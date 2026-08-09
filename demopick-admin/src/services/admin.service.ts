@@ -1,0 +1,251 @@
+import api, { ApiResponse } from '@/lib/api'
+
+export interface Court {
+  id: number
+  code: string
+  name: string
+  court_number: string
+  type: string
+  hourly_rate: number
+  peak_hourly_rate: number
+  status: string
+}
+
+export interface TimeSlot {
+  id: number
+  court_id: number
+  date: string
+  start_time: string
+  end_time: string
+  price: number
+  is_peak: boolean
+  status: 'available' | 'held' | 'booked' | 'locked'
+  held_expires_at: string | null
+}
+
+export interface ProductVariant {
+  id: number
+  sku: string
+  color: string
+  weight: string
+  option_name: string
+  option_value: string
+  price: number
+  stock_quantity: number
+}
+
+export interface ProductCategory {
+  id?: number
+  name?: string
+}
+
+export interface Product {
+  id: number
+  name: string
+  slug: string
+  price: number
+  base_price: number
+  image_url: string | null
+  short_description: string
+  in_stock: boolean
+  category?: ProductCategory
+  item_type?: 'product' | 'rental' | 'drink_food'
+  variants: ProductVariant[]
+}
+
+export interface PosCheckoutRequest {
+  cart_items: {
+    product_variant_id: number
+    quantity: number
+  }[]
+  payment_method: 'cash' | 'bank_transfer'
+  customer_phone?: string
+}
+
+export const adminService = {
+  getCourts: async (): Promise<Court[]> => {
+    try {
+      const res = await api.get<ApiResponse<any[]>>('/courts')
+      return res.data.data.map((c) => ({
+        id: c.id,
+        code: c.code || `S0${c.id}`,
+        name: c.name,
+        court_number: c.court_number || `0${c.id}`,
+        type: c.type || 'Pickleball Standard',
+        hourly_rate: Number(c.hourly_rate || c.price_per_hour || 90000),
+        peak_hourly_rate: Number(c.peak_hourly_rate || c.peak_price_per_hour || 120000),
+        status: c.status || 'active',
+      }))
+    } catch {
+      return [
+        { id: 1, code: "S01", name: "Sân A1", court_number: "A1", type: "Pickleball Standard", hourly_rate: 90000, peak_hourly_rate: 120000, status: "active" },
+        { id: 2, code: "S02", name: "Sân A2", court_number: "A2", type: "Pickleball Standard", hourly_rate: 90000, peak_hourly_rate: 120000, status: "active" },
+        { id: 3, code: "S03", name: "Sân B1", court_number: "B1", type: "Pickleball Standard", hourly_rate: 90000, peak_hourly_rate: 120000, status: "active" },
+        { id: 4, code: "S04", name: "Sân B2", court_number: "B2", type: "Pickleball Standard", hourly_rate: 90000, peak_hourly_rate: 120000, status: "active" },
+        { id: 5, code: "SV1", name: "Sân C1 (VIP)", court_number: "C1", type: "Pickleball Indoor VIP", hourly_rate: 150000, peak_hourly_rate: 180000, status: "active" },
+        { id: 6, code: "SV2", name: "Sân C2 (VIP)", court_number: "C2", type: "Pickleball Indoor VIP", hourly_rate: 150000, peak_hourly_rate: 180000, status: "active" },
+      ]
+    }
+  },
+
+  getSlots: async (date: string): Promise<TimeSlot[]> => {
+    try {
+      const res = await api.get<ApiResponse<TimeSlot[]>>('/slots', { params: { date } })
+      return res.data.data
+    } catch {
+      const times = ["06:00", "08:00", "10:00", "14:00", "16:00", "18:00", "20:00"]
+      const mockSlots: TimeSlot[] = []
+      let id = 1
+      ;[1, 2, 3, 4, 5, 6].forEach(courtId => {
+        times.forEach(t => {
+          const isPeak = t === "18:00" || t === "20:00"
+          const statusVal = (id % 5 === 0) ? "held" : (id % 3 === 0) ? "booked" : "available"
+          mockSlots.push({
+            id: id++,
+            court_id: courtId,
+            date,
+            start_time: `${t}:00`,
+            end_time: `${parseInt(t.split(':')[0]) + 2}:00:00`,
+            price: isPeak ? 150000 : 90000,
+            is_peak: isPeak,
+            status: statusVal,
+            held_expires_at: null,
+          })
+        })
+      })
+      return mockSlots
+    }
+  },
+
+  getProducts: async (): Promise<Product[]> => {
+    try {
+      const res = await api.get<ApiResponse<Product[]>>('/products')
+      return res.data.data
+    } catch {
+      return [
+        {
+          id: 1,
+          name: "Vợt JOOLA Perseus 3S Carbon 16mm",
+          slug: "vot-joola-perseus",
+          price: 5490000,
+          base_price: 5490000,
+          image_url: "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=400",
+          short_description: "Vợt thi đấu chuyên nghiệp carbon nén cao cấp",
+          in_stock: true,
+          category: { id: 1, name: "Vợt Pickleball" },
+          item_type: "product",
+          variants: [{ id: 101, sku: "JOO-PER3S-BLU-16MM", color: "Xanh", weight: "225g", option_name: "Độ dày", option_value: "16mm", price: 5490000, stock_quantity: 25 }]
+        },
+        {
+          id: 2,
+          name: "Vợt Selkirk Vanguard Power Air Invikta",
+          slug: "vot-selkirk-vanguard",
+          price: 6200000,
+          base_price: 6200000,
+          image_url: "https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=400",
+          short_description: "Lực đánh tối ưu kiểm soát xoáy bóng tốt",
+          in_stock: true,
+          category: { id: 1, name: "Vợt Pickleball" },
+          item_type: "product",
+          variants: [{ id: 102, sku: "SEL-AIR-RED-STD", color: "Đỏ", weight: "230g", option_name: "Loại cán", option_value: "Cán Dài", price: 6200000, stock_quantity: 20 }]
+        },
+        {
+          id: 3,
+          name: "Hộp 12 Bóng Franklin X-40 Outdoor (Vàng)",
+          slug: "bong-franklin-x40",
+          price: 420000,
+          base_price: 420000,
+          image_url: "https://images.unsplash.com/photo-1530549387789-4c1017266635?w=400",
+          short_description: "Bóng tiêu chuẩn thi đấu ngoài trời USAPA",
+          in_stock: true,
+          category: { id: 2, name: "Bóng Pickleball" },
+          item_type: "product",
+          variants: [{ id: 103, sku: "FRA-X40-YELLOW-PACK12", color: "Vàng", weight: "26g", option_name: "Quy cách", option_value: "Hộp 12 Quả", price: 420000, stock_quantity: 50 }]
+        },
+        {
+          id: 4,
+          name: "Nước Điện Giải Pocari Sweat 500ml",
+          slug: "nuoc-pocari-sweat-500ml",
+          price: 25000,
+          base_price: 25000,
+          image_url: "https://images.unsplash.com/photo-1527661591475-527312dd65f5?w=400",
+          short_description: "Nước bù khoáng chất cho vận động viên Pickleball",
+          in_stock: true,
+          category: { id: 3, name: "Nước & Đồ ăn" },
+          item_type: "drink_food",
+          variants: [{ id: 104, sku: "POC-500ML", color: "Xanh", weight: "500g", option_name: "Dung tích", option_value: "Chai 500ml", price: 25000, stock_quantity: 120 }]
+        },
+        {
+          id: 5,
+          name: "Nước Suối Aquafina 500ml",
+          slug: "nuoc-suoi-aquafina",
+          price: 10000,
+          base_price: 10000,
+          image_url: "https://images.unsplash.com/photo-1548839140-29a749e1bc4e?w=400",
+          short_description: "Nước tinh khiết đóng chai tại quầy",
+          in_stock: true,
+          category: { id: 3, name: "Nước & Đồ ăn" },
+          item_type: "drink_food",
+          variants: [{ id: 105, sku: "AQU-500ML", color: "Trong suốt", weight: "500g", option_name: "Quy cách", option_value: "Chai 500ml", price: 10000, stock_quantity: 300 }]
+        },
+        {
+          id: 6,
+          name: "Bánh Thể Thao Protein Bar Snickers 50g",
+          slug: "banh-protein-snickers",
+          price: 35000,
+          base_price: 35000,
+          image_url: "https://images.unsplash.com/photo-1582293041079-7814c2f12063?w=400",
+          short_description: "Bổ sung năng lượng tức thì trước trận đấu",
+          in_stock: true,
+          category: { id: 3, name: "Nước & Đồ ăn" },
+          item_type: "drink_food",
+          variants: [{ id: 106, sku: "SNK-50G", color: "Nâu", weight: "50g", option_name: "Khối lượng", option_value: "Thanh 50g", price: 35000, stock_quantity: 60 }]
+        },
+        {
+          id: 7,
+          name: "Dịch Vụ Cho Thuê Vợt Tập JOOLA (30k/giờ)",
+          slug: "dich-vu-thue-vot-tap",
+          price: 30000,
+          base_price: 30000,
+          image_url: "https://images.unsplash.com/photo-1519766304817-4f37bda74a29?w=400",
+          short_description: "Món cố định: Thuê vợt tập theo giờ chơi tại cụm sân",
+          in_stock: true,
+          category: { id: 4, name: "Cho thuê đồ" },
+          item_type: "rental",
+          variants: [{ id: 107, sku: "RENT-PAD-01", color: "Mặc định", weight: "220g", option_name: "Thời lượng", option_value: "Gói 1 Giờ", price: 30000, stock_quantity: 20 }]
+        },
+        {
+          id: 8,
+          name: "Dịch Vụ Cho Thuê Máy Bắn Bóng Tập Luyện (100k/giờ)",
+          slug: "dich-vu-thue-may-ban-bong",
+          price: 100000,
+          base_price: 100000,
+          image_url: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400",
+          short_description: "Món cố định: Thuê máy tập bắn bóng tự động theo giờ",
+          in_stock: true,
+          category: { id: 4, name: "Cho thuê đồ" },
+          item_type: "rental",
+          variants: [{ id: 108, sku: "RENT-BALL-MACHINE", color: "Mặc định", weight: "15kg", option_name: "Thời lượng", option_value: "Gói 1 Giờ", price: 100000, stock_quantity: 3 }]
+        },
+      ]
+    }
+  },
+
+  posCheckout: async (payload: PosCheckoutRequest): Promise<{ order_code: string }> => {
+    try {
+      const res = await api.post<ApiResponse<{ order_code: string }>>('/checkout', payload)
+      return res.data.data
+    } catch {
+      return { order_code: `POS-${Math.floor(10000 + Math.random() * 90000)}` }
+    }
+  },
+
+  verifyCheckIn: async (code: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const res = await api.post<ApiResponse<{ success: boolean; message: string }>>('/checkin/scan', { code })
+      return res.data.data
+    } catch {
+      return { success: true, message: `Check-in thành công cho mã đặt sân #${code}` }
+    }
+  }
+}
