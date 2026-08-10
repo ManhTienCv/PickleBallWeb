@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import AppLayout from "@/components/AppLayout";
 import { adminService, Product } from "@/services/admin.service";
@@ -31,6 +31,8 @@ import {
   ShieldCheck,
   Lock,
   PlusCircle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -86,6 +88,10 @@ export default function Inventory() {
   const [search, setSearch] = useState("");
   const [activeTabCat, setActiveTabCat] = useState("Tất cả");
 
+  // Pagination for Product Grid in Inventory
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 6;
+
   // Dialog states
   const [addProductOpen, setAddProductOpen] = useState(false);
   const [restockOpen, setRestockOpen] = useState(false);
@@ -115,6 +121,11 @@ export default function Inventory() {
   const [inventoryLogs, setInventoryLogs] = useState<InventoryLog[]>(initialLogs);
 
   const displayProducts = productsList.length > 0 ? productsList : initialProducts;
+
+  // Reset page when search or category changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, activeTabCat]);
 
   const filteredProducts = displayProducts.filter((p) => {
     const matchSearch =
@@ -149,14 +160,22 @@ export default function Inventory() {
     return matchSearch && matchCat;
   });
 
+  // Pagination calculation
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage) || 1;
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   const handleCreateProduct = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isStaffOnly) {
-      toast.error("🔒 Quyền khai báo mặt hàng mới dành riêng cho Admin/Chủ Sân.");
-      return;
-    }
     if (!newProductName.trim()) {
       toast.error("Vui lòng nhập tên sản phẩm / dịch vụ.");
+      return;
+    }
+
+    if (isStaffOnly && newProductCategory !== "Nước & Đồ ăn") {
+      toast.error("🔒 Lễ tân chỉ được phép khai báo thêm Nước uống & Đồ ăn bán tại quầy POS. Khai báo Vợt & Thiết bị cao cấp do Admin quản lý.");
       return;
     }
 
@@ -173,18 +192,18 @@ export default function Inventory() {
       price: Number(newProductPrice),
       base_price: Number(newProductPrice),
       image_url: newProductImage || "https://images.unsplash.com/photo-1527661591475-527312dd65f5?w=400",
-      short_description: `${newProductCategory} - Phục vụ tại cụm sân Pickleball`,
+      short_description: `${newProductCategory} - Phục vụ tại quầy POS`,
       in_stock: Number(newProductStock) > 0,
-      item_type: newProductItemType,
+      item_type: isStaffOnly ? "drink_food" : newProductItemType,
       category: { name: newProductCategory },
       variants: [
         {
           id: Date.now() + 1,
-          sku: newProductSku || "SKU-GENERIC",
+          sku: newProductSku || "SKU-BEV-NEW",
           color: "Mặc định",
           weight: "Tiêu chuẩn",
-          option_name: newProductItemType === "rental" ? "Thời lượng" : "Quy cách",
-          option_value: newProductItemType === "rental" ? "Theo Giờ" : "Tiêu chuẩn",
+          option_name: "Quy cách",
+          option_value: "Chai/Lốc",
           price: Number(newProductPrice),
           stock_quantity: Number(newProductStock),
         },
@@ -193,19 +212,22 @@ export default function Inventory() {
 
     setProductsList([createdProduct, ...displayProducts]);
 
+    const nowTimeStr = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
     const newLog: InventoryLog = {
       id: Date.now(),
       productName: newProductName,
-      sku: newProductSku || "SKU-GENERIC",
+      sku: newProductSku || "SKU-BEV-NEW",
       type: "in",
       changeQty: Number(newProductStock),
       stockAfter: Number(newProductStock),
-      note: `Admin [Chủ Sân] khai báo mặt hàng mới (${newProductCategory})`,
-      time: new Date().toLocaleTimeString("vi-VN") + " - " + new Date().toLocaleDateString("vi-VN"),
+      note: isStaffOnly
+        ? `Lễ tân [${user?.name || "Phạm Văn Đức"}] khai báo thêm món mới (${newProductName}) bán tại quầy POS`
+        : `Admin [Chủ Sân] khai báo mặt hàng mới (${newProductCategory})`,
+      time: nowTimeStr + " - " + new Date().toLocaleDateString("vi-VN"),
     };
     setInventoryLogs([newLog, ...inventoryLogs]);
 
-    toast.success(`Khai báo thành công: "${newProductName}"!`);
+    toast.success(`Đã thêm món mới vào quầy POS thành công: "${newProductName}"!`);
     setAddProductOpen(false);
     setNewProductName("");
   };
@@ -281,12 +303,19 @@ export default function Inventory() {
       subtitle="Quản lý toàn bộ Thiết bị bán, Nước giải khát & Dịch vụ Cho thuê đồ cố định theo giờ"
       headerRight={
         isStaffOnly ? (
-          <Badge className="bg-amber-100 text-amber-900 border-amber-300 font-bold p-2 gap-1.5 text-xs">
-            <Lock className="h-3.5 w-3.5 text-amber-600" />
-            <span>🔒 Khai báo hàng mới: Dành riêng Admin</span>
-          </Badge>
+          <Button
+            onClick={() => {
+              setNewProductCategory("Nước & Đồ ăn");
+              setNewProductItemType("drink_food");
+              setAddProductOpen(true);
+            }}
+            className="gap-2 font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm text-xs"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Thêm Nước & Đồ Ăn Mới Tại Quầy</span>
+          </Button>
         ) : (
-          <Button onClick={() => setAddProductOpen(true)} className="gap-2 font-bold bg-emerald-600 hover:bg-emerald-500">
+          <Button onClick={() => setAddProductOpen(true)} className="gap-2 font-bold bg-emerald-600 hover:bg-emerald-500 text-xs">
             <Plus className="h-4 w-4" />
             <span>Thêm Hàng / Cho Thuê Đồ Mới</span>
           </Button>
@@ -302,10 +331,10 @@ export default function Inventory() {
             </div>
             <div>
               <h3 className="font-bold text-sm text-emerald-300">
-                Phương Án Phân Quyền Thông Minh (Smart Inventory Permission)
+                Phương Án Phân Quyền Thông Minh Lễ Tân Quầy
               </h3>
               <p className="text-xs text-slate-300 mt-0.5">
-                <strong className="text-amber-300">Lễ Tân Quầy:</strong> Được tự do bấm nút <span className="text-emerald-400 font-bold">+ Nhập Quầy Nước/Bóng</span> để bán hàng liên tục cho khách. <strong className="text-red-300">Admin/Chủ Sân:</strong> Độc quyền khai báo sản phẩm mới & niêm yết giá vợt cao cấp.
+                <strong className="text-amber-300">Lễ Tân Quầy:</strong> Được tự do bấm nút <span className="text-emerald-400 font-bold">Thêm Nước & Đồ Ăn Mới Tại Quầy</span> & nút <span className="text-emerald-400 font-bold">Nhập Quầy Nước/Bóng</span> để bán liên tục cho khách. <strong className="text-red-300">Admin/Chủ Sân:</strong> Độc quyền khai báo Vợt & Thiết bị cao cấp.
               </p>
             </div>
           </div>
@@ -364,7 +393,7 @@ export default function Inventory() {
 
         {/* MAIN LAYOUT: Split 2 Halves (Cột Trái: Danh Mục Sản Phẩm | Cột Phải: Nhật Ký Kho & Thao Tác) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* NỬA 1 (BÊN TRÁI - 7 COLS): DANH MỤC & SẢN PHẨM */}
+          {/* NỬA 1 (BÊN TRÁI - 7 COLS): DANH MỤC & SẢN PHẨM CÓ THANH CUỘN BẢO VỆ */}
           <div className="lg:col-span-7 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
               <div className="relative flex-1">
@@ -395,63 +424,103 @@ export default function Inventory() {
               </div>
             </div>
 
-            {/* Product Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {filteredProducts.map((product) => {
-                const stock = product.variants?.[0]?.stock_quantity || 0;
-                const isAllowStaffRestock =
-                  product.item_type === "drink_food" ||
-                  product.category?.name?.includes("Nước") ||
-                  product.category?.name?.includes("Đồ ăn");
+            {/* PRODUCT CONTAINER WITH VISIBLE SCROLLBAR & PAGINATION */}
+            <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+              {/* Scrollable Cards Grid Container */}
+              <div className="max-h-[420px] overflow-y-auto pr-1.5 space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {paginatedProducts.map((product) => {
+                    const stock = product.variants?.[0]?.stock_quantity || 0;
+                    const isAllowStaffRestock =
+                      product.item_type === "drink_food" ||
+                      product.category?.name?.includes("Nước") ||
+                      product.category?.name?.includes("Đồ ăn");
 
-                return (
-                  <Card key={product.id} className="p-3.5 bg-white border-slate-200 hover:border-emerald-500 shadow-sm transition-all space-y-3 flex flex-col justify-between">
-                    <div className="flex items-start gap-3">
-                      <div className="w-16 h-16 rounded-lg bg-slate-100 overflow-hidden shrink-0 border relative">
-                        <img src={product.image_url || ""} alt={product.name} className="w-full h-full object-cover" />
-                      </div>
-                      <div className="space-y-1 flex-1 min-w-0">
-                        <Badge variant="outline" className="text-[9px] bg-slate-50 text-slate-700">
-                          {product.category?.name || "Mặt hàng"}
-                        </Badge>
-                        <h4 className="font-bold text-xs text-slate-900 truncate">{product.name}</h4>
-                        <p className="text-[11px] font-bold text-emerald-600">
-                          {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(product.price)}
-                        </p>
-                      </div>
-                    </div>
+                    return (
+                      <Card key={product.id} className="p-3.5 bg-white border-slate-200 hover:border-emerald-500 shadow-sm transition-all space-y-3 flex flex-col justify-between">
+                        <div className="flex items-start gap-3">
+                          <div className="w-16 h-16 rounded-lg bg-slate-100 overflow-hidden shrink-0 border relative">
+                            <img src={product.image_url || ""} alt={product.name} className="w-full h-full object-cover" />
+                          </div>
+                          <div className="space-y-1 flex-1 min-w-0">
+                            <Badge variant="outline" className="text-[9px] bg-slate-50 text-slate-700">
+                              {product.category?.name || "Mặt hàng"}
+                            </Badge>
+                            <h4 className="font-bold text-xs text-slate-900 truncate">{product.name}</h4>
+                            <p className="text-[11px] font-bold text-emerald-600">
+                              {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(product.price)}
+                            </p>
+                          </div>
+                        </div>
 
-                    <div className="pt-2 border-t flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-slate-500 text-[11px]">Tồn kho:</span>
-                        <strong className={`font-extrabold ${stock > 5 ? "text-emerald-700" : "text-amber-600"}`}>
-                          {stock}
-                        </strong>
-                      </div>
+                        <div className="pt-2 border-t flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-slate-500 text-[11px]">Tồn kho:</span>
+                            <strong className={`font-extrabold ${stock > 5 ? "text-emerald-700" : "text-amber-600"}`}>
+                              {stock}
+                            </strong>
+                          </div>
 
-                      {isAllowStaffRestock ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedProduct(product);
-                            setRestockActionType("in");
-                            setRestockOpen(true);
-                          }}
-                          className="h-7 px-2 font-bold text-[11px] border-amber-300 text-amber-800 bg-amber-50 hover:bg-amber-100 gap-1"
-                        >
-                          <PlusCircle className="h-3 w-3 text-amber-600" />
-                          <span>+ Nhập Quầy Nước/Bóng</span>
-                        </Button>
-                      ) : (
-                        <Badge variant="outline" className="text-[10px] text-red-600 border-red-200 bg-red-50">
-                          🔒 Khai báo / Giá: Admin
-                        </Badge>
-                      )}
-                    </div>
-                  </Card>
-                );
-              })}
+                          {isAllowStaffRestock ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedProduct(product);
+                                setRestockActionType("in");
+                                setRestockOpen(true);
+                              }}
+                              className="h-7 px-2 font-bold text-[11px] border-amber-300 text-amber-800 bg-amber-50 hover:bg-amber-100 gap-1"
+                            >
+                              <PlusCircle className="h-3 w-3 text-amber-600" />
+                              <span>Nhập Quầy Nước/Bóng</span>
+                            </Button>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px] text-red-600 border-red-200 bg-red-50">
+                              🔒 Khai báo / Giá: Admin
+                            </Badge>
+                          )}
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* PAGINATION FOOTER CONTROL BAR IN INVENTORY */}
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs font-bold">
+                <span className="text-slate-500 font-semibold text-[11px]">
+                  Hiển thị {paginatedProducts.length}/{filteredProducts.length} mặt hàng kho
+                </span>
+
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                    className="h-7 px-2.5 border-slate-300 text-xs font-bold gap-1"
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                    <span>Trang trước</span>
+                  </Button>
+
+                  <span className="px-2 font-mono text-slate-800 text-xs font-extrabold bg-slate-100 py-1 rounded border">
+                    {currentPage} / {totalPages}
+                  </span>
+
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                    className="h-7 px-2.5 border-slate-300 text-xs font-bold gap-1"
+                  >
+                    <span>Trang sau</span>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -466,7 +535,7 @@ export default function Inventory() {
                 <Badge variant="secondary" className="text-[10px]">Thời Gian Thực</Badge>
               </div>
 
-              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+              <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1.5">
                 {inventoryLogs.map((log) => (
                   <div key={log.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1 text-xs">
                     <div className="flex items-center justify-between font-bold text-slate-900">
@@ -487,25 +556,38 @@ export default function Inventory() {
           </div>
         </div>
 
-        {/* Modal Khai Báo Sản Phẩm Mới (Dành Cho Admin) */}
+        {/* Modal Khai Báo Sản Phẩm Mới (Cho phép Lễ tân thêm Nước/Đồ ăn) */}
         <Dialog open={addProductOpen} onOpenChange={setAddProductOpen}>
-          <DialogContent className="max-w-md bg-white">
+          <DialogContent className="max-w-md bg-white max-h-[85vh] overflow-y-auto pr-2">
             <form onSubmit={handleCreateProduct} className="space-y-4 text-xs">
               <DialogHeader>
                 <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
                   <PackagePlus className="h-5 w-5 text-emerald-600" />
-                  Khai Báo Mặt Hàng / Cho Thuê Đồ Mới
+                  {isStaffOnly ? "Lễ Tân Thêm Món Nước Uống & Đồ Ăn Mới" : "Khai Báo Mặt Hàng / Cho Thuê Đồ Mới"}
                 </DialogTitle>
                 <DialogDescription>
-                  Chỉ duy nhất Admin/Chủ Sân có quyền niêm yết sản phẩm mới và cài đặt giá
+                  {isStaffOnly
+                    ? "Lễ tân khai báo loại nước hoặc đồ ăn mới nhận tại quầy để bán trực tiếp trên máy POS"
+                    : "Chỉ duy nhất Admin/Chủ Sân có quyền niêm yết sản phẩm thiết bị cao cấp mới"}
                 </DialogDescription>
               </DialogHeader>
 
+              {isStaffOnly && (
+                <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 space-y-0.5">
+                  <p className="font-bold flex items-center gap-1">
+                    <ShieldCheck className="h-4 w-4 text-amber-600" /> Quyền Lễ Tân Quầy POS:
+                  </p>
+                  <p className="text-[11px]">
+                    Bạn đang thêm món mới thuộc danh mục <strong>Nước & Đồ ăn</strong> để bán tại quầy.
+                  </p>
+                </div>
+              )}
+
               <div className="space-y-3">
                 <div className="space-y-1">
-                  <Label className="font-bold text-slate-700">Tên mặt hàng / dịch vụ (*):</Label>
+                  <Label className="font-bold text-slate-700">Tên mặt hàng / nước uống mới (*):</Label>
                   <Input
-                    placeholder="VD: Hộp 12 Bóng Franklin, Nước giải khát..."
+                    placeholder="VD: Nước Ép Cam Tươi, Trà Chanh, Bánh Snickers..."
                     value={newProductName}
                     onChange={(e) => setNewProductName(e.target.value)}
                     required
@@ -515,21 +597,25 @@ export default function Inventory() {
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
                     <Label className="font-bold text-slate-700">Danh mục:</Label>
-                    <select
-                      value={newProductCategory}
-                      onChange={(e) => setNewProductCategory(e.target.value)}
-                      className="w-full h-9 px-2 border rounded-lg font-semibold bg-white"
-                    >
-                      <option value="Nước & Đồ ăn">Nước & Đồ ăn</option>
-                      <option value="Cho thuê đồ">Cho thuê đồ</option>
-                      <option value="Bóng">Bóng Pickleball</option>
-                      <option value="Vợt">Vợt Pickleball</option>
-                      <option value="Phụ kiện">Phụ kiện</option>
-                    </select>
+                    {isStaffOnly ? (
+                      <Input value="Nước & Đồ ăn" disabled className="bg-slate-100 font-bold text-slate-700" />
+                    ) : (
+                      <select
+                        value={newProductCategory}
+                        onChange={(e) => setNewProductCategory(e.target.value)}
+                        className="w-full h-9 px-2 border rounded-lg font-semibold bg-white"
+                      >
+                        <option value="Nước & Đồ ăn">Nước & Đồ ăn</option>
+                        <option value="Cho thuê đồ">Cho thuê đồ</option>
+                        <option value="Bóng">Bóng Pickleball</option>
+                        <option value="Vợt">Vợt Pickleball</option>
+                        <option value="Phụ kiện">Phụ kiện</option>
+                      </select>
+                    )}
                   </div>
 
                   <div className="space-y-1">
-                    <Label className="font-bold text-slate-700">Giá niêm yết (VNĐ):</Label>
+                    <Label className="font-bold text-slate-700">Giá bán quầy (VNĐ):</Label>
                     <Input
                       type="number"
                       value={newProductPrice}
@@ -561,7 +647,7 @@ export default function Inventory() {
 
               <DialogFooter className="pt-2">
                 <Button type="submit" className="w-full font-bold bg-emerald-600 hover:bg-emerald-500">
-                  Lưu Khai Báo Sản Phẩm Mới 🚀
+                  Lưu Khai Báo & Cho Bán POS Ngay 🚀
                 </Button>
               </DialogFooter>
             </form>
@@ -579,7 +665,7 @@ export default function Inventory() {
                     Lễ Tân Nhập Bổ Sung Quầy: {selectedProduct.name}
                   </DialogTitle>
                   <DialogDescription>
-                    Ghi nhận trực tiếp khi shipper giao lốc nước uống hoặc bóng lẻ tại quầy
+                    Ghi nhận trực tiếp khi shipper giao lốc nước uống hoặc đồ ăn tại quầy
                   </DialogDescription>
                 </DialogHeader>
 

@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Search, ShoppingCart, Trash2, Banknote, QrCode, Receipt, PlusCircle, User, ShieldCheck, Lock, CheckCircle2, Clock } from "lucide-react";
+import { Search, ShoppingCart, Trash2, Banknote, QrCode, Receipt, PlusCircle, User, ShieldCheck, Lock, CheckCircle2, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -46,6 +46,10 @@ export default function POS() {
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "bank_transfer">("cash");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shiftReportOpen, setShiftReportOpen] = useState(false);
+
+  // Pagination for Product Grid
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 6; // 6 products per page (2 rows x 3 cols) for perfect screen fit
 
   // Selected customer info for membership discount
   const [selectedCustomer, setSelectedCustomer] = useState<{
@@ -157,6 +161,11 @@ export default function POS() {
   const [productsState, setProductsState] = useState<Product[]>([]);
   const products = productsState.length > 0 ? productsState : initialProducts;
 
+  // Reset page when category or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCategory, search]);
+
   // URL query params auto-add court fee from CourtMap page
   useEffect(() => {
     const paramCourtName = searchParams.get("courtName");
@@ -215,6 +224,13 @@ export default function POS() {
 
     return matchSearch && matchCat;
   });
+
+  // Pagination Calculations
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage) || 1;
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const handleSelectCourtFromSidebar = (court: CourtStatusItem) => {
     const feeAmount = court.rate * court.hours;
@@ -421,7 +437,7 @@ export default function POS() {
           </div>
         </div>
 
-        {/* CỘT 2 (Ở GIỮA - 6 COLS): DANH MỤC LỌC VÀ SẢN PHẨM / NƯỚC UỐNG / THUÊ VỢT (Chuẩn Ảnh 2) */}
+        {/* CỘT 2 (Ở GIỮA - 6 COLS): KHOẢNG ĐỎ CÓ THANH CUỘN & PHÂN TRANG CHUYỂN TRANG */}
         <div className="lg:col-span-6 space-y-3">
           {/* Category Tabs (Chuẩn Thiết Kế Ảnh 2) */}
           <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-2">
@@ -455,66 +471,104 @@ export default function POS() {
             </div>
           </div>
 
-          {/* Product Cards Grid (Matching Visual Cards in Ảnh 2) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {filteredProducts.map((p) => {
-              const stock = p.variants?.[0]?.stock_quantity || 0;
-              const isAllowStaffRestock =
-                p.item_type === "drink_food" ||
-                p.category?.name?.includes("Nước") ||
-                p.category?.name?.includes("Đồ ăn");
+          {/* PRODUCT CONTAINER: SCROLLABLE & PAGINATED CONTAINER */}
+          <div className="max-h-[calc(100vh-270px)] overflow-y-auto pr-1 space-y-3 flex flex-col justify-between">
+            {/* Product Cards Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {paginatedProducts.map((p) => {
+                const stock = p.variants?.[0]?.stock_quantity || 0;
+                const isAllowStaffRestock =
+                  p.item_type === "drink_food" ||
+                  p.category?.name?.includes("Nước") ||
+                  p.category?.name?.includes("Đồ ăn");
 
-              return (
-                <Card
-                  key={p.id}
-                  className="p-3 border-slate-200 hover:border-emerald-500 hover:shadow-md transition-all bg-white flex flex-col justify-between"
-                >
-                  <div className="space-y-2">
-                    <div className="aspect-square bg-slate-50 rounded-xl overflow-hidden relative flex items-center justify-center p-2 border border-slate-100">
-                      <img src={p.image_url || ""} alt={p.name} className="max-h-full max-w-full object-contain" />
-                      <span className={`absolute bottom-1 right-1 text-[9px] font-bold px-1.5 py-0.5 rounded ${stock > 0 ? "bg-emerald-600 text-white" : "bg-red-600 text-white"}`}>
-                        Tồn: {stock}
-                      </span>
-                    </div>
-                    <h4 className="font-bold text-xs text-slate-900 line-clamp-2">{p.name}</h4>
-                  </div>
-
-                  <div className="pt-2 mt-2 border-t space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-black text-emerald-600 text-xs">
-                        {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(p.price)}
-                      </span>
-
-                      <Button
-                        size="sm"
-                        disabled={stock <= 0}
-                        onClick={() => handleAddToCart(p, 0)}
-                        className="h-6 px-2 font-bold text-[11px] bg-emerald-600 hover:bg-emerald-500"
-                      >
-                        + Chọn
-                      </Button>
-                    </div>
-
-                    {isAllowStaffRestock ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setQuickRestockProduct(p)}
-                        className="w-full h-6 px-1.5 font-bold text-[9px] border-amber-300 text-amber-800 bg-amber-50 hover:bg-amber-100 gap-1"
-                      >
-                        <PlusCircle className="h-3 w-3 text-amber-600" />
-                        <span>+ Nhập Quầy</span>
-                      </Button>
-                    ) : (
-                      <div className="w-full h-6 flex items-center justify-center gap-1 text-[9px] font-bold text-slate-400 bg-slate-100 rounded border border-slate-200">
-                        <Lock className="h-3 w-3 text-slate-400" />
-                        <span>🔒 Khai báo/Giá: Admin</span>
+                return (
+                  <Card
+                    key={p.id}
+                    className="p-3 border-slate-200 hover:border-emerald-500 hover:shadow-md transition-all bg-white flex flex-col justify-between"
+                  >
+                    <div className="space-y-2">
+                      <div className="aspect-square bg-slate-50 rounded-xl overflow-hidden relative flex items-center justify-center p-2 border border-slate-100">
+                        <img src={p.image_url || ""} alt={p.name} className="max-h-full max-w-full object-contain" />
+                        <span className={`absolute bottom-1 right-1 text-[9px] font-bold px-1.5 py-0.5 rounded ${stock > 0 ? "bg-emerald-600 text-white" : "bg-red-600 text-white"}`}>
+                          Tồn: {stock}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                </Card>
-              );
-            })}
+                      <h4 className="font-bold text-xs text-slate-900 line-clamp-2">{p.name}</h4>
+                    </div>
+
+                    <div className="pt-2 mt-2 border-t space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-black text-emerald-600 text-xs">
+                          {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(p.price)}
+                        </span>
+
+                        <Button
+                          size="sm"
+                          disabled={stock <= 0}
+                          onClick={() => handleAddToCart(p, 0)}
+                          className="h-6 px-2 font-bold text-[11px] bg-emerald-600 hover:bg-emerald-500"
+                        >
+                          + Chọn
+                        </Button>
+                      </div>
+
+                      {isAllowStaffRestock ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setQuickRestockProduct(p)}
+                          className="w-full h-6 px-1.5 font-bold text-[9px] border-amber-300 text-amber-800 bg-amber-50 hover:bg-amber-100 gap-1"
+                        >
+                          <PlusCircle className="h-3 w-3 text-amber-600" />
+                          <span>+ Nhập Quầy</span>
+                        </Button>
+                      ) : (
+                        <div className="w-full h-6 flex items-center justify-center gap-1 text-[9px] font-bold text-slate-400 bg-slate-100 rounded border border-slate-200">
+                          <Lock className="h-3 w-3 text-slate-400" />
+                          <span>🔒 Khai báo/Giá: Admin</span>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+
+            {/* PAGINATION FOOTER CONTROL BAR */}
+            <div className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm text-xs font-bold mt-2">
+              <span className="text-slate-500 font-semibold text-[11px]">
+                Hiển thị {paginatedProducts.length}/{filteredProducts.length} mặt hàng
+              </span>
+
+              <div className="flex items-center gap-1.5">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  className="h-7 px-2.5 border-slate-300 text-xs font-bold gap-1"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                  <span>Trang trước</span>
+                </Button>
+
+                <span className="px-2 font-mono text-slate-800 text-xs font-extrabold bg-slate-100 py-1 rounded border">
+                  {currentPage} / {totalPages}
+                </span>
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  className="h-7 px-2.5 border-slate-300 text-xs font-bold gap-1"
+                >
+                  <span>Trang sau</span>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 

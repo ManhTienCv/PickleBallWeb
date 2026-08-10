@@ -68,36 +68,36 @@ const AppLayout = ({ children, title, subtitle, headerRight }: AppLayoutProps) =
 
   return (
     <div className="flex h-screen bg-slate-100 overflow-hidden font-sans">
-      {/* Sidebar */}
-      <aside className="w-64 bg-slate-900 text-white flex flex-col shrink-0 border-r border-slate-800">
-        <div className="p-5 border-b border-slate-800">
+      {/* Sidebar - Minimalist Executive Style */}
+      <aside className="w-64 bg-[#FAF8F5] text-slate-800 flex flex-col shrink-0 border-r border-slate-200/90 shadow-sm relative">
+        <div className="p-5 border-b border-slate-200/80">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
-              <MapPin className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 bg-[#27c372] rounded-xl flex items-center justify-center shadow-md shadow-[#27c372]/25 text-white font-bold">
+              <MapPin className="w-5 h-5 text-white font-extrabold" />
             </div>
             <div>
-              <h1 className="font-bold text-white text-base tracking-tight">DemoPick ONE</h1>
-              <p className="text-[11px] text-emerald-400 font-semibold uppercase tracking-wider">
+              <h1 className="font-extrabold text-slate-900 text-base tracking-tight">DemoPick ONE</h1>
+              <p className="text-[11px] text-[#16a34a] font-extrabold uppercase tracking-wider">
                 {isStaffOnly ? "Lễ Tân POS Quầy" : "Admin Portal"}
               </p>
             </div>
           </div>
         </div>
 
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+        <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
           {visibleMenuItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${
                   isActive
-                    ? "bg-primary text-white shadow-md shadow-primary/20"
-                    : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                    ? "bg-[#27c372] text-white font-extrabold shadow-md shadow-[#27c372]/30 scale-[1.01]"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 font-bold"
                 }`}
               >
-                <item.icon className="w-4 h-4" />
+                <item.icon className={`w-4 h-4 ${isActive ? "text-white" : "text-[#27c372]"}`} />
                 <span>{item.label}</span>
               </Link>
             );
@@ -105,30 +105,30 @@ const AppLayout = ({ children, title, subtitle, headerRight }: AppLayoutProps) =
         </nav>
 
         {/* Quick Check-in Button in Sidebar */}
-        <div className="p-4 border-t border-slate-800 space-y-3">
+        <div className="p-4 border-t border-slate-200/80 space-y-3">
           <Button
             onClick={() => setCheckInOpen(true)}
-            className="w-full gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-sm"
+            className="w-full gap-2 bg-slate-900 hover:bg-slate-800 text-white font-black rounded-xl shadow-md shadow-slate-900/10"
           >
-            <QrCode className="w-4 h-4" />
+            <QrCode className="w-4 h-4 text-[#27c372]" />
             <span>Check-in QR Khách</span>
           </Button>
 
           {/* Logged User Info */}
-          <div className="flex items-center justify-between pt-2">
+          <div className="flex items-center justify-between pt-2 border-t border-slate-200/60">
             <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="w-8 h-8 bg-primary/20 text-primary rounded-full flex items-center justify-center font-bold text-xs shrink-0">
+              <div className="w-8 h-8 bg-[#27c372]/15 text-[#16a34a] border border-[#27c372]/30 rounded-full flex items-center justify-center font-extrabold text-xs shrink-0">
                 {user?.name?.charAt(0).toUpperCase() || "A"}
               </div>
               <div className="truncate">
-                <p className="text-xs font-semibold text-white truncate">{user?.name || "Quản trị viên"}</p>
-                <p className="text-[10px] text-slate-400 truncate">{user?.email}</p>
+                <p className="text-xs font-extrabold text-slate-900 truncate">{user?.name || "Quản trị viên"}</p>
+                <p className="text-[10px] text-slate-500 font-semibold truncate">{user?.email}</p>
               </div>
             </div>
 
             <button
               onClick={logout}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
               title="Đăng xuất"
             >
               <LogOut className="w-4 h-4" />

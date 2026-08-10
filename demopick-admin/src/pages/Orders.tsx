@@ -311,7 +311,7 @@ export default function Orders() {
             <Badge variant="secondary">{filteredOrders.length} Hóa đơn</Badge>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <div className="overflow-x-auto rounded-xl border border-slate-200 max-h-[calc(100vh-320px)] overflow-y-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b border-slate-200 font-bold text-slate-700 uppercase bg-slate-50">

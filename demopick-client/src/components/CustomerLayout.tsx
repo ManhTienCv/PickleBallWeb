@@ -32,9 +32,9 @@ export default function CustomerLayout() {
   const cartCount = cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#FAF8F5] flex flex-col font-sans">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+      <header className="sticky top-0 z-50 bg-[#FAF8F5]/90 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
         <div className="container mx-auto flex items-center justify-between h-16 px-4">
           {/* Left Group: Logo + Navigation side-by-side */}
           <div className="flex items-center gap-8">
