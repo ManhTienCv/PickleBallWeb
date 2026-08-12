@@ -49,7 +49,7 @@ export default function Register() {
           </div>
           <CardTitle className="text-2xl font-bold text-slate-900">Tạo Tài Khoản Mới</CardTitle>
           <CardDescription>
-            Điền đầy đủ thông tin bên dưới để trải nghiệm DemoPick
+            Điền đầy đủ thông tin bên dưới để trải nghiệm Pick
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>

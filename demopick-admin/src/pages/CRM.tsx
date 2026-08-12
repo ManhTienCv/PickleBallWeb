@@ -390,7 +390,7 @@ export default function CRM() {
                           {staff.status === "active" ? (
                             <Badge className="bg-emerald-600 text-white font-bold">✓ Đang hoạt động</Badge>
                           ) : (
-                            <Badge variant="destructive" className="font-bold">🔒 Tạm khóa</Badge>
+                            <Badge variant="destructive" className="font-bold">Tạm khóa</Badge>
                           )}
                         </td>
 
@@ -516,7 +516,7 @@ export default function CRM() {
                 <p className="text-[11px] leading-relaxed">
                   ✓ Quyền Bán hàng POS & Check-in QR khách<br />
                   ✓ Quyền Xem sơ đồ sân & Đặt ca trực tiếp<br />
-                  🔒 Tự động ẩn Báo cáo doanh thu & Quản lý kho giá vốn
+                  Tự động ẩn Báo cáo doanh thu & Quản lý kho giá vốn
                 </p>
               </div>
 

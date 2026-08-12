@@ -93,40 +93,9 @@ export default function Payments() {
   return (
     <AppLayout
       title="Quản Lý Thanh Toán & Chuyển Khoản Ngân Hàng"
-      subtitle="Theo dõi biến động số dư, xác nhận tiền về (Cấp độ 1 Thủ công & Cấp độ 2 Webhook tự động 100%)"
+      subtitle="Theo dõi biến động số dư & xác nhận tiền về chuyển khoản ngân hàng"
     >
       <div className="space-y-6">
-        {/* Level 1 & Level 2 Explanation Banner */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <Card className="p-5 border-emerald-200 bg-emerald-50/60 shadow-sm space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase text-emerald-800 flex items-center gap-1.5">
-                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                Cấp Độ 1: Đối Soát & Xác Nhận Thủ Công (Bán Tự Động)
-              </span>
-              <Badge className="bg-emerald-600">Áp dụng hiện tại</Badge>
-            </div>
-            <p className="text-xs text-emerald-950 leading-relaxed">
-              Khách chuyển khoản VietQR với nội dung là <strong>Mã Đơn Hàng (VD: DP-1002)</strong>. Khi tài khoản báo "Ting ting", Thu ngân chỉ cần bấm nút <strong>"Xác Nhận Đã Thu Tiền"</strong> để hệ thống tự động chốt cứng lịch sân.
-            </p>
-          </Card>
-
-          <Card className="p-5 border-blue-200 bg-blue-50/60 shadow-sm space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase text-blue-900 flex items-center gap-1.5">
-                <Zap className="h-4 w-4 text-blue-600 animate-bounce" />
-                Cấp Độ 2: Tự Động 100% Qua Webhook (Casso / SePay / MoMo)
-              </span>
-              <Badge variant="outline" className="text-blue-700 border-blue-300">
-                Lắng nghe Real-time
-              </Badge>
-            </div>
-            <p className="text-xs text-blue-950 leading-relaxed">
-              Dịch vụ trung gian ngân hàng tự bắn gói dữ liệu Webhook ngầm sang API Laravel khi nhận được tiền. Hệ thống tự động chuyển trạng thái đơn thành <strong>PAID</strong> & đẩy popup thông báo ngay lập tức.
-            </p>
-          </Card>
-        </div>
-
         {/* Action Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
           <div className="relative w-full sm:w-80">
@@ -135,18 +104,8 @@ export default function Payments() {
               placeholder="Tìm theo mã đơn DP-1002, tên khách..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
+              className="pl-10 text-xs"
             />
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Button
-              onClick={handleSimulateWebhook}
-              className="gap-2 font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-md text-xs"
-            >
-              <Zap className="h-4 w-4" />
-              <span>Giả Lập Bắn Webhook Ngân Hàng (Cấp Độ 2)</span>
-            </Button>
           </div>
         </div>
 

@@ -1,14 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Receipt, Printer, RefreshCw, CheckCircle2, Eye, Edit3, Trash2, Calendar, ChevronLeft, ChevronRight, User, Plus, FileText, CreditCard } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  Search,
+  Receipt,
+  Printer,
+  RefreshCw,
+  CheckCircle2,
+  Eye,
+  Edit3,
+  Trash2,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  User,
+  Plus,
+  Truck,
+  Globe,
+  Clock,
+  Lock,
+  AlertCircle,
+  MapPin,
+  Phone,
+} from "lucide-react";
+import { notificationService } from "@/services/notification.service";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface OrderItem {
   id: number;
@@ -20,33 +49,54 @@ interface OrderItem {
 interface Order {
   code: string;
   customerName: string;
+  customerPhone?: string;
   staffName: string;
   type: "POS Quầy" | "Đặt Sân Online";
   totalAmount: number;
   paymentMethod: "Tiền mặt" | "VietQR" | "MoMo";
-  status: "PAID" | "PENDING" | "REFUNDED";
+  status: "PAID" | "PENDING" | "SHIPPED" | "REFUNDED";
   createdAt: string;
   dateStr: string;
   items: OrderItem[];
   editNote?: string;
+  shippingAddress?: string;
+  trackingNumber?: string;
 }
 
 const mockOrders: Order[] = [
   {
     code: "HD-88291",
     customerName: "Nguyễn Văn An (VIP)",
+    customerPhone: "0987654321",
     staffName: "Hệ thống Tự Động Online",
     type: "Đặt Sân Online",
     totalAmount: 360000,
     paymentMethod: "VietQR",
-    status: "PAID",
+    status: "PENDING", // Chờ duyệt
     createdAt: "2026-08-09 08:30",
     dateStr: "2026-08-09",
-    items: [{ id: 1, name: "Đặt Sân VIP 1 (08:00 - 10:00)", qty: 1, price: 360000 }],
+    shippingAddress: "Số 10 Đường Pickleball, Q. Cầu Giấy, Hà Nội",
+    items: [{ id: 1, name: "Vợt Pickleball JOOLA Perseus 3S 16mm Carbon", qty: 1, price: 360000 }],
+  },
+  {
+    code: "HD-88295",
+    customerName: "Trần Văn Cường",
+    customerPhone: "0912345678",
+    staffName: "Hệ thống Tự Động Online",
+    type: "Đặt Sân Online",
+    totalAmount: 5580000,
+    paymentMethod: "VietQR",
+    status: "SHIPPED", // Đã giao DVVC
+    createdAt: "2026-08-09 08:15",
+    dateStr: "2026-08-09",
+    shippingAddress: "Số 25 Phố Lý Thường Kiệt, Q. Hoàn Kiếm, Hà Nội",
+    trackingNumber: "SPX-VN-9821093",
+    items: [{ id: 10, name: "Vợt JOOLA Perseus 16mm + Hộp 4 Bóng Franklin X-40", qty: 1, price: 5580000 }],
   },
   {
     code: "HD-88292",
     customerName: "Trần Thị Bích (Gold)",
+    customerPhone: "0909123456",
     staffName: "Phạm Văn Đức (Ca Sáng)",
     type: "POS Quầy",
     totalAmount: 5580000,
@@ -62,6 +112,7 @@ const mockOrders: Order[] = [
   {
     code: "HD-88293",
     customerName: "Lê Hoàng Long",
+    customerPhone: "0977889900",
     staffName: "Hệ thống Tự Động Online",
     type: "Đặt Sân Online",
     totalAmount: 180000,
@@ -69,11 +120,13 @@ const mockOrders: Order[] = [
     status: "REFUNDED",
     createdAt: "2026-08-09 07:00",
     dateStr: "2026-08-09",
+    shippingAddress: "Khách hủy sân 2 (06:00 - 08:00)",
     items: [{ id: 4, name: "Đặt Sân 2 (06:00 - 08:00) - [Đã Hủy Hoàn 100%]", qty: 1, price: 180000 }],
   },
   {
     code: "HD-88294",
     customerName: "Phạm Quốc Bảo (VIP)",
+    customerPhone: "0933445566",
     staffName: "Nguyễn Thị Hương (Ca Chiều)",
     type: "POS Quầy",
     totalAmount: 140000,
@@ -89,6 +142,7 @@ const mockOrders: Order[] = [
   {
     code: "HD-88285",
     customerName: "Vũ Thị Mai (Gold)",
+    customerPhone: "0944556677",
     staffName: "Phạm Văn Đức (Ca Sáng)",
     type: "POS Quầy",
     totalAmount: 420000,
@@ -108,9 +162,20 @@ const availableAddons = [
 ];
 
 export default function Orders() {
+  const [searchParams] = useSearchParams();
+
+  // Distinct Form Mode state: "online" vs "pos"
+  const [viewMode, setViewMode] = useState<"online" | "pos">("online");
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "pos") setViewMode("pos");
+    else if (tab === "online") setViewMode("online");
+  }, [searchParams]);
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [datePeriod, setDatePeriod] = useState("today"); // today, yesterday, 7days, custom
+  const [datePeriod, setDatePeriod] = useState("today");
   const [customDate, setCustomDate] = useState("2026-08-09");
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5;
@@ -119,14 +184,32 @@ export default function Orders() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [printReceiptOrder, setPrintReceiptOrder] = useState<Order | null>(null);
+  const [shippingConfirmOrder, setShippingConfirmOrder] = useState<Order | null>(null);
 
-  // Filter logic
+  const executeShipOrder = (order: Order) => {
+    setOrdersList((prev) =>
+      prev.map((o) => (o.code === order.code ? { ...o, status: "SHIPPED" } : o))
+    );
+
+    notificationService.sendOrderShippedNotice({
+      orderCode: order.code,
+      customerName: order.customerName,
+      shippingAddress: order.shippingAddress || "Số 10 Đường Pickleball, Q. Cầu Giấy, Hà Nội",
+      totalAmount: order.totalAmount,
+    });
+
+    setShippingConfirmOrder(null);
+  };
+
+  // Filter logic separated by viewMode
   const filteredOrders = ordersList.filter((order) => {
+    const isModeMatch = viewMode === "online" ? order.type === "Đặt Sân Online" : order.type === "POS Quầy";
     const matchesStatus = statusFilter === "all" || order.status === statusFilter;
     const matchesSearch =
       order.code.toLowerCase().includes(search.toLowerCase()) ||
       order.customerName.toLowerCase().includes(search.toLowerCase()) ||
-      order.staffName.toLowerCase().includes(search.toLowerCase());
+      order.staffName.toLowerCase().includes(search.toLowerCase()) ||
+      (order.shippingAddress && order.shippingAddress.toLowerCase().includes(search.toLowerCase()));
 
     let matchesDate = true;
     if (datePeriod === "today") {
@@ -137,15 +220,14 @@ export default function Orders() {
       matchesDate = order.dateStr === customDate;
     }
 
-    return matchesStatus && matchesSearch && matchesDate;
+    return isModeMatch && matchesStatus && matchesSearch && matchesDate;
   });
 
-  // Pagination calculation
   const totalPages = Math.ceil(filteredOrders.length / pageSize) || 1;
   const paginatedOrders = filteredOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const totalFilteredRevenue = filteredOrders
-    .filter((o) => o.status === "PAID")
+    .filter((o) => o.status === "PAID" || o.status === "SHIPPED")
     .reduce((sum, o) => sum + o.totalAmount, 0);
 
   const handlePrint = (order: Order) => {
@@ -181,18 +263,16 @@ export default function Orders() {
 
   const handleAddItemToEditingOrder = (addon: { id: number; name: string; price: number }) => {
     if (!editingOrder) return;
-    const existing = editingOrder.items.find((i) => i.id === addon.id || i.name === addon.name);
+    const existing = editingOrder.items.find((i) => i.name === addon.name);
     let updatedItems: OrderItem[];
     if (existing) {
       updatedItems = editingOrder.items.map((i) =>
-        i.id === existing.id ? { ...i, qty: i.qty + 1 } : i
+        i.name === addon.name ? { ...i, qty: i.qty + 1 } : i
       );
     } else {
-      updatedItems = [
-        ...editingOrder.items,
-        { id: addon.id, name: addon.name, price: addon.price, qty: 1 },
-      ];
+      updatedItems = [...editingOrder.items, { id: Date.now(), name: addon.name, qty: 1, price: addon.price }];
     }
+
     const newTotal = updatedItems.reduce((sum, i) => sum + i.price * i.qty, 0);
     setEditingOrder({ ...editingOrder, items: updatedItems, totalAmount: newTotal });
   };
@@ -208,17 +288,20 @@ export default function Orders() {
 
   return (
     <AppLayout
-      title="Tra Cứu Hóa Đơn & Form Chỉnh Sửa Đơn Hàng"
-      subtitle="Hiển thị rõ Thu ngân thực hiện, hỗ trợ Form sửa chi tiết đơn hàng & in lại Bill chuẩn quầy"
+      title={viewMode === "online" ? "Quản Lý Đơn Hàng Online & Vận Chuyển" : "Quản Lý Hóa Đơn Bán Hàng POS Quầy"}
+      subtitle={
+        viewMode === "online"
+          ? "Duyệt đơn web/app, bàn giao đơn vị vận chuyển & khóa quyền sửa địa chỉ của người mua"
+          : "Tra cứu hóa đơn ca trực lễ tân, hỗ trợ chỉnh sửa chi tiết sản phẩm & in lại Bill nhiệt"
+      }
     >
-      <div className="space-y-6">
-        {/* Filters & Calendar Date Picker Bar */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
+      <div className="space-y-6 font-sans">
+        {/* Date Filter & Search Filter Bar */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-4">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            {/* Date Period Filter */}
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 mr-1">
-                <Calendar className="h-4 w-4 text-emerald-600" />
+                <Calendar className="h-4 w-4 text-[#27c372]" />
                 <span>Xem theo lịch:</span>
               </div>
 
@@ -235,7 +318,7 @@ export default function Orders() {
                     setCurrentPage(1);
                   }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    datePeriod === p.id ? "bg-emerald-600 text-white shadow-sm" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    datePeriod === p.id ? "bg-[#27c372] text-white shadow-sm" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                   }`}
                 >
                   {p.label}
@@ -250,24 +333,51 @@ export default function Orders() {
                     setCustomDate(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-36 text-xs h-8 font-bold border-slate-300"
+                  className="w-36 text-xs h-8 font-bold border-slate-300 rounded-lg"
                 />
               )}
             </div>
 
-            {/* Total Revenue Indicator for Filtered Period */}
-            <div className="px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs flex items-center gap-2">
-              <span className="text-emerald-800 font-semibold">Doanh thu thời gian chọn:</span>
-              <strong className="text-emerald-700 font-black text-sm">
-                {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(totalFilteredRevenue)}
-              </strong>
+            <div className="relative w-full sm:w-80">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder={viewMode === "online" ? "Tìm mã HD, tên người nhận, địa chỉ giao..." : "Tìm mã HD, khách hàng, tên thu ngân..."}
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="pl-10 text-xs h-9 rounded-xl border-slate-300"
+              />
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t pt-3">
-            <div className="flex items-center gap-2">
-              {[
-                { id: "all", label: "Tất cả trạng thái" },
+          {/* Sub-Status Filters tailored for viewMode */}
+          <div className="flex items-center gap-2 border-t pt-3 flex-wrap">
+            <span className="text-xs font-extrabold text-slate-400 mr-2 uppercase tracking-wide">Trạng thái:</span>
+            {viewMode === "online" ? (
+              [
+                { id: "all", label: "Tất cả đơn online" },
+                { id: "PENDING", label: "Chờ duyệt (Khách được sửa địa chỉ)" },
+                { id: "SHIPPED", label: "Đã giao DVVC (Đã khóa địa chỉ)" },
+                { id: "REFUNDED", label: "Đã hoàn tiền (Hủy)" },
+              ].map((st) => (
+                <button
+                  key={st.id}
+                  onClick={() => {
+                    setStatusFilter(st.id);
+                    setCurrentPage(1);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    statusFilter === st.id ? "bg-[#27c372] text-white shadow-sm" : "bg-slate-50 text-slate-600 hover:bg-slate-100 font-medium"
+                  }`}
+                >
+                  {st.label}
+                </button>
+              ))
+            ) : (
+              [
+                { id: "all", label: "Tất cả hóa đơn quầy" },
                 { id: "PAID", label: "Đã thanh toán" },
                 { id: "REFUNDED", label: "Đã hoàn tiền (Hủy)" },
               ].map((st) => (
@@ -277,455 +387,474 @@ export default function Orders() {
                     setStatusFilter(st.id);
                     setCurrentPage(1);
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    statusFilter === st.id ? "bg-slate-900 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100"
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    statusFilter === st.id ? "bg-[#27c372] text-white shadow-sm" : "bg-slate-50 text-slate-600 hover:bg-slate-100 font-medium"
                   }`}
                 >
                   {st.label}
                 </button>
-              ))}
-            </div>
-
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder="Tìm mã HD, khách hàng, tên thu ngân..."
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="pl-10 text-xs h-9"
-              />
-            </div>
+              ))
+            )}
           </div>
         </div>
 
-        {/* Orders Table */}
-        <Card className="p-6 border-slate-200 bg-white shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-              <Receipt className="h-5 w-5 text-emerald-600" />
-              Lịch Sử Hóa Đơn (Hiển Thị Rõ Nhân Viên Xử Lý)
-            </h3>
-            <Badge variant="secondary">{filteredOrders.length} Hóa đơn</Badge>
-          </div>
+        {/* ---------------------------------------------------- */}
+        {/* FORM 1: ONLINE ORDERS & SHIPPING MANAGEMENT TABLE */}
+        {/* ---------------------------------------------------- */}
+        {viewMode === "online" && (
+          <Card className="p-6 border-slate-200 bg-white shadow-sm space-y-4 rounded-2xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                  <Globe className="h-5 w-5 text-[#27c372]" />
+                  Danh Sách Đơn Hàng Online & Trạng Thái Vận Chuyển
+                </h3>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Đơn trạng thái "Chờ duyệt" cho phép người mua sửa địa chỉ. Khi bấm "Giao DVVC", hệ thống tự động gửi thông báo và khóa quyền sửa.
+                </p>
+              </div>
+              <Badge className="bg-[#27c372]/15 text-[#16a34a] border border-[#27c372]/30 px-3 py-1 font-bold text-xs">
+                {filteredOrders.length} Đơn Đặt Online
+              </Badge>
+            </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 max-h-[calc(100vh-320px)] overflow-y-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="border-b border-slate-200 font-bold text-slate-700 uppercase bg-slate-50">
-                  <th className="py-3 px-3">Mã Hóa Đơn</th>
-                  <th className="py-3 px-3">Khách Hàng</th>
-                  <th className="py-3 px-3">Thu Ngân Thực Hiện</th>
-                  <th className="py-3 px-3">Phương Thức</th>
-                  <th className="py-3 px-3">Tổng Tiền</th>
-                  <th className="py-3 px-3">Trạng Thái</th>
-                  <th className="py-3 px-3 text-right">Thao Tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
-                {paginatedOrders.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="py-8 text-center text-slate-400">
-                      Không tìm thấy hóa đơn nào trong khoảng thời gian đã chọn
-                    </td>
+            <div className="overflow-x-auto rounded-2xl border border-slate-200">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 font-extrabold text-slate-700 uppercase bg-slate-50">
+                    <th className="py-3.5 px-4">Mã Đơn Online</th>
+                    <th className="py-3.5 px-4">Khách Hàng & SĐT</th>
+                    <th className="py-3.5 px-4">Địa Chỉ Giao Hàng Chi Tiết</th>
+                    <th className="py-3.5 px-4">Tổng Tiền & PTTT</th>
+                    <th className="py-3.5 px-4">Trạng Thái Vận Chuyển</th>
+                    <th className="py-3.5 px-4 text-right">Tác Vụ Duyệt Đơn</th>
                   </tr>
-                ) : (
-                  paginatedOrders.map((order) => (
-                    <tr key={order.code} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-3 px-3 font-mono font-bold text-slate-900">{order.code}</td>
-
-                      <td className="py-3 px-3">
-                        <div className="font-bold text-slate-900">{order.customerName}</div>
-                        <div className="text-[11px] text-slate-400 font-mono">{order.createdAt}</div>
-                      </td>
-
-                      <td className="py-3 px-3">
-                        <div className="font-bold text-emerald-800 flex items-center gap-1.5">
-                          <User className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                          <span>{order.staffName}</span>
-                        </div>
-                        <div className="text-[10px] text-slate-400">Loại: {order.type}</div>
-                      </td>
-
-                      <td className="py-3 px-3 font-semibold text-slate-700">{order.paymentMethod}</td>
-
-                      <td className="py-3 px-3 font-black text-emerald-600">
-                        {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(order.totalAmount)}
-                      </td>
-
-                      <td className="py-3 px-3">
-                        {order.status === "PAID" ? (
-                          <Badge className="bg-emerald-600 gap-1 font-bold">
-                            <CheckCircle2 className="h-3 w-3" /> Đã thanh toán
-                          </Badge>
-                        ) : (
-                          <Badge variant="destructive" className="gap-1 font-bold">
-                            <RefreshCw className="h-3 w-3" /> Đã hoàn tiền
-                          </Badge>
-                        )}
-                      </td>
-
-                      <td className="py-3 px-3 text-right space-x-1.5">
-                        <Button size="sm" variant="outline" onClick={() => setSelectedOrder(order)} className="h-7 px-2 text-[11px] gap-1 font-semibold">
-                          <Eye className="h-3.5 w-3.5" /> Xem
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleOpenEdit(order)} className="h-7 px-2 text-[11px] gap-1 text-amber-700 border-amber-300 hover:bg-amber-50 font-bold">
-                          <Edit3 className="h-3.5 w-3.5" /> Sửa Đơn
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => handlePrint(order)} className="h-7 px-2 text-[11px] gap-1 font-semibold">
-                          <Printer className="h-3.5 w-3.5" /> In Bill
-                        </Button>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
+                  {paginatedOrders.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-slate-400 font-bold">
+                        Không có đơn hàng Online nào trong bộ lọc đã chọn
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ) : (
+                    paginatedOrders.map((order) => (
+                      <tr key={order.code} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-4 px-4">
+                          <div className="font-mono font-black text-slate-900 text-sm">#{order.code}</div>
+                          <div className="text-[11px] text-slate-400 font-medium">{order.createdAt}</div>
+                        </td>
 
-          {/* Pagination Controls */}
-          <div className="flex items-center justify-between pt-2 border-t text-xs">
-            <span className="text-slate-500 font-medium">
-              Hiển thị {paginatedOrders.length} / {filteredOrders.length} hóa đơn
-            </span>
+                        <td className="py-4 px-4">
+                          <div className="font-bold text-slate-900">{order.customerName}</div>
+                          <div className="text-xs text-slate-500 font-mono flex items-center gap-1 mt-0.5">
+                            <Phone className="w-3 h-3 text-[#27c372]" /> {order.customerPhone || "0987654321"}
+                          </div>
+                        </td>
 
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                className="h-8 gap-1 font-bold text-xs"
-              >
-                <ChevronLeft className="h-3.5 w-3.5" /> Trang trước
-              </Button>
-              <span className="font-bold text-slate-900 px-2">
-                {currentPage} / {totalPages}
-              </span>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={currentPage >= totalPages}
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className="h-8 gap-1 font-bold text-xs"
-              >
-                Trang tiếp <ChevronRight className="h-3.5 w-3.5" />
-              </Button>
+                        <td className="py-4 px-4 max-w-xs">
+                          <div className="flex items-start gap-1.5 text-xs text-slate-700 font-bold leading-snug">
+                            <MapPin className="w-3.5 h-3.5 text-[#27c372] shrink-0 mt-0.5" />
+                            <span>{order.shippingAddress || "Số 10 Đường Pickleball, Q. Cầu Giấy, Hà Nội"}</span>
+                          </div>
+                        </td>
+
+                        <td className="py-4 px-4">
+                          <div className="font-black text-[#27c372] text-sm">
+                            {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(order.totalAmount)}
+                          </div>
+                          <div className="text-[11px] text-slate-500 font-extrabold uppercase">{order.paymentMethod}</div>
+                        </td>
+
+                        <td className="py-4 px-4">
+                          {order.status === "PENDING" && (
+                            <div className="space-y-1">
+                              <Badge variant="outline" className="text-amber-700 bg-amber-50 border-amber-300 font-extrabold gap-1">
+                                <Clock className="w-3 h-3" /> Chờ duyệt (Cho phép sửa)
+                              </Badge>
+                              <div className="text-[10px] text-amber-700 font-medium">Khách đang kiểm tra thông tin</div>
+                            </div>
+                          )}
+                          {order.status === "SHIPPED" && (
+                            <div className="space-y-1">
+                              <Badge className="bg-blue-600 font-extrabold gap-1">
+                                <Truck className="w-3 h-3" /> Đã Giao DVVC (Khóa)
+                              </Badge>
+                              <div className="text-[10px] text-slate-400 font-mono">{order.trackingNumber || "SPX-VN-9821093"}</div>
+                            </div>
+                          )}
+                          {order.status === "PAID" && (
+                            <Badge className="bg-emerald-600 font-bold gap-1">
+                              <CheckCircle2 className="w-3 h-3" /> Đã Thanh Toán
+                            </Badge>
+                          )}
+                          {order.status === "REFUNDED" && (
+                            <Badge variant="destructive" className="font-bold">Đã Hủy Hoàn Tiền</Badge>
+                          )}
+                        </td>
+
+                        <td className="py-4 px-4 text-right space-x-1.5">
+                          {order.status !== "SHIPPED" && order.status !== "REFUNDED" && (
+                            <Button
+                              size="sm"
+                              onClick={() => setShippingConfirmOrder(order)}
+                              className="h-8 px-3 text-xs bg-blue-600 hover:bg-blue-700 text-white font-black gap-1.5 rounded-xl shadow-sm"
+                            >
+                              <Truck className="h-3.5 w-3.5" /> Giao DVVC
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSelectedOrder(order)}
+                            className="h-8 px-2.5 text-xs font-bold rounded-xl"
+                          >
+                            <Eye className="h-3.5 w-3.5" /> Xem
+                          </Button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
-          </div>
-        </Card>
+          </Card>
+        )}
 
-        {/* Form Sửa Đơn Hàng Modal */}
-        <Dialog open={!!editingOrder} onOpenChange={() => setEditingOrder(null)}>
-          <DialogContent className="max-w-xl bg-white max-h-[90vh] overflow-y-auto">
-            {editingOrder && (
+        {/* ---------------------------------------------------- */}
+        {/* FORM 2: DIRECT POS COUNTER BILLING TABLE */}
+        {/* ---------------------------------------------------- */}
+        {viewMode === "pos" && (
+          <Card className="p-6 border-slate-200 bg-white shadow-sm space-y-4 rounded-2xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                  <Receipt className="h-5 w-5 text-slate-900" />
+                  Lịch Sử Hóa Đơn Bán Hàng & Thu Lễ Tân Tại Quầy
+                </h3>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Hiển thị rõ tên thu ngân phụ trách ca trực, cho phép chỉnh sửa sản phẩm quầy và in lại hóa đơn nhiệt.
+                </p>
+              </div>
+              <Badge variant="secondary" className="px-3 py-1 font-bold text-xs">
+                {filteredOrders.length} Hóa Đơn POS
+              </Badge>
+            </div>
+
+            <div className="overflow-x-auto rounded-2xl border border-slate-200">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 font-extrabold text-slate-700 uppercase bg-slate-50">
+                    <th className="py-3.5 px-4">Mã Hóa Đơn</th>
+                    <th className="py-3.5 px-4">Khách Hàng Mua</th>
+                    <th className="py-3.5 px-4">Thu Ngân Ca Trực</th>
+                    <th className="py-3.5 px-4">Phương Thức</th>
+                    <th className="py-3.5 px-4">Tổng Tiền</th>
+                    <th className="py-3.5 px-4">Trạng Thái</th>
+                    <th className="py-3.5 px-4 text-right">Tác Vụ POS</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
+                  {paginatedOrders.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-12 text-center text-slate-400 font-bold">
+                        Không có hóa đơn bán hàng tại quầy nào
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedOrders.map((order) => (
+                      <tr key={order.code} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-4 px-4 font-mono font-black text-slate-900">{order.code}</td>
+
+                        <td className="py-4 px-4">
+                          <div className="font-bold text-slate-900">{order.customerName}</div>
+                          <div className="text-[11px] text-slate-400 font-mono">{order.createdAt}</div>
+                        </td>
+
+                        <td className="py-4 px-4">
+                          <div className="font-bold text-emerald-800 flex items-center gap-1.5">
+                            <User className="h-3.5 w-3.5 text-[#27c372] shrink-0" />
+                            <span>{order.staffName}</span>
+                          </div>
+                          <div className="text-[10px] text-slate-400">Giao dịch quầy trực tiếp</div>
+                        </td>
+
+                        <td className="py-4 px-4 font-extrabold text-slate-700 uppercase">{order.paymentMethod}</td>
+
+                        <td className="py-4 px-4 font-black text-emerald-600 text-sm">
+                          {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(order.totalAmount)}
+                        </td>
+
+                        <td className="py-4 px-4">
+                          {order.status === "PAID" ? (
+                            <Badge className="bg-emerald-600 gap-1 font-bold">
+                              <CheckCircle2 className="h-3 w-3" /> Đã thanh toán
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive" className="gap-1 font-bold">
+                              <RefreshCw className="h-3 w-3" /> Đã hoàn tiền
+                            </Badge>
+                          )}
+                        </td>
+
+                        <td className="py-4 px-4 text-right space-x-1.5">
+                          <Button size="sm" variant="outline" onClick={() => setSelectedOrder(order)} className="h-7 px-2 text-[11px] gap-1 font-semibold rounded-lg">
+                            <Eye className="h-3.5 w-3.5" /> Xem
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handleOpenEdit(order)} className="h-7 px-2 text-[11px] gap-1 text-amber-700 border-amber-300 hover:bg-amber-50 font-bold rounded-lg">
+                            <Edit3 className="h-3.5 w-3.5" /> Sửa Đơn
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handlePrint(order)} className="h-7 px-2 text-[11px] gap-1 font-extrabold rounded-lg">
+                            <Printer className="h-3.5 w-3.5" /> In Bill
+                          </Button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
+
+        {/* Pagination Controls */}
+        <div className="flex items-center justify-between pt-2 text-xs">
+          <span className="text-slate-500 font-medium">
+            Hiển thị {paginatedOrders.length} / {filteredOrders.length} {viewMode === "online" ? "đơn online" : "hóa đơn quầy"}
+          </span>
+
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              className="h-8 gap-1 font-bold text-xs rounded-xl"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" /> Trang trước
+            </Button>
+            <span className="font-bold text-slate-900 px-2">
+              {currentPage} / {totalPages}
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              className="h-8 gap-1 font-bold text-xs rounded-xl"
+            >
+              Trang tiếp <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+
+        {/* ---------------------------------------------------- */}
+        {/* MODALS: VIEW DETAILS, EDIT POS ORDER, PRINT BILL, SHIP CONFIRM */}
+        {/* ---------------------------------------------------- */}
+
+        {/* VIEW ORDER DETAILS MODAL */}
+        <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
+          <DialogContent className="max-w-lg bg-white rounded-3xl p-6 font-sans">
+            {selectedOrder && (
               <div className="space-y-4">
-                <DialogHeader>
-                  <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <Edit3 className="h-5 w-5 text-amber-500" />
-                    Form Chỉnh Sửa Đơn Hàng #{editingOrder.code}
+                <DialogHeader className="border-b pb-3">
+                  <DialogTitle className="text-xl font-black text-slate-900 flex items-center justify-between">
+                    <span>Chi Tiết Đơn #{selectedOrder.code}</span>
+                    <Badge className={selectedOrder.type === "Đặt Sân Online" ? "bg-[#27c372]" : "bg-slate-900"}>
+                      {selectedOrder.type}
+                    </Badge>
                   </DialogTitle>
-                  <DialogDescription>
-                    Thay đổi thông tin khách hàng, phương thức thanh toán, điều chỉnh sản phẩm & in lại Bill
+                  <DialogDescription className="text-xs text-slate-500 font-medium">
+                    Thời gian tạo: {selectedOrder.createdAt}
                   </DialogDescription>
                 </DialogHeader>
 
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  {/* Customer Name */}
-                  <div className="space-y-1.5">
-                    <Label className="font-bold text-slate-700">Tên Khách Hàng:</Label>
-                    <Input
-                      value={editingOrder.customerName}
-                      onChange={(e) => setEditingOrder({ ...editingOrder, customerName: e.target.value })}
-                      className="text-xs h-9 font-semibold"
-                    />
+                <div className="space-y-3 text-xs">
+                  <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-2xl border font-semibold">
+                    <div>
+                      <span className="text-slate-400">Khách hàng: </span>
+                      <strong className="text-slate-900">{selectedOrder.customerName}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-400">Số điện thoại: </span>
+                      <strong className="text-slate-900">{selectedOrder.customerPhone || "0987654321"}</strong>
+                    </div>
                   </div>
 
-                  {/* Staff Name (Read-only info) */}
-                  <div className="space-y-1.5">
-                    <Label className="font-bold text-slate-700">Thu Ngân Xử Lý:</Label>
-                    <Input
-                      value={editingOrder.staffName}
-                      disabled
-                      className="text-xs h-9 font-semibold bg-slate-100 text-slate-600"
-                    />
-                  </div>
-                </div>
+                  {selectedOrder.shippingAddress && (
+                    <div className="bg-slate-50 p-3 rounded-2xl border font-semibold">
+                      <span className="text-slate-400">Địa chỉ giao hàng: </span>
+                      <strong className="text-slate-900">{selectedOrder.shippingAddress}</strong>
+                    </div>
+                  )}
 
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  {/* Payment Method */}
-                  <div className="space-y-1.5">
-                    <Label className="font-bold text-slate-700">Phương Thức Thanh Toán:</Label>
-                    <RadioGroup
-                      value={editingOrder.paymentMethod}
-                      onValueChange={(v: any) => setEditingOrder({ ...editingOrder, paymentMethod: v })}
-                      className="flex items-center gap-3 pt-1"
-                    >
-                      <div className="flex items-center gap-1">
-                        <RadioGroupItem value="Tiền mặt" id="edit-cash" />
-                        <Label htmlFor="edit-cash" className="cursor-pointer font-semibold">Tiền mặt</Label>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <RadioGroupItem value="VietQR" id="edit-qr" />
-                        <Label htmlFor="edit-qr" className="cursor-pointer font-semibold">VietQR</Label>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <RadioGroupItem value="MoMo" id="edit-momo" />
-                        <Label htmlFor="edit-momo" className="cursor-pointer font-semibold">MoMo</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-
-                  {/* Order Status */}
-                  <div className="space-y-1.5">
-                    <Label className="font-bold text-slate-700">Trạng Thái Đơn Hàng:</Label>
-                    <RadioGroup
-                      value={editingOrder.status}
-                      onValueChange={(v: any) => setEditingOrder({ ...editingOrder, status: v })}
-                      className="flex items-center gap-3 pt-1"
-                    >
-                      <div className="flex items-center gap-1">
-                        <RadioGroupItem value="PAID" id="edit-status-paid" />
-                        <Label htmlFor="edit-status-paid" className="cursor-pointer font-semibold text-emerald-700">Đã thanh toán</Label>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <RadioGroupItem value="REFUNDED" id="edit-status-refund" />
-                        <Label htmlFor="edit-status-refund" className="cursor-pointer font-semibold text-red-600">Hoàn tiền / Hủy</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-                </div>
-
-                {/* Edit Note */}
-                <div className="space-y-1.5 text-xs">
-                  <Label className="font-bold text-slate-700">Ghi Chú Lý Do Sửa Đơn:</Label>
-                  <Input
-                    placeholder="VD: Khách đổi sang mua nước pocari, Lễ tân chọn nhầm phương thức..."
-                    value={editingOrder.editNote || ""}
-                    onChange={(e) => setEditingOrder({ ...editingOrder, editNote: e.target.value })}
-                    className="text-xs h-9"
-                  />
-                </div>
-
-                {/* Products List & Quick Add Button */}
-                <div className="space-y-2 pt-2 border-t text-xs">
-                  <div className="flex items-center justify-between">
-                    <Label className="font-bold text-slate-700">Danh Sách Sản Phẩm Trong Đơn:</Label>
-                    <span className="text-slate-500 font-semibold">{editingOrder.items.length} Mặt hàng</span>
-                  </div>
-
-                  <div className="divide-y divide-slate-100 border rounded-xl overflow-hidden text-xs">
-                    {editingOrder.items.length === 0 ? (
-                      <div className="p-4 text-center text-slate-400">Đơn hàng đang trống sản phẩm</div>
-                    ) : (
-                      editingOrder.items.map((item) => (
-                        <div key={item.id} className="p-2.5 flex items-center justify-between bg-white">
-                          <div className="flex-1 pr-2">
-                            <div className="font-bold text-slate-900">{item.name}</div>
-                            <div className="text-emerald-600 font-semibold">
-                              {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(item.price)}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center border rounded-lg overflow-hidden bg-slate-50">
-                              <button
-                                onClick={() => handleItemQtyChange(item.id, -1)}
-                                className="px-2 py-1 text-slate-600 hover:bg-slate-200 font-bold"
-                              >
-                                -
-                              </button>
-                              <span className="px-2.5 font-extrabold text-slate-900">{item.qty}</span>
-                              <button
-                                onClick={() => handleItemQtyChange(item.id, 1)}
-                                className="px-2 py-1 text-slate-600 hover:bg-slate-200 font-bold"
-                              >
-                                +
-                              </button>
-                            </div>
-
-                            <button onClick={() => handleRemoveItem(item.id)} className="text-red-500 p-1 hover:bg-red-50 rounded">
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
+                  <div className="space-y-1.5 pt-2">
+                    <Label className="font-extrabold text-slate-800">Danh mục sản phẩm / dịch vụ:</Label>
+                    <div className="border rounded-2xl divide-y overflow-hidden">
+                      {selectedOrder.items.map((item, idx) => (
+                        <div key={idx} className="flex justify-between items-center p-3 text-xs">
+                          <span className="font-bold text-slate-900">{item.name} x{item.qty}</span>
+                          <span className="font-black text-[#27c372]">
+                            {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(item.price * item.qty)}
+                          </span>
                         </div>
-                      ))
-                    )}
-                  </div>
-
-                  {/* Add Fast Addon Products */}
-                  <div className="pt-2">
-                    <span className="text-[11px] font-bold text-slate-500 block mb-1 text-emerald-800">
-                      + Thêm sản phẩm nhanh vào đơn:
-                    </span>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {availableAddons.map((addon) => (
-                        <button
-                          key={addon.id}
-                          onClick={() => handleAddItemToEditingOrder(addon)}
-                          className="px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 border rounded-lg text-[11px] font-semibold transition-all flex items-center gap-1"
-                        >
-                          <Plus className="h-3 w-3" />
-                          <span>{addon.name} ({new Intl.NumberFormat("vi-VN").format(addon.price)}đ)</span>
-                        </button>
                       ))}
                     </div>
                   </div>
-                </div>
 
-                <div className="pt-3 border-t flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-slate-500 block">Tổng tiền đơn hàng mới:</span>
-                    <span className="text-xl font-black text-emerald-600">
-                      {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(editingOrder.totalAmount)}
+                  <div className="flex justify-between items-center pt-3 border-t text-sm font-black">
+                    <span>Tổng tiền thanh toán:</span>
+                    <span className="text-[#27c372] text-lg">
+                      {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(selectedOrder.totalAmount)}
                     </span>
                   </div>
-                  <Button onClick={handleSaveEditAndReprint} className="gap-2 font-bold bg-amber-600 hover:bg-amber-500 text-white">
-                    <Printer className="h-4 w-4" /> Lưu Đơn Hàng & In Lại Bill
-                  </Button>
                 </div>
+
+                <DialogFooter className="pt-3">
+                  <Button onClick={() => setSelectedOrder(null)} className="w-full font-extrabold rounded-xl bg-slate-900 text-white">
+                    Đóng Màn Hình
+                  </Button>
+                </DialogFooter>
               </div>
             )}
           </DialogContent>
         </Dialog>
 
-        {/* View Order Details Modal */}
-        <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
-          <DialogContent className="max-w-md bg-white">
-            {selectedOrder && (
+        {/* EDIT POS ORDER MODAL */}
+        <Dialog open={!!editingOrder} onOpenChange={() => setEditingOrder(null)}>
+          <DialogContent className="max-w-xl bg-white rounded-3xl p-6 font-sans">
+            {editingOrder && (
               <div className="space-y-4">
                 <DialogHeader>
-                  <DialogTitle className="flex items-center justify-between">
-                    <span>Chi Tiết Hóa Đơn #{selectedOrder.code}</span>
-                    <Badge className="bg-emerald-600">{selectedOrder.status}</Badge>
+                  <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
+                    <Edit3 className="h-5 w-5 text-amber-500" />
+                    Chỉnh Sửa Hóa Đơn Quầy #{editingOrder.code}
                   </DialogTitle>
-                  <DialogDescription>Thời gian tạo: {selectedOrder.createdAt}</DialogDescription>
+                  <DialogDescription className="text-xs text-slate-500 font-medium">
+                    Thay đổi thông tin khách hàng, số lượng sản phẩm & in lại Bill quầy trực tiếp
+                  </DialogDescription>
                 </DialogHeader>
 
-                <div className="p-3 bg-slate-50 rounded-xl space-y-2 text-xs border border-slate-200">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Khách hàng:</span>
-                    <strong className="text-slate-900">{selectedOrder.customerName}</strong>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="space-y-1.5">
+                    <Label className="font-bold text-slate-700">Tên Khách Hàng:</Label>
+                    <Input
+                      value={editingOrder.customerName}
+                      onChange={(e) => setEditingOrder({ ...editingOrder, customerName: e.target.value })}
+                      className="text-xs h-9 font-semibold rounded-xl"
+                    />
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Thu ngân thực hiện:</span>
-                    <strong className="text-emerald-700">{selectedOrder.staffName}</strong>
+
+                  <div className="space-y-1.5">
+                    <Label className="font-bold text-slate-700">Thu Ngân Phụ Trách:</Label>
+                    <Input value={editingOrder.staffName} disabled className="text-xs h-9 font-semibold bg-slate-100 rounded-xl" />
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Hình thức thanh toán:</span>
-                    <strong className="text-slate-900">{selectedOrder.paymentMethod}</strong>
-                  </div>
-                  {selectedOrder.editNote && (
-                    <div className="flex justify-between text-amber-700 border-t pt-1">
-                      <span>Lý do sửa đơn:</span>
-                      <strong>{selectedOrder.editNote}</strong>
-                    </div>
-                  )}
                 </div>
 
-                <div className="space-y-2">
-                  <h4 className="font-bold text-xs uppercase text-slate-500">Sản phẩm mua:</h4>
-                  <div className="divide-y divide-slate-100 text-xs border rounded-xl overflow-hidden">
-                    {selectedOrder.items.map((item, idx) => (
-                      <div key={idx} className="p-3 flex justify-between items-center bg-white">
-                        <div>
-                          <div className="font-bold text-slate-900">{item.name}</div>
-                          <div className="text-slate-400">Số lượng: x{item.qty}</div>
-                        </div>
-                        <div className="font-black text-emerald-600">
-                          {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(item.price * item.qty)}
+                {/* Edit Items */}
+                <div className="space-y-2 pt-2">
+                  <Label className="font-extrabold text-slate-800 text-xs">Sản phẩm trong hóa đơn:</Label>
+                  <div className="border rounded-2xl divide-y max-h-48 overflow-y-auto">
+                    {editingOrder.items.map((item) => (
+                      <div key={item.id} className="p-3 flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-800 truncate max-w-[180px]">{item.name}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center border rounded-lg">
+                            <button
+                              onClick={() => handleItemQtyChange(item.id, -1)}
+                              className="px-2 py-0.5 text-slate-600 hover:bg-slate-100 font-bold"
+                            >
+                              -
+                            </button>
+                            <span className="px-2 font-black">{item.qty}</span>
+                            <button
+                              onClick={() => handleItemQtyChange(item.id, 1)}
+                              className="px-2 py-0.5 text-slate-600 hover:bg-slate-100 font-bold"
+                            >
+                              +
+                            </button>
+                          </div>
+                          <span className="font-black text-emerald-600 w-20 text-right">
+                            {new Intl.NumberFormat("vi-VN").format(item.price * item.qty)}đ
+                          </span>
+                          <button onClick={() => handleRemoveItem(item.id)} className="text-slate-400 hover:text-red-600">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="pt-3 border-t flex items-center justify-between">
-                  <span className="text-xl font-black text-emerald-600">
-                    {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(selectedOrder.totalAmount)}
-                  </span>
-                  <Button onClick={() => handlePrint(selectedOrder)} className="gap-1 font-bold">
-                    <Printer className="h-4 w-4" /> In Hóa Đơn
-                  </Button>
+                {/* Add Fast Addons */}
+                <div className="space-y-2">
+                  <Label className="font-extrabold text-slate-800 text-xs">+ Thêm nhanh sản phẩm phụ kiện:</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {availableAddons.map((ad) => (
+                      <button
+                        key={ad.id}
+                        onClick={() => handleAddItemToEditingOrder(ad)}
+                        className="px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 hover:text-[#16a34a] border border-slate-200 rounded-xl text-[11px] font-extrabold transition-all flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3 text-[#27c372]" />
+                        <span>{ad.name} ({new Intl.NumberFormat("vi-VN").format(ad.price)}đ)</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
+                <div className="flex justify-between items-center pt-3 border-t text-sm font-black">
+                  <span>Tổng tiền mới:</span>
+                  <span className="text-[#27c372] text-lg">
+                    {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(editingOrder.totalAmount)}
+                  </span>
+                </div>
+
+                <DialogFooter className="flex flex-row gap-3 justify-end pt-3">
+                  <Button variant="outline" onClick={() => setEditingOrder(null)} className="rounded-xl font-bold border-slate-300">
+                    Hủy
+                  </Button>
+                  <Button onClick={handleSaveEditAndReprint} className="bg-[#27c372] hover:bg-[#22c55e] text-white font-black rounded-xl gap-1.5 shadow-md">
+                    <Printer className="w-4 h-4" />
+                    Lưu & In Bill Mới
+                  </Button>
+                </DialogFooter>
               </div>
             )}
           </DialogContent>
         </Dialog>
 
-        {/* Modal Xem Trước Phân Phiếu In Bill Chuẩn Quầy */}
+        {/* PRINT RECEIPT MODAL */}
         <Dialog open={!!printReceiptOrder} onOpenChange={() => setPrintReceiptOrder(null)}>
-          <DialogContent className="max-w-sm bg-white font-mono text-slate-900">
+          <DialogContent className="max-w-xs bg-white rounded-3xl p-6 font-mono text-xs">
             {printReceiptOrder && (
-              <div className="space-y-4 p-2 text-xs border border-dashed border-slate-300 rounded-2xl">
-                {/* Receipt Header */}
-                <div className="text-center space-y-1 pb-3 border-b border-dashed border-slate-300">
-                  <h3 className="font-black text-base uppercase">DemoPick ONE Long Biên</h3>
-                  <p className="text-[11px] text-slate-600">188 Nguyễn Văn Cừ, Long Biên, Hà Nội</p>
-                  <p className="text-[11px] text-slate-600">Hotline: 0988.123.456</p>
-                  <div className="text-[12px] font-bold uppercase pt-1 text-slate-900">HÓA ĐƠN THANH TOÁN</div>
+              <div className="space-y-3">
+                <div className="text-center border-b border-dashed border-slate-300 pb-3 space-y-1">
+                  <h3 className="font-black text-sm uppercase">PICKLEBALL ONE CENTER</h3>
+                  <p className="text-[10px] text-slate-500">Số 10 Đường Pickleball, Cầu Giấy, Hà Nội</p>
+                  <div className="font-bold text-xs pt-1">HÓA ĐƠN BÁN HÀNG QUẦY</div>
+                  <div className="text-[11px] font-bold">Mã HD: #{printReceiptOrder.code}</div>
+                  <div className="text-[10px] text-slate-500">{printReceiptOrder.createdAt}</div>
                 </div>
 
-                {/* Receipt Info */}
-                <div className="space-y-1 text-[11px] border-b border-dashed border-slate-300 pb-2">
-                  <div className="flex justify-between">
-                    <span>Mã HD:</span>
-                    <strong className="font-mono">{printReceiptOrder.code}</strong>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Ngày giờ:</span>
-                    <span>{printReceiptOrder.createdAt}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Khách hàng:</span>
-                    <strong>{printReceiptOrder.customerName}</strong>
-                  </div>
-                  <div className="flex justify-between text-emerald-800">
-                    <span>Thu ngân thực hiện:</span>
-                    <strong className="font-bold">{printReceiptOrder.staffName}</strong>
-                  </div>
-                  {printReceiptOrder.editNote && (
-                    <div className="flex justify-between text-amber-800 pt-0.5">
-                      <span>Ghi chú sửa:</span>
-                      <strong>{printReceiptOrder.editNote}</strong>
-                    </div>
-                  )}
+                <div className="space-y-1 border-b border-dashed border-slate-300 pb-2 text-[11px]">
+                  <div>Khách hàng: <strong>{printReceiptOrder.customerName}</strong></div>
+                  <div>Thu ngân: <strong>{printReceiptOrder.staffName}</strong></div>
                 </div>
 
-                {/* Items */}
-                <div className="space-y-1.5 text-[11px] border-b border-dashed border-slate-300 pb-2">
-                  <div className="flex justify-between font-bold border-b pb-1">
-                    <span>Tên mặt hàng</span>
-                    <span>SL x Đơn giá</span>
-                    <span>Thành tiền</span>
-                  </div>
+                <div className="space-y-1.5 border-b border-dashed border-slate-300 pb-2">
                   {printReceiptOrder.items.map((item, idx) => (
-                    <div key={idx} className="flex justify-between py-0.5">
-                      <span className="line-clamp-1 max-w-[130px]">{item.name}</span>
-                      <span>{item.qty}x</span>
+                    <div key={idx} className="flex justify-between py-0.5 text-[11px]">
+                      <span className="truncate max-w-[120px]">{item.name}</span>
+                      <span>x{item.qty}</span>
                       <span className="font-bold">{new Intl.NumberFormat("vi-VN").format(item.price * item.qty)}đ</span>
                     </div>
                   ))}
                 </div>
 
-                {/* Totals */}
-                <div className="space-y-1 text-[11px]">
-                  <div className="flex justify-between font-black text-sm pt-1">
-                    <span>TỔNG TIỀN HÀNG:</span>
-                    <span>{new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(printReceiptOrder.totalAmount)}</span>
-                  </div>
-                  <div className="flex justify-between text-[11px]">
-                    <span>Phương thức:</span>
-                    <strong>{printReceiptOrder.paymentMethod}</strong>
-                  </div>
-                </div>
-
-                {/* Footer Message */}
-                <div className="text-center text-[10px] text-slate-500 pt-3 border-t border-dashed border-slate-300 space-y-0.5">
-                  <p className="font-bold text-slate-800">Cảm ơn Quý khách & Hẹn gặp lại!</p>
-                  <p>Website: demopick.com • Wifi pass: demopick2026</p>
+                <div className="flex justify-between font-black text-sm pt-1">
+                  <span>TỔNG CỘNG:</span>
+                  <span>{new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(printReceiptOrder.totalAmount)}</span>
                 </div>
 
                 <DialogFooter className="pt-2">
@@ -734,13 +863,49 @@ export default function Orders() {
                       toast.success(`Đã gửi lệnh in Bill #${printReceiptOrder.code} tới máy in nhiệt!`);
                       setPrintReceiptOrder(null);
                     }}
-                    className="w-full font-bold bg-slate-900 text-white"
+                    className="w-full font-black bg-slate-900 text-white rounded-xl"
                   >
-                    In Phiếu Thanh Toán 🖨️
+                    In Phiếu Bán Hàng 🖨️
                   </Button>
                 </DialogFooter>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* CONFIRM SHIPPING HANDOFF MODAL */}
+        <Dialog open={!!shippingConfirmOrder} onOpenChange={() => setShippingConfirmOrder(null)}>
+          <DialogContent className="sm:max-w-md bg-white rounded-3xl p-6 font-sans">
+            <DialogHeader className="space-y-2">
+              <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
+                <Truck className="w-5 h-5 text-blue-600" />
+                Xác Nhận Giao Cho Đơn Vị Vận Chuyển?
+              </DialogTitle>
+              <DialogDescription className="text-slate-600 text-xs leading-relaxed font-medium">
+                Thực hiện điều này... Bạn có chắc chắn muốn chuyển đơn hàng Online <strong>#{shippingConfirmOrder?.code}</strong> sang trạng thái <strong>ĐÃ GIAO ĐƠN VỊ VẬN CHUYỂN</strong> chứ?
+                <br />
+                <span className="text-blue-700 font-extrabold block mt-2 p-2.5 bg-blue-50 border border-blue-200 rounded-xl">
+                  👉 Tự động gửi email/thông báo hành trình và khóa quyền sửa địa chỉ của người mua trên web.
+                </span>
+              </DialogDescription>
+            </DialogHeader>
+
+            <DialogFooter className="flex flex-row gap-3 justify-end pt-4 border-t border-slate-100">
+              <Button
+                variant="outline"
+                onClick={() => setShippingConfirmOrder(null)}
+                className="rounded-xl font-extrabold border-slate-300"
+              >
+                Hủy
+              </Button>
+              <Button
+                onClick={() => shippingConfirmOrder && executeShipOrder(shippingConfirmOrder)}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl gap-1.5 shadow-md"
+              >
+                <Truck className="w-4 h-4" />
+                <span>Xác Nhận Giao DVVC</span>
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

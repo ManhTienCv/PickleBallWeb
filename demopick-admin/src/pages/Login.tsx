@@ -49,7 +49,7 @@ export default function Login() {
               <ShieldAlert className="h-6 w-6" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold tracking-tight">DemoPick Admin Portal</CardTitle>
+          <CardTitle className="text-2xl font-bold tracking-tight">Pick Admin Portal</CardTitle>
           <CardDescription className="text-slate-400">
             Hệ thống Quản Trị Sân & Bán Hàng POS Pickleball
           </CardDescription>

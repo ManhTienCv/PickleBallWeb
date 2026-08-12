@@ -130,28 +130,6 @@ export default function CourtMap() {
       }
     >
       <div className="space-y-6">
-        {/* Anti-Conflict & Real-time Banner */}
-        <Card className="p-4 bg-emerald-950 border-emerald-800 text-white flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg">
-          <div className="flex items-start gap-3">
-            <div className="h-10 w-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
-              <ShieldAlert className="h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="font-bold text-sm text-emerald-300 flex items-center gap-2">
-                Cơ Chế Đồng Bộ Real-time & Chống Trùng Lịch (Pessimistic Locking)
-              </h3>
-              <p className="text-xs text-slate-300 mt-0.5">
-                Khi khách hàng chọn giờ ở App Client, khung giờ được <strong className="text-amber-400">Khóa tạm thời 10 phút (Held)</strong> đồng bộ ngay sang Admin. Nếu 2 người bấm cùng 1 lúc, giao dịch sau sẽ bị ngắt ngầm trong 100ms để đảm bảo không bao giờ trùng lịch!
-              </p>
-            </div>
-          </div>
-
-          <Button onClick={handleSimulateConflict} variant="outline" size="sm" className="border-amber-500/50 text-amber-300 hover:bg-amber-500/20 font-bold text-xs shrink-0">
-            <AlertTriangle className="h-3.5 w-3.5 mr-1.5" />
-            <span>Giả Lập Thử Cảnh Báo Trùng Lịch</span>
-          </Button>
-        </Card>
-
         {/* Navigation & Controls Toolbar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
           <div className="flex items-center gap-2">

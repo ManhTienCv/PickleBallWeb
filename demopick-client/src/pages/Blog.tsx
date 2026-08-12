@@ -35,7 +35,7 @@ const mockPosts: BlogPost[] = [
     title: 'Hướng Dẫn Mở Sân Pickleball Từ A đến Z: Chi Phí, Vốn, Doanh Thu 2026',
     slug: 'huong-dan-mo-san-pickleball-tu-a-den-z',
     category: 'Kinh doanh sân',
-    image: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=600',
+    image: '/images/pickleball_match.jpg',
     date: '12/12/2025',
     readTime: '8 phút đọc',
     excerpt: 'Hướng dẫn chi tiết mở sân Pickleball: từ chọn mặt bằng thảm, chi phí đầu tư thảm USAPA, dự toán doanh thu đến phần mềm quản lý tự động.',
@@ -127,19 +127,23 @@ export default function Blog() {
   })
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Hero Header Section */}
-      <section className="bg-gradient-to-br from-emerald-950 via-slate-900 to-emerald-900 text-white py-16 px-4">
-        <div className="container mx-auto max-w-4xl text-center space-y-4">
-          <Badge className="bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 px-3 py-1 font-bold text-xs rounded-full">
-            📖 Blog Kiến Thức Pickleball DemoPick ONE
+    <div className="min-h-screen bg-[#FAF8F5] font-sans pb-12">
+      {/* Blog Hero Header Section - Architectural Ivory Canvas Theme */}
+      <section className="bg-white text-slate-900 rounded-3xl mx-2 sm:mx-6 mt-2 mb-8 p-8 sm:p-12 border border-slate-200/90 shadow-xl shadow-slate-200/60 relative overflow-hidden text-center">
+        {/* Decorative Ambient Orbs */}
+        <div className="absolute -top-24 -right-24 w-[380px] h-[380px] bg-[#27c372]/10 rounded-full blur-[90px] pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-[380px] h-[380px] bg-emerald-600/10 rounded-full blur-[90px] pointer-events-none" />
+
+        <div className="container mx-auto max-w-4xl space-y-4 relative z-10">
+          <Badge className="bg-[#27c372]/15 text-[#16a34a] border border-[#27c372]/30 px-3.5 py-1 font-extrabold text-xs rounded-full">
+            📖 Blog Kiến Thức Pickleball Pick ONE
           </Badge>
 
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white">
-            Kiến Thức Quản Lý & Kinh Nghiệm Mở Sân Pickleball
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">
+            Kiến Thức Quản Lý & <span className="text-[#27c372]">Kinh Nghiệm Mở Sân Pickleball</span>
           </h1>
 
-          <p className="text-slate-300 text-sm max-w-2xl mx-auto leading-relaxed">
+          <p className="text-slate-600 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed font-semibold">
             Tổng hợp kiến thức, hướng dẫn, kinh nghiệm kinh doanh cụm sân Pickleball tiêu chuẩn USAPA. Dành cho chủ sân và cộng đồng Pickleball Việt Nam.
           </p>
 
@@ -149,7 +153,7 @@ export default function Blog() {
               placeholder="Tìm bài viết theo từ khóa..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-12 h-12 bg-white text-slate-900 text-base rounded-full shadow-lg border-0 focus-visible:ring-2 focus-visible:ring-emerald-500"
+              className="pl-12 pr-4 h-12 bg-slate-50 border-slate-300 text-slate-900 placeholder:text-slate-400 rounded-2xl shadow-inner focus:bg-white text-sm font-medium"
             />
           </div>
         </div>

@@ -36,7 +36,7 @@ export default function Login() {
           </div>
           <CardTitle className="text-2xl font-bold text-slate-900">Đăng Nhập</CardTitle>
           <CardDescription>
-            Nhập email và mật khẩu để đăng nhập tài khoản DemoPick
+            Nhập email và mật khẩu để đăng nhập tài khoản Pick
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>

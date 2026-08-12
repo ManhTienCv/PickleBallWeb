@@ -24,6 +24,14 @@ export interface ProductVariant {
   stock_quantity: number
 }
 
+export interface TechnicalSpecs {
+  material?: string
+  thickness?: string
+  weight?: string
+  usapa_certified?: boolean
+  origin?: string
+}
+
 export interface Product {
   id: number
   name: string
@@ -36,6 +44,7 @@ export interface Product {
   brand?: Brand
   variants: ProductVariant[]
   in_stock: boolean
+  specs?: TechnicalSpecs
 }
 
 export interface ProductQueryParams {
@@ -45,6 +54,9 @@ export interface ProductQueryParams {
   sort?: string
   page?: number
 }
+
+// Key for synced products in localStorage between POS & Web
+const SYNCED_PRODUCTS_KEY = 'demopick_synced_products'
 
 export const shopService = {
   async getCategories(): Promise<Category[]> {
@@ -58,15 +70,69 @@ export const shopService = {
   },
 
   async getProducts(params?: ProductQueryParams): Promise<{ items: Product[]; meta?: ApiResponse['meta'] }> {
-    const response = await api.get<ApiResponse<Product[]>>('/products', { params })
-    return {
-      items: response.data.data,
-      meta: response.data.meta,
+    try {
+      const response = await api.get<ApiResponse<Product[]>>('/products', { params })
+      let items = response.data.data
+
+      // Check if local synced products exist (updated by Admin / POS)
+      const syncedRaw = localStorage.getItem(SYNCED_PRODUCTS_KEY)
+      if (syncedRaw) {
+        try {
+          const syncedList: Product[] = JSON.parse(syncedRaw)
+          const syncedIds = new Set((items || []).map((i) => i.id))
+          const newItems = syncedList.filter((s) => s && s.id && !syncedIds.has(s.id))
+          items = [...newItems, ...(items || [])].map((item) => {
+            if (!item) return item
+            const match = syncedList.find((s) => s && (s.id === item.id || s.slug === item.slug))
+            return match ? { ...item, ...match } : item
+          }).filter(Boolean)
+        } catch {
+          // fallback to items
+        }
+      }
+
+      return {
+        items,
+        meta: response.data.meta,
+      }
+    } catch {
+      // Fallback local mock if offline
+      const syncedRaw = localStorage.getItem(SYNCED_PRODUCTS_KEY)
+      if (syncedRaw) {
+        try {
+          return { items: JSON.parse(syncedRaw) }
+        } catch {
+          // ignore
+        }
+      }
+      return { items: [] }
     }
   },
 
   async getProductBySlug(slug: string): Promise<Product> {
-    const response = await api.get<ApiResponse<Product>>(`/products/${slug}`)
-    return response.data.data
+    const syncedRaw = localStorage.getItem(SYNCED_PRODUCTS_KEY)
+    let syncedProduct: Product | undefined
+    if (syncedRaw) {
+      try {
+        const syncedList: Product[] = JSON.parse(syncedRaw)
+        syncedProduct = syncedList.find((s) => s && (s.slug === slug || String(s.id) === slug))
+      } catch {
+        // fallback
+      }
+    }
+
+    try {
+      const response = await api.get<ApiResponse<Product>>(`/products/${slug}`)
+      let product = response.data.data
+      if (syncedProduct) {
+        product = { ...product, ...syncedProduct }
+      }
+      return product
+    } catch (err) {
+      if (syncedProduct) {
+        return syncedProduct
+      }
+      throw err
+    }
   },
 }

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { shopService } from '@/services/shop.service'
@@ -19,16 +19,32 @@ import {
   MapPin,
   CheckCircle2,
   Users,
+  Flame,
+  Truck,
+  RotateCcw,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function Home() {
+  const [activeCategory, setActiveCategory] = useState<string>('all')
+
   const { data: productData, isLoading } = useQuery({
     queryKey: ['home-featured-products'],
     queryFn: () => shopService.getProducts({ page: 1 }),
   })
 
-  const products = productData?.items?.slice(0, 4) || []
+  const rawProducts = productData?.items || []
+
+  const filteredProducts = rawProducts.filter((product: any) => {
+    if (!product || !product.name) return false
+    const pName = String(product.name).toLowerCase()
+    const cName = String(product.category?.name || '').toLowerCase()
+    if (activeCategory === 'all') return true
+    if (activeCategory === 'racket') return pName.includes('vợt') || cName.includes('vợt')
+    if (activeCategory === 'ball') return pName.includes('bóng') || cName.includes('bóng')
+    if (activeCategory === 'accessory') return pName.includes('túi') || pName.includes('băng') || pName.includes('phụ') || cName.includes('phụ')
+    return true
+  }).slice(0, 8)
 
   const handleAddToCart = async (product: any) => {
     if (!product.variants || product.variants.length === 0) {
@@ -106,10 +122,10 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right Interactive 3D Floating Showcase Card (Dark Charcoal Luxury Accent) */}
+            {/* Right Interactive 3D Floating Showcase Card (Harmonized Light Architectural Theme) */}
             <div className="lg:col-span-5 relative perspective-[1200px] pt-4 sm:pt-0">
               {/* Floating Live Status Badge (Top-Right) */}
-              <div className="absolute -top-3 right-3 z-30 bg-[#1C1D21] border border-[#27c372]/50 px-3.5 py-1.5 rounded-full shadow-xl flex items-center gap-2 hidden sm:flex">
+              <div className="absolute -top-3 right-3 z-30 bg-slate-900 border border-[#27c372]/50 px-3.5 py-1.5 rounded-full shadow-lg flex items-center gap-2 hidden sm:flex">
                 <span className="relative flex h-2.5 w-2.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#27c372] opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#27c372]"></span>
@@ -117,13 +133,13 @@ export default function Home() {
                 <span className="text-[11px] font-extrabold text-white">⚡ Giữ Chỗ Tự Động 24/7</span>
               </div>
 
-              {/* Main 3D Dark Charcoal Card Showcase */}
-              <div className="relative rounded-3xl overflow-hidden border border-slate-800 bg-[#1C1D21] p-4.5 shadow-2xl transition-all duration-500 transform hover:rotate-y-[-4deg] hover:rotate-x-[3deg] space-y-3.5">
-                {/* Image Banner */}
-                <div className="aspect-video rounded-2xl overflow-hidden relative border border-slate-700/60 group">
+              {/* Main 3D Card Showcase */}
+              <div className="relative rounded-3xl overflow-hidden border border-slate-200/90 bg-white p-4.5 shadow-xl shadow-slate-200/50 transition-all duration-500 transform hover:rotate-y-[-4deg] hover:rotate-x-[3deg] space-y-3.5">
+                {/* Image Banner - Authentic Pickleball Court Photo */}
+                <div className="aspect-video rounded-2xl overflow-hidden relative border border-slate-200 shadow-inner group">
                   <img
-                    src="https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&q=80&w=800"
-                    alt="Sân Pickleball DemoPick"
+                    src="/images/pickleball_court.jpg"
+                    alt="Sân Pickleball Pick Center"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                   <Badge className="absolute top-3 left-3 bg-[#27c372] text-white font-black shadow-md">
@@ -131,34 +147,25 @@ export default function Home() {
                   </Badge>
                 </div>
 
-                {/* Quick Info Box */}
-                <div className="bg-[#121316] p-4 rounded-2xl border border-slate-800 space-y-2.5">
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span className="flex items-center gap-1 font-bold text-white">
+                {/* Quick Info Box - Clean & Uncluttered */}
+                <div className="bg-slate-50/90 p-4 rounded-2xl border border-slate-200/80 space-y-2.5">
+                  <div className="flex items-center justify-between text-xs text-slate-500">
+                    <span className="flex items-center gap-1 font-extrabold text-slate-800">
                       <MapPin className="h-3.5 w-3.5 text-[#27c372]" />
                       Cầu Giấy, Hà Nội
                     </span>
-                    <span className="flex items-center gap-1 text-amber-400 font-bold">
+                    <span className="flex items-center gap-1 text-amber-500 font-extrabold">
                       <Star className="h-3.5 w-3.5 fill-amber-400" /> 4.9 (120+ Đánh giá)
                     </span>
                   </div>
 
-                  <h3 className="font-extrabold text-white text-base">Cụm Sân Pickleball DemoPick Center</h3>
-                  <p className="text-xs text-slate-300 leading-relaxed font-medium">
+                  <h3 className="font-extrabold text-slate-900 text-base">Cụm Sân Pickleball Pick Center</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed font-semibold">
                     Đèn LED chống chói thi đấu chuyên nghiệp, lounge máy lạnh, phòng tắm nóng lạnh & pro shop hỗ trợ mượn vợt cao cấp dùng thử.
                   </p>
 
-                  {/* Clean Equipment Highlight Bar */}
-                  <div className="flex items-center justify-between bg-[#1C1D21] border border-slate-800 px-3 py-2 rounded-xl text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">🏆</span>
-                      <span className="font-bold text-white">JOOLA Perseus 3S Carbon</span>
-                    </div>
-                    <span className="text-[10px] text-[#27c372] font-extrabold bg-[#27c372]/15 px-2 py-0.5 rounded border border-[#27c372]/30">USAPA Official</span>
-                  </div>
-
                   <Link to="/booking" className="block pt-1">
-                    <Button size="sm" className="w-full bg-[#27c372] hover:bg-[#22c55e] text-white font-black rounded-xl gap-1.5 shadow-md">
+                    <Button size="sm" className="w-full bg-[#27c372] hover:bg-[#22c55e] text-white font-black rounded-xl gap-1.5 shadow-md shadow-[#27c372]/20">
                       <span>Kiểm tra lịch trống hôm nay</span>
                       <ArrowRight className="h-3.5 w-3.5 text-white" />
                     </Button>
@@ -170,45 +177,117 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 🟢 FEATURED PRODUCTS SECTION */}
-      <section className="container mx-auto px-4 sm:px-6">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-          <div>
-            <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider mb-1">
-              <Zap className="h-4 w-4" />
-              <span>Thiết Bị Nổi Bật Bán Chạy</span>
+      {/* 🟢 FEATURED PRODUCTS SECTION (Harmonious European Layout) */}
+      <section className="container mx-auto px-4 sm:px-6 space-y-6 sm:space-y-8">
+        {/* Section Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/80 pb-5">
+          <div className="space-y-1.5 max-w-2xl">
+            <div className="inline-flex items-center gap-1.5 text-[#16a34a] font-bold text-xs uppercase tracking-wider">
+              <Flame className="h-4 w-4 text-[#27c372]" />
+              <span>USAPA Certified • Trang Bị Hot Nhất 2026</span>
             </div>
-            <h2 className="text-3xl font-extrabold text-slate-900">Vợt & Phụ Kiện Thi Đấu Hot Nhất</h2>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              Vợt & Phụ Kiện Thi Đấu <span className="text-[#27c372]">Hot Nhất</span>
+            </h2>
+            <p className="text-slate-500 text-xs sm:text-sm font-medium">
+              Vợt carbon 3S, bóng thi đấu và túi phụ kiện tiêu chuẩn quốc tế từ JOOLA, Selkirk, Franklin.
+            </p>
           </div>
 
-          <Link to="/products">
-            <Button variant="outline" className="gap-2 text-slate-700 hover:text-slate-900 border-slate-300">
-              <span>Xem Tất Cả Sản Phẩm</span>
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
+          {/* Category Filter Pills & See All Link */}
+          <div className="flex flex-wrap items-center gap-2">
+            {[
+              { id: 'all', label: 'Tất Cả' },
+              { id: 'racket', label: '🏓 Vợt Carbon 3S' },
+              { id: 'ball', label: '🟡 Bóng Thi Đấu' },
+              { id: 'accessory', label: '🎒 Túi & Phụ Kiện' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveCategory(tab.id)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
+                  activeCategory === tab.id
+                    ? 'bg-[#27c372] text-white shadow-sm shadow-[#27c372]/30'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+
+            <Link to="/products" className="ml-1">
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs font-bold text-slate-700 border-slate-300 rounded-full h-8 px-3.5 hover:bg-slate-100">
+                <span>Xem tất cả</span>
+                <ArrowRight className="h-3.5 w-3.5 text-slate-600" />
+              </Button>
+            </Link>
+          </div>
         </div>
 
+        {/* Product Grid resting cleanly on page */}
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map((n) => (
-              <div key={n} className="h-80 rounded-xl bg-slate-100 animate-pulse" />
+              <div key={n} className="h-80 rounded-2xl bg-slate-100 animate-pulse border border-slate-200" />
             ))}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {products.map((product) => (
+            {filteredProducts.map((product: any) => (
               <ProductCard key={product.id} product={product} onAddToCart={handleAddToCart} />
             ))}
           </div>
         )}
+
+        {/* Minimal Guarantees Strip */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+          <div className="flex items-center gap-2.5 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm">
+            <div className="w-8 h-8 rounded-xl bg-[#27c372]/15 text-[#16a34a] flex items-center justify-center shrink-0">
+              <Award className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="font-extrabold text-slate-900 text-xs">100% Chính Hãng</p>
+              <p className="text-[11px] text-slate-500 font-medium">Đạt chuẩn USAPA</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm">
+            <div className="w-8 h-8 rounded-xl bg-[#27c372]/15 text-[#16a34a] flex items-center justify-center shrink-0">
+              <Truck className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="font-extrabold text-slate-900 text-xs">Giao Hỏa Tốc 2H</p>
+              <p className="text-[11px] text-slate-500 font-medium">Nội thành Hà Nội & TP.HCM</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm">
+            <div className="w-8 h-8 rounded-xl bg-[#27c372]/15 text-[#16a34a] flex items-center justify-center shrink-0">
+              <RotateCcw className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="font-extrabold text-slate-900 text-xs">Đổi Trả 7 Ngày</p>
+              <p className="text-[11px] text-slate-500 font-medium">Lỗi nhà sản xuất</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm">
+            <div className="w-8 h-8 rounded-xl bg-[#27c372]/15 text-[#16a34a] flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="font-extrabold text-slate-900 text-xs">Bảo Hành 12 Tháng</p>
+              <p className="text-[11px] text-slate-500 font-medium">Mặt vợt carbon 3S</p>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* 🟢 HIGHLIGHT FEATURES SECTION */}
       <section className="bg-slate-100/70 py-16 border-y border-slate-200">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="text-center max-w-2xl mx-auto mb-12 space-y-2">
-            <h2 className="text-3xl font-extrabold text-slate-900">Tại Sao Chọn DemoPick Web?</h2>
+            <h2 className="text-3xl font-extrabold text-slate-900">Tại Sao Chọn Pick Web?</h2>
             <p className="text-slate-600 text-sm">
               Trải nghiệm đặt dịch vụ thể thao hiện đại, minh bạch và tiện lợi nhất.
             </p>

@@ -58,9 +58,9 @@ export default function ProductDetail() {
     )
   }
 
-  const currentPrice = selectedVariant ? selectedVariant.price : product.price
-  const isOutOfStock = selectedVariant ? selectedVariant.stock_quantity <= 0 : !product.in_stock
-  const isRacket = product.name.toLowerCase().includes('vợt')
+  const currentPrice = selectedVariant ? (selectedVariant.price ?? product?.price ?? 0) : (product?.price ?? 0)
+  const isOutOfStock = selectedVariant ? (selectedVariant.stock_quantity <= 0) : (!product?.in_stock)
+  const isRacket = product?.name ? String(product.name).toLowerCase().includes('vợt') : false
 
   const handleAddToCart = async () => {
     if (!selectedVariant) {
@@ -126,19 +126,14 @@ export default function ProductDetail() {
                 </span>
               )}
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight">{product.name}</h1>
-
-              {/* Rating & Sold count */}
+              
+              {/* Synced Inventory Stock Status */}
               <div className="flex items-center gap-2 text-xs">
-                <div className="flex items-center text-amber-400">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Star key={s} className="h-4 w-4 fill-current" />
-                  ))}
-                  <span className="ml-1.5 font-bold text-slate-900 text-sm">4.9</span>
-                </div>
+                <Badge className="bg-emerald-600 text-white font-bold text-[11px] gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5" /> Đồng bộ POS & Web
+                </Badge>
                 <span className="text-slate-300">|</span>
-                <span className="text-slate-600 font-medium">142 Đánh giá</span>
-                <span className="text-slate-300">|</span>
-                <span className="text-slate-600 font-medium">Đã bán 350+</span>
+                <span className="text-slate-700 font-bold">Tồn kho khả dụng: {selectedVariant?.stock_quantity ?? 15} sản phẩm</span>
               </div>
 
               {/* Price Box */}
@@ -171,59 +166,51 @@ export default function ProductDetail() {
                       <button
                         key={variant.id}
                         onClick={() => setSelectedVariant(variant)}
-                        className={`px-3.5 py-2 rounded-xl text-xs border font-semibold transition-all ${
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
                           selectedVariant?.id === variant.id
-                            ? 'border-emerald-600 bg-emerald-50 text-emerald-700 font-bold ring-2 ring-emerald-600/20'
+                            ? 'border-emerald-600 bg-emerald-50 text-emerald-700 shadow-sm'
                             : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
                         }`}
                       >
-                        {variant.option_name}: {variant.option_value}
-                        <span className="ml-1.5 text-[11px] text-slate-500 font-mono">
-                          (Tồn: {variant.stock_quantity})
-                        </span>
+                        {variant.option_value || variant.sku || `Phiên bản #${variant.id}`}
                       </button>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Quantity Selector */}
-              <div className="flex items-center gap-4 pt-2">
-                <label className="text-xs font-bold text-slate-900 uppercase tracking-wider">Số lượng:</label>
-                <div className="flex items-center border border-slate-200 rounded-xl bg-slate-50">
+              {/* Quantity Counter & Add to Cart */}
+              <div className="flex items-center gap-4 pt-4 border-t border-slate-200">
+                <div className="flex items-center border border-slate-300 rounded-xl overflow-hidden bg-white">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="px-3 py-1.5 text-slate-600 hover:bg-slate-200 rounded-l-xl font-bold"
+                    className="w-10 h-10 flex items-center justify-center text-slate-600 hover:bg-slate-100 font-bold"
                   >
                     -
                   </button>
-                  <span className="px-4 py-1.5 font-bold text-slate-900 text-sm">{quantity}</span>
+                  <span className="w-12 text-center font-bold text-sm text-slate-900">{quantity}</span>
                   <button
                     onClick={() => setQuantity(quantity + 1)}
-                    className="px-3 py-1.5 text-slate-600 hover:bg-slate-200 rounded-r-xl font-bold"
+                    className="w-10 h-10 flex items-center justify-center text-slate-600 hover:bg-slate-100 font-bold"
                   >
                     +
                   </button>
                 </div>
-              </div>
-            </div>
 
-            {/* Actions */}
-            <div className="space-y-3 pt-4 border-t border-slate-100">
-              <Button
-                size="lg"
-                className="w-full gap-2 text-sm font-bold h-12 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-md"
-                disabled={isOutOfStock}
-                onClick={handleAddToCart}
-              >
-                <ShoppingCart className="h-5 w-5" />
-                <span>{isOutOfStock ? 'Hết Hàng Rất Tiếc' : 'Thêm Vào Giỏ Hàng Ngay'}</span>
-              </Button>
+                <Button
+                  onClick={handleAddToCart}
+                  disabled={isOutOfStock}
+                  className="flex-1 h-11 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm rounded-xl gap-2 shadow-md shadow-emerald-600/20"
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  <span>{isOutOfStock ? 'Hết Hàng Rất Tiếc' : 'Thêm Vào Giỏ Hàng Ngay'}</span>
+                </Button>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Tabs Section: Mô tả / Thông số kỹ thuật / Đánh giá */}
+        {/* Tabs Section: Mô tả / Thông số kỹ thuật */}
         <Card className="p-6 bg-white border-slate-200 shadow-sm space-y-6">
           <div className="flex items-center gap-4 border-b border-slate-200 pb-3">
             <button
@@ -244,28 +231,18 @@ export default function ProductDetail() {
                   : 'border-transparent text-slate-500 hover:text-slate-900'
               }`}
             >
-              Thông Số Kỹ Thuật
-            </button>
-            <button
-              onClick={() => setActiveTab('reviews')}
-              className={`text-sm font-bold pb-2 transition-colors border-b-2 ${
-                activeTab === 'reviews'
-                  ? 'border-emerald-600 text-emerald-700'
-                  : 'border-transparent text-slate-500 hover:text-slate-900'
-              }`}
-            >
-              Đánh Giá Khách Hàng (142)
+              Thông Số Kỹ Thuật Chi Tiết
             </button>
           </div>
 
           {activeTab === 'desc' && (
             <div className="space-y-4 text-xs sm:text-sm text-slate-700 leading-relaxed font-normal">
               <p>
-                Sản phẩm <strong>{product.name}</strong> được sản xuất với công nghệ hiện đại tiêu chuẩn thi đấu quốc tế USAPA. Mặt vật liệu carbon nhám nguyên chất gia tăng khả năng bám xoáy bóng tối đa và đầm tay trong từng cú dink hoặc đập smash.
+                Sản phẩm <strong>{product.name}</strong> được kiểm định nghiêm ngặt về chất lượng, phù hợp cho cả tập luyện phong trào và thi đấu chuyên nghiệp. Đồng bộ tồn kho thời gian thực giữa bán trực tiếp tại quầy POS và thanh toán online qua website.
               </p>
               <ul className="list-disc pl-5 space-y-2 text-slate-700">
                 <li>Công nghệ viền đúc nguyên khối chống va đập và bảo vệ thảm sân.</li>
-                <li>Lõi Polypropylene Honeycomb 16mm giảm chấn động cổ tay hiệu quả.</li>
+                <li>Lõi Polypropylene Honeycomb giảm chấn động cổ tay hiệu quả.</li>
                 <li>Cán vợt bọc lớp da đục lỗ hút mồ hôi êm ái chống trơn trượt.</li>
               </ul>
             </div>
@@ -281,44 +258,24 @@ export default function ProductDetail() {
                   </tr>
                   <tr className="border-b border-slate-100">
                     <td className="py-2.5 px-4 font-bold text-slate-700">Chất liệu mặt:</td>
-                    <td className="py-2.5 px-4 text-slate-900 font-semibold">T700 Raw Carbon Fiber</td>
+                    <td className="py-2.5 px-4 text-slate-900 font-semibold">{product.specs?.material || 'T700 Raw Carbon Fiber 3S'}</td>
                   </tr>
                   <tr className="border-b border-slate-100 bg-slate-50">
                     <td className="py-2.5 px-4 font-bold text-slate-700">Độ dày lõi:</td>
-                    <td className="py-2.5 px-4 text-slate-900 font-semibold">14mm / 16mm Reactive Polymer</td>
+                    <td className="py-2.5 px-4 text-slate-900 font-semibold">{product.specs?.thickness || '16mm Polypropylene Honeycomb'}</td>
                   </tr>
                   <tr className="border-b border-slate-100">
                     <td className="py-2.5 px-4 font-bold text-slate-700">Trọng lượng:</td>
-                    <td className="py-2.5 px-4 text-slate-900 font-semibold">7.8 oz - 8.2 oz (Middleweight)</td>
+                    <td className="py-2.5 px-4 text-slate-900 font-semibold">{product.specs?.weight || '230g ± 5g (Standard Middleweight)'}</td>
                   </tr>
                   <tr className="border-b border-slate-100 bg-slate-50">
                     <td className="py-2.5 px-4 font-bold text-slate-700">Chứng nhận:</td>
-                    <td className="py-2.5 px-4 text-emerald-700 font-bold">Đạt chuẩn thi đấu USAPA Approved 2026</td>
+                    <td className="py-2.5 px-4 text-emerald-700 font-bold">
+                      {product.specs?.usapa_certified !== false ? 'Đạt chuẩn thi đấu USAPA Approved 2026' : 'Tiêu chuẩn tập luyện phong trào'}
+                    </td>
                   </tr>
                 </tbody>
               </table>
-            </div>
-          )}
-
-          {activeTab === 'reviews' && (
-            <div className="space-y-4">
-              {[
-                { name: 'Nguyễn Văn Minh', date: '05/02/2026', comment: 'Vợt cầm rất đầm tay, mặt carbon bám bóng đỉnh cao. Giao hàng Hà Nội chỉ trong 2 tiếng!' },
-                { name: 'Trần Hải Đăng', date: '01/02/2026', comment: 'Shop đóng gói hộp xốp cẩn thận, tặng kèm bao vợt. Đánh thử ở sân VIP Long Biên rất đã.' },
-              ].map((rev, idx) => (
-                <div key={idx} className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1 text-xs">
-                  <div className="flex items-center justify-between font-bold text-slate-900">
-                    <span>{rev.name}</span>
-                    <span className="text-[10px] text-slate-400 font-mono">{rev.date}</span>
-                  </div>
-                  <div className="flex text-amber-400">
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <Star key={s} className="h-3 w-3 fill-current" />
-                    ))}
-                  </div>
-                  <p className="text-slate-600">{rev.comment}</p>
-                </div>
-              ))}
             </div>
           )}
         </Card>

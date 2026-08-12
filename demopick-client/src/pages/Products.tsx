@@ -61,38 +61,41 @@ export default function Products() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans pb-12">
-      {/* Store Hero Banner */}
-      <div className="bg-gradient-to-br from-emerald-950 via-slate-900 to-emerald-900 text-white py-12 px-4 relative overflow-hidden mb-8">
+    <div className="min-h-screen bg-[#FAF8F5] font-sans pb-12">
+      {/* Store Hero Banner - Architectural Ivory Canvas Theme */}
+      <div className="bg-white text-slate-900 rounded-3xl mx-2 sm:mx-6 mt-2 mb-8 p-6 sm:p-10 border border-slate-200/90 shadow-xl shadow-slate-200/60 relative overflow-hidden">
+        {/* Decorative Ambient Orbs */}
+        <div className="absolute -top-24 -right-24 w-[380px] h-[380px] bg-[#27c372]/10 rounded-full blur-[90px] pointer-events-none" />
+        
         <div className="container mx-auto max-w-6xl space-y-4 relative z-10">
-          <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/40 text-xs font-bold gap-1.5 px-3 py-1">
-            <Sparkles className="h-3.5 w-3.5 text-amber-300" /> Cửa Hàng Thiết Bị Chính Hãng 2026
+          <Badge className="bg-[#27c372]/15 text-[#16a34a] border border-[#27c372]/30 text-xs font-extrabold gap-1.5 px-3.5 py-1 rounded-full">
+            <Sparkles className="h-3.5 w-3.5 text-[#16a34a]" /> Cửa Hàng Thiết Bị Chính Hãng 2026
           </Badge>
 
-          <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white leading-tight">
-            Bộ Sưu Tập Vợt Pickleball & Phụ Kiện Chuẩn USAPA
+          <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-slate-900 leading-tight">
+            Bộ Sưu Tập Vợt Pickleball & <span className="text-[#27c372]">Phụ Kiện Chuẩn USAPA</span>
           </h1>
 
-          <p className="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed">
+          <p className="text-sm sm:text-base text-slate-600 max-w-2xl leading-relaxed font-semibold">
             Phân phối chính hãng các thương hiệu hàng đầu JOOLA, Selkirk, CRBN, Franklin. Cam kết 100% chính hãng, bảo hành 12 tháng & miễn phí vận chuyển.
           </p>
 
           {/* Quick Commitments Bar */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-white/10 text-xs text-slate-200">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-slate-200/80 text-xs font-bold text-slate-700">
             <div className="flex items-center gap-2">
-              <Truck className="h-4 w-4 text-emerald-400 shrink-0" />
+              <Truck className="h-4 w-4 text-[#27c372] shrink-0" />
               <span>Miễn phí giao đơn từ 500K</span>
             </div>
             <div className="flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
+              <ShieldCheck className="h-4 w-4 text-[#27c372] shrink-0" />
               <span>Cam kết chính hãng 100%</span>
             </div>
             <div className="flex items-center gap-2">
-              <Zap className="h-4 w-4 text-emerald-400 shrink-0" />
+              <Zap className="h-4 w-4 text-[#27c372] shrink-0" />
               <span>Giao siêu tốc 2H Hà Nội</span>
             </div>
             <div className="flex items-center gap-2">
-              <RefreshCw className="h-4 w-4 text-emerald-400 shrink-0" />
+              <RefreshCw className="h-4 w-4 text-[#27c372] shrink-0" />
               <span>Đổi trả 7 ngày linh hoạt</span>
             </div>
           </div>

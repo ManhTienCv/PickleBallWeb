@@ -58,7 +58,7 @@ const initialPosts: AdminBlogPost[] = [
     title: "Hướng Dẫn Mở Sân Pickleball Từ A đến Z: Chi Phí, Vốn, Doanh Thu 2026",
     slug: "huong-dan-mo-san-pickleball-tu-a-den-z",
     category: "Kinh doanh sân",
-    image: "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=600",
+    image: "/images/pickleball_match.jpg",
     date: "12/12/2025",
     views: 980,
     status: "published",

@@ -15,6 +15,7 @@ import {
   BookOpen,
   UserCheck,
   RefreshCw,
+  Globe,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import CheckInDialog from "@/components/CheckInDialog";
@@ -25,7 +26,8 @@ const menuItems = [
   { icon: LayoutDashboard, label: "Tổng quan", path: "/", roles: ["admin", "super_admin"] },
   { icon: MapPin, label: "Sơ đồ & Đặt lịch", path: "/court-map", roles: ["admin", "super_admin", "staff"] },
   { icon: ShoppingCart, label: "Bán hàng POS", path: "/pos", roles: ["admin", "super_admin", "staff"] },
-  { icon: Receipt, label: "Quản lý Hóa đơn", path: "/orders", roles: ["admin", "super_admin", "staff"] },
+  { icon: Globe, label: "Đơn Online & Vận Chuyển", path: "/orders?tab=online", roles: ["admin", "super_admin", "staff"] },
+  { icon: Receipt, label: "Hóa Đơn POS Quầy", path: "/orders?tab=pos", roles: ["admin", "super_admin", "staff"] },
   { icon: CreditCard, label: "Quản lý Thanh toán", path: "/payments", roles: ["admin", "super_admin"] },
   { icon: Users, label: "Khách hàng CRM", path: "/crm", roles: ["admin", "super_admin"] },
   { icon: Package, label: "Kho sản phẩm", path: "/inventory", roles: ["admin", "super_admin", "staff"] },
@@ -76,8 +78,8 @@ const AppLayout = ({ children, title, subtitle, headerRight }: AppLayoutProps) =
               <MapPin className="w-5 h-5 text-white font-extrabold" />
             </div>
             <div>
-              <h1 className="font-extrabold text-slate-900 text-base tracking-tight">DemoPick ONE</h1>
-              <p className="text-[11px] text-[#16a34a] font-extrabold uppercase tracking-wider">
+              <h1 className="font-bold text-slate-900 text-lg tracking-tight">Pick</h1>
+              <p className="text-[11px] text-[#16a34a] font-bold uppercase tracking-wider">
                 {isStaffOnly ? "Lễ Tân POS Quầy" : "Admin Portal"}
               </p>
             </div>
@@ -86,15 +88,16 @@ const AppLayout = ({ children, title, subtitle, headerRight }: AppLayoutProps) =
 
         <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
           {visibleMenuItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const fullPath = location.pathname + location.search;
+            const isActive = fullPath === item.path || (location.pathname === item.path && !item.path.includes("?"));
             return (
               <Link
                 key={item.path}
                 to={item.path}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${
                   isActive
-                    ? "bg-[#27c372] text-white font-extrabold shadow-md shadow-[#27c372]/30 scale-[1.01]"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 font-bold"
+                    ? "bg-[#27c372] text-white font-semibold shadow-sm shadow-[#27c372]/20"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 font-medium"
                 }`}
               >
                 <item.icon className={`w-4 h-4 ${isActive ? "text-white" : "text-[#27c372]"}`} />
@@ -108,9 +111,9 @@ const AppLayout = ({ children, title, subtitle, headerRight }: AppLayoutProps) =
         <div className="p-4 border-t border-slate-200/80 space-y-3">
           <Button
             onClick={() => setCheckInOpen(true)}
-            className="w-full gap-2 bg-slate-900 hover:bg-slate-800 text-white font-black rounded-xl shadow-md shadow-slate-900/10"
+            className="w-full gap-2 bg-[#27c372] hover:bg-[#22c55e] text-white font-semibold rounded-xl shadow-sm shadow-[#27c372]/20 h-11 text-xs"
           >
-            <QrCode className="w-4 h-4 text-[#27c372]" />
+            <QrCode className="w-4 h-4 text-white" />
             <span>Check-in QR Khách</span>
           </Button>
 

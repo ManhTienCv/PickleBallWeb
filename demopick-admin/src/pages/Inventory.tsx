@@ -33,6 +33,7 @@ import {
   PlusCircle,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -100,16 +101,43 @@ export default function Inventory() {
   const [restockQty, setRestockQty] = useState(20);
   const [restockNote, setRestockNote] = useState("Lễ tân nhập bổ sung lốc nước mới nhận tại quầy");
 
-  // Form New Product
+  // Form New Product - Clean Empty States (No pre-filled text)
   const [newProductName, setNewProductName] = useState("");
-  const [newProductCategory, setNewProductCategory] = useState("Nước & Đồ ăn");
-  const [newProductItemType, setNewProductItemType] = useState<"product" | "drink_food" | "rental">("drink_food");
-  const [newProductPrice, setNewProductPrice] = useState(20000);
-  const [newProductSku, setNewProductSku] = useState("BEV-DRINK-01");
-  const [newProductStock, setNewProductStock] = useState(50);
+  const [newProductCategory, setNewProductCategory] = useState("Vợt");
+  const [newProductItemType, setNewProductItemType] = useState<"product" | "drink_food" | "rental">("product");
+  const [newProductPrice, setNewProductPrice] = useState<number | "">("");
+  const [newProductSku, setNewProductSku] = useState("");
+  const [newProductStock, setNewProductStock] = useState<number | "">("");
   const [newProductImage, setNewProductImage] = useState(
-    "https://images.unsplash.com/photo-1527661591475-527312dd65f5?w=600"
+    "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=600"
   );
+
+  // Technical Specifications & Description Form state - Clean Empty States
+  const [newProductDescription, setNewProductDescription] = useState("");
+  const [newProductMaterial, setNewProductMaterial] = useState("");
+  const [newProductThickness, setNewProductThickness] = useState("");
+  const [newProductWeight, setNewProductWeight] = useState("");
+  const [newProductUsapa, setNewProductUsapa] = useState(true);
+
+  // Auto Generate Unique SKU dynamically from product name & category
+  const [skuSeed, setSkuSeed] = useState(() => Math.floor(1000 + Math.random() * 9000));
+
+  useEffect(() => {
+    const catCode = newProductCategory.includes('Vợt') ? 'VOT' : newProductCategory.includes('Bóng') ? 'BONG' : newProductCategory.includes('Phụ kiện') ? 'PHU' : newProductCategory.includes('Nước') ? 'BEV' : 'REN';
+    if (newProductName.trim()) {
+      const nameClean = newProductName
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d")
+        .replace(/[^a-z0-9]/g, "")
+        .toUpperCase();
+      const prefix = nameClean.substring(0, 6) || 'ITEM';
+      setNewProductSku(`${catCode}-${prefix}-${skuSeed}`);
+    } else {
+      setNewProductSku(`${catCode}-ITEM-${skuSeed}`);
+    }
+  }, [newProductName, newProductCategory, skuSeed]);
 
   // Queries & local states
   const { data: initialProducts = [] } = useQuery({
@@ -175,7 +203,57 @@ export default function Inventory() {
     }
 
     if (isStaffOnly && newProductCategory !== "Nước & Đồ ăn") {
-      toast.error("🔒 Lễ tân chỉ được phép khai báo thêm Nước uống & Đồ ăn bán tại quầy POS. Khai báo Vợt & Thiết bị cao cấp do Admin quản lý.");
+      toast.error("Lễ tân chỉ được phép khai báo thêm Nước uống & Đồ ăn bán tại quầy POS. Khai báo Vợt & Thiết bị cao cấp do Admin quản lý.");
+      return;
+    }
+
+    // 🟢 SMART AUTO-MERGE: nếu sản phẩm đã có sẵn, cộng dồn số lượng chứ không nhân đôi
+    const existingIndex = displayProducts.findIndex(
+      (p) => p.name.toLowerCase().trim() === newProductName.toLowerCase().trim()
+    );
+
+    if (existingIndex !== -1) {
+      const existing = displayProducts[existingIndex];
+      const addedQty = Number(newProductStock) || 1;
+      const updatedList = displayProducts.map((p, idx) => {
+        if (idx === existingIndex) {
+          const updatedVariants = (p.variants || []).map((v) => ({
+            ...v,
+            stock_quantity: (v.stock_quantity || 0) + addedQty,
+          }));
+          const finalStock = updatedVariants[0]?.stock_quantity || addedQty;
+          return {
+            ...p,
+            price: Number(newProductPrice) || p.price,
+            in_stock: finalStock > 0,
+            variants: updatedVariants,
+            description: newProductDescription || p.description,
+          };
+        }
+        return p;
+      });
+
+      setProductsList(updatedList);
+      localStorage.setItem("demopick_synced_products", JSON.stringify(updatedList));
+      window.dispatchEvent(new Event("storage"));
+
+      const nowTimeStr = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+      const mergeLog: InventoryLog = {
+        id: Date.now(),
+        productName: existing.name,
+        sku: existing.variants?.[0]?.sku || newProductSku,
+        type: "in",
+        changeQty: addedQty,
+        stockAfter: (existing.variants?.[0]?.stock_quantity || 0) + addedQty,
+        note: `Tự động gộp cộng dồn +${addedQty} sản phẩm sẵn có vào kho`,
+        time: nowTimeStr + " - " + new Date().toLocaleDateString("vi-VN"),
+      };
+      setInventoryLogs([mergeLog, ...inventoryLogs]);
+
+      toast.success(`Sản phẩm "${existing.name}" đã có sẵn! Đã tự động GỘP & CỘNG DỒN +${addedQty} vào tồn kho!`);
+      setAddProductOpen(false);
+      setNewProductName("");
+      setSkuSeed(Math.floor(1000 + Math.random() * 9000));
       return;
     }
 
@@ -192,7 +270,8 @@ export default function Inventory() {
       price: Number(newProductPrice),
       base_price: Number(newProductPrice),
       image_url: newProductImage || "https://images.unsplash.com/photo-1527661591475-527312dd65f5?w=400",
-      short_description: `${newProductCategory} - Phục vụ tại quầy POS`,
+      short_description: newProductDescription || `${newProductCategory} - Phục vụ tại quầy POS & Web`,
+      description: newProductDescription || `${newProductCategory} - Phục vụ tại quầy POS & Web`,
       in_stock: Number(newProductStock) > 0,
       item_type: isStaffOnly ? "drink_food" : newProductItemType,
       category: { name: newProductCategory },
@@ -208,9 +287,19 @@ export default function Inventory() {
           stock_quantity: Number(newProductStock),
         },
       ],
+      specs: {
+        material: newProductMaterial,
+        thickness: newProductThickness,
+        weight: newProductWeight,
+        usapa_certified: newProductUsapa,
+        origin: "Chính Hãng 100%",
+      },
     };
 
-    setProductsList([createdProduct, ...displayProducts]);
+    const updated = [createdProduct, ...displayProducts];
+    setProductsList(updated);
+    localStorage.setItem("demopick_synced_products", JSON.stringify(updated));
+    window.dispatchEvent(new Event("storage"));
 
     const nowTimeStr = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
     const newLog: InventoryLog = {
@@ -227,9 +316,10 @@ export default function Inventory() {
     };
     setInventoryLogs([newLog, ...inventoryLogs]);
 
-    toast.success(`Đã thêm món mới vào quầy POS thành công: "${newProductName}"!`);
+    toast.success(`Đã thêm món mới & đồng bộ POS/Web thành công: "${newProductName}"!`);
     setAddProductOpen(false);
     setNewProductName("");
+    setSkuSeed(Math.floor(1000 + Math.random() * 9000));
   };
 
   const handleRestockSubmit = (e: React.FormEvent) => {
@@ -242,7 +332,7 @@ export default function Inventory() {
       selectedProduct.category?.name?.includes("Đồ ăn");
 
     if (isStaffOnly && !isAllowStaff) {
-      toast.error("🔒 Sản phẩm cao cấp giá trị lớn chỉ Admin/Chủ Sân mới có quyền cộng nhập kho.");
+      toast.error("Sản phẩm cao cấp giá trị lớn chỉ Admin/Chủ Sân mới có quyền cộng nhập kho.");
       return;
     }
 
@@ -273,6 +363,8 @@ export default function Inventory() {
     });
 
     setProductsList(updatedList);
+    localStorage.setItem("demopick_synced_products", JSON.stringify(updatedList));
+    window.dispatchEvent(new Event("storage"));
 
     const nowTimeStr = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
 
@@ -323,23 +415,6 @@ export default function Inventory() {
       }
     >
       <div className="space-y-6">
-        {/* Smart Permission Alert Banner */}
-        <Card className="p-4 bg-emerald-950 text-white border-emerald-800 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="font-bold text-sm text-emerald-300">
-                Phương Án Phân Quyền Thông Minh Lễ Tân Quầy
-              </h3>
-              <p className="text-xs text-slate-300 mt-0.5">
-                <strong className="text-amber-300">Lễ Tân Quầy:</strong> Được tự do bấm nút <span className="text-emerald-400 font-bold">Thêm Nước & Đồ Ăn Mới Tại Quầy</span> & nút <span className="text-emerald-400 font-bold">Nhập Quầy Nước/Bóng</span> để bán liên tục cho khách. <strong className="text-red-300">Admin/Chủ Sân:</strong> Độc quyền khai báo Vợt & Thiết bị cao cấp.
-              </p>
-            </div>
-          </div>
-        </Card>
-
         {/* Upper Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <Card className="p-4 bg-white border-slate-200 shadow-sm flex items-center gap-3">
@@ -558,14 +633,14 @@ export default function Inventory() {
 
         {/* Modal Khai Báo Sản Phẩm Mới (Cho phép Lễ tân thêm Nước/Đồ ăn) */}
         <Dialog open={addProductOpen} onOpenChange={setAddProductOpen}>
-          <DialogContent className="max-w-md bg-white max-h-[85vh] overflow-y-auto pr-2">
+          <DialogContent className="max-w-2xl bg-white max-h-[85vh] overflow-y-auto p-6 shadow-2xl sm:rounded-2xl border border-slate-200">
             <form onSubmit={handleCreateProduct} className="space-y-4 text-xs">
               <DialogHeader>
-                <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <DialogTitle className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
                   <PackagePlus className="h-5 w-5 text-emerald-600" />
                   {isStaffOnly ? "Lễ Tân Thêm Món Nước Uống & Đồ Ăn Mới" : "Khai Báo Mặt Hàng / Cho Thuê Đồ Mới"}
                 </DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="text-xs text-slate-500">
                   {isStaffOnly
                     ? "Lễ tân khai báo loại nước hoặc đồ ăn mới nhận tại quầy để bán trực tiếp trên máy POS"
                     : "Chỉ duy nhất Admin/Chủ Sân có quyền niêm yết sản phẩm thiết bị cao cấp mới"}
@@ -573,81 +648,152 @@ export default function Inventory() {
               </DialogHeader>
 
               {isStaffOnly && (
-                <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 space-y-0.5">
-                  <p className="font-bold flex items-center gap-1">
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 space-y-0.5">
+                  <p className="font-bold flex items-center gap-1 text-xs">
                     <ShieldCheck className="h-4 w-4 text-amber-600" /> Quyền Lễ Tân Quầy POS:
                   </p>
-                  <p className="text-[11px]">
+                  <p className="text-xs">
                     Bạn đang thêm món mới thuộc danh mục <strong>Nước & Đồ ăn</strong> để bán tại quầy.
                   </p>
                 </div>
               )}
 
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <Label className="font-bold text-slate-700">Tên mặt hàng / nước uống mới (*):</Label>
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label className="font-medium text-slate-700 text-xs">Tên mặt hàng / sản phẩm mới (*):</Label>
                   <Input
-                    placeholder="VD: Nước Ép Cam Tươi, Trà Chanh, Bánh Snickers..."
+                    placeholder="Nhập tên sản phẩm..."
                     value={newProductName}
                     onChange={(e) => setNewProductName(e.target.value)}
+                    className="h-10 text-xs font-medium"
                     required
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <Label className="font-bold text-slate-700">Danh mục:</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="font-medium text-slate-700 text-xs">Danh mục sản phẩm:</Label>
                     {isStaffOnly ? (
-                      <Input value="Nước & Đồ ăn" disabled className="bg-slate-100 font-bold text-slate-700" />
+                      <Input value="Nước & Đồ ăn" disabled className="bg-slate-100 font-medium text-slate-700 h-10 text-xs" />
                     ) : (
                       <select
                         value={newProductCategory}
                         onChange={(e) => setNewProductCategory(e.target.value)}
-                        className="w-full h-9 px-2 border rounded-lg font-semibold bg-white"
+                        className="w-full h-10 px-3 border rounded-xl font-medium bg-white text-xs border-slate-300 focus:ring-2 focus:ring-emerald-500"
                       >
-                        <option value="Nước & Đồ ăn">Nước & Đồ ăn</option>
-                        <option value="Cho thuê đồ">Cho thuê đồ</option>
-                        <option value="Bóng">Bóng Pickleball</option>
-                        <option value="Vợt">Vợt Pickleball</option>
-                        <option value="Phụ kiện">Phụ kiện</option>
+                        <option value="Vợt">🏓 Vợt Pickleball</option>
+                        <option value="Bóng">🟡 Bóng Pickleball</option>
+                        <option value="Phụ kiện">🎒 Phụ kiện & Túi đựng</option>
+                        <option value="Nước & Đồ ăn">🥤 Nước & Đồ ăn</option>
+                        <option value="Cho thuê đồ">⏱️ Cho thuê đồ</option>
                       </select>
                     )}
                   </div>
 
-                  <div className="space-y-1">
-                    <Label className="font-bold text-slate-700">Giá bán quầy (VNĐ):</Label>
+                  <div className="space-y-1.5">
+                    <Label className="font-medium text-slate-700 text-xs">Giá bán niêm yết (VNĐ):</Label>
                     <Input
                       type="number"
+                      placeholder="Nhập giá VNĐ..."
                       value={newProductPrice}
-                      onChange={(e) => setNewProductPrice(Number(e.target.value))}
+                      onChange={(e) => setNewProductPrice(e.target.value === "" ? "" : Number(e.target.value))}
+                      className="h-10 text-xs font-medium text-emerald-700"
                       required
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <Label className="font-bold text-slate-700">Mã SKU:</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="font-medium text-slate-700 text-xs">Mã SKU Quản Lý (Khóa tự động):</Label>
                     <Input
                       value={newProductSku}
-                      onChange={(e) => setNewProductSku(e.target.value)}
+                      disabled
+                      className="h-10 text-xs font-mono bg-slate-100 font-semibold text-slate-600 border-slate-200 cursor-not-allowed"
                     />
                   </div>
-                  <div className="space-y-1">
-                    <Label className="font-bold text-slate-700">Số lượng khởi tạo (*):</Label>
+                  <div className="space-y-1.5">
+                    <Label className="font-medium text-slate-700 text-xs">Số lượng kho khởi tạo (*):</Label>
                     <Input
                       type="number"
+                      placeholder="Nhập số lượng kho..."
                       value={newProductStock}
-                      onChange={(e) => setNewProductStock(Number(e.target.value))}
+                      onChange={(e) => setNewProductStock(e.target.value === "" ? "" : Number(e.target.value))}
+                      className="h-10 text-xs font-medium text-slate-900"
                       required
                     />
                   </div>
                 </div>
+
+                <div className="space-y-1.5">
+                  <Label className="font-medium text-slate-700 text-xs">Mô tả sản phẩm chi tiết (Giới thiệu người mua Web):</Label>
+                  <textarea
+                    value={newProductDescription}
+                    onChange={(e) => setNewProductDescription(e.target.value)}
+                    placeholder="Nhập bài viết / mô tả giới thiệu chi tiết sản phẩm..."
+                    className="w-full h-20 p-3 border rounded-xl font-medium text-xs bg-white border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none leading-relaxed"
+                  />
+                </div>
+
+                {/* 🟢 CHỈ HIỂN THỊ THÔNG SỐ KỸ THUẬT VỚI CÁC SẢN PHẨM VỢT, BÓNG, PHỤ KIỆN */}
+                {!isStaffOnly && ["Vợt", "Bóng", "Phụ kiện"].some((cat) => newProductCategory.includes(cat)) && (
+                  <div className="space-y-3 pt-3 border-t border-slate-200 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
+                    <div className="flex items-center gap-1.5 text-emerald-800 font-bold text-xs uppercase tracking-wider">
+                      <Sparkles className="w-4 h-4 text-amber-500" />
+                      <span>Thông Số Kỹ Thuật Chi Tiết (Thiết Bị Thi Đấu Web)</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="font-medium text-slate-700 text-xs">Chất liệu mặt vợt/bóng:</Label>
+                        <Input
+                          value={newProductMaterial}
+                          onChange={(e) => setNewProductMaterial(e.target.value)}
+                          placeholder="Nhập chất liệu mặt..."
+                          className="h-9 text-xs bg-white"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="font-medium text-slate-700 text-xs">Độ dày lõi (mm):</Label>
+                        <Input
+                          value={newProductThickness}
+                          onChange={(e) => setNewProductThickness(e.target.value)}
+                          placeholder="Nhập độ dày lõi..."
+                          className="h-9 text-xs bg-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="font-medium text-slate-700 text-xs">Trọng lượng (gam/oz):</Label>
+                        <Input
+                          value={newProductWeight}
+                          onChange={(e) => setNewProductWeight(e.target.value)}
+                          placeholder="Nhập trọng lượng..."
+                          className="h-9 text-xs bg-white"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="font-medium text-slate-700 text-xs">Chứng nhận chuẩn USAPA:</Label>
+                        <select
+                          value={newProductUsapa ? "true" : "false"}
+                          onChange={(e) => setNewProductUsapa(e.target.value === "true")}
+                          className="w-full h-9 px-2 border rounded-xl font-medium bg-white text-xs border-slate-300"
+                        >
+                          <option value="true">✅ Đạt chuẩn thi đấu USAPA Approved</option>
+                          <option value="false">❌ Không bắt buộc USAPA</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <DialogFooter className="pt-2">
-                <Button type="submit" className="w-full font-bold bg-emerald-600 hover:bg-emerald-500">
-                  Lưu Khai Báo & Cho Bán POS Ngay 🚀
+              <DialogFooter className="pt-3 border-t border-slate-100">
+                <Button type="submit" className="w-full font-bold bg-emerald-600 hover:bg-emerald-500 h-11 text-xs rounded-xl shadow-md gap-2">
+                  <PackagePlus className="w-4 h-4" />
+                  <span>Lưu Khai Báo & Cho Bán POS/Web Ngay 🚀</span>
                 </Button>
               </DialogFooter>
             </form>

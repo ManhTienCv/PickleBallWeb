@@ -39,6 +39,14 @@ export interface ProductCategory {
   name?: string
 }
 
+export interface TechnicalSpecs {
+  material?: string
+  thickness?: string
+  weight?: string
+  usapa_certified?: boolean
+  origin?: string
+}
+
 export interface Product {
   id: number
   name: string
@@ -51,6 +59,7 @@ export interface Product {
   category?: ProductCategory
   item_type?: 'product' | 'rental' | 'drink_food'
   variants: ProductVariant[]
+  specs?: TechnicalSpecs
 }
 
 export interface PosCheckoutRequest {

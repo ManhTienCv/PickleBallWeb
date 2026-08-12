@@ -21,7 +21,7 @@ export default function OrderSuccess() {
 
       <h1 className="text-3xl font-extrabold text-slate-900">Đặt Hàng Thành Công!</h1>
       <p className="text-slate-600 mt-2 text-sm">
-        Cảm ơn bạn đã tin tưởng dịch vụ của DemoPick. Mã đơn hàng của bạn là{' '}
+        Cảm ơn bạn đã tin tưởng dịch vụ của Pick. Mã đơn hàng của bạn là{' '}
         <span className="font-mono font-bold text-primary">{code}</span>
       </p>
 

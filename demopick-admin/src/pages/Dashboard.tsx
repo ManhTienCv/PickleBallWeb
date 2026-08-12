@@ -25,7 +25,7 @@ export default function Dashboard() {
 
   return (
     <AppLayout
-      title="Tổng Quan Hoạt Động Cụm Sân DemoPick"
+      title="Tổng Quan Hoạt Động Cụm Sân Pick"
       subtitle="Báo cáo tình hình đặt sân, doanh thu & kinh doanh thiết bị Pickleball"
       headerRight={
         <Button onClick={() => setCheckInOpen(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold">

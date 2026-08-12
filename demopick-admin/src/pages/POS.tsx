@@ -342,7 +342,30 @@ export default function POS() {
       }
       setShiftOrdersCount((prev) => prev + 1);
 
-      toast.success(`Thanh toán hóa đơn #${newOrderCode} (${new Intl.NumberFormat("vi-VN").format(finalTotalAmount)}đ) thành công! Đã in bill quầy.`, {
+      // Deduct stock quantity for purchased POS items & sync with Web store
+      const syncedRaw = localStorage.getItem("demopick_synced_products");
+      let currentProductsList = products;
+      if (syncedRaw) {
+        try { currentProductsList = JSON.parse(syncedRaw); } catch {}
+      }
+      const updatedProducts = currentProductsList.map((p) => {
+        const itemInCart = cartItems.find((c) => !c.isCourtFee && (c.productName === p.name || c.variantId === p.id));
+        if (itemInCart) {
+          const currentQty = p.variants?.[0]?.stock_quantity || 15;
+          const newQty = Math.max(0, currentQty - itemInCart.quantity);
+          return {
+            ...p,
+            in_stock: newQty > 0,
+            variants: (p.variants || []).map((v) => ({ ...v, stock_quantity: newQty })),
+          };
+        }
+        return p;
+      });
+      setProductsState(updatedProducts);
+      localStorage.setItem("demopick_synced_products", JSON.stringify(updatedProducts));
+      window.dispatchEvent(new Event("storage"));
+
+      toast.success(`Thanh toán hóa đơn #${newOrderCode} (${new Intl.NumberFormat("vi-VN").format(finalTotalAmount)}đ) thành công! Tồn kho POS & Web đã đồng bộ tự động.`, {
         duration: 5000,
       });
       setCartItems([]);
@@ -368,6 +391,8 @@ export default function POS() {
     });
 
     setProductsState(updated);
+    localStorage.setItem("demopick_synced_products", JSON.stringify(updated));
+    window.dispatchEvent(new Event("storage"));
     const nowTimeStr = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
     toast.success(
       `Lễ tân ${user?.name || "Phạm Văn Đức"} đã nhập thêm +${addNum} "${quickRestockProduct.name}" vào quầy POS lúc ${nowTimeStr}! Nhật ký hệ thống đã được ghi nhận.`,
@@ -526,7 +551,7 @@ export default function POS() {
                       ) : (
                         <div className="w-full h-6 flex items-center justify-center gap-1 text-[9px] font-bold text-slate-400 bg-slate-100 rounded border border-slate-200">
                           <Lock className="h-3 w-3 text-slate-400" />
-                          <span>🔒 Khai báo/Giá: Admin</span>
+                          <span>Khai báo/Giá: Admin</span>
                         </div>
                       )}
                     </div>

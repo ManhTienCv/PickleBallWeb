@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { cartService, CartItem } from '@/services/cart.service'
+import { useCheckoutTimer } from '@/contexts/CheckoutTimerContext'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { ShoppingCart, Trash2, ArrowRight, ArrowLeft, ShoppingBag } from 'lucide-react'
@@ -10,6 +11,17 @@ import { toast } from 'sonner'
 export default function CartPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { startTimer, resetTimer } = useCheckoutTimer()
+
+  useEffect(() => {
+    // Exiting checkout flow to cart resets the 20-minute timer per requirements
+    resetTimer()
+  }, [resetTimer])
+
+  const handleProceedToCheckout = () => {
+    startTimer()
+    navigate('/checkout')
+  }
 
   const { data: cart, isLoading } = useQuery({
     queryKey: ['cart'],
@@ -155,7 +167,7 @@ export default function CartPage() {
 
             <Button
               size="lg"
-              onClick={() => navigate('/checkout')}
+              onClick={handleProceedToCheckout}
               className="w-full gap-2 font-bold mt-4"
             >
               <span>Tiến Hành Đặt Hàng</span>
