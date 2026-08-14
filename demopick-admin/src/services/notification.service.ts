@@ -14,7 +14,7 @@ export const notificationService = {
   sendOrderShippedNotice: (payload: OrderNotificationPayload) => {
     console.log('[Admin Mail Gateway] Order Shipped Notice Sent:', payload)
     toast.success(
-      `🚚 [Đã Gửi Email & Thông Báo Handoff #${payload.orderCode}]: Đơn hàng đã chuyển sang trạng thái ĐÃ GIAO ĐƠN VỊ VẬN CHUYỂN. Đã khóa quyền sửa địa chỉ của người dùng.`,
+      ` [Đã Gửi Email & Thông Báo Handoff #${payload.orderCode}]: Đơn hàng đã chuyển sang trạng thái ĐÃ GIAO ĐƠN VỊ VẬN CHUYỂN. Đã khóa quyền sửa địa chỉ của người dùng.`,
       { duration: 6000 }
     )
   },
