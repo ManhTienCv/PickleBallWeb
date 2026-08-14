@@ -189,15 +189,15 @@ export default function Posts() {
         prev.map((p) =>
           p.id === editingPost.id
             ? {
-                ...p,
-                title: formTitle,
-                slug,
-                category: formCategory,
-                image: formImage,
-                excerpt: formExcerpt,
-                content: formContent,
-                status: formStatus,
-              }
+              ...p,
+              title: formTitle,
+              slug,
+              category: formCategory,
+              image: formImage,
+              excerpt: formExcerpt,
+              content: formContent,
+              status: formStatus,
+            }
             : p
         )
       );
@@ -312,11 +312,10 @@ export default function Posts() {
                   <button
                     key={cat}
                     onClick={() => setSelectedCat(cat)}
-                    className={`px-3 py-1.5 rounded-lg transition-colors ${
-                      selectedCat === cat
-                        ? "bg-white text-emerald-700 shadow-sm font-bold"
-                        : "text-slate-600 hover:text-slate-900"
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg transition-colors ${selectedCat === cat
+                      ? "bg-white text-emerald-700 shadow-sm font-bold"
+                      : "text-slate-600 hover:text-slate-900"
+                      }`}
                   >
                     {cat}
                   </button>
@@ -374,7 +373,7 @@ export default function Posts() {
 
                     {/* Views */}
                     <td className="py-3 px-4 font-mono font-bold text-slate-700">
-                      👁️ {post.views}
+                      {post.views}
                     </td>
 
                     {/* Status */}
@@ -487,7 +486,7 @@ export default function Posts() {
                   className="w-full h-10 px-3 border border-slate-200 rounded-lg text-xs font-semibold bg-white"
                 >
                   <option value="published">✓ Xuất bản ngay</option>
-                  <option value="draft">⏳ Lưu bản nháp</option>
+                  <option value="draft"> Lưu bản nháp</option>
                 </select>
               </div>
             </div>
@@ -575,7 +574,7 @@ export default function Posts() {
 
               <h2 className="text-xl font-bold text-slate-900">{previewPost.title}</h2>
               <div className="text-xs text-slate-500 font-medium">Đăng ngày: {previewPost.date} | Lượt xem: {previewPost.views}</div>
-              
+
               <div className="p-4 bg-emerald-50 border-l-4 border-emerald-600 rounded-r-xl text-xs text-emerald-900 font-medium">
                 {previewPost.excerpt}
               </div>

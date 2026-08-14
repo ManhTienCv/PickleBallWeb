@@ -88,7 +88,7 @@ export default function Login() {
 
             {/* Quick Demo Credentials Buttons */}
             <div className="space-y-2 pt-1 border-t border-slate-800">
-              <p className="text-xs font-semibold text-slate-400">⚡ Chọn nhanh tài khoản kiểm thử phân quyền:</p>
+              <p className="text-xs font-semibold text-slate-400">Chọn nhanh tài khoản kiểm thử phân quyền:</p>
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   type="button"

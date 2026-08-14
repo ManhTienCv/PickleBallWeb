@@ -3,6 +3,9 @@
 .env.*
 !.env.example
 *.env
+*.sql
+*.sqlite
+*.sqlite-journal
 
 # ── Dependencies ──
 node_modules/

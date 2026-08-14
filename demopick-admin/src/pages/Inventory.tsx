@@ -162,23 +162,23 @@ export default function Inventory() {
 
     let matchCat = true;
     if (activeTabCat === "Vợt") {
-      matchCat = p.name.toLowerCase().includes("vợt") || p.category?.name?.includes("Vợt");
+      matchCat = p.name.toLowerCase().includes("vợt") || Boolean(p.category?.name?.includes("Vợt"));
     } else if (activeTabCat === "Bóng") {
-      matchCat = p.name.toLowerCase().includes("bóng") || p.category?.name?.includes("Bóng");
+      matchCat = p.name.toLowerCase().includes("bóng") || Boolean(p.category?.name?.includes("Bóng"));
     } else if (activeTabCat === "Nước & Đồ ăn") {
       matchCat =
         p.item_type === "drink_food" ||
-        p.category?.name?.includes("Nước") ||
+        Boolean(p.category?.name?.includes("Nước")) ||
         p.name.toLowerCase().includes("nước") ||
         p.name.toLowerCase().includes("bánh");
     } else if (activeTabCat === "Cho thuê đồ") {
       matchCat =
         p.item_type === "rental" ||
-        p.category?.name?.includes("Cho thuê") ||
+        Boolean(p.category?.name?.includes("Cho thuê")) ||
         p.name.toLowerCase().includes("thuê");
     } else if (activeTabCat === "Phụ kiện") {
       matchCat =
-        p.category?.name?.includes("Phụ kiện") ||
+        Boolean(p.category?.name?.includes("Phụ kiện")) ||
         (!p.name.toLowerCase().includes("vợt") &&
           !p.name.toLowerCase().includes("bóng") &&
           p.item_type !== "drink_food" &&
@@ -233,6 +233,8 @@ export default function Inventory() {
         return p;
       });
 
+      adminService.adjustStock(existing.id, addedQty, 'in', 'Tự động gộp cộng dồn sản phẩm').catch(() => { });
+
       setProductsList(updatedList);
       localStorage.setItem("demopick_synced_products", JSON.stringify(updatedList));
       window.dispatchEvent(new Event("storage"));
@@ -257,23 +259,70 @@ export default function Inventory() {
       return;
     }
 
-    const createdProduct: Product = {
+    const payload = {
+      name: newProductName,
+      price: Number(newProductPrice),
+      short_description: newProductDescription || `${newProductCategory} - Phục vụ tại quầy POS & Web`,
+      description: newProductDescription || `${newProductCategory} - Phục vụ tại quầy POS & Web`,
+      image_url: newProductImage || "https://images.unsplash.com/photo-1527661591475-527312dd65f5?w=400",
+      sku: newProductSku || "SKU-BEV-NEW",
+      stock_quantity: Number(newProductStock),
+      item_type: isStaffOnly ? "drink_food" : newProductItemType,
+      category: { name: newProductCategory },
+      specs: {
+        material: newProductMaterial,
+        thickness: newProductThickness,
+        weight: newProductWeight,
+        usapa_certified: newProductUsapa,
+        origin: "Chính Hãng 100%",
+      },
+    };
+
+    // Async call API to persist in backend database
+    adminService.createProduct(payload as any).then((createdApiProduct) => {
+      const createdProduct: Product = {
+        ...createdApiProduct,
+        id: createdApiProduct.id || Date.now(),
+        name: newProductName,
+        price: Number(newProductPrice),
+        base_price: Number(newProductPrice),
+        image_url: newProductImage || createdApiProduct.image_url || "https://images.unsplash.com/photo-1527661591475-527312dd65f5?w=400",
+        short_description: newProductDescription || `${newProductCategory} - Phục vụ tại quầy POS & Web`,
+        description: newProductDescription || `${newProductCategory} - Phục vụ tại quầy POS & Web`,
+        in_stock: Number(newProductStock) > 0,
+        item_type: (isStaffOnly ? "drink_food" : newProductItemType) as any,
+        category: { name: newProductCategory },
+        variants: [
+          {
+            id: Date.now() + 1,
+            sku: newProductSku || "SKU-BEV-NEW",
+            color: "Mặc định",
+            weight: "Tiêu chuẩn",
+            option_name: "Quy cách",
+            option_value: "Chai/Lốc",
+            price: Number(newProductPrice),
+            stock_quantity: Number(newProductStock),
+          },
+        ],
+      };
+
+      const updated = [createdProduct, ...displayProducts];
+      setProductsList(updated);
+      localStorage.setItem("demopick_synced_products", JSON.stringify(updated));
+      window.dispatchEvent(new Event("storage"));
+    }).catch(() => { });
+
+    const createdProductFallback: Product = {
       id: Date.now(),
       name: newProductName,
-      slug: newProductName
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/đ/g, "d")
-        .replace(/[^a-z0-9\s-]/g, "")
-        .replace(/\s+/g, "-"),
+      slug: newProductName.toLowerCase().replace(/\s+/g, "-"),
       price: Number(newProductPrice),
       base_price: Number(newProductPrice),
       image_url: newProductImage || "https://images.unsplash.com/photo-1527661591475-527312dd65f5?w=400",
       short_description: newProductDescription || `${newProductCategory} - Phục vụ tại quầy POS & Web`,
       description: newProductDescription || `${newProductCategory} - Phục vụ tại quầy POS & Web`,
       in_stock: Number(newProductStock) > 0,
-      item_type: isStaffOnly ? "drink_food" : newProductItemType,
+      item_type: (isStaffOnly ? "drink_food" : newProductItemType) as any,
       category: { name: newProductCategory },
       variants: [
         {
@@ -287,16 +336,9 @@ export default function Inventory() {
           stock_quantity: Number(newProductStock),
         },
       ],
-      specs: {
-        material: newProductMaterial,
-        thickness: newProductThickness,
-        weight: newProductWeight,
-        usapa_certified: newProductUsapa,
-        origin: "Chính Hãng 100%",
-      },
     };
 
-    const updated = [createdProduct, ...displayProducts];
+    const updated = [createdProductFallback, ...displayProducts];
     setProductsList(updated);
     localStorage.setItem("demopick_synced_products", JSON.stringify(updated));
     window.dispatchEvent(new Event("storage"));
@@ -487,11 +529,10 @@ export default function Inventory() {
                   <button
                     key={cat}
                     onClick={() => setActiveTabCat(cat)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
-                      activeTabCat === cat
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${activeTabCat === cat
                         ? "bg-slate-900 text-white shadow-sm"
                         : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                    }`}
+                      }`}
                   >
                     {cat}
                   </button>
@@ -510,6 +551,8 @@ export default function Inventory() {
                       product.item_type === "drink_food" ||
                       product.category?.name?.includes("Nước") ||
                       product.category?.name?.includes("Đồ ăn");
+
+                    const canRestock = !isStaffOnly || isAllowStaffRestock;
 
                     return (
                       <Card key={product.id} className="p-3.5 bg-white border-slate-200 hover:border-emerald-500 shadow-sm transition-all space-y-3 flex flex-col justify-between">
@@ -536,7 +579,7 @@ export default function Inventory() {
                             </strong>
                           </div>
 
-                          {isAllowStaffRestock ? (
+                          {canRestock ? (
                             <Button
                               size="sm"
                               variant="outline"
@@ -545,14 +588,14 @@ export default function Inventory() {
                                 setRestockActionType("in");
                                 setRestockOpen(true);
                               }}
-                              className="h-7 px-2 font-bold text-[11px] border-amber-300 text-amber-800 bg-amber-50 hover:bg-amber-100 gap-1"
+                              className="h-7 px-2 font-bold text-[11px] border-emerald-300 text-emerald-800 bg-emerald-50 hover:bg-emerald-100 gap-1"
                             >
-                              <PlusCircle className="h-3 w-3 text-amber-600" />
-                              <span>Nhập Quầy Nước/Bóng</span>
+                              <PlusCircle className="h-3 w-3 text-emerald-600" />
+                              <span>{isStaffOnly ? "Nhập Quầy Nước/Bóng" : "+ Nhập Kho"}</span>
                             </Button>
                           ) : (
-                            <Badge variant="outline" className="text-[10px] text-red-600 border-red-200 bg-red-50">
-                              🔒 Khai báo / Giá: Admin
+                            <Badge variant="outline" className="text-[10px] text-amber-700 border-amber-200 bg-amber-50">
+                              Khai báo / Giá: Admin
                             </Badge>
                           )}
                         </div>
@@ -681,11 +724,11 @@ export default function Inventory() {
                         onChange={(e) => setNewProductCategory(e.target.value)}
                         className="w-full h-10 px-3 border rounded-xl font-medium bg-white text-xs border-slate-300 focus:ring-2 focus:ring-emerald-500"
                       >
-                        <option value="Vợt">🏓 Vợt Pickleball</option>
-                        <option value="Bóng">🟡 Bóng Pickleball</option>
-                        <option value="Phụ kiện">🎒 Phụ kiện & Túi đựng</option>
-                        <option value="Nước & Đồ ăn">🥤 Nước & Đồ ăn</option>
-                        <option value="Cho thuê đồ">⏱️ Cho thuê đồ</option>
+                        <option value="Vợt">Vợt Pickleball</option>
+                        <option value="Bóng">Bóng Pickleball</option>
+                        <option value="Phụ kiện">Phụ kiện & Túi đựng</option>
+                        <option value="Nước & Đồ ăn">Nước & Đồ ăn</option>
+                        <option value="Cho thuê đồ">⏱Cho thuê đồ</option>
                       </select>
                     )}
                   </div>
@@ -793,7 +836,7 @@ export default function Inventory() {
               <DialogFooter className="pt-3 border-t border-slate-100">
                 <Button type="submit" className="w-full font-bold bg-emerald-600 hover:bg-emerald-500 h-11 text-xs rounded-xl shadow-md gap-2">
                   <PackagePlus className="w-4 h-4" />
-                  <span>Lưu Khai Báo & Cho Bán POS/Web Ngay 🚀</span>
+                  <span>Lưu Khai Báo & Cho Bán POS/Web Ngay </span>
                 </Button>
               </DialogFooter>
             </form>
@@ -839,7 +882,7 @@ export default function Inventory() {
 
                 <DialogFooter className="pt-2">
                   <Button type="submit" className="w-full font-bold bg-emerald-600 hover:bg-emerald-500">
-                    Xác Nhận & Ghi Nhật Ký Nhập Quầy 🚀
+                    Xác Nhận & Ghi Nhật Ký Nhập Quầy
                   </Button>
                 </DialogFooter>
               </form>

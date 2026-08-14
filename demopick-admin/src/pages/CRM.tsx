@@ -164,11 +164,10 @@ export default function CRM() {
         <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
           <button
             onClick={() => setActiveMainTab("customers")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-              activeMainTab === "customers"
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${activeMainTab === "customers"
                 ? "bg-slate-900 text-white shadow-sm"
                 : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100"
-            }`}
+              }`}
           >
             <UserCheck className="h-4 w-4" />
             <span>Danh Sách Hội Viên Pickleball ({initialCustomers.length})</span>
@@ -176,11 +175,10 @@ export default function CRM() {
 
           <button
             onClick={() => setActiveMainTab("staff")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-              activeMainTab === "staff"
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${activeMainTab === "staff"
                 ? "bg-slate-900 text-white shadow-sm"
                 : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100"
-            }`}
+              }`}
           >
             <UserPlus className="h-4 w-4" />
             <span>Quản Lý Tài Khoản Lễ Tân Quầy ({staffList.length})</span>
@@ -204,7 +202,7 @@ export default function CRM() {
                     </div>
                     <p className="text-xs font-semibold text-emerald-600">Mức chi tối thiểu: {tier.minSpent}</p>
                     <p className="text-xs text-slate-500 line-clamp-1">{tier.desc}</p>
-                    <p className="text-xs font-bold text-slate-900 mt-2">👥 {tier.members} Hội viên đang sở hữu</p>
+                    <p className="text-xs font-bold text-slate-900 mt-2"> {tier.members} Hội viên đang sở hữu</p>
                   </div>
                 </Card>
               ))}
@@ -221,11 +219,10 @@ export default function CRM() {
                   <button
                     key={t.id}
                     onClick={() => setTab(t.id)}
-                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      tab === t.id
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === t.id
                         ? "bg-slate-900 text-white shadow-sm"
                         : "text-slate-600 hover:bg-slate-100"
-                    }`}
+                      }`}
                   >
                     {t.label}
                   </button>
@@ -259,7 +256,6 @@ export default function CRM() {
                     <tr className="border-b border-slate-200 text-xs font-bold text-slate-500 uppercase bg-slate-50">
                       <th className="py-3 px-3">Khách Hàng</th>
                       <th className="py-3 px-3">Số Điện Thoại / Email</th>
-                      <th className="py-3 px-3">Trình Độ Chơi</th>
                       <th className="py-3 px-3">Cấp Hạng Hiện Tại</th>
                       <th className="py-3 px-3">Lượt Đặt Sân</th>
                       <th className="py-3 px-3">Tổng Chi Tích Lũy</th>
@@ -286,15 +282,8 @@ export default function CRM() {
                         </td>
 
                         <td className="py-3 px-3">
-                          <Badge variant="outline" className="font-semibold text-xs">
-                            {c.level}
-                          </Badge>
-                        </td>
-
-                        <td className="py-3 px-3">
-                          <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full ${
-                            c.rank === "VIP" ? "bg-amber-100 text-amber-800" : c.rank === "Gold" ? "bg-yellow-100 text-yellow-800" : "bg-slate-100 text-slate-700"
-                          }`}>
+                          <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full ${c.rank === "VIP" ? "bg-amber-100 text-amber-800" : c.rank === "Gold" ? "bg-yellow-100 text-yellow-800" : "bg-slate-100 text-slate-700"
+                            }`}>
                             🏅 {c.rank === "VIP" ? "Kim Cương" : c.rank === "Gold" ? "Hạng Vàng" : "Hạng Bạc"}
                           </span>
                         </td>

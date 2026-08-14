@@ -74,9 +74,8 @@ export default function Reports() {
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id)}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                activeTab === t.id ? "bg-primary text-white shadow-sm" : "text-slate-600 hover:bg-slate-100"
-              }`}
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === t.id ? "bg-primary text-white shadow-sm" : "text-slate-600 hover:bg-slate-100"
+                }`}
             >
               {t.label}
             </button>

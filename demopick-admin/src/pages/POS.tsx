@@ -39,6 +39,7 @@ interface CourtStatusItem {
 
 export default function POS() {
   const { user } = useAuth();
+  const isStaffOnly = user?.roles?.includes("staff") && !user?.roles?.includes("admin") && !user?.roles?.includes("super_admin");
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("Tất cả");
@@ -187,12 +188,12 @@ export default function POS() {
     }
   }, [searchParams]);
 
-  // Category filter tabs (Matching Ảnh 2)
+  // Category filter tabs (Clean labels matching Ảnh 2)
   const categoriesList = [
-    { id: "Tất cả", label: "🌟 Tất cả" },
-    { id: "Nước uống", label: "🥤 Đồ uống & Đồ ăn" },
-    { id: "Thuê vợt", label: "⏱️ Thuê vợt & máy" },
-    { id: "Phụ kiện", label: "🎒 Phụ kiện & Vợt bán" },
+    { id: "Tất cả", label: "Tất cả" },
+    { id: "Nước uống", label: "Đồ uống & Đồ ăn" },
+    { id: "Thuê vợt", label: "Thuê vợt & máy" },
+    { id: "Phụ kiện", label: "Phụ kiện & Vợt bán" },
   ];
 
   const filteredProducts = products.filter((p) => {
@@ -317,7 +318,7 @@ export default function POS() {
 
   // Calculations
   const subtotalAmount = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  
+
   // Calculate discount on court fee if customer has membership rank
   const courtFeeItem = cartItems.find((i) => i.isCourtFee);
   const courtFeeAmount = courtFeeItem ? courtFeeItem.price * courtFeeItem.quantity : 0;
@@ -346,7 +347,7 @@ export default function POS() {
       const syncedRaw = localStorage.getItem("demopick_synced_products");
       let currentProductsList = products;
       if (syncedRaw) {
-        try { currentProductsList = JSON.parse(syncedRaw); } catch {}
+        try { currentProductsList = JSON.parse(syncedRaw); } catch { }
       }
       const updatedProducts = currentProductsList.map((p) => {
         const itemInCart = cartItems.find((c) => !c.isCourtFee && (c.productName === p.name || c.variantId === p.id));
@@ -452,7 +453,7 @@ export default function POS() {
                     <span className="text-emerald-700">{new Intl.NumberFormat("vi-VN").format(court.rate)}đ/h</span>
                     {court.customerName && (
                       <span className="text-[10px] text-slate-500 font-normal truncate max-w-[110px]">
-                        👤 {court.customerName}
+                        {court.customerName}
                       </span>
                     )}
                   </div>
@@ -471,11 +472,10 @@ export default function POS() {
                 <button
                   key={cat.id}
                   onClick={() => setActiveCategory(cat.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                    activeCategory === cat.id
-                      ? "bg-emerald-600 text-white shadow-sm"
-                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                  }`}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${activeCategory === cat.id
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    }`}
                 >
                   {cat.label}
                 </button>
@@ -538,19 +538,17 @@ export default function POS() {
                         </Button>
                       </div>
 
-                      {isAllowStaffRestock ? (
+                      {(!isStaffOnly || isAllowStaffRestock) ? (
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => setQuickRestockProduct(p)}
-                          className="w-full h-6 px-1.5 font-bold text-[9px] border-amber-300 text-amber-800 bg-amber-50 hover:bg-amber-100 gap-1"
+                          className="w-full h-6 px-1.5 font-bold text-[9px] border-amber-300 text-amber-800 bg-amber-50 hover:bg-amber-100"
                         >
-                          <PlusCircle className="h-3 w-3 text-amber-600" />
                           <span>+ Nhập Quầy</span>
                         </Button>
                       ) : (
-                        <div className="w-full h-6 flex items-center justify-center gap-1 text-[9px] font-bold text-slate-400 bg-slate-100 rounded border border-slate-200">
-                          <Lock className="h-3 w-3 text-slate-400" />
+                        <div className="w-full h-6 flex items-center justify-center text-[9px] font-bold text-slate-400 bg-slate-100 rounded border border-slate-200">
                           <span>Khai báo/Giá: Admin</span>
                         </div>
                       )}
@@ -742,7 +740,7 @@ export default function POS() {
               </DialogHeader>
 
               <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 space-y-1">
-                <p className="font-bold">⚡ Ghi nhật ký tự động (Audit Trail):</p>
+                <p className="font-bold"> Ghi nhật ký tự động (Audit Trail):</p>
                 <p className="text-[11px]">
                   Hệ thống ghi nhận: Lễ tân <strong>{user?.name || "Phạm Văn Đức"}</strong> nhập thêm +{quickRestockQty} lốc nước vào lúc {new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}.
                 </p>
@@ -762,7 +760,7 @@ export default function POS() {
 
               <DialogFooter className="pt-2">
                 <Button type="submit" className="w-full font-bold bg-emerald-600 hover:bg-emerald-500">
-                  Cộng Vào Quầy POS Ngay 🚀
+                  Cộng Vào Quầy POS Ngay
                 </Button>
               </DialogFooter>
             </form>
@@ -801,14 +799,14 @@ export default function POS() {
 
             <div className="space-y-2 border-t pt-2">
               <div className="flex justify-between items-center p-2.5 bg-emerald-50 rounded-lg border border-emerald-200">
-                <span className="font-bold text-emerald-900">💵 Tiền mặt thu tại quầy:</span>
+                <span className="font-bold text-emerald-900">Tiền mặt thu tại quầy:</span>
                 <strong className="text-emerald-700 text-sm">
                   {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(shiftCashTotal)}
                 </strong>
               </div>
 
               <div className="flex justify-between items-center p-2.5 bg-blue-50 rounded-lg border border-blue-200">
-                <span className="font-bold text-blue-900">💳 Chuyển khoản VietQR/MoMo:</span>
+                <span className="font-bold text-blue-900">Chuyển khoản VietQR/MoMo:</span>
                 <strong className="text-blue-700 text-sm">
                   {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(shiftTransferTotal)}
                 </strong>
@@ -831,7 +829,7 @@ export default function POS() {
               }}
               className="w-full font-bold bg-emerald-600 hover:bg-emerald-500"
             >
-              In Báo Cáo Bàn Giao Ca Trực 🖨️
+              In Báo Cáo Bàn Giao Ca Trực
             </Button>
           </DialogFooter>
         </DialogContent>

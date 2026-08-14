@@ -317,9 +317,8 @@ export default function Orders() {
                     setDatePeriod(p.id);
                     setCurrentPage(1);
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    datePeriod === p.id ? "bg-[#27c372] text-white shadow-sm" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${datePeriod === p.id ? "bg-[#27c372] text-white shadow-sm" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
                 >
                   {p.label}
                 </button>
@@ -368,9 +367,8 @@ export default function Orders() {
                     setStatusFilter(st.id);
                     setCurrentPage(1);
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    statusFilter === st.id ? "bg-[#27c372] text-white shadow-sm" : "bg-slate-50 text-slate-600 hover:bg-slate-100 font-medium"
-                  }`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${statusFilter === st.id ? "bg-[#27c372] text-white shadow-sm" : "bg-slate-50 text-slate-600 hover:bg-slate-100 font-medium"
+                    }`}
                 >
                   {st.label}
                 </button>
@@ -387,9 +385,8 @@ export default function Orders() {
                     setStatusFilter(st.id);
                     setCurrentPage(1);
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    statusFilter === st.id ? "bg-[#27c372] text-white shadow-sm" : "bg-slate-50 text-slate-600 hover:bg-slate-100 font-medium"
-                  }`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${statusFilter === st.id ? "bg-[#27c372] text-white shadow-sm" : "bg-slate-50 text-slate-600 hover:bg-slate-100 font-medium"
+                    }`}
                 >
                   {st.label}
                 </button>
@@ -865,7 +862,7 @@ export default function Orders() {
                     }}
                     className="w-full font-black bg-slate-900 text-white rounded-xl"
                   >
-                    In Phiếu Bán Hàng 🖨️
+                    In Phiếu Bán Hàng
                   </Button>
                 </DialogFooter>
               </div>
@@ -885,7 +882,7 @@ export default function Orders() {
                 Thực hiện điều này... Bạn có chắc chắn muốn chuyển đơn hàng Online <strong>#{shippingConfirmOrder?.code}</strong> sang trạng thái <strong>ĐÃ GIAO ĐƠN VỊ VẬN CHUYỂN</strong> chứ?
                 <br />
                 <span className="text-blue-700 font-extrabold block mt-2 p-2.5 bg-blue-50 border border-blue-200 rounded-xl">
-                  👉 Tự động gửi email/thông báo hành trình và khóa quyền sửa địa chỉ của người mua trên web.
+                  Tự động gửi email/thông báo hành trình và khóa quyền sửa địa chỉ của người mua trên web.
                 </span>
               </DialogDescription>
             </DialogHeader>

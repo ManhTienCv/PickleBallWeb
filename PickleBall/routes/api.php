@@ -68,6 +68,25 @@ Route::prefix('v1')->group(function () {
         // Check-in QR Scan
         Route::post('/checkin/scan', [\App\Modules\Booking\Http\Controllers\Admin\CheckInAdminController::class, 'scan']);
 
+        // Admin Products & Stock Inventory Management
+        Route::get('/products', [\App\Modules\Shop\Http\Controllers\Admin\AdminProductController::class, 'index']);
+        Route::post('/products', [\App\Modules\Shop\Http\Controllers\Admin\AdminProductController::class, 'store']);
+        Route::put('/products/{id}', [\App\Modules\Shop\Http\Controllers\Admin\AdminProductController::class, 'update']);
+        Route::delete('/products/{id}', [\App\Modules\Shop\Http\Controllers\Admin\AdminProductController::class, 'destroy']);
+        Route::post('/products/{id}/stock', [\App\Modules\Shop\Http\Controllers\Admin\AdminProductController::class, 'adjustStock']);
+
+        // Admin Court & Emergency Maintenance Lock
+        Route::get('/courts', [\App\Modules\Booking\Http\Controllers\Admin\AdminCourtController::class, 'index']);
+        Route::post('/courts/{id}/lock', [\App\Modules\Booking\Http\Controllers\Admin\AdminCourtController::class, 'toggleStatus']);
+
+        // Admin Orders Management
+        Route::get('/orders', [\App\Modules\Order\Http\Controllers\Admin\AdminOrderController::class, 'index']);
+        Route::put('/orders/{id}/status', [\App\Modules\Order\Http\Controllers\Admin\AdminOrderController::class, 'updateStatus']);
+
+        // Admin Reporting & Analytics
+        Route::get('/reports/revenue', [\App\Modules\Report\Http\Controllers\ReportController::class, 'revenue']);
+        Route::get('/reports/utilization-rate', [\App\Modules\Report\Http\Controllers\ReportController::class, 'utilization']);
+
         // Blog Posts Management
         Route::get('/posts', [\App\Http\Controllers\PostController::class, 'adminIndex']);
         Route::post('/posts', [\App\Http\Controllers\PostController::class, 'store']);
