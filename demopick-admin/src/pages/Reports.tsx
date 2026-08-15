@@ -55,7 +55,7 @@ export default function Reports() {
   return (
     <AppLayout
       title="Báo Cáo Phân Tích & Nhật Ký Hệ Thống (Audit Logs)"
-      subtitle="Theo dõi biến động doanh thu, lịch sử đặt sân & nhật ký thao tác người dùng"
+
       headerRight={
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="gap-2 bg-white border-slate-300 font-semibold">

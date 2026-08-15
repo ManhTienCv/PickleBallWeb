@@ -25,11 +25,12 @@ import { toast } from "sonner";
 const menuItems = [
   { icon: LayoutDashboard, label: "Tổng quan", path: "/", roles: ["admin", "super_admin"] },
   { icon: MapPin, label: "Sơ đồ & Đặt lịch", path: "/court-map", roles: ["admin", "super_admin", "staff"] },
-  { icon: ShoppingCart, label: "Bán hàng POS", path: "/pos", roles: ["admin", "super_admin", "staff"] },
-  { icon: Globe, label: "Đơn Online & Vận Chuyển", path: "/orders?tab=online", roles: ["admin", "super_admin", "staff"] },
-  { icon: Receipt, label: "Hóa Đơn POS Quầy", path: "/orders?tab=pos", roles: ["admin", "super_admin", "staff"] },
+  { icon: ShoppingCart, label: "Bán hàng Quầy", path: "/pos", roles: ["admin", "super_admin", "staff"] },
+  { icon: Globe, label: "Hóa Đơn Online", path: "/orders?tab=online", roles: ["admin", "super_admin", "staff"] },
+  { icon: Receipt, label: "Hóa Đơn Quầy", path: "/orders?tab=pos", roles: ["admin", "super_admin", "staff"] },
   { icon: CreditCard, label: "Quản lý Thanh toán", path: "/payments", roles: ["admin", "super_admin"] },
-  { icon: Users, label: "Khách hàng CRM", path: "/crm", roles: ["admin", "super_admin"] },
+  { icon: Users, label: "Hội Viên & Khách Hàng", path: "/crm?tab=customers", roles: ["admin", "super_admin"] },
+  { icon: UserCheck, label: "Quản Lý Nhân Viên", path: "/crm?tab=staff", roles: ["admin", "super_admin"] },
   { icon: Package, label: "Kho sản phẩm", path: "/inventory", roles: ["admin", "super_admin", "staff"] },
   { icon: BookOpen, label: "Quản lý Bài viết", path: "/posts", roles: ["admin", "super_admin"] },
   { icon: BarChart3, label: "Báo cáo & Nhật ký", path: "/reports", roles: ["admin", "super_admin"] },
@@ -79,9 +80,6 @@ const AppLayout = ({ children, title, subtitle, headerRight }: AppLayoutProps) =
             </div>
             <div>
               <h1 className="font-bold text-slate-900 text-lg tracking-tight">Pick</h1>
-              <p className="text-[11px] text-[#16a34a] font-bold uppercase tracking-wider">
-                {isStaffOnly ? "Lễ Tân POS Quầy" : "Admin Portal"}
-              </p>
             </div>
           </div>
         </div>
@@ -94,11 +92,10 @@ const AppLayout = ({ children, title, subtitle, headerRight }: AppLayoutProps) =
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${
-                  isActive
-                    ? "bg-[#27c372] text-white font-semibold shadow-sm shadow-[#27c372]/20"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 font-medium"
-                }`}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${isActive
+                  ? "bg-[#27c372] text-white font-semibold shadow-sm shadow-[#27c372]/20"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 font-medium"
+                  }`}
               >
                 <item.icon className={`w-4 h-4 ${isActive ? "text-white" : "text-[#27c372]"}`} />
                 <span>{item.label}</span>
@@ -121,10 +118,12 @@ const AppLayout = ({ children, title, subtitle, headerRight }: AppLayoutProps) =
           <div className="flex items-center justify-between pt-2 border-t border-slate-200/60">
             <div className="flex items-center gap-2.5 overflow-hidden">
               <div className="w-8 h-8 bg-[#27c372]/15 text-[#16a34a] border border-[#27c372]/30 rounded-full flex items-center justify-center font-extrabold text-xs shrink-0">
-                {user?.name?.charAt(0).toUpperCase() || "A"}
+                {user?.name?.charAt(0).toUpperCase() || "P"}
               </div>
               <div className="truncate">
-                <p className="text-xs font-extrabold text-slate-900 truncate">{user?.name || "Quản trị viên"}</p>
+                <p className="text-xs font-extrabold text-slate-900 truncate">
+                  {(user?.name || "Quản Trị Viên PickleBall").replace("DemoPick", "PickleBall")}
+                </p>
                 <p className="text-[10px] text-slate-500 font-semibold truncate">{user?.email}</p>
               </div>
             </div>
@@ -163,15 +162,6 @@ const AppLayout = ({ children, title, subtitle, headerRight }: AppLayoutProps) =
               <RefreshCw className="w-3.5 h-3.5 text-amber-600" />
               <span>Chuyển sang {isStaffOnly ? "Admin Chủ Sân" : "Lễ Tân POS"}</span>
             </Button>
-
-            <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
-              <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="font-semibold text-slate-800">
-                  {user?.roles?.[0] ? user.roles[0].toUpperCase() : "ADMIN"}
-                </span>
-              </div>
-            </div>
           </div>
         </header>
 

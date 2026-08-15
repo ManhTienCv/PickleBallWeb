@@ -9,10 +9,26 @@ interface BookingGridProps {
   slots: TimeSlot[]
   selectedSlotIds: number[]
   onToggleSlot: (slotId: number) => void
+  selectedDate?: Date
 }
 
-export default function BookingGrid({ courts: apiCourts, slots, selectedSlotIds, onToggleSlot }: BookingGridProps) {
+export default function BookingGrid({ courts: apiCourts, slots, selectedSlotIds, onToggleSlot, selectedDate }: BookingGridProps) {
   const [zoomLevel, setZoomLevel] = useState<number>(100) // 60% - 160%
+
+  // Real-time calculation helper to check if a slot is past relative to actual local time
+  const isSlotExpired = (timeStr: string, date?: Date) => {
+    if (!date) return false
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+
+    if (targetDate < today) return true
+    if (targetDate > today) return false
+
+    const slotHour = parseInt(timeStr.split(':')[0], 10)
+    const currentHour = now.getHours()
+    return slotHour <= currentHour
+  }
 
   // Fallback to exclusive Pickleball courts if api is returning mock or empty
   const pickleballCourts: Court[] = apiCourts.length > 0 ? apiCourts : [
@@ -122,14 +138,10 @@ export default function BookingGrid({ courts: apiCourts, slots, selectedSlotIds,
                   const slot = getSlot(court.id, time)
                   const slotId = slot ? slot.id : (court.id * 100 + parseInt(time.split(":")[0]))
                   const isSelected = selectedSlotIds.includes(slotId)
-                  const isAvailable = !slot || slot.status === 'available'
+                  const isExpired = isSlotExpired(time, selectedDate)
+                  const isAvailable = (!slot || slot.status === 'available') && !isExpired
                   const isPeak = parseInt(time.split(":")[0]) >= 17
                   const price = slot ? slot.price : (isPeak ? court.peak_hourly_rate : court.hourly_rate)
-
-                  const formattedPrice = new Intl.NumberFormat('vi-VN', {
-                    notation: 'compact',
-                    compactDisplay: 'short',
-                  }).format(price)
 
                   return (
                     <td
@@ -139,7 +151,7 @@ export default function BookingGrid({ courts: apiCourts, slots, selectedSlotIds,
                     >
                       <button
                         disabled={!isAvailable}
-                        onClick={() => onToggleSlot(slotId)}
+                        onClick={() => isAvailable && onToggleSlot(slotId)}
                         style={{
                           paddingTop: `${slotPaddingPx}px`,
                           paddingBottom: `${slotPaddingPx}px`,
@@ -147,7 +159,9 @@ export default function BookingGrid({ courts: apiCourts, slots, selectedSlotIds,
                           transition: "all 0.2s ease-out",
                         }}
                         className={`w-full px-1 rounded-lg font-bold flex flex-col items-center justify-center ${
-                          isSelected
+                          isExpired
+                            ? 'bg-slate-100/90 text-slate-400 border border-slate-200/90 opacity-65 cursor-not-allowed line-through'
+                            : isSelected
                             ? 'bg-primary text-white ring-2 ring-primary ring-offset-1 shadow-md scale-105'
                             : isAvailable
                             ? isPeak
@@ -156,7 +170,12 @@ export default function BookingGrid({ courts: apiCourts, slots, selectedSlotIds,
                             : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
                         }`}
                       >
-                        {isSelected ? (
+                        {isExpired ? (
+                          <div className="flex items-center gap-1 opacity-80">
+                            <Clock className="h-3 w-3 text-slate-400 shrink-0" />
+                            <span className="no-underline text-[10px]">Quá giờ</span>
+                          </div>
+                        ) : isSelected ? (
                           <div className="flex items-center gap-1">
                             <Check className="h-3.5 w-3.5" />
                             <span>Đã chọn</span>

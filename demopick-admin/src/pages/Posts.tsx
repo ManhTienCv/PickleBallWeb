@@ -246,7 +246,7 @@ export default function Posts() {
   return (
     <AppLayout
       title="Quản Lý Bài Viết & Blog CMS"
-      subtitle="Đăng bài viết mới, chỉnh sửa nội dung và quản lý bài xuất bản hiển thị phía khách hàng"
+
       headerRight={
         <Button onClick={handleOpenAdd} className="gap-2 bg-emerald-600 hover:bg-emerald-500 font-bold">
           <Plus className="h-4 w-4" />

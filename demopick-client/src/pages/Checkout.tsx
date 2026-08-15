@@ -242,25 +242,8 @@ export default function CheckoutPage() {
                   <Label htmlFor="bank" className="flex items-center gap-3 cursor-pointer flex-1">
                     <QrCode className="h-6 w-6 text-[#27c372]" />
                     <div>
-                      <div className="font-extrabold text-slate-900">Chuyển khoản Ngân hàng qua Mã VietQR (Khuyên dùng)</div>
-                      <div className="text-xs text-slate-500 font-medium">Mở App ngân hàng quét mã QR tự động điền số tiền & nội dung</div>
-                    </div>
-                  </Label>
-                </div>
-
-                <div className={`flex items-center space-x-3 rounded-2xl border p-4 transition-all cursor-pointer ${
-                  paymentMethod === 'momo'
-                    ? 'border-[#27c372] bg-[#27c372]/5 shadow-sm'
-                    : 'border-slate-200 hover:border-slate-300'
-                }`}>
-                  <RadioGroupItem value="momo" id="momo" />
-                  <Label htmlFor="momo" className="flex items-center gap-3 cursor-pointer flex-1">
-                    <div className="h-6 w-6 rounded bg-pink-600 text-white flex items-center justify-center font-black text-xs">
-                      M
-                    </div>
-                    <div>
-                      <div className="font-extrabold text-slate-900">Ví Điện Tử MoMo Sandbox</div>
-                      <div className="text-xs text-slate-500 font-medium">Thanh toán tức thì qua ví điện tử MoMo</div>
+                      <div className="font-extrabold text-slate-900">Chuyển khoản Ngân hàng qua Mã VietQR (VietinBank)</div>
+                      <div className="text-xs text-slate-500 font-medium">Mở App ngân hàng quét mã QR tự động điền chính xác số tiền & nội dung</div>
                     </div>
                   </Label>
                 </div>
@@ -347,16 +330,16 @@ export default function CheckoutPage() {
               {/* VietQR Code Image Box */}
               <div className="relative inline-block bg-slate-50 p-6 rounded-3xl border-2 border-slate-200/90 shadow-inner group">
                 <img
-                  src={`https://api.vietqr.io/image/970422-99998888PICK-compact2.png?amount=${cartTotal}&addInfo=HD${Math.floor(10000 + Math.random() * 90000)}&accountName=PICKLEBALL%20ONE%20VIETNAM`}
+                  src={`https://img.vietqr.io/image/ICB-102888888888-compact2.png?amount=${cartTotal}&addInfo=HD${Math.floor(10000 + Math.random() * 90000)}&accountName=NGUYEN%20MANH%20TIEN`}
                   alt="Mã QR Thanh Toán VietQR"
                   className="w-56 h-56 sm:w-64 sm:h-64 object-contain mx-auto rounded-xl"
                   onError={(e: any) => {
                     // Fallback to stylized SVG QR mockup if network blocked
-                    e.target.src = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=PICKLEBALL_ONE_VIETNAM'
+                    e.target.src = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=NGUYEN_MANH_TIEN_VIETINBANK'
                   }}
                 />
                 <div className="mt-3 text-[11px] font-extrabold text-emerald-700 bg-emerald-50 py-1 px-3 rounded-full inline-flex items-center gap-1.5 border border-emerald-200">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#27c372]" /> Tự động xác thực giao dịch
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#27c372]" /> Tự động xác thực giao dịch VietinBank
                 </div>
               </div>
 
@@ -364,14 +347,14 @@ export default function CheckoutPage() {
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-left space-y-3 text-xs sm:text-sm font-semibold">
                 <div className="flex justify-between items-center pb-2 border-b border-slate-200">
                   <span className="text-slate-500">Ngân hàng thụ hưởng:</span>
-                  <span className="font-extrabold text-slate-900">MBBank (Ngân hàng Quân Đội)</span>
+                  <span className="font-extrabold text-slate-900">VietinBank (Ngân hàng TMCP Công Thương Việt Nam)</span>
                 </div>
                 <div className="flex justify-between items-center pb-2 border-b border-slate-200">
                   <span className="text-slate-500">Số tài khoản:</span>
                   <div className="flex items-center gap-1.5">
-                    <span className="font-extrabold text-[#27c372]">99998888PICK</span>
+                    <span className="font-extrabold text-[#27c372] font-mono">102888888888</span>
                     <button
-                      onClick={() => copyToClipboard('99998888PICK', 'Số tài khoản')}
+                      onClick={() => copyToClipboard('102888888888', 'Số tài khoản')}
                       className="p-1 text-slate-400 hover:text-slate-700 rounded"
                     >
                       <Copy className="w-3.5 h-3.5" />
@@ -380,7 +363,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between items-center pb-2 border-b border-slate-200">
                   <span className="text-slate-500">Chủ tài khoản:</span>
-                  <span className="font-extrabold text-slate-900">CÔNG TY PICKLEBALL ONE VIỆT NAM</span>
+                  <span className="font-extrabold text-slate-900">NGUYEN MANH TIEN</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500">Số tiền thanh toán:</span>

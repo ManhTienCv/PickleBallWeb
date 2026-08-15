@@ -289,11 +289,6 @@ export default function Orders() {
   return (
     <AppLayout
       title={viewMode === "online" ? "Quản Lý Đơn Hàng Online & Vận Chuyển" : "Quản Lý Hóa Đơn Bán Hàng POS Quầy"}
-      subtitle={
-        viewMode === "online"
-          ? "Duyệt đơn web/app, bàn giao đơn vị vận chuyển & khóa quyền sửa địa chỉ của người mua"
-          : "Tra cứu hóa đơn ca trực lễ tân, hỗ trợ chỉnh sửa chi tiết sản phẩm & in lại Bill nhiệt"
-      }
     >
       <div className="space-y-6 font-sans">
         {/* Date Filter & Search Filter Bar */}
@@ -406,9 +401,7 @@ export default function Orders() {
                   <Globe className="h-5 w-5 text-[#27c372]" />
                   Danh Sách Đơn Hàng Online & Trạng Thái Vận Chuyển
                 </h3>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">
-                  Đơn trạng thái "Chờ duyệt" cho phép người mua sửa địa chỉ. Khi bấm "Giao DVVC", hệ thống tự động gửi thông báo và khóa quyền sửa.
-                </p>
+
               </div>
               <Badge className="bg-[#27c372]/15 text-[#16a34a] border border-[#27c372]/30 px-3 py-1 font-bold text-xs">
                 {filteredOrders.length} Đơn Đặt Online
@@ -467,15 +460,15 @@ export default function Orders() {
                           {order.status === "PENDING" && (
                             <div className="space-y-1">
                               <Badge variant="outline" className="text-amber-700 bg-amber-50 border-amber-300 font-extrabold gap-1">
-                                <Clock className="w-3 h-3" /> Chờ duyệt (Cho phép sửa)
+                                <Clock className="w-3 h-3" /> Chờ duyệt
                               </Badge>
-                              <div className="text-[10px] text-amber-700 font-medium">Khách đang kiểm tra thông tin</div>
+
                             </div>
                           )}
                           {order.status === "SHIPPED" && (
                             <div className="space-y-1">
                               <Badge className="bg-blue-600 font-extrabold gap-1">
-                                <Truck className="w-3 h-3" /> Đã Giao DVVC (Khóa)
+                                <Truck className="w-3 h-3" /> Đã Giao DVVC
                               </Badge>
                               <div className="text-[10px] text-slate-400 font-mono">{order.trackingNumber || "SPX-VN-9821093"}</div>
                             </div>
@@ -490,24 +483,26 @@ export default function Orders() {
                           )}
                         </td>
 
-                        <td className="py-4 px-4 text-right space-x-1.5">
-                          {order.status !== "SHIPPED" && order.status !== "REFUNDED" && (
+                        <td className="py-4 px-4 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-2.5">
+                            {order.status !== "SHIPPED" && order.status !== "REFUNDED" && (
+                              <Button
+                                size="sm"
+                                onClick={() => setShippingConfirmOrder(order)}
+                                className="h-8 px-3 text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium gap-1.5 rounded-xl shadow-sm"
+                              >
+                                <Truck className="h-3.5 w-3.5" /> Giao DVVC
+                              </Button>
+                            )}
                             <Button
                               size="sm"
-                              onClick={() => setShippingConfirmOrder(order)}
-                              className="h-8 px-3 text-xs bg-blue-600 hover:bg-blue-700 text-white font-black gap-1.5 rounded-xl shadow-sm"
+                              variant="outline"
+                              onClick={() => setSelectedOrder(order)}
+                              className="h-8 px-3 text-xs font-medium rounded-xl border-slate-300 hover:bg-slate-100"
                             >
-                              <Truck className="h-3.5 w-3.5" /> Giao DVVC
+                              <Eye className="h-3.5 w-3.5" /> Xem
                             </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setSelectedOrder(order)}
-                            className="h-8 px-2.5 text-xs font-bold rounded-xl"
-                          >
-                            <Eye className="h-3.5 w-3.5" /> Xem
-                          </Button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -529,9 +524,6 @@ export default function Orders() {
                   <Receipt className="h-5 w-5 text-slate-900" />
                   Lịch Sử Hóa Đơn Bán Hàng & Thu Lễ Tân Tại Quầy
                 </h3>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">
-                  Hiển thị rõ tên thu ngân phụ trách ca trực, cho phép chỉnh sửa sản phẩm quầy và in lại hóa đơn nhiệt.
-                </p>
               </div>
               <Badge variant="secondary" className="px-3 py-1 font-bold text-xs">
                 {filteredOrders.length} Hóa Đơn POS
@@ -594,16 +586,18 @@ export default function Orders() {
                           )}
                         </td>
 
-                        <td className="py-4 px-4 text-right space-x-1.5">
-                          <Button size="sm" variant="outline" onClick={() => setSelectedOrder(order)} className="h-7 px-2 text-[11px] gap-1 font-semibold rounded-lg">
-                            <Eye className="h-3.5 w-3.5" /> Xem
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleOpenEdit(order)} className="h-7 px-2 text-[11px] gap-1 text-amber-700 border-amber-300 hover:bg-amber-50 font-bold rounded-lg">
-                            <Edit3 className="h-3.5 w-3.5" /> Sửa Đơn
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => handlePrint(order)} className="h-7 px-2 text-[11px] gap-1 font-extrabold rounded-lg">
-                            <Printer className="h-3.5 w-3.5" /> In Bill
-                          </Button>
+                        <td className="py-4 px-4 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button size="sm" variant="outline" onClick={() => setSelectedOrder(order)} className="h-7 px-2.5 text-[11px] gap-1 font-medium rounded-lg border-slate-300">
+                              <Eye className="h-3.5 w-3.5" /> Xem
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => handleOpenEdit(order)} className="h-7 px-2.5 text-[11px] gap-1 text-amber-700 border-amber-300 hover:bg-amber-50 font-medium rounded-lg">
+                              <Edit3 className="h-3.5 w-3.5" /> Sửa Đơn
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => handlePrint(order)} className="h-7 px-2.5 text-[11px] gap-1 font-medium rounded-lg border-slate-300">
+                              <Printer className="h-3.5 w-3.5" /> In Bill
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -655,9 +649,9 @@ export default function Orders() {
             {selectedOrder && (
               <div className="space-y-4">
                 <DialogHeader className="border-b pb-3">
-                  <DialogTitle className="text-xl font-black text-slate-900 flex items-center justify-between">
+                  <DialogTitle className="text-lg font-semibold text-slate-900 flex items-center justify-between">
                     <span>Chi Tiết Đơn #{selectedOrder.code}</span>
-                    <Badge className={selectedOrder.type === "Đặt Sân Online" ? "bg-[#27c372]" : "bg-slate-900"}>
+                    <Badge className={selectedOrder.type === "Đặt Sân Online" ? "bg-[#27c372] font-medium" : "bg-slate-900 font-medium"}>
                       {selectedOrder.type}
                     </Badge>
                   </DialogTitle>
@@ -667,31 +661,31 @@ export default function Orders() {
                 </DialogHeader>
 
                 <div className="space-y-3 text-xs">
-                  <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-2xl border font-semibold">
+                  <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-2xl border font-normal">
                     <div>
                       <span className="text-slate-400">Khách hàng: </span>
-                      <strong className="text-slate-900">{selectedOrder.customerName}</strong>
+                      <span className="text-slate-800 font-medium">{selectedOrder.customerName}</span>
                     </div>
                     <div>
                       <span className="text-slate-400">Số điện thoại: </span>
-                      <strong className="text-slate-900">{selectedOrder.customerPhone || "0987654321"}</strong>
+                      <span className="text-slate-800 font-medium">{selectedOrder.customerPhone || "0987654321"}</span>
                     </div>
                   </div>
 
                   {selectedOrder.shippingAddress && (
-                    <div className="bg-slate-50 p-3 rounded-2xl border font-semibold">
+                    <div className="bg-slate-50 p-3 rounded-2xl border font-normal">
                       <span className="text-slate-400">Địa chỉ giao hàng: </span>
-                      <strong className="text-slate-900">{selectedOrder.shippingAddress}</strong>
+                      <span className="text-slate-800 font-medium">{selectedOrder.shippingAddress}</span>
                     </div>
                   )}
 
                   <div className="space-y-1.5 pt-2">
-                    <Label className="font-extrabold text-slate-800">Danh mục sản phẩm / dịch vụ:</Label>
+                    <Label className="font-medium text-slate-700">Danh mục sản phẩm / dịch vụ:</Label>
                     <div className="border rounded-2xl divide-y overflow-hidden">
                       {selectedOrder.items.map((item, idx) => (
                         <div key={idx} className="flex justify-between items-center p-3 text-xs">
-                          <span className="font-bold text-slate-900">{item.name} x{item.qty}</span>
-                          <span className="font-black text-[#27c372]">
+                          <span className="font-medium text-slate-800">{item.name} x{item.qty}</span>
+                          <span className="font-semibold text-[#27c372]">
                             {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(item.price * item.qty)}
                           </span>
                         </div>
@@ -699,16 +693,16 @@ export default function Orders() {
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-center pt-3 border-t text-sm font-black">
-                    <span>Tổng tiền thanh toán:</span>
-                    <span className="text-[#27c372] text-lg">
+                  <div className="flex justify-between items-center pt-3 border-t text-sm font-medium">
+                    <span className="text-slate-700">Tổng tiền thanh toán:</span>
+                    <span className="text-[#27c372] text-base font-semibold">
                       {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(selectedOrder.totalAmount)}
                     </span>
                   </div>
                 </div>
 
                 <DialogFooter className="pt-3">
-                  <Button onClick={() => setSelectedOrder(null)} className="w-full font-extrabold rounded-xl bg-slate-900 text-white">
+                  <Button onClick={() => setSelectedOrder(null)} className="w-full font-medium rounded-xl bg-slate-900 text-white">
                     Đóng Màn Hình
                   </Button>
                 </DialogFooter>
@@ -723,7 +717,7 @@ export default function Orders() {
             {editingOrder && (
               <div className="space-y-4">
                 <DialogHeader>
-                  <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <DialogTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2">
                     <Edit3 className="h-5 w-5 text-amber-500" />
                     Chỉnh Sửa Hóa Đơn Quầy #{editingOrder.code}
                   </DialogTitle>
@@ -734,44 +728,44 @@ export default function Orders() {
 
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div className="space-y-1.5">
-                    <Label className="font-bold text-slate-700">Tên Khách Hàng:</Label>
+                    <Label className="font-medium text-slate-700">Tên Khách Hàng:</Label>
                     <Input
                       value={editingOrder.customerName}
                       onChange={(e) => setEditingOrder({ ...editingOrder, customerName: e.target.value })}
-                      className="text-xs h-9 font-semibold rounded-xl"
+                      className="text-xs h-9 font-medium rounded-xl"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label className="font-bold text-slate-700">Thu Ngân Phụ Trách:</Label>
-                    <Input value={editingOrder.staffName} disabled className="text-xs h-9 font-semibold bg-slate-100 rounded-xl" />
+                    <Label className="font-medium text-slate-700">Thu Ngân Phụ Trách:</Label>
+                    <Input value={editingOrder.staffName} disabled className="text-xs h-9 font-medium bg-slate-100 rounded-xl" />
                   </div>
                 </div>
 
                 {/* Edit Items */}
                 <div className="space-y-2 pt-2">
-                  <Label className="font-extrabold text-slate-800 text-xs">Sản phẩm trong hóa đơn:</Label>
+                  <Label className="font-medium text-slate-700 text-xs">Sản phẩm trong hóa đơn:</Label>
                   <div className="border rounded-2xl divide-y max-h-48 overflow-y-auto">
                     {editingOrder.items.map((item) => (
                       <div key={item.id} className="p-3 flex items-center justify-between text-xs">
-                        <span className="font-bold text-slate-800 truncate max-w-[180px]">{item.name}</span>
+                        <span className="font-medium text-slate-800 truncate max-w-[180px]">{item.name}</span>
                         <div className="flex items-center gap-2">
                           <div className="flex items-center border rounded-lg">
                             <button
                               onClick={() => handleItemQtyChange(item.id, -1)}
-                              className="px-2 py-0.5 text-slate-600 hover:bg-slate-100 font-bold"
+                              className="px-2 py-0.5 text-slate-600 hover:bg-slate-100 font-medium"
                             >
                               -
                             </button>
-                            <span className="px-2 font-black">{item.qty}</span>
+                            <span className="px-2 font-semibold">{item.qty}</span>
                             <button
                               onClick={() => handleItemQtyChange(item.id, 1)}
-                              className="px-2 py-0.5 text-slate-600 hover:bg-slate-100 font-bold"
+                              className="px-2 py-0.5 text-slate-600 hover:bg-slate-100 font-medium"
                             >
                               +
                             </button>
                           </div>
-                          <span className="font-black text-emerald-600 w-20 text-right">
+                          <span className="font-semibold text-emerald-600 w-20 text-right">
                             {new Intl.NumberFormat("vi-VN").format(item.price * item.qty)}đ
                           </span>
                           <button onClick={() => handleRemoveItem(item.id)} className="text-slate-400 hover:text-red-600">
@@ -785,13 +779,13 @@ export default function Orders() {
 
                 {/* Add Fast Addons */}
                 <div className="space-y-2">
-                  <Label className="font-extrabold text-slate-800 text-xs">+ Thêm nhanh sản phẩm phụ kiện:</Label>
+                  <Label className="font-medium text-slate-700 text-xs">+ Thêm nhanh sản phẩm phụ kiện:</Label>
                   <div className="flex flex-wrap gap-2">
                     {availableAddons.map((ad) => (
                       <button
                         key={ad.id}
                         onClick={() => handleAddItemToEditingOrder(ad)}
-                        className="px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 hover:text-[#16a34a] border border-slate-200 rounded-xl text-[11px] font-extrabold transition-all flex items-center gap-1"
+                        className="px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 hover:text-[#16a34a] border border-slate-200 rounded-xl text-[11px] font-medium transition-all flex items-center gap-1"
                       >
                         <Plus className="w-3 h-3 text-[#27c372]" />
                         <span>{ad.name} ({new Intl.NumberFormat("vi-VN").format(ad.price)}đ)</span>
@@ -800,18 +794,18 @@ export default function Orders() {
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center pt-3 border-t text-sm font-black">
-                  <span>Tổng tiền mới:</span>
-                  <span className="text-[#27c372] text-lg">
+                <div className="flex justify-between items-center pt-3 border-t text-sm font-medium">
+                  <span className="text-slate-700">Tổng tiền mới:</span>
+                  <span className="text-[#27c372] text-base font-semibold">
                     {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(editingOrder.totalAmount)}
                   </span>
                 </div>
 
                 <DialogFooter className="flex flex-row gap-3 justify-end pt-3">
-                  <Button variant="outline" onClick={() => setEditingOrder(null)} className="rounded-xl font-bold border-slate-300">
+                  <Button variant="outline" onClick={() => setEditingOrder(null)} className="rounded-xl font-medium border-slate-300">
                     Hủy
                   </Button>
-                  <Button onClick={handleSaveEditAndReprint} className="bg-[#27c372] hover:bg-[#22c55e] text-white font-black rounded-xl gap-1.5 shadow-md">
+                  <Button onClick={handleSaveEditAndReprint} className="bg-[#27c372] hover:bg-[#22c55e] text-white font-medium rounded-xl gap-1.5 shadow-md">
                     <Printer className="w-4 h-4" />
                     Lưu & In Bill Mới
                   </Button>
@@ -827,16 +821,16 @@ export default function Orders() {
             {printReceiptOrder && (
               <div className="space-y-3">
                 <div className="text-center border-b border-dashed border-slate-300 pb-3 space-y-1">
-                  <h3 className="font-black text-sm uppercase">PICKLEBALL ONE CENTER</h3>
+                  <h3 className="font-semibold text-sm uppercase">PICKLEBALL ONE CENTER</h3>
                   <p className="text-[10px] text-slate-500">Số 10 Đường Pickleball, Cầu Giấy, Hà Nội</p>
-                  <div className="font-bold text-xs pt-1">HÓA ĐƠN BÁN HÀNG QUẦY</div>
-                  <div className="text-[11px] font-bold">Mã HD: #{printReceiptOrder.code}</div>
+                  <div className="font-medium text-xs pt-1">HÓA ĐƠN BÁN HÀNG QUẦY</div>
+                  <div className="text-[11px] font-medium">Mã HD: #{printReceiptOrder.code}</div>
                   <div className="text-[10px] text-slate-500">{printReceiptOrder.createdAt}</div>
                 </div>
 
                 <div className="space-y-1 border-b border-dashed border-slate-300 pb-2 text-[11px]">
-                  <div>Khách hàng: <strong>{printReceiptOrder.customerName}</strong></div>
-                  <div>Thu ngân: <strong>{printReceiptOrder.staffName}</strong></div>
+                  <div>Khách hàng: <span className="font-medium">{printReceiptOrder.customerName}</span></div>
+                  <div>Thu ngân: <span className="font-medium">{printReceiptOrder.staffName}</span></div>
                 </div>
 
                 <div className="space-y-1.5 border-b border-dashed border-slate-300 pb-2">
@@ -844,12 +838,12 @@ export default function Orders() {
                     <div key={idx} className="flex justify-between py-0.5 text-[11px]">
                       <span className="truncate max-w-[120px]">{item.name}</span>
                       <span>x{item.qty}</span>
-                      <span className="font-bold">{new Intl.NumberFormat("vi-VN").format(item.price * item.qty)}đ</span>
+                      <span className="font-medium">{new Intl.NumberFormat("vi-VN").format(item.price * item.qty)}đ</span>
                     </div>
                   ))}
                 </div>
 
-                <div className="flex justify-between font-black text-sm pt-1">
+                <div className="flex justify-between font-semibold text-sm pt-1">
                   <span>TỔNG CỘNG:</span>
                   <span>{new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(printReceiptOrder.totalAmount)}</span>
                 </div>
@@ -860,7 +854,7 @@ export default function Orders() {
                       toast.success(`Đã gửi lệnh in Bill #${printReceiptOrder.code} tới máy in nhiệt!`);
                       setPrintReceiptOrder(null);
                     }}
-                    className="w-full font-black bg-slate-900 text-white rounded-xl"
+                    className="w-full font-medium bg-slate-900 text-white rounded-xl"
                   >
                     In Phiếu Bán Hàng
                   </Button>
@@ -874,14 +868,14 @@ export default function Orders() {
         <Dialog open={!!shippingConfirmOrder} onOpenChange={() => setShippingConfirmOrder(null)}>
           <DialogContent className="sm:max-w-md bg-white rounded-3xl p-6 font-sans">
             <DialogHeader className="space-y-2">
-              <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
+              <DialogTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2">
                 <Truck className="w-5 h-5 text-blue-600" />
                 Xác Nhận Giao Cho Đơn Vị Vận Chuyển?
               </DialogTitle>
               <DialogDescription className="text-slate-600 text-xs leading-relaxed font-medium">
-                Thực hiện điều này... Bạn có chắc chắn muốn chuyển đơn hàng Online <strong>#{shippingConfirmOrder?.code}</strong> sang trạng thái <strong>ĐÃ GIAO ĐƠN VỊ VẬN CHUYỂN</strong> chứ?
+                Thực hiện điều này... Bạn có chắc chắn muốn chuyển đơn hàng Online <span className="font-semibold text-slate-900">#{shippingConfirmOrder?.code}</span> sang trạng thái <span className="font-semibold text-slate-900">ĐÃ GIAO ĐƠN VỊ VẬN CHUYỂN</span> chứ?
                 <br />
-                <span className="text-blue-700 font-extrabold block mt-2 p-2.5 bg-blue-50 border border-blue-200 rounded-xl">
+                <span className="text-blue-700 font-medium block mt-2 p-2.5 bg-blue-50 border border-blue-200 rounded-xl">
                   Tự động gửi email/thông báo hành trình và khóa quyền sửa địa chỉ của người mua trên web.
                 </span>
               </DialogDescription>

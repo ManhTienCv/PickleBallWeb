@@ -101,7 +101,6 @@ export default function CourtMap() {
   return (
     <AppLayout
       title="Sơ Đồ Sân & Lịch Trình Đặt Khung Giờ Pickleball"
-      subtitle="Đồng bộ trạng thái thời gian thực giữa Khách hàng & Admin, xử lý chống trùng lịch 100%"
       headerRight={
         <div className="flex items-center gap-2">
           <Button onClick={() => setPolicyOpen(true)} variant="outline" size="sm" className="bg-white border-slate-300 gap-1.5 text-xs font-semibold">
@@ -141,33 +140,55 @@ export default function CourtMap() {
               <button
                 key={v.id}
                 onClick={() => setViewMode(v.id as any)}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  viewMode === v.id ? "bg-slate-900 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100"
-                }`}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === v.id ? "bg-slate-900 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100"
+                  }`}
               >
                 {v.label}
               </button>
             ))}
           </div>
 
-          {/* Zoom Slider Control */}
-          <div className="flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 text-xs">
-            <span className="text-slate-500 font-semibold flex items-center gap-1">
-              <ZoomOut className="h-3.5 w-3.5" />
-            </span>
+          {/* Interactive Zoom Control Bar */}
+          <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 text-xs shadow-inner">
+            <button
+              type="button"
+              onClick={() => setZoomLevel((prev) => Math.max(60, prev - 10))}
+              disabled={zoomLevel <= 60}
+              className="p-1 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-200 active:scale-95 disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
+              title="Thu nhỏ (-10%)"
+            >
+              <ZoomOut className="h-4 w-4 text-slate-700" />
+            </button>
+
             <input
               type="range"
               min={60}
               max={160}
-              step={10}
+              step={5}
               value={zoomLevel}
               onChange={(e) => setZoomLevel(Number(e.target.value))}
-              className="w-24 accent-emerald-600 cursor-pointer"
+              className="w-28 accent-[#27c372] cursor-pointer touch-none"
+              title={`Tỷ lệ thu phóng hiện tại: ${zoomLevel}%`}
             />
-            <span className="text-slate-500 font-semibold flex items-center gap-1">
-              <ZoomIn className="h-3.5 w-3.5" />
-            </span>
-            <span className="font-mono font-bold text-slate-800 w-10 text-right">{zoomLevel}%</span>
+
+            <button
+              type="button"
+              onClick={() => setZoomLevel((prev) => Math.min(160, prev + 10))}
+              disabled={zoomLevel >= 160}
+              className="p-1 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-200 active:scale-95 disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
+              title="Phóng to (+10%)"
+            >
+              <ZoomIn className="h-4 w-4 text-slate-700" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setZoomLevel(100)}
+              className="font-mono font-extrabold text-slate-800 hover:text-[#27c372] bg-white border border-slate-200 px-2 py-0.5 rounded-lg hover:border-[#27c372] active:scale-95 transition-all cursor-pointer text-xs ml-1 shadow-sm"
+              title="Nhấn để đặt lại tỉ lệ chuẩn 100%"
+            >
+              {zoomLevel}%
+            </button>
           </div>
 
           {/* Status Legends */}
@@ -246,19 +267,18 @@ export default function CourtMap() {
                               fontSize: `${slotFontSizePx}px`,
                               transition: "all 0.2s ease-out",
                             }}
-                            className={`w-full px-1 rounded-lg font-bold flex flex-col items-center justify-center transition-transform active:scale-95 ${
-                              status === "expired"
+                            className={`w-full px-1 rounded-lg font-bold flex flex-col items-center justify-center transition-transform active:scale-95 ${status === "expired"
                                 ? "bg-slate-100 text-slate-400 line-through border border-slate-200"
                                 : status === "in_use"
-                                ? "bg-blue-600 text-white shadow-md animate-pulse border border-blue-700"
-                                : status === "held"
-                                ? "bg-amber-500 text-white shadow-sm"
-                                : status === "booked"
-                                ? "bg-emerald-700 text-white shadow-sm"
-                                : isPeak
-                                ? "bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100"
-                                : "bg-emerald-50 text-emerald-900 border border-emerald-300 hover:bg-emerald-100"
-                            }`}
+                                  ? "bg-blue-600 text-white shadow-md animate-pulse border border-blue-700"
+                                  : status === "held"
+                                    ? "bg-amber-500 text-white shadow-sm"
+                                    : status === "booked"
+                                      ? "bg-emerald-700 text-white shadow-sm"
+                                      : isPeak
+                                        ? "bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100"
+                                        : "bg-emerald-50 text-emerald-900 border border-emerald-300 hover:bg-emerald-100"
+                              }`}
                           >
                             {status === "expired" ? (
                               <div className="flex items-center gap-1 opacity-70">
@@ -341,11 +361,10 @@ export default function CourtMap() {
                   <Button
                     onClick={handleAttemptHoldSlot}
                     variant="outline"
-                    className={`w-full justify-between h-10 font-bold text-xs ${
-                      slotClickData.status === "in_use" || slotClickData.status === "booked"
+                    className={`w-full justify-between h-10 font-bold text-xs ${slotClickData.status === "in_use" || slotClickData.status === "booked"
                         ? "border-amber-300 text-amber-800 bg-amber-50 hover:bg-amber-100"
                         : "border-slate-300 text-slate-800"
-                    }`}
+                      }`}
                   >
                     <span>⚡ Khóa Giữ Sân Nhanh Cho Khách Trực Tiếp</span>
                     <CheckCircle2 className="h-4 w-4 text-emerald-600" />

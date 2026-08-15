@@ -70,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         newToken = 'mock-token-' + Date.now()
         newUser = {
           id: isStaff ? 2 : 1,
-          name: isStaff ? 'Nhân Viên Lễ Tân Quầy' : 'Quản Trị Viên DemoPick',
+          name: isStaff ? 'Nhân Viên Lễ Tân Quầy' : 'Quản Trị Viên PickleBall',
           email,
           phone: isStaff ? '0988 123 456' : '0900 000 001',
           avatar_url: null,

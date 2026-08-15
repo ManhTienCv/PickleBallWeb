@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Outlet, Link, useLocation } from 'react-router-dom'
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { ShoppingCart, MapPin, Package, LogOut, User as UserIcon, Home, ShoppingBag, CalendarDays, BookOpen } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useQuery } from '@tanstack/react-query'
@@ -23,6 +23,7 @@ const navItems = [
 
 export default function CustomerLayout() {
   const location = useLocation()
+  const navigate = useNavigate()
   const [hoveredPath, setHoveredPath] = useState<string | null>(null)
   const { isAuthenticated, user, logout } = useAuth()
 
@@ -35,11 +36,18 @@ export default function CustomerLayout() {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
   }
 
-  const { data: cart } = useQuery({
+  const { data: cart, refetch: refetchCart } = useQuery({
     queryKey: ['cart'],
     queryFn: cartService.getCart,
-    enabled: isAuthenticated,
   })
+
+  useEffect(() => {
+    const handleStorage = () => {
+      refetchCart()
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [refetchCart])
 
   const cartCount = cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0
 
@@ -138,30 +146,30 @@ export default function CustomerLayout() {
                     whileTap={{ scale: 0.97 }}
                     className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full hover:bg-slate-100 transition-colors border border-slate-200/90 shadow-sm"
                   >
-                    <div className="w-8 h-8 bg-[#27c372]/20 text-[#16a34a] rounded-full flex items-center justify-center font-extrabold text-xs">
+                    <div className="w-8 h-8 bg-[#27c372]/20 text-[#16a34a] rounded-full flex items-center justify-center font-bold text-xs">
                       {user?.name?.charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-sm font-extrabold text-slate-800 hidden sm:block">
+                    <span className="text-sm font-semibold text-slate-800 hidden sm:block">
                       {user?.name}
                     </span>
                   </motion.button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 rounded-2xl p-2 shadow-xl border-slate-200">
-                  <DropdownMenuLabel className="font-extrabold text-slate-900 px-3 py-2">
+                  <DropdownMenuLabel className="font-bold text-slate-900 px-3 py-2">
                     {user?.name}
-                    <div className="text-xs font-semibold text-slate-500">{user?.email}</div>
+                    <div className="text-xs font-normal text-slate-500">{user?.email}</div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => (window.location.href = '/orders')} className="gap-2 rounded-xl cursor-pointer font-bold">
+                  <DropdownMenuItem onClick={() => navigate('/orders')} className="gap-2 rounded-xl cursor-pointer font-medium text-slate-700">
                     <Package className="h-4 w-4 text-slate-500" />
                     <span>Lịch sử đơn hàng</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => (window.location.href = '/profile')} className="gap-2 rounded-xl cursor-pointer font-bold">
+                  <DropdownMenuItem onClick={() => navigate('/profile')} className="gap-2 rounded-xl cursor-pointer font-medium text-slate-700">
                     <UserIcon className="h-4 w-4 text-slate-500" />
                     <span>Hồ sơ cá nhân</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout} className="gap-2 text-destructive rounded-xl cursor-pointer font-bold">
+                  <DropdownMenuItem onClick={logout} className="gap-2 text-destructive rounded-xl cursor-pointer font-medium">
                     <LogOut className="h-4 w-4" />
                     <span>Đăng xuất</span>
                   </DropdownMenuItem>

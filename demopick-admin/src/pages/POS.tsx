@@ -407,7 +407,6 @@ export default function POS() {
   return (
     <AppLayout
       title="Bán Hàng POS Quầy Lễ Tân"
-      subtitle="Bảng trạng thái sân theo thời gian thực & Phân hệ thanh toán quầy chuẩn xác"
       headerRight={
         <Button
           onClick={() => setShiftReportOpen(true)}

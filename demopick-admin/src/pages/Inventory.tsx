@@ -434,7 +434,7 @@ export default function Inventory() {
   return (
     <AppLayout
       title="Trung Tâm Quản Lý Kho & Phân Quyền Nhập Quầy"
-      subtitle="Quản lý toàn bộ Thiết bị bán, Nước giải khát & Dịch vụ Cho thuê đồ cố định theo giờ"
+
       headerRight={
         isStaffOnly ? (
           <Button
@@ -530,8 +530,8 @@ export default function Inventory() {
                     key={cat}
                     onClick={() => setActiveTabCat(cat)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${activeTabCat === cat
-                        ? "bg-slate-900 text-white shadow-sm"
-                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      ? "bg-slate-900 text-white shadow-sm"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                       }`}
                   >
                     {cat}

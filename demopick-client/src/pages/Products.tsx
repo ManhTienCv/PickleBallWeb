@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { shopService, Category, Brand } from '@/services/shop.service'
 import { cartService } from '@/services/cart.service'
@@ -13,6 +14,7 @@ import {
 import { toast } from 'sonner'
 
 export default function Products() {
+  const navigate = useNavigate()
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedBrand, setSelectedBrand] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState<string>('')
@@ -48,15 +50,17 @@ export default function Products() {
   })
 
   const handleAddToCart = async (product: any) => {
-    if (!product.variants || product.variants.length === 0) {
-      toast.error('Sản phẩm chưa có biến thể khả dụng')
-      return
-    }
+    const variantId = product.variants?.[0]?.id || product.id || Date.now()
     try {
-      await cartService.addToCart(product.variants[0].id, 1)
-      toast.success(`Đã thêm "${product.name}" vào giỏ hàng!`)
+      await cartService.addToCart(variantId, 1, product)
+      toast.success(`Đã thêm "${product.name}" vào giỏ hàng!`, {
+        action: {
+          label: 'Xem giỏ hàng →',
+          onClick: () => navigate('/cart'),
+        },
+      })
     } catch {
-      toast.error('Có lỗi xảy ra khi thêm vào giỏ hàng. Vui lòng đăng nhập.')
+      toast.error('Có lỗi xảy ra khi thêm vào giỏ hàng.')
     }
   }
 

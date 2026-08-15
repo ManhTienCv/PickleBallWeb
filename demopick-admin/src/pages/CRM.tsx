@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import { Star, Shield, Award, Search, UserCheck, HelpCircle, UserPlus, Trash2, Lock, Unlock, Key, Phone, Mail, User } from "lucide-react";
+import { Star, Shield, Award, Search, UserCheck, HelpCircle, UserPlus, Trash2, Lock, Unlock, Key, Phone, Mail, User, Copy, CheckCircle2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -68,7 +69,10 @@ const initialCustomers = [
 ];
 
 export default function CRM() {
-  const [activeMainTab, setActiveMainTab] = useState<"customers" | "staff">("customers");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentTabParam = searchParams.get("tab");
+  const activeMainTab = currentTabParam === "staff" ? "staff" : "customers";
+
   const [tab, setTab] = useState("all");
   const [search, setSearch] = useState("");
   const [ruleModalOpen, setRuleModalOpen] = useState(false);
@@ -80,6 +84,10 @@ export default function CRM() {
   const [newStaffEmail, setNewStaffEmail] = useState("");
   const [newStaffPhone, setNewStaffPhone] = useState("");
   const [newStaffShift, setNewStaffShift] = useState("Ca Sáng (05:00 - 14:00)");
+
+  const handleTabSwitch = (newTab: "customers" | "staff") => {
+    setSearchParams({ tab: newTab });
+  };
 
   const filteredCustomers = initialCustomers.filter((c) => {
     const matchesTab = tab === "all" || (tab === "VIP" && c.rank === "VIP") || (tab === "Gold" && c.rank === "Gold");
@@ -112,11 +120,23 @@ export default function CRM() {
     };
 
     setStaffList([newStaff, ...staffList]);
-    toast.success(`Đã đăng ký tài khoản Lễ tân thành công cho: "${newStaffName}"!`);
+    toast.success(`Đã cấp tài khoản Lễ tân thành công cho nhân viên "${newStaffName}"!`);
     setAddStaffOpen(false);
     setNewStaffName("");
     setNewStaffEmail("");
     setNewStaffPhone("");
+  };
+
+  const handleCopyStaffLogin = (staff: StaffUser) => {
+    const infoText = `📋 THÔNG TIN TÀI KHOẢN NHÂN VIÊN LỄ TÂN PICKLEBALL
+• Họ và tên: ${staff.name}
+• Email đăng nhập: ${staff.email}
+• Mật khẩu mặc định: 123456
+• Ca trực đảm nhận: ${staff.shift}
+• Trang đăng nhập hệ thống: http://localhost:5174/login`;
+
+    navigator.clipboard.writeText(infoText);
+    toast.success(`Đã sao chép thông tin tài khoản của nhân viên "${staff.name}" vào Bộ nhớ tạm!`);
   };
 
   const handleToggleLockStaff = (id: number) => {
@@ -143,8 +163,7 @@ export default function CRM() {
 
   return (
     <AppLayout
-      title="Quản Lý Hội Viên & Tài Khoản Nhân Viên Lễ Tân"
-      subtitle="Quản lý hội viên Pickleball & Tạo / Xóa tài khoản phân quyền cho Nhân viên quầy POS"
+      title={activeMainTab === "staff" ? "Quản Lý Tài Khoản & Phân Ca Nhân Viên Lễ Tân" : "Quản Lý Hội Viên & Khách Hàng Pickleball"}
       headerRight={
         activeMainTab === "staff" ? (
           <Button onClick={() => setAddStaffOpen(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-500 font-bold">
@@ -159,14 +178,14 @@ export default function CRM() {
         )
       }
     >
-      <div className="space-y-6">
+      <div className="space-y-6 font-sans">
         {/* Main Tab Navigation */}
         <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
           <button
-            onClick={() => setActiveMainTab("customers")}
+            onClick={() => handleTabSwitch("customers")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${activeMainTab === "customers"
-                ? "bg-slate-900 text-white shadow-sm"
-                : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100"
+              ? "bg-slate-900 text-white shadow-sm"
+              : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100"
               }`}
           >
             <UserCheck className="h-4 w-4" />
@@ -174,10 +193,10 @@ export default function CRM() {
           </button>
 
           <button
-            onClick={() => setActiveMainTab("staff")}
+            onClick={() => handleTabSwitch("staff")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${activeMainTab === "staff"
-                ? "bg-slate-900 text-white shadow-sm"
-                : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100"
+              ? "bg-slate-900 text-white shadow-sm"
+              : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100"
               }`}
           >
             <UserPlus className="h-4 w-4" />
@@ -220,8 +239,8 @@ export default function CRM() {
                     key={t.id}
                     onClick={() => setTab(t.id)}
                     className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === t.id
-                        ? "bg-slate-900 text-white shadow-sm"
-                        : "text-slate-600 hover:bg-slate-100"
+                      ? "bg-slate-900 text-white shadow-sm"
+                      : "text-slate-600 hover:bg-slate-100"
                       }`}
                   >
                     {t.label}
@@ -385,6 +404,16 @@ export default function CRM() {
 
                         <td className="py-3 px-4 text-right">
                           <div className="flex items-center justify-end gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleCopyStaffLogin(staff)}
+                              className="h-8 w-8 p-0 text-slate-600 hover:text-emerald-600"
+                              title="Sao chép thông tin tài khoản đăng nhập"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+
                             <Button
                               size="sm"
                               variant="ghost"

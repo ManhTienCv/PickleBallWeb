@@ -293,7 +293,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto gap-8">
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3 hover:border-primary/40 transition-all">
               <div className="h-12 w-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
                 <Calendar className="h-6 w-6" />
@@ -311,16 +311,6 @@ export default function Home() {
               <h3 className="text-lg font-bold text-slate-900">Khoá Sân Tự Động 10 Phút</h3>
               <p className="text-xs text-slate-500 leading-relaxed">
                 Hệ thống tạm giữ khung giờ bằng công nghệ Pessimistic Lock giúp bạn yên tâm thanh toán mà không sợ bị người khác đặt đè.
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3 hover:border-primary/40 transition-all">
-              <div className="h-12 w-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-                <ShieldCheck className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-900">Thanh Toán VietQR & MoMo</h3>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Xác thực chuyển khoản tự động qua mã VietQR thông minh hoặc cổng ví điện tử MoMo Sandbox kèm mã Check-in QR tiện lợi.
               </p>
             </div>
           </div>

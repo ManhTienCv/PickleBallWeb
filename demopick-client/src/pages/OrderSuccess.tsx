@@ -65,20 +65,6 @@ export default function OrderSuccess() {
         </Card>
       )}
 
-      {/* MoMo Redirect Payment Option */}
-      {result?.payment_url && (
-        <Card className="mt-8 p-6 border-pink-200 bg-pink-50/50 text-center space-y-4">
-          <h3 className="font-bold text-pink-900">Thanh Toán Qua Cổng MoMo</h3>
-          <p className="text-xs text-pink-700">Vui lòng bấm nút bên dưới để chuyển hướng sang giao diện thanh toán MoMo Sandbox.</p>
-          <a href={result.payment_url} target="_blank" rel="noreferrer">
-            <Button className="bg-pink-600 hover:bg-pink-700 text-white font-bold gap-2">
-              <span>Đến trang thanh toán MoMo</span>
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </a>
-        </Card>
-      )}
-
       <div className="flex flex-wrap justify-center gap-4 mt-8">
         <Button variant="outline" onClick={() => navigate(`/orders`)} className="gap-2">
           <CalendarDays className="h-4 w-4" />

@@ -26,7 +26,7 @@ export default function Dashboard() {
   return (
     <AppLayout
       title="Tổng Quan Hoạt Động Cụm Sân Pick"
-      subtitle="Báo cáo tình hình đặt sân, doanh thu & kinh doanh thiết bị Pickleball"
+
       headerRight={
         <Button onClick={() => setCheckInOpen(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold">
           <QrCode className="h-4 w-4" />
@@ -88,7 +88,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
           <Card className="p-5 border-slate-200 bg-white space-y-3 shadow-sm">
             <h3 className="font-bold text-slate-900 text-sm">Sơ Đồ Đặt Sân</h3>
-            <p className="text-xs text-slate-500 line-clamp-2">Xem lịch 7 ngày của 4 sân Pickleball chuẩn USAPA.</p>
+            <p className="text-xs text-slate-500 line-clamp-2">Xem lịch 7 ngày của các sân Pickleball trực thuộc.</p>
             <Button onClick={() => navigate("/court-map")} variant="outline" className="w-full justify-between h-9 text-xs">
               <span>Mở sơ đồ sân</span>
               <ArrowRight className="h-3.5 w-3.5" />
@@ -96,7 +96,7 @@ export default function Dashboard() {
           </Card>
 
           <Card className="p-5 border-slate-200 bg-white space-y-3 shadow-sm">
-            <h3 className="font-bold text-slate-900 text-sm">Bán Hàng POS Quầy</h3>
+            <h3 className="font-bold text-slate-900 text-sm">Bán Hàng Tại quầy</h3>
             <p className="text-xs text-slate-500 line-clamp-2">Tạo hóa đơn bán vợt, bóng & nước uống cho khách.</p>
             <Button onClick={() => navigate("/pos")} variant="outline" className="w-full justify-between h-9 text-xs">
               <span>Mở máy POS</span>
@@ -105,8 +105,8 @@ export default function Dashboard() {
           </Card>
 
           <Card className="p-5 border-slate-200 bg-white space-y-3 shadow-sm">
-            <h3 className="font-bold text-slate-900 text-sm">Đối Soát Chuyển Khoản</h3>
-            <p className="text-xs text-slate-500 line-clamp-2">Duyệt thủ công hoặc xem Webhook tự động 100%.</p>
+            <h3 className="font-bold text-slate-900 text-sm">Đối Soát Giao Dịch</h3>
+            <p className="text-xs text-slate-500 line-clamp-2">Duyệt thủ công & tự động 100%.</p>
             <Button onClick={() => navigate("/payments")} variant="outline" className="w-full justify-between h-9 text-xs border-blue-300 text-blue-800">
               <span>Quản lý Thanh toán</span>
               <CreditCard className="h-3.5 w-3.5" />
@@ -127,7 +127,7 @@ export default function Dashboard() {
         <Card className="p-6 border-slate-200 bg-white space-y-4 shadow-sm">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-slate-900 text-lg">Danh Sách Sân Pickleball Trực Thuộc</h3>
-            <Badge className="bg-primary">Tiêu chuẩn USAPA</Badge>
+
           </div>
 
           <div className="overflow-x-auto">

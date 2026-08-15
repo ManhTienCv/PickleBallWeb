@@ -93,7 +93,7 @@ export default function Payments() {
   return (
     <AppLayout
       title="Quản Lý Thanh Toán & Chuyển Khoản Ngân Hàng"
-      subtitle="Theo dõi biến động số dư & xác nhận tiền về chuyển khoản ngân hàng"
+
     >
       <div className="space-y-6">
         {/* Action Header */}

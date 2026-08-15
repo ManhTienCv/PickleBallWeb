@@ -123,7 +123,7 @@ export default function CourtBooking() {
           <div className="bg-emerald-600 text-white px-4 py-3 flex items-center justify-between font-bold">
             <div className="flex items-center gap-2 text-sm sm:text-base tracking-tight">
               <Tag className="h-4.5 w-4.5" />
-              <span>Bảng Giá Thuê Sân Pickleball DemoPick ONE</span>
+              <span>Bảng Giá Thuê Sân Pickleball</span>
             </div>
             <Badge className="bg-emerald-700/80 text-white font-semibold text-xs border border-emerald-400/30">
               Tiêu chuẩn USAPA
@@ -133,30 +133,30 @@ export default function CourtBooking() {
           <div className="p-4 overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="border-b border-slate-200 text-slate-700 font-extrabold uppercase bg-slate-50">
+                <tr className="border-b border-slate-200 text-slate-700 font-semibold uppercase bg-slate-50">
                   <th className="py-2.5 px-4 text-xs sm:text-sm">Khung giờ</th>
-                  <th className="py-2.5 px-4 text-emerald-700 font-bold text-xs sm:text-sm">Thứ 2 – Thứ 6</th>
-                  <th className="py-2.5 px-4 text-emerald-700 font-bold text-xs sm:text-sm">Thứ 7 – Chủ Nhật</th>
+                  <th className="py-2.5 px-4 text-emerald-700 font-semibold text-xs sm:text-sm">Thứ 2 – Thứ 6</th>
+                  <th className="py-2.5 px-4 text-emerald-700 font-semibold text-xs sm:text-sm">Thứ 7 – Chủ Nhật</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-800">
                 <tr className="hover:bg-slate-50/70 transition-colors">
-                  <td className="py-2.5 px-4 text-slate-900 font-semibold text-xs sm:text-sm">06:00 – 09:00</td>
-                  <td className="py-2.5 px-4 text-emerald-600 font-bold text-sm sm:text-base">140K/h</td>
-                  <td className="py-2.5 px-4 text-emerald-600 font-bold text-sm sm:text-base">180K/h</td>
+                  <td className="py-2 px-4 text-slate-700 font-medium text-xs sm:text-sm">06:00 – 09:00</td>
+                  <td className="py-2 px-4 text-emerald-600 font-medium text-xs sm:text-sm">140K/h</td>
+                  <td className="py-2 px-4 text-emerald-600 font-medium text-xs sm:text-sm">180K/h</td>
                 </tr>
                 <tr className="hover:bg-slate-50/70 transition-colors">
-                  <td className="py-2.5 px-4 text-slate-900 font-semibold text-xs sm:text-sm">09:00 – 17:00</td>
-                  <td className="py-2.5 px-4 text-emerald-600 font-bold text-sm sm:text-base">140K/h</td>
-                  <td className="py-2.5 px-4 text-emerald-600 font-bold text-sm sm:text-base">180K/h</td>
+                  <td className="py-2 px-4 text-slate-700 font-medium text-xs sm:text-sm">09:00 – 17:00</td>
+                  <td className="py-2 px-4 text-emerald-600 font-medium text-xs sm:text-sm">140K/h</td>
+                  <td className="py-2 px-4 text-emerald-600 font-medium text-xs sm:text-sm">180K/h</td>
                 </tr>
                 <tr className="bg-amber-50/60 hover:bg-amber-50 transition-colors border-l-4 border-amber-500">
-                  <td className="py-2.5 px-4 font-bold text-amber-950 flex items-center gap-1.5 text-xs sm:text-sm">
+                  <td className="py-2 px-4 font-medium text-amber-950 flex items-center gap-1.5 text-xs sm:text-sm">
                     <span>17:00 – 22:00</span>
-                    <Badge className="bg-amber-600 text-white font-bold text-[10px] px-1.5 py-0.5">Cao điểm</Badge>
+                    <Badge className="bg-amber-600 text-white font-medium text-[10px] px-1.5 py-0.5">Cao điểm</Badge>
                   </td>
-                  <td className="py-2.5 px-4 text-amber-700 font-extrabold text-sm sm:text-base">180K/h</td>
-                  <td className="py-2.5 px-4 text-amber-700 font-extrabold text-sm sm:text-base">220K/h</td>
+                  <td className="py-2 px-4 text-amber-700 font-medium text-xs sm:text-sm">180K/h</td>
+                  <td className="py-2 px-4 text-amber-700 font-medium text-xs sm:text-sm">220K/h</td>
                 </tr>
               </tbody>
             </table>
@@ -169,14 +169,11 @@ export default function CourtBooking() {
 
         {/* Right 1 Col: Khung Địa Chỉ & Vị Trí Cụm Sân */}
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm flex flex-col justify-between">
-          <div className="bg-slate-900 text-white px-4 py-3 flex items-center justify-between font-bold text-sm sm:text-base">
+          <div className="bg-emerald-600 text-white px-4 py-3 flex items-center justify-between font-bold text-sm sm:text-base">
             <div className="flex items-center gap-2">
-              <MapPin className="h-4.5 w-4.5 text-emerald-400" />
-              <span>Vị Trí & Liên Hệ Cụm Sân</span>
+              <MapPin className="h-4.5 w-4.5 text-white" />
+              <span>Thông Tin Sân</span>
             </div>
-            <Badge className="bg-emerald-500/20 text-emerald-300 text-xs border border-emerald-500/30">
-              Cụm 6 Sân
-            </Badge>
           </div>
 
           <div className="p-4 space-y-3 text-xs sm:text-sm text-slate-700 flex-1 flex flex-col justify-between">
@@ -186,7 +183,7 @@ export default function CourtBooking() {
                 <MapPin className="h-4.5 w-4.5 text-primary shrink-0 mt-0.5" />
                 <div>
                   <div className="font-bold text-slate-900 text-xs sm:text-sm">Địa chỉ cụm sân:</div>
-                  <div className="text-slate-600 text-xs sm:text-sm font-medium">Số 188 Nguyễn Văn Cừ, Q. Long Biên, Hà Nội</div>
+                  <div className="text-slate-600 text-xs sm:text-sm font-medium">Số xx Trần Duy Hưng, Q. Cầu Giấy, Hà Nội</div>
                 </div>
               </div>
 
@@ -198,7 +195,7 @@ export default function CourtBooking() {
                 </div>
                 <div className="flex items-center gap-1.5 text-slate-600">
                   <Phone className="h-4 w-4 text-emerald-600" />
-                  <span>Hotline: <strong className="text-emerald-600">0988.123.456</strong></span>
+                  <span>Hotline: <strong className="text-emerald-600">0888888888</strong></span>
                 </div>
               </div>
 
@@ -209,10 +206,10 @@ export default function CourtBooking() {
                   <span>Tiện ích có sẵn tại sân:</span>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5 text-xs text-slate-600 font-medium">
-                  <div className="flex items-center gap-1">🚗 Đỗ ô tô / Xe máy Free</div>
-                  <div className="flex items-center gap-1">🚿 Phòng tắm nóng lạnh</div>
-                  <div className="flex items-center gap-1">💡 Đèn LED thi đấu ban đêm</div>
-                  <div className="flex items-center gap-1">📶 Wi-Fi 6 tốc độ cao</div>
+                  <div className="flex items-center gap-1">Có sân đỗ ô tô / Xe máy</div>
+                  <div className="flex items-center gap-1">Hệ thống chiếu sáng</div>
+                  <div className="flex items-center gap-1">Khu vực nghỉ</div>
+                  <div className="flex items-center gap-1">Wi-Fi 6 tốc độ cao</div>
                 </div>
               </div>
             </div>
@@ -220,7 +217,7 @@ export default function CourtBooking() {
             {/* Google Maps & Navigation Action */}
             <div className="pt-2.5 border-t border-slate-100 flex items-center gap-2">
               <a
-                href="https://maps.google.com/?q=188+Nguyen+Van+Cu+Long+Bien+Hanoi"
+                href="https://maps.google.com/?q=Tran+Duy+Hung+Cau+Giay+Hanoi"
                 target="_blank"
                 rel="noreferrer"
                 className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-800 text-center py-2 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-colors"
@@ -229,7 +226,7 @@ export default function CourtBooking() {
                 <span>Chỉ đường Maps</span>
               </a>
               <a
-                href="tel:0988123456"
+                href="tel:0888888888"
                 className="bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-1 transition-colors"
               >
                 <Phone className="h-4 w-4" />
@@ -259,6 +256,12 @@ export default function CourtBooking() {
             <span className="h-3.5 w-3.5 rounded-full bg-slate-300" />
             <span>Đã đặt / Đang giữ</span>
           </div>
+          <div className="flex items-center gap-1.5">
+            <span className="h-3.5 w-3.5 rounded-md bg-slate-200 border border-slate-300 text-slate-400 font-mono text-[9px] flex items-center justify-center line-through">
+              Quá
+            </span>
+            <span>Đã quá giờ</span>
+          </div>
         </div>
 
         <div className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-600 font-medium">
@@ -276,6 +279,7 @@ export default function CourtBooking() {
           slots={slots}
           selectedSlotIds={selectedSlotIds}
           onToggleSlot={handleToggleSlot}
+          selectedDate={selectedDate}
         />
       )}
 
