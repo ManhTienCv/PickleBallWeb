@@ -11,6 +11,9 @@ declare const _default: {
             };
         };
         extend: {
+            fontFamily: {
+                sans: [string, string];
+            };
             colors: {
                 border: string;
                 input: string;
@@ -94,6 +97,8 @@ declare const _default: {
             };
         };
     };
-    plugins: any[];
+    plugins: {
+        handler: () => void;
+    }[];
 };
 export default _default;
