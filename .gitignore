@@ -40,3 +40,6 @@ Thumbs.db
 .idea/
 *.suo
 *.user
+# ── Documentation & Local Notes ──
+/Note/
+/note/

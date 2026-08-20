@@ -60,6 +60,18 @@
     @apply border-border;
   }
 
+  html {
+    font-size: 14.4px; /* 90% rem scale across the entire UI */
+    height: 100%;
+  }
+
+  body, #root {
+    min-height: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', sans-serif;
@@ -99,6 +111,22 @@
     @apply bg-accent text-accent-foreground;
   }
 
+  /* Eliminate focus outlines on Recharts SVG elements */
+  .recharts-wrapper,
+  .recharts-wrapper *:focus,
+  .recharts-surface,
+  .recharts-surface:focus,
+  .recharts-pie-sector,
+  .recharts-pie-sector:focus,
+  .recharts-sector,
+  .recharts-sector:focus,
+  .recharts-pie:focus,
+  svg path:focus,
+  svg:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
   .badge-playing {
     @apply bg-primary/10 text-primary;
   }
@@ -106,4 +134,20 @@
   .badge-maintenance {
     @apply bg-warning/10 text-warning;
   }
+}
+
+/* Sleek custom scrollbar for POS independent scroll panels */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.65);
 }

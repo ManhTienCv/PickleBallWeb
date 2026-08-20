@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { motion } from 'framer-motion'
 import { shopService } from '@/services/shop.service'
 import ProductCard from '@/components/ProductCard'
 import { cartService } from '@/services/cart.service'
@@ -22,10 +23,16 @@ import {
   Flame,
   Truck,
   RotateCcw,
+  CircleDot,
+  Layers,
+  Percent,
+  ChevronRight,
+  Trophy,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function Home() {
+  const navigate = useNavigate()
   const [activeCategory, setActiveCategory] = useState<string>('all')
 
   const { data: productData, isLoading } = useQuery({
@@ -35,137 +42,236 @@ export default function Home() {
 
   const rawProducts = productData?.items || []
 
-  const filteredProducts = rawProducts.filter((product: any) => {
-    if (!product || !product.name) return false
-    const pName = String(product.name).toLowerCase()
-    const cName = String(product.category?.name || '').toLowerCase()
-    if (activeCategory === 'all') return true
-    if (activeCategory === 'racket') return pName.includes('vợt') || cName.includes('vợt')
-    if (activeCategory === 'ball') return pName.includes('bóng') || cName.includes('bóng')
-    if (activeCategory === 'accessory') return pName.includes('túi') || pName.includes('băng') || pName.includes('phụ') || cName.includes('phụ')
-    return true
-  }).slice(0, 8)
+  // Filter Products for Home Grid
+  const filteredProducts = rawProducts
+    .filter((product: any) => {
+      if (!product || !product.name) return false
+      const pName = String(product.name).toLowerCase()
+      const cName = String(product.category?.name || '').toLowerCase()
+      if (activeCategory === 'all') return true
+      if (activeCategory === 'racket') return pName.includes('vợt') || cName.includes('vợt')
+      if (activeCategory === 'ball') return pName.includes('bóng') || cName.includes('bóng')
+      if (activeCategory === 'accessory')
+        return (
+          pName.includes('túi') ||
+          pName.includes('băng') ||
+          pName.includes('phụ') ||
+          cName.includes('phụ')
+        )
+      if (activeCategory === 'apparel')
+        return (
+          pName.includes('áo') ||
+          pName.includes('quần') ||
+          pName.includes('váy') ||
+          cName.includes('quần') ||
+          cName.includes('trang phục')
+        )
+      return true
+    })
+    .slice(0, 8)
 
   const handleAddToCart = async (product: any) => {
-    if (!product.variants || product.variants.length === 0) {
-      toast.error('Sản phẩm chưa có biến thể khả dụng')
-      return
-    }
+    const variantId = product.variants?.[0]?.id || product.id || Date.now()
     try {
-      await cartService.addToCart(product.variants[0].id, 1)
-      toast.success(`Đã thêm "${product.name}" vào giỏ hàng!`)
+      await cartService.addToCart(variantId, 1, product)
+      toast.success(`Đã thêm "${product.name}" vào giỏ hàng!`, {
+        action: {
+          label: 'Xem giỏ hàng →',
+          onClick: () => navigate('/cart'),
+        },
+      })
     } catch {
-      toast.error('Có lỗi xảy ra khi thêm vào giỏ hàng. Vui lòng đăng nhập.')
+      toast.error('Có lỗi xảy ra khi thêm vào giỏ hàng.')
     }
   }
 
+  // 5 Featured Categories (Khớp 100% Ảnh 1)
+  const featuredCategories = [
+    {
+      id: 'Vợt Pickleball',
+      name: 'Vợt Pickleball',
+      count: '24+ Mẫu vợt',
+      icon: Trophy,
+      color: 'from-emerald-500/10 to-emerald-500/5',
+      iconColor: 'text-emerald-700',
+    },
+    {
+      id: 'Bóng Pickleball',
+      name: 'Bóng Pickleball',
+      count: 'Chuẩn USAPA 40 lỗ',
+      icon: CircleDot,
+      color: 'from-amber-500/10 to-amber-500/5',
+      iconColor: 'text-amber-700',
+    },
+    {
+      id: 'Phụ kiện & Bao vợt',
+      name: 'Phụ kiện & Bao vợt',
+      count: 'Túi, Băng quấn, Nón',
+      icon: ShoppingBag,
+      color: 'from-blue-500/10 to-blue-500/5',
+      iconColor: 'text-blue-700',
+    },
+    {
+      id: 'Quần áo & Trang phục',
+      name: 'Quần áo & Trang phục',
+      count: 'Dry-fit thoáng khí',
+      icon: Layers,
+      color: 'from-purple-500/10 to-purple-500/5',
+      iconColor: 'text-purple-700',
+    },
+    {
+      id: 'Dịch vụ Đặt Sân',
+      name: 'Sân Thi Đấu Pro',
+      count: '4 Sân chuẩn quốc tế',
+      icon: Calendar,
+      color: 'from-rose-500/10 to-rose-500/5',
+      iconColor: 'text-rose-700',
+      isBooking: true,
+    },
+  ]
+
+  // Top Brands
+  const topBrands = [
+    { name: 'JOOLA', tag: 'Official USAPA', desc: 'Vợt Carbon 3S' },
+    { name: 'SELKIRK', tag: 'Made in USA', desc: 'Công nghệ Power Air' },
+    { name: 'CRBN', tag: 'Raw Carbon Fiber', desc: 'Kiểm soát & Tạo xoáy' },
+    { name: 'FRANKLIN', tag: 'Official Ball', desc: 'Bóng thi đấu X-40' },
+    { name: 'GAMMA', tag: 'Pro Accessories', desc: 'Phụ kiện & Dây quấn' },
+    { name: 'HEAD', tag: 'Radical Tour', desc: 'Sức mạnh vượt trội' },
+  ]
+
+  // 4 Featured Courts
+  const courts = [
+    {
+      id: 'A1',
+      name: 'Sân A1 - Pro USAPA',
+      type: 'Trong nhà / Máy lạnh',
+      price: '180.000 đ/h',
+      status: 'Sẵn sàng đón khách',
+      image: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&q=80&w=500',
+    },
+    {
+      id: 'A2',
+      name: 'Sân A2 - Pro USAPA',
+      type: 'Đèn LED 500 Lux',
+      price: '180.000 đ/h',
+      status: 'Sẵn sàng đón khách',
+      image: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&q=80&w=500',
+    },
+    {
+      id: 'A3',
+      name: 'Sân A3 - Standard',
+      type: 'Luyện tập & Giao lưu',
+      price: '150.000 đ/h',
+      status: 'Sẵn sàng đón khách',
+      image: 'https://images.unsplash.com/photo-1599474924187-334a4ae5bd3c?auto=format&fit=crop&q=80&w=500',
+    },
+    {
+      id: 'VIP',
+      name: 'Sân VIP Center',
+      type: 'Khán đài & Lounge riêng',
+      price: '250.000 đ/h',
+      status: 'Sẵn sàng đón khách',
+      image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=500',
+    },
+  ]
+
   return (
-    <div className="space-y-16 pb-16">
-      {/* 🟢 HERO SECTION WITH ELEVATED PURE WHITE CANVAS & DARK CHARCOAL CARD SHOWCASE */}
-      <section className="relative bg-white text-slate-900 rounded-3xl mx-2 sm:mx-4 mt-2 border border-slate-200/90 shadow-xl shadow-slate-200/70 overflow-visible">
-        {/* Background Decorative Soft Blur Spheres */}
-        <div className="absolute -top-24 -right-24 w-[420px] h-[420px] bg-[#27c372]/10 rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-[420px] h-[420px] bg-emerald-600/10 rounded-full blur-[100px] pointer-events-none" />
+    <div className="space-y-16 pb-20 font-sans">
+      {/* ========================================================= */}
+      {/* 1. HERO SECTION (ELEVATED PURE WHITE CANVAS & ARCHITECTURAL) */}
+      {/* ========================================================= */}
+      <section className="container mx-auto max-w-7xl px-3 sm:px-6">
+        <div className="relative bg-white text-slate-900 rounded-3xl p-6 sm:p-12 border border-slate-200/90 shadow-xl shadow-slate-200/50 overflow-hidden">
+          {/* Ambient Lighting Orbs */}
+          <div className="absolute -top-28 -right-28 w-[450px] h-[450px] bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none" />
+          <div className="absolute -bottom-28 -left-28 w-[450px] h-[450px] bg-emerald-600/10 rounded-full blur-[100px] pointer-events-none" />
 
-        <div className="container mx-auto px-4 py-12 sm:py-16 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            {/* Left Text Content */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center relative z-10">
+            {/* Left Hero Content */}
             <div className="lg:col-span-7 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-800/10 border border-emerald-700/20 text-emerald-800 text-xs font-extrabold uppercase tracking-wider">
-                <Sparkles className="h-3.5 w-3.5 text-emerald-700" />
-                <span>Hệ Thống Đặt Sân & Pro Shop Pickleball Đạt Chuẩn European SOA</span>
-              </div>
-
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-none text-slate-900">
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight text-slate-900">
                 Thiết Bị Thể Thao & <br />
-                <span className="text-[#27c372] font-black">
-                  Sân Pickleball Class-A
-                </span>
+                <span className="text-emerald-600">Sân Pickleball Class-A</span>
               </h1>
 
-              <p className="text-slate-600 text-base sm:text-lg leading-relaxed max-w-2xl font-semibold">
-                Một trải nghiệm ứng dụng đồng bộ đa dịch vụ: Chọn giữ chỗ sân Pickleball tự động trong 7 ngày và mua sắm vợt bóng chính hãng tiện lợi chỉ trong 1 quy trình duy nhất.
+              <p className="text-slate-600 text-sm sm:text-base leading-relaxed max-w-2xl font-normal">
+                Hệ thống thể thao liên thông tiện lợi: Giữ chỗ 4 cụm sân thi đấu tự động 24/7 và mua sắm vợt bóng chính hãng chuẩn quốc tế chỉ trong một nền tảng duy nhất.
               </p>
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-4 pt-2">
+              <div className="flex flex-wrap items-center gap-3.5 pt-2">
                 <Link to="/booking">
-                  <Button size="lg" className="gap-2 bg-[#27c372] hover:bg-[#22c55e] text-white font-black px-8 py-3.5 rounded-2xl shadow-lg shadow-[#27c372]/25 scale-[1.02] transition-all">
-                    <Calendar className="h-5 w-5 text-white" />
+                  <Button
+                    size="lg"
+                    className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-7 py-3.5 rounded-2xl shadow-lg shadow-emerald-600/25 transition-all text-sm cursor-pointer"
+                  >
+                    <Calendar className="h-4.5 w-4.5 text-white" />
                     <span>Đặt Lịch Sân Ngay</span>
                     <ArrowRight className="h-4 w-4 text-white" />
                   </Button>
                 </Link>
 
                 <Link to="/products">
-                  <Button size="lg" variant="outline" className="gap-2 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-800 font-extrabold rounded-2xl px-6 py-3.5 shadow-sm">
-                    <ShoppingBag className="h-5 w-5 text-[#27c372]" />
-                    <span>Xem Cửa Hàng Vợt</span>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="gap-2 bg-white border border-slate-200/90 hover:bg-slate-50 text-slate-800 font-medium rounded-2xl px-6 py-3.5 shadow-xs text-sm cursor-pointer"
+                  >
+                    <ShoppingBag className="h-4.5 w-4.5 text-emerald-600" />
+                    <span>Khám Phá Sản Phẩm</span>
                   </Button>
                 </Link>
               </div>
 
               {/* Quick Stats Badges */}
-              <div className="pt-8 grid grid-cols-3 gap-4 border-t border-slate-200/80 text-xs sm:text-sm">
+              <div className="pt-6 grid grid-cols-3 gap-4 border-t border-slate-200/80 text-xs sm:text-sm">
                 <div>
-                  <div className="text-2xl font-black text-slate-900">4 Sân Thi Đấu</div>
-                  <div className="text-slate-500 font-semibold">Mặt sân đạt chuẩn USAPA Pro</div>
+                  <div className="text-xl sm:text-2xl font-bold text-slate-900">4 Sân Đấu</div>
+                  <div className="text-slate-500 font-normal">Chuẩn USAPA Pro</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-black text-[#27c372]">10 Phút</div>
-                  <div className="text-slate-500 font-semibold">Khoá lịch tự động không sợ trùng</div>
+                  <div className="text-xl sm:text-2xl font-bold text-emerald-600">10 Phút</div>
+                  <div className="text-slate-500 font-normal">Khóa lịch tự động</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-black text-slate-900">100%</div>
-                  <div className="text-slate-500 font-semibold">Vợt & Bóng chính hãng Hãng</div>
+                  <div className="text-xl sm:text-2xl font-bold text-slate-900">100%</div>
+                  <div className="text-slate-500 font-normal">Hàng chính hãng</div>
                 </div>
               </div>
             </div>
 
-            {/* Right Interactive 3D Floating Showcase Card (Harmonized Light Architectural Theme) */}
-            <div className="lg:col-span-5 relative perspective-[1200px] pt-4 sm:pt-0">
-              {/* Floating Live Status Badge (Top-Right) */}
-              <div className="absolute -top-3 right-3 z-30 bg-slate-900 border border-[#27c372]/50 px-3.5 py-1.5 rounded-full shadow-lg flex items-center gap-2 hidden sm:flex">
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#27c372] opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#27c372]"></span>
-                </span>
-                <span className="text-[11px] font-extrabold text-white">⚡ Giữ Chỗ Tự Động 24/7</span>
-              </div>
-
-              {/* Main 3D Card Showcase */}
-              <div className="relative rounded-3xl overflow-hidden border border-slate-200/90 bg-white p-4.5 shadow-xl shadow-slate-200/50 transition-all duration-500 transform hover:rotate-y-[-4deg] hover:rotate-x-[3deg] space-y-3.5">
-                {/* Image Banner - Authentic Pickleball Court Photo */}
+            {/* Right Interactive Showcase Card */}
+            <div className="lg:col-span-5 relative pt-4 sm:pt-0">
+              <div className="relative rounded-3xl overflow-hidden border border-slate-200/90 bg-white p-4 shadow-xl shadow-slate-200/50 space-y-4">
+                {/* Court Image Banner */}
                 <div className="aspect-video rounded-2xl overflow-hidden relative border border-slate-200 shadow-inner group">
                   <img
-                    src="/images/pickleball_court.jpg"
+                    src="https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&q=80&w=800"
                     alt="Sân Pickleball Pick Center"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
-                  <Badge className="absolute top-3 left-3 bg-[#27c372] text-white font-black shadow-md">
-                    Đang mở cửa (05:00 - 23:00)
-                  </Badge>
                 </div>
 
-                {/* Quick Info Box - Clean & Uncluttered */}
-                <div className="bg-slate-50/90 p-4 rounded-2xl border border-slate-200/80 space-y-2.5">
-                  <div className="flex items-center justify-between text-xs text-slate-500">
-                    <span className="flex items-center gap-1 font-extrabold text-slate-800">
-                      <MapPin className="h-3.5 w-3.5 text-[#27c372]" />
+                {/* Quick Info */}
+                <div className="bg-[#FAF8F5] p-4 rounded-2xl border border-slate-200/80 space-y-3">
+                  <div className="flex items-center text-xs text-slate-500">
+                    <span className="flex items-center gap-1 font-semibold text-slate-800">
+                      <MapPin className="h-3.5 w-3.5 text-emerald-600" />
                       Cầu Giấy, Hà Nội
-                    </span>
-                    <span className="flex items-center gap-1 text-amber-500 font-extrabold">
-                      <Star className="h-3.5 w-3.5 fill-amber-400" /> 4.9 (120+ Đánh giá)
                     </span>
                   </div>
 
-                  <h3 className="font-extrabold text-slate-900 text-base">Cụm Sân Pickleball Pick Center</h3>
-                  <p className="text-xs text-slate-600 leading-relaxed font-semibold">
-                    Đèn LED chống chói thi đấu chuyên nghiệp, lounge máy lạnh, phòng tắm nóng lạnh & pro shop hỗ trợ mượn vợt cao cấp dùng thử.
+                  <h3 className="font-bold text-slate-900 text-base">Cụm Sân Pickleball Pick Center</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed font-normal">
+                    Đèn LED chống chói thi đấu chuyên nghiệp, lounge máy lạnh, phòng tắm nóng lạnh & pro shop hỗ trợ mượn vợt dùng thử.
                   </p>
 
                   <Link to="/booking" className="block pt-1">
-                    <Button size="sm" className="w-full bg-[#27c372] hover:bg-[#22c55e] text-white font-black rounded-xl gap-1.5 shadow-md shadow-[#27c372]/20">
+                    <Button
+                      size="sm"
+                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl gap-1.5 shadow-md shadow-emerald-600/20 text-xs h-10 cursor-pointer"
+                    >
                       <span>Kiểm tra lịch trống hôm nay</span>
                       <ArrowRight className="h-3.5 w-3.5 text-white" />
                     </Button>
@@ -177,141 +283,289 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 🟢 FEATURED PRODUCTS SECTION (Harmonious European Layout) */}
-      <section className="container mx-auto px-4 sm:px-6 space-y-6 sm:space-y-8">
-        {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/80 pb-5">
-          <div className="space-y-1.5 max-w-2xl">
-            <div className="inline-flex items-center gap-1.5 text-[#16a34a] font-bold text-xs uppercase tracking-wider">
-              <Flame className="h-4 w-4 text-[#27c372]" />
-              <span>USAPA Certified • Trang Bị Hot Nhất 2026</span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Vợt & Phụ Kiện Thi Đấu <span className="text-[#27c372]">Hot Nhất</span>
+      {/* ========================================================= */}
+      {/* 2. ✨ DANH MỤC NỔI BẬT (KHỚP 100% HÌNH 1 BẠN GỬI) */}
+      {/* ========================================================= */}
+      <section className="container mx-auto max-w-7xl px-3 sm:px-6 space-y-5">
+        <div className="flex items-end justify-between border-b border-slate-200/80 pb-4">
+          <div className="space-y-1">
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+              Danh mục nổi bật
             </h2>
-            <p className="text-slate-500 text-xs sm:text-sm font-medium">
-              Vợt carbon 3S, bóng thi đấu và túi phụ kiện tiêu chuẩn quốc tế từ JOOLA, Selkirk, Franklin.
+            <p className="text-sm text-slate-500 font-normal">
+              Khám phá theo loại sản phẩm và dịch vụ
             </p>
           </div>
 
-          {/* Category Filter Pills & See All Link */}
-          <div className="flex flex-wrap items-center gap-2">
+          <Link
+            to="/products"
+            className="text-sm font-semibold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 transition-colors group"
+          >
+            <span>Xem tất cả</span>
+            <ArrowRight className="w-4 h-4 text-emerald-600 group-hover:translate-x-1 transition-transform" />
+          </Link>
+        </div>
+
+        {/* 5 Distinct Category Cards in a Row (Khớp Ảnh 1) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-5">
+          {featuredCategories.map((cat) => {
+            const Icon = cat.icon
+            const destination = cat.isBooking ? '/booking' : `/products?category=${encodeURIComponent(cat.id)}`
+
+            return (
+              <Link
+                key={cat.id}
+                to={destination}
+                className="group relative bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm hover:shadow-lg hover:border-emerald-500/50 transition-all duration-300 flex flex-col items-center text-center space-y-3 cursor-pointer"
+              >
+                {/* Soft Icon Box (Khớp Ảnh 1) */}
+                <div className="w-16 h-16 rounded-2xl bg-[#FAF8F5] group-hover:bg-emerald-50 border border-slate-100 group-hover:border-emerald-200 flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-xs">
+                  <Icon className={`w-7 h-7 ${cat.iconColor}`} />
+                </div>
+
+                <div className="space-y-0.5">
+                  <h3 className="font-semibold text-slate-900 text-sm group-hover:text-emerald-700 transition-colors">
+                    {cat.name}
+                  </h3>
+                  <p className="text-xs text-slate-400 font-normal">
+                    {cat.count}
+                  </p>
+                </div>
+              </Link>
+            )
+          })}
+        </div>
+      </section>
+
+      {/* ========================================================= */}
+      {/* 3. SẢN PHẨM NỔI BẬT */}
+      {/* ========================================================= */}
+      <section className="container mx-auto max-w-7xl px-3 sm:px-6 space-y-6">
+        {/* Section Header with Category Tabs */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/80 pb-5">
+          <div className="space-y-1.5 max-w-xl">
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+              Sản Phẩm Được Mua Nhiều Nhất
+            </h2>
+            <p className="text-slate-500 text-xs sm:text-sm font-normal">
+              Vợt carbon 3S, bóng thi đấu và phụ kiện chính hãng JOOLA, Selkirk, Franklin.
+            </p>
+          </div>
+
+          {/* Sliding Pill Filter Tabs */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none relative">
             {[
               { id: 'all', label: 'Tất Cả' },
-              { id: 'racket', label: '🏓 Vợt Carbon 3S' },
-              { id: 'ball', label: '🟡 Bóng Thi Đấu' },
-              { id: 'accessory', label: '🎒 Túi & Phụ Kiện' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveCategory(tab.id)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
-                  activeCategory === tab.id
-                    ? 'bg-[#27c372] text-white shadow-sm shadow-[#27c372]/30'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+              { id: 'racket', label: 'Vợt Carbon' },
+              { id: 'ball', label: 'Bóng Thi Đấu' },
+              { id: 'accessory', label: 'Phụ Kiện' },
+            ].map((tab) => {
+              const isActive = activeCategory === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveCategory(tab.id)}
+                  className="relative px-4 py-2 rounded-full text-xs font-medium transition-colors shrink-0 select-none flex items-center justify-center cursor-pointer"
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="home-category-sliding-pill"
+                      transition={{
+                        type: 'spring',
+                        stiffness: 280,
+                        damping: 26,
+                        mass: 0.8,
+                      }}
+                      className="absolute inset-0 bg-slate-900 rounded-full shadow-sm z-0"
+                    />
+                  )}
+                  {!isActive && (
+                    <div className="absolute inset-0 bg-white border border-slate-200/90 rounded-full hover:bg-slate-50 transition-colors z-0" />
+                  )}
+                  <span
+                    className={`relative z-10 transition-colors ${
+                      isActive ? 'text-white font-semibold' : 'text-slate-700 hover:text-slate-900'
+                    }`}
+                  >
+                    {tab.label}
+                  </span>
+                </button>
+              )
+            })}
 
-            <Link to="/products" className="ml-1">
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs font-bold text-slate-700 border-slate-300 rounded-full h-8 px-3.5 hover:bg-slate-100">
+            <Link to="/products" className="ml-1 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1 text-xs font-medium text-slate-700 border-slate-300 rounded-full h-8 px-3.5 hover:bg-slate-100"
+              >
                 <span>Xem tất cả</span>
-                <ArrowRight className="h-3.5 w-3.5 text-slate-600" />
+                <ChevronRight className="h-3.5 w-3.5" />
               </Button>
             </Link>
           </div>
         </div>
 
-        {/* Product Grid resting cleanly on page */}
+        {/* Product Cards Grid: 4 Cột Cân Đối, Vừa Vặn */}
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-5">
             {[1, 2, 3, 4].map((n) => (
-              <div key={n} className="h-80 rounded-2xl bg-slate-100 animate-pulse border border-slate-200" />
+              <div key={n} className="h-80 rounded-2xl bg-slate-200/70 animate-pulse border border-slate-200" />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {filteredProducts.map((product: any) => (
               <ProductCard key={product.id} product={product} onAddToCart={handleAddToCart} />
             ))}
           </div>
         )}
+      </section>
 
-        {/* Minimal Guarantees Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-          <div className="flex items-center gap-2.5 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm">
-            <div className="w-8 h-8 rounded-xl bg-[#27c372]/15 text-[#16a34a] flex items-center justify-center shrink-0">
-              <Award className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="font-extrabold text-slate-900 text-xs">100% Chính Hãng</p>
-              <p className="text-[11px] text-slate-500 font-medium">Đạt chuẩn USAPA</p>
-            </div>
+      {/* ========================================================= */}
+      {/* 4. CỤM SÂN THI ĐẤU (FEATURED COURTS) */}
+      {/* ========================================================= */}
+      <section className="container mx-auto max-w-7xl px-3 sm:px-6 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200/80 pb-4">
+          <div className="space-y-1">
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+              Hệ Thống 4 Sân Đấu Chuẩn USAPA
+            </h2>
+            <p className="text-sm text-slate-500 font-normal">
+              Mặt sân Decoturf thi đấu chống trơn trượt, đèn LED 500 Lux chuẩn giải đấu
+            </p>
           </div>
 
-          <div className="flex items-center gap-2.5 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm">
-            <div className="w-8 h-8 rounded-xl bg-[#27c372]/15 text-[#16a34a] flex items-center justify-center shrink-0">
-              <Truck className="w-4 h-4" />
+          <Link to="/booking">
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-xl border-slate-300 text-xs font-semibold gap-1.5 hover:bg-slate-100"
+            >
+              <span>Xem sơ đồ & lịch trống</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Button>
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {courts.map((court) => (
+            <div
+              key={court.id}
+              className="bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
+            >
+              <div className="aspect-[16/10] overflow-hidden relative group">
+                <img
+                  src={court.image}
+                  alt={court.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <Badge className="absolute top-2.5 left-2.5 bg-slate-900/90 text-white text-[11px] font-medium backdrop-blur-sm">
+                  {court.type}
+                </Badge>
+              </div>
+
+              <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
+                      {court.status}
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-slate-900 text-base">{court.name}</h3>
+                  <div className="text-sm font-bold text-slate-900">{court.price}</div>
+                </div>
+
+                <Link to="/booking" className="block pt-1">
+                  <Button
+                    size="sm"
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl h-9"
+                  >
+                    Đặt sân này
+                  </Button>
+                </Link>
+              </div>
             </div>
-            <div>
-              <p className="font-extrabold text-slate-900 text-xs">Giao Hỏa Tốc 2H</p>
-              <p className="text-[11px] text-slate-500 font-medium">Nội thành Hà Nội & TP.HCM</p>
-            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ========================================================= */}
+      {/* 5. ✨ THƯƠNG HIỆU THỂ THAO ĐỒNG HÀNH (TOP BRANDS STRIP) */}
+      {/* ========================================================= */}
+      <section className="container mx-auto max-w-7xl px-3 sm:px-6">
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-5">
+          <div className="text-center space-y-1">
+            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
+              Đối Tác Phân Phối Chính Hãng
+            </h3>
+            <p className="text-base sm:text-lg font-bold text-slate-900">
+              Các thương hiệu Pickleball hàng đầu thế giới
+            </p>
           </div>
 
-          <div className="flex items-center gap-2.5 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm">
-            <div className="w-8 h-8 rounded-xl bg-[#27c372]/15 text-[#16a34a] flex items-center justify-center shrink-0">
-              <RotateCcw className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="font-extrabold text-slate-900 text-xs">Đổi Trả 7 Ngày</p>
-              <p className="text-[11px] text-slate-500 font-medium">Lỗi nhà sản xuất</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2.5 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm">
-            <div className="w-8 h-8 rounded-xl bg-[#27c372]/15 text-[#16a34a] flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="font-extrabold text-slate-900 text-xs">Bảo Hành 12 Tháng</p>
-              <p className="text-[11px] text-slate-500 font-medium">Mặt vợt carbon 3S</p>
-            </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+            {topBrands.map((brand) => (
+              <Link
+                key={brand.name}
+                to={`/products?search=${encodeURIComponent(brand.name)}`}
+                className="p-3.5 rounded-2xl bg-[#FAF8F5] border border-slate-200/70 hover:border-emerald-500/50 hover:bg-white hover:shadow-md transition-all text-center space-y-1 group"
+              >
+                <div className="font-extrabold text-sm sm:text-base text-slate-800 group-hover:text-emerald-700 tracking-wider">
+                  {brand.name}
+                </div>
+                <div className="text-[11px] text-slate-500 font-normal">
+                  {brand.desc}
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* 🟢 HIGHLIGHT FEATURES SECTION */}
-      <section className="bg-slate-100/70 py-16 border-y border-slate-200">
-        <div className="container mx-auto px-4 sm:px-6">
-          <div className="text-center max-w-2xl mx-auto mb-12 space-y-2">
-            <h2 className="text-3xl font-extrabold text-slate-900">Tại Sao Chọn Pick Web?</h2>
-            <p className="text-slate-600 text-sm">
-              Trải nghiệm đặt dịch vụ thể thao hiện đại, minh bạch và tiện lợi nhất.
-            </p>
+      {/* ========================================================= */}
+      {/* 6. 4 CAM KẾT VÀNG CHẤT LƯỢNG */}
+      {/* ========================================================= */}
+      <section className="container mx-auto max-w-7xl px-3 sm:px-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="flex items-center gap-3 bg-white p-4.5 rounded-2xl border border-slate-200/90 shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-100">
+              <Award className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="font-bold text-slate-900 text-sm">100% Chính Hãng</p>
+              <p className="text-xs text-slate-500 font-normal">Đạt chuẩn USAPA Pro</p>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto gap-8">
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3 hover:border-primary/40 transition-all">
-              <div className="h-12 w-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
-                <Calendar className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-900">Lịch Sân Trực Quan 7 Ngày</h3>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Xem chính xác khung giờ trống theo từng sân (Sân A1, A2, VIP), giá giờ thường và giờ cao điểm được minh bạch rõ ràng.
-              </p>
+          <div className="flex items-center gap-3 bg-white p-4.5 rounded-2xl border border-slate-200/90 shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-100">
+              <Truck className="w-5 h-5" />
             </div>
+            <div>
+              <p className="font-bold text-slate-900 text-sm">Giao Hỏa Tốc 2H</p>
+              <p className="text-xs text-slate-500 font-normal">Nội thành Hà Nội</p>
+            </div>
+          </div>
 
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3 hover:border-primary/40 transition-all">
-              <div className="h-12 w-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-                <Clock className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-900">Khoá Sân Tự Động 10 Phút</h3>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Hệ thống tạm giữ khung giờ bằng công nghệ Pessimistic Lock giúp bạn yên tâm thanh toán mà không sợ bị người khác đặt đè.
-              </p>
+          <div className="flex items-center gap-3 bg-white p-4.5 rounded-2xl border border-slate-200/90 shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-100">
+              <RotateCcw className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="font-bold text-slate-900 text-sm">Đổi Trả 7 Ngày</p>
+              <p className="text-xs text-slate-500 font-normal">Lỗi nhà sản xuất</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 bg-white p-4.5 rounded-2xl border border-slate-200/90 shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-100">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="font-bold text-slate-900 text-sm">Bảo Hành 12 Tháng</p>
+              <p className="text-xs text-slate-500 font-normal">Mặt vợt carbon 3S</p>
             </div>
           </div>
         </div>

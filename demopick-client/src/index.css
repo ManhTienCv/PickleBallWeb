@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import 'leaflet/dist/leaflet.css';
 
 @tailwind base;
 @tailwind components;
@@ -58,6 +59,18 @@
 @layer base {
   * {
     @apply border-border;
+  }
+
+  html {
+    font-size: 14.4px; /* 90% rem scale across the entire UI */
+    height: 100%;
+  }
+
+  body, #root {
+    min-height: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
   }
 
   body {

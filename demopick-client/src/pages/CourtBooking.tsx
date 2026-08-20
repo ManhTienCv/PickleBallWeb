@@ -21,7 +21,6 @@ export default function CourtBooking() {
   const [currentHold, setCurrentHold] = useState<Hold | null>(null)
   const [isHolding, setIsHolding] = useState(false)
   const [policyOpen, setPolicyOpen] = useState(false)
-  const [rankPolicyOpen, setRankPolicyOpen] = useState(false)
 
   const dateStr = format(selectedDate, 'yyyy-MM-dd')
 
@@ -84,16 +83,6 @@ export default function CourtBooking() {
           >
             <RefreshCw className="h-3.5 w-3.5 text-primary" />
             <span>Chính Sách Hủy & Hoàn Tiền</span>
-          </Button>
-
-          <Button
-            onClick={() => setRankPolicyOpen(true)}
-            variant="outline"
-            size="sm"
-            className="bg-white border-slate-300 gap-1.5 text-xs font-semibold"
-          >
-            <Award className="h-3.5 w-3.5 text-amber-500" />
-            <span>Chính Sách Hạng Hội Viên</span>
           </Button>
 
           <Popover>
@@ -354,49 +343,6 @@ export default function CourtBooking() {
                 <Badge variant="destructive">Không hoàn tiền (0%)</Badge>
               </div>
               <p className="text-red-700">Khấu trừ 100% chi phí giữ sân do quá cận giờ thi đấu không thể mở ca lại cho hội viên khác.</p>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Rank Policy Dialog */}
-      <Dialog open={rankPolicyOpen} onOpenChange={setRankPolicyOpen}>
-        <DialogContent className="max-w-md bg-white">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <Award className="h-5 w-5 text-amber-500" />
-              Quy Định Hạng Thành Viên & Ưu Đãi Giảm Giá
-            </DialogTitle>
-            <DialogDescription>
-              Tự động nâng hạng dựa trên tổng chi tiêu tích lũy đặt sân & mua phụ kiện tại DemoPick ONE
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3 text-xs pt-2">
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
-              <div className="font-bold text-slate-900 flex items-center justify-between">
-                <span>🥉 Hạng Bạc (Silver):</span>
-                <Badge variant="outline" className="font-bold">Chi tiêu ≥ 0đ</Badge>
-              </div>
-              <p className="text-slate-600">Tự động cấp khi tạo tài khoản. Tích lũy 1% giá trị đơn hàng đổi voucher giảm giá.</p>
-            </div>
-
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1">
-              <div className="font-bold text-amber-900 flex items-center justify-between">
-                <span>🥇 Hạng Vàng (Gold):</span>
-                <Badge className="bg-amber-600 font-bold">Chi tiêu ≥ 5.000.000đ</Badge>
-              </div>
-              <p className="text-amber-800">Tự động <strong>Giảm 10%</strong> tổng hóa đơn đặt sân & mua phụ kiện tại quầy POS.</p>
-            </div>
-
-            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1">
-              <div className="font-bold text-emerald-900 flex items-center justify-between">
-                <span>💎 VIP Kim Cương (Diamond):</span>
-                <Badge className="bg-emerald-600 font-bold">Chi tiêu ≥ 15.000.000đ</Badge>
-              </div>
-              <p className="text-emerald-800">
-                Tự động <strong>Giảm 15%</strong> tiền sân, ưu tiên giữ trước khung giờ vàng (17h-21h) & tặng 2 nước uống miễn phí/buổi.
-              </p>
             </div>
           </div>
         </DialogContent>

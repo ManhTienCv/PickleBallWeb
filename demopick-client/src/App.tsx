@@ -1,5 +1,6 @@
+import { useEffect } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Route, Routes, useNavigate, useLocation } from 'react-router-dom'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { CheckoutTimerProvider } from '@/contexts/CheckoutTimerContext'
 import CustomerLayout from '@/components/CustomerLayout'
@@ -10,8 +11,6 @@ import Profile from '@/pages/Profile'
 import Products from '@/pages/Products'
 import ProductDetail from '@/pages/ProductDetail'
 import CourtBooking from '@/pages/CourtBooking'
-import Blog from '@/pages/Blog'
-import BlogPostDetail from '@/pages/BlogPostDetail'
 import CartPage from '@/pages/Cart'
 import CheckoutPage from '@/pages/Checkout'
 import OrderSuccess from '@/pages/OrderSuccess'
@@ -28,12 +27,36 @@ const queryClient = new QueryClient({
   },
 })
 
+// Tự động chuyển hướng về Trang Chủ mỗi khi bấm F5 hoặc Reload lại trang
+function ResetToHomeOnReload() {
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  useEffect(() => {
+    try {
+      const navEntries = performance.getEntriesByType?.('navigation') as PerformanceNavigationTiming[]
+      const isReload =
+        (navEntries && navEntries.length > 0 && navEntries[0]?.type === 'reload') ||
+        (performance as any)?.navigation?.type === 1
+
+      if (isReload && location.pathname !== '/' && location.pathname !== '/login') {
+        navigate('/', { replace: true })
+      }
+    } catch {
+      // Fallback ignore
+    }
+  }, [])
+
+  return null
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <CheckoutTimerProvider>
           <BrowserRouter>
+            <ResetToHomeOnReload />
             <Routes>
               <Route element={<CustomerLayout />}>
                 <Route path="/" element={<Home />} />
@@ -43,8 +66,6 @@ function App() {
                 <Route path="/products" element={<Products />} />
                 <Route path="/products/:slug" element={<ProductDetail />} />
                 <Route path="/booking" element={<CourtBooking />} />
-                <Route path="/blog" element={<Blog />} />
-                <Route path="/blog/:slug" element={<BlogPostDetail />} />
                 <Route path="/cart" element={<CartPage />} />
                 <Route path="/checkout" element={<CheckoutPage />} />
                 <Route path="/order-success/:code" element={<OrderSuccess />} />

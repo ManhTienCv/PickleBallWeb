@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
-  ShoppingCart,
+  ShoppingBag,
   Star,
   ShieldCheck,
   Sparkles,
@@ -37,6 +37,7 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
 
   const productName = product.name ? String(product.name) : 'Sản phẩm Pickleball'
   const isRacket = productName.toLowerCase().includes('vợt')
+  const brandName = product.brand?.name || (isRacket ? 'JOOLA' : 'DEMOPICK')
 
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
     product.variants && product.variants.length > 0 ? product.variants[0] : null
@@ -44,32 +45,35 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
   const [modalQuantity, setModalQuantity] = useState(1)
 
   const safePrice = Number(product.price) || 0
+  const originalPrice = Number(product.sale_price) || (safePrice > 1000000 ? Math.round(safePrice * 1.1) : safePrice)
+  const hasDiscount = originalPrice > safePrice
+  const discountPercent = hasDiscount ? Math.round(((originalPrice - safePrice) / originalPrice) * 100) : 0
+
   const formattedPrice = new Intl.NumberFormat('vi-VN', {
     style: 'currency',
     currency: 'VND',
   }).format(safePrice)
 
-  const formattedSalePrice = product.sale_price
+  const formattedOriginalPrice = hasDiscount
     ? new Intl.NumberFormat('vi-VN', {
         style: 'currency',
         currency: 'VND',
-      }).format(Number(product.sale_price))
+      }).format(originalPrice)
     : null
 
-  const totalStock = product.variants?.reduce((s, v) => s + (v?.stock_quantity || 0), 0) ?? 15
-
   const handleModalAddToCart = async () => {
-    const variantId = selectedVariant ? selectedVariant.id : product.variants?.[0]?.id
-    if (!variantId) {
-      toast.error('Sản phẩm chưa có biến thể khả dụng')
-      return
-    }
+    const variantId = selectedVariant ? selectedVariant.id : product.variants?.[0]?.id || product.id || Date.now()
     try {
-      await cartService.addToCart(variantId, modalQuantity)
-      toast.success(`Đã thêm ${modalQuantity} x "${product.name}" vào giỏ hàng!`)
+      await cartService.addToCart(variantId, modalQuantity, product)
+      toast.success(`Đã thêm ${modalQuantity} x "${product.name}" vào giỏ hàng!`, {
+        action: {
+          label: 'Xem giỏ hàng →',
+          onClick: () => navigate('/cart'),
+        },
+      })
       setQuickViewOpen(false)
     } catch {
-      toast.error('Vui lòng đăng nhập để thêm vào giỏ hàng.')
+      toast.error('Có lỗi xảy ra khi thêm vào giỏ hàng.')
     }
   }
 
@@ -80,267 +84,214 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
 
   return (
     <>
-      <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:border-[#27c372]/50">
-        {/* Product Image & Hover Action Overlay */}
-        <div className="aspect-square overflow-hidden bg-slate-100 relative block group/img">
-          <Link to={`/products/${product.slug}`}>
+      <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:border-emerald-500/50">
+        {/* Product Image Box */}
+        <div className="aspect-[4/3] sm:aspect-square overflow-hidden bg-[#FAF8F5] relative block group/img">
+          <Link to={`/products/${product.slug || product.id}`}>
             <img
-              src={product.image_url || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&q=80&w=400'}
+              src={product.image_url || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&q=80&w=600'}
               alt={product.name}
+              onError={(e) => {
+                ;(e.target as HTMLImageElement).src =
+                  'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&q=80&w=600'
+              }}
               className="h-full w-full object-cover object-center transition-transform duration-500 group-hover/img:scale-105"
             />
           </Link>
 
-          {/* Top Badges */}
-          <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5 z-10">
-            {product.brand && (
-              <Badge className="bg-slate-900/90 text-white backdrop-blur-md text-[10px] font-bold px-2 py-0.5 shadow-sm">
-                {product.brand.name}
-              </Badge>
+          {/* Top Left Discount or Status Badge (Chuẩn mẫu Ecommerce) */}
+          <div className="absolute top-3 left-3 flex items-center gap-1.5 z-10">
+            {discountPercent > 0 && product.in_stock && (
+              <span className="bg-[#EA580C] text-white text-xs font-bold px-2.5 py-0.5 rounded-full shadow-sm">
+                -{discountPercent}%
+              </span>
             )}
-            {isRacket && (
-              <Badge className="bg-[#27c372]/90 text-white backdrop-blur-md text-[10px] font-bold px-2 py-0.5 shadow-sm flex items-center gap-1">
-                <Sparkles className="h-3 w-3 text-amber-300" /> USAPA Approved
-              </Badge>
+            {!product.in_stock && (
+              <span className="bg-rose-600 text-white text-xs font-bold px-2.5 py-0.5 rounded-full shadow-sm">
+                Hết hàng
+              </span>
+            )}
+            {product.in_stock && discountPercent === 0 && (
+              <span className="bg-slate-900 text-white text-xs font-medium px-2.5 py-0.5 rounded-full shadow-sm">
+                Mới
+              </span>
             )}
           </div>
 
-          {!product.in_stock ? (
-            <Badge variant="destructive" className="absolute top-2.5 right-2.5 font-bold text-[10px]">
-              Hết Hàng
-            </Badge>
-          ) : (
-            <Badge className="absolute top-2.5 right-2.5 bg-amber-500/90 text-white font-bold text-[10px]">
-              Bán Chạy #1
-            </Badge>
-          )}
-
-          {/* Quick View Floating Hover Button */}
+          {/* Quick View Button on Image Hover */}
           <button
             onClick={() => setQuickViewOpen(true)}
-            className="absolute bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover/img:opacity-100 transition-all duration-300 bg-slate-900/90 hover:bg-slate-900 text-white text-xs font-bold px-4 py-2 rounded-full backdrop-blur-md shadow-lg flex items-center gap-1.5 z-20 scale-95 group-hover/img:scale-100"
+            className="absolute bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover/img:opacity-100 transition-all duration-300 bg-slate-900/90 hover:bg-slate-900 text-white text-xs font-medium px-4 py-2 rounded-full backdrop-blur-md shadow-lg flex items-center gap-1.5 z-20 scale-95 group-hover/img:scale-100"
           >
-            <Eye className="w-3.5 h-3.5 text-[#27c372]" />
-            <span>Xem Chi Tiết</span>
+            <Eye className="w-4 h-4 text-emerald-400" />
+            <span>Xem nhanh</span>
           </button>
         </div>
 
         {/* Content Details */}
-        <div className="flex flex-1 flex-col p-4 space-y-2">
-          {product.category && (
-            <span className="text-[11px] font-bold text-[#16a34a] uppercase tracking-wider">
-              {product.category.name}
-            </span>
-          )}
-
-          <h3 className="font-bold text-slate-900 group-hover:text-[#16a34a] transition-colors line-clamp-1 text-sm">
-            <Link to={`/products/${product.slug}`}>{product.name}</Link>
-          </h3>
-
-          {/* Rating & Sold count */}
-          <div className="flex items-center gap-1.5 text-xs text-slate-500">
-            <div className="flex items-center text-amber-400">
-              <Star className="h-3.5 w-3.5 fill-current" />
-              <span className="ml-1 font-bold text-slate-800 text-xs">4.9</span>
-            </div>
-            <span>•</span>
-            <span className="text-[11px] font-medium text-slate-500">Đã bán 142</span>
+        <div className="flex flex-1 flex-col p-4.5 sm:p-5 space-y-2">
+          {/* Brand uppercase */}
+          <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            {brandName}
           </div>
 
-          <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed flex-1 pt-1 font-normal">
-            {product.description}
-          </p>
+          {/* Product Name (2 Lines Clamp) */}
+          <h3 className="font-semibold text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-2 text-base leading-snug min-h-[2.8rem]">
+            <Link to={`/products/${product.slug || product.id}`}>{product.name}</Link>
+          </h3>
 
-          {/* Price & Action Buttons */}
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2 mt-auto">
+          {/* Star Rating & Review Count */}
+          <div className="flex items-center gap-1.5 text-sm pt-0.5">
+            <div className="flex items-center text-amber-400">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+              ))}
+            </div>
+            <span className="text-xs text-slate-400 font-normal ml-0.5">(54)</span>
+          </div>
+
+          {/* Price & Action Button (Bottom Row) */}
+          <div className="pt-3.5 border-t border-slate-100 flex items-center justify-between gap-2 mt-auto">
             <div>
-              {formattedSalePrice ? (
-                <div className="flex flex-col">
-                  <span className="text-base font-black text-[#16a34a] leading-tight">{formattedSalePrice}</span>
-                  <span className="text-[11px] text-slate-400 line-through font-mono">{formattedPrice}</span>
+              <div className="text-lg sm:text-xl font-bold text-slate-900 leading-tight">
+                {formattedPrice}
+              </div>
+              {formattedOriginalPrice && (
+                <div className="text-xs text-slate-400 line-through font-normal mt-0.5">
+                  {formattedOriginalPrice}
                 </div>
-              ) : (
-                <span className="text-base font-black text-slate-900">{formattedPrice}</span>
               )}
             </div>
 
-            <div className="flex items-center gap-1.5">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setQuickViewOpen(true)}
-                className="h-8 w-8 p-0 rounded-xl border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                title="Xem chi tiết sản phẩm"
-              >
-                <Eye className="h-3.5 w-3.5" />
-              </Button>
-
-              <Button
-                size="sm"
-                disabled={!product.in_stock}
-                onClick={() => onAddToCart && onAddToCart(product)}
-                className="h-8 px-3 rounded-xl gap-1.5 bg-[#27c372] hover:bg-[#22c55e] text-white font-bold text-xs shadow-sm"
-              >
-                <ShoppingCart className="h-3.5 w-3.5 text-white" />
-                <span>Thêm</span>
-              </Button>
-            </div>
+            {/* Quick Add Shopping Bag Button (Chuẩn ảnh mẫu Ecommerce) */}
+            <button
+              disabled={!product.in_stock}
+              onClick={() => (onAddToCart ? onAddToCart(product) : handleModalAddToCart())}
+              className="w-10 h-10 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white flex items-center justify-center transition-colors shadow-sm disabled:opacity-40 disabled:hover:bg-slate-900 shrink-0"
+              title="Thêm nhanh vào giỏ hàng"
+            >
+              <ShoppingBag className="w-5 h-5 text-white" />
+            </button>
           </div>
         </div>
       </div>
 
-      {/* 🟢 QUICK VIEW PRODUCT MODAL DIALOG (Form Xem Nhanh Chi Tiết Sản Phẩm) */}
+      {/* QUICK VIEW PRODUCT MODAL DIALOG */}
       <Dialog open={quickViewOpen} onOpenChange={setQuickViewOpen}>
-        <DialogContent className="max-w-3xl sm:rounded-3xl p-0 overflow-hidden border border-slate-200 bg-white shadow-2xl">
+        <DialogContent className="max-w-3xl sm:rounded-3xl p-0 overflow-hidden border border-slate-200 bg-white shadow-2xl font-sans">
           <DialogHeader className="sr-only">
-            <DialogTitle>Form Chi Tiết Sản Phẩm - {product.name}</DialogTitle>
+            <DialogTitle>Chi Tiết Sản Phẩm - {product.name}</DialogTitle>
           </DialogHeader>
 
           <div className="grid grid-cols-1 md:grid-cols-2">
-            {/* Left Column: Image & Badges */}
-            <div className="bg-slate-50 p-6 flex flex-col items-center justify-center relative border-b md:border-b-0 md:border-r border-slate-200/80">
-              <div className="aspect-square w-full max-w-xs rounded-2xl overflow-hidden bg-white border border-slate-200 shadow-md relative group">
-                <img
-                  src={product.image_url || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&q=80&w=600'}
-                  alt={product.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-
-                {isRacket && (
-                  <Badge className="absolute top-3 left-3 bg-[#27c372] text-white font-bold text-xs shadow-sm gap-1">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-300" /> USAPA Approved
-                  </Badge>
-                )}
-              </div>
-
-              <div className="mt-4 flex items-center justify-center gap-4 text-xs text-slate-500 font-semibold">
-                <span className="flex items-center gap-1 text-[#16a34a]">
-                  <ShieldCheck className="w-4 h-4 text-[#27c372]" /> Bảo hành 12 tháng
-                </span>
-                <span>•</span>
-                <span>100% Chính hãng</span>
+            {/* Left Column: Image & Gallery */}
+            <div className="p-6 bg-[#FAF8F5] flex flex-col justify-center items-center border-b md:border-b-0 md:border-r border-slate-100 relative">
+              <img
+                src={product.image_url || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&q=80&w=600'}
+                alt={product.name}
+                className="max-h-72 w-full object-contain rounded-2xl shadow-sm"
+              />
+              <div className="flex items-center gap-2 mt-4 text-xs text-slate-500 font-medium">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <span>Cam kết chính hãng 100% bảo hành 12 tháng</span>
               </div>
             </div>
 
-            {/* Right Column: Detailed Product Info Form */}
-            <div className="p-6 sm:p-8 flex flex-col space-y-4 max-h-[85vh] overflow-y-auto">
-              <div className="space-y-1">
-                {product.brand && (
-                  <span className="text-xs font-bold text-[#16a34a] uppercase tracking-wider">
-                    {product.brand.name} • {product.category?.name || 'Pickleball Equipment'}
+            {/* Right Column: Info & Buy Options */}
+            <div className="p-6 flex flex-col justify-between space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wider">
+                    {brandName}
                   </span>
-                )}
-                <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 leading-snug">
+                  {product.in_stock ? (
+                    <Badge className="bg-emerald-50 text-emerald-800 border-emerald-200 text-xs font-normal">
+                      Còn hàng sẵn kho
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive" className="text-xs font-normal">
+                      Hết hàng
+                    </Badge>
+                  )}
+                </div>
+
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900 leading-snug">
                   {product.name}
                 </h2>
-                <div className="flex items-center gap-2 pt-1 text-xs">
-                  <div className="flex items-center text-amber-400 font-bold">
-                    <Star className="w-4 h-4 fill-amber-400" />
-                    <span className="ml-1 text-slate-800 font-black">4.9 / 5.0</span>
-                  </div>
-                  <span className="text-slate-300">|</span>
-                  <span className="text-slate-500 font-medium">Đã bán 142 sản phẩm</span>
-                </div>
-              </div>
 
-              {/* Price Tag */}
-              <div className="p-3 bg-emerald-50/60 rounded-2xl border border-emerald-200/60 flex items-baseline gap-3">
-                <span className="text-2xl font-black text-[#16a34a]">
-                  {formattedSalePrice || formattedPrice}
-                </span>
-                {formattedSalePrice && (
-                  <span className="text-xs text-slate-400 line-through font-mono">
+                {/* Rating */}
+                <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                  <div className="flex text-amber-400">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                    ))}
+                  </div>
+                  <span className="font-semibold text-slate-800">4.9</span>
+                  <span>•</span>
+                  <span>Đã bán 142 cái</span>
+                </div>
+
+                {/* Price */}
+                <div className="p-3 bg-[#FAF8F5] rounded-xl border border-slate-200/80 flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-slate-900">
                     {formattedPrice}
                   </span>
-                )}
-                <Badge className="ml-auto bg-[#27c372] text-white text-[10px] font-bold">
-                  Còn hàng ({totalStock} SP)
-                </Badge>
-              </div>
-
-              {/* Description */}
-              <div className="space-y-1 text-xs text-slate-600">
-                <p className="font-bold text-slate-900">Mô tả sản phẩm:</p>
-                <p className="leading-relaxed text-slate-600 font-normal">{product.description}</p>
-              </div>
-
-              {/* Variants Selector */}
-              {product.variants && product.variants.length > 0 && (
-                <div className="space-y-2 pt-2 border-t border-slate-100">
-                  <label className="text-xs font-bold text-slate-900 block">Chọn phiên bản / màu sắc:</label>
-                  <div className="flex flex-wrap gap-2">
-                    {product.variants.map((variant) => {
-                      const isSelected = selectedVariant?.id === variant.id
-                      return (
-                        <button
-                          key={variant.id}
-                          onClick={() => setSelectedVariant(variant)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 border ${
-                            isSelected
-                              ? 'border-[#27c372] bg-emerald-50 text-[#16a34a] font-bold shadow-sm'
-                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                          }`}
-                        >
-                          {isSelected && <Check className="w-3.5 h-3.5 text-[#27c372]" />}
-                          <span>{variant.option_value || variant.sku || `Phiên bản #${variant.id}`}</span>
-                        </button>
-                      )
-                    })}
-                  </div>
+                  {formattedOriginalPrice && (
+                    <span className="text-sm text-slate-400 line-through">
+                      {formattedOriginalPrice}
+                    </span>
+                  )}
                 </div>
-              )}
 
-              {/* Quantity Counter */}
-              <div className="space-y-2 pt-2 border-t border-slate-100">
-                <label className="text-xs font-bold text-slate-900 block">Số lượng mua:</label>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+                <p className="text-xs text-slate-600 leading-relaxed line-clamp-3">
+                  {product.description || 'Sản phẩm Pickleball cao cấp đạt chuẩn thi đấu USAPA, tối ưu khả năng kiểm soát và tạo xoáy bóng mạnh mẽ.'}
+                </p>
+              </div>
+
+              {/* Quantity & Action Buttons */}
+              <div className="space-y-3 pt-3 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-slate-700">Số lượng:</span>
+                  <div className="flex items-center border border-slate-200 rounded-xl bg-white">
                     <button
+                      type="button"
                       onClick={() => setModalQuantity(Math.max(1, modalQuantity - 1))}
-                      className="w-8 h-8 flex items-center justify-center text-slate-600 hover:bg-slate-200"
+                      className="p-2 text-slate-500 hover:text-slate-900"
                     >
                       <Minus className="w-3.5 h-3.5" />
                     </button>
-                    <span className="w-10 text-center font-bold text-xs text-slate-900">{modalQuantity}</span>
+                    <span className="px-3 text-xs font-semibold text-slate-900">
+                      {modalQuantity}
+                    </span>
                     <button
+                      type="button"
                       onClick={() => setModalQuantity(modalQuantity + 1)}
-                      className="w-8 h-8 flex items-center justify-center text-slate-600 hover:bg-slate-200"
+                      className="p-2 text-slate-500 hover:text-slate-900"
                     >
                       <Plus className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
-              </div>
 
-              {/* Form Action Buttons */}
-              <div className="pt-4 space-y-2.5">
                 <div className="grid grid-cols-2 gap-3">
                   <Button
+                    variant="outline"
                     onClick={handleModalAddToCart}
-                    className="w-full bg-[#27c372] hover:bg-[#22c55e] text-white font-bold rounded-xl h-11 text-xs gap-1.5 shadow-md shadow-[#27c372]/20"
+                    disabled={!product.in_stock}
+                    className="h-10 text-xs font-medium rounded-xl border-slate-300 hover:bg-slate-50 gap-1.5"
                   >
-                    <ShoppingCart className="w-4 h-4 text-white" />
-                    <span>Thêm Vào Giỏ</span>
+                    <ShoppingBag className="w-4 h-4 text-emerald-600" />
+                    <span>Thêm giỏ hàng</span>
                   </Button>
 
                   <Button
                     onClick={handleModalBuyNow}
-                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl h-11 text-xs gap-1.5 shadow-md"
+                    disabled={!product.in_stock}
+                    className="h-10 text-xs font-medium rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-500/20 gap-1.5"
                   >
-                    <Zap className="w-4 h-4 text-amber-400" />
-                    <span>Mua Ngay</span>
+                    <span>Mua ngay</span>
+                    <ArrowRight className="w-4 h-4" />
                   </Button>
-                </div>
-
-                <div className="text-center pt-1">
-                  <Link
-                    to={`/products/${product.slug}`}
-                    onClick={() => setQuickViewOpen(false)}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-[#16a34a] hover:underline"
-                  >
-                    <span>Xem trang chi tiết đánh giá đầy đủ</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
                 </div>
               </div>
             </div>

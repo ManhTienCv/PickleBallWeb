@@ -16,9 +16,8 @@ import {
 
 const navItems = [
   { label: 'Trang chủ', path: '/', icon: Home },
-  { label: 'Cửa hàng', path: '/products', icon: ShoppingBag },
+  { label: 'Sản phẩm', path: '/products', icon: ShoppingBag },
   { label: 'Đặt sân', path: '/booking', icon: CalendarDays },
-  { label: 'Blog', path: '/blog', icon: BookOpen },
 ]
 
 export default function CustomerLayout() {
@@ -196,12 +195,12 @@ export default function CustomerLayout() {
 
       {/* Footer */}
       <footer className="border-t border-slate-200/80 bg-white py-8 mt-12">
-        <div className="container mx-auto px-4 text-center space-y-2">
-          <p className="text-sm font-bold text-slate-700">
-            © 2026 Pick Web — Nền tảng Thương mại điện tử & Đặt sân Pickleball chuẩn SOA
+        <div className="container mx-auto px-4 text-center space-y-1.5">
+          <p className="text-sm font-bold text-slate-800">
+            © 2026 Pick Web — Hệ thống Thiết bị thể thao & Đặt sân Pickleball hàng đầu
           </p>
-          <p className="text-xs text-slate-400 font-medium">
-            Powered by Laravel 13 Multi-DB Monolith API & React 18 SPA Customer Portal
+          <p className="text-xs text-slate-500 font-normal">
+            Cung cấp vợt bóng chính hãng, dịch vụ đặt sân chuyên nghiệp & giao hàng toàn quốc
           </p>
         </div>
       </footer>

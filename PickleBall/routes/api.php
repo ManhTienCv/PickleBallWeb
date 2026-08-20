@@ -43,8 +43,9 @@ Route::prefix('v1')->group(function () {
     Route::post('/booking/hold', [\App\Modules\Booking\Http\Controllers\HoldController::class, 'store']);
     Route::delete('/booking/hold/{id}', [\App\Modules\Booking\Http\Controllers\HoldController::class, 'destroy']);
 
-    // Webhooks
+    // Webhooks (Cấp 2 - Realtime Bank Gateway)
     Route::post('/webhooks/payment/momo', [\App\Modules\Order\Http\Controllers\PaymentWebhookController::class, 'momoWebhook']);
+    Route::post('/webhooks/payment/vietqr', [\App\Modules\Order\Http\Controllers\PaymentWebhookController::class, 'vietqrWebhook']);
 
     // ── 2. Protected Routes (Customer Auth) ──────────────────
     Route::middleware('auth:sanctum')->group(function () {
@@ -53,6 +54,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/auth/logout', [\App\Modules\User\Http\Controllers\AuthController::class, 'logout']);
         Route::get('/user/profile', [\App\Modules\User\Http\Controllers\ProfileController::class, 'show']);
         Route::put('/user/profile', [\App\Modules\User\Http\Controllers\ProfileController::class, 'update']);
+        Route::post('/user/email/send-otp', [\App\Modules\User\Http\Controllers\ProfileController::class, 'sendEmailOtp']);
+        Route::post('/user/email/verify-otp', [\App\Modules\User\Http\Controllers\ProfileController::class, 'verifyEmailOtp']);
 
         // Checkout Saga
         Route::post('/checkout', [\App\Modules\Order\Http\Controllers\CheckoutController::class, 'store']);
@@ -62,33 +65,35 @@ Route::prefix('v1')->group(function () {
         Route::get('/orders/{code}', [\App\Modules\Order\Http\Controllers\OrderController::class, 'show']);
     });
 
-    // ── 3. Admin Routes (Admin / Staff / Super Admin) ────────
+    // ── 3. Admin & Staff Shared Routes (Read-only Catalog, POS Orders & Scan) ────
     Route::prefix('admin')->middleware(['auth:sanctum', 'role:admin|super_admin|staff'])->group(function () {
-
         // Check-in QR Scan
         Route::post('/checkin/scan', [\App\Modules\Booking\Http\Controllers\Admin\CheckInAdminController::class, 'scan']);
 
-        // Admin Products & Stock Inventory Management
+        // Staff & Admin View Catalog & Orders for POS
         Route::get('/products', [\App\Modules\Shop\Http\Controllers\Admin\AdminProductController::class, 'index']);
+        Route::get('/courts', [\App\Modules\Booking\Http\Controllers\Admin\AdminCourtController::class, 'index']);
+        Route::get('/orders', [\App\Modules\Order\Http\Controllers\Admin\AdminOrderController::class, 'index']);
+        Route::put('/orders/{id}/status', [\App\Modules\Order\Http\Controllers\Admin\AdminOrderController::class, 'updateStatus']);
+        Route::get('/posts', [\App\Http\Controllers\PostController::class, 'adminIndex']);
+    });
+
+    // ── 4. Admin Only Operations (Stock Adjustments, Deletions, Reports & Locks) ──
+    Route::prefix('admin')->middleware(['auth:sanctum', 'role:admin|super_admin'])->group(function () {
+        // Admin Product CRUD & Inventory Adjustment
         Route::post('/products', [\App\Modules\Shop\Http\Controllers\Admin\AdminProductController::class, 'store']);
         Route::put('/products/{id}', [\App\Modules\Shop\Http\Controllers\Admin\AdminProductController::class, 'update']);
         Route::delete('/products/{id}', [\App\Modules\Shop\Http\Controllers\Admin\AdminProductController::class, 'destroy']);
         Route::post('/products/{id}/stock', [\App\Modules\Shop\Http\Controllers\Admin\AdminProductController::class, 'adjustStock']);
 
-        // Admin Court & Emergency Maintenance Lock
-        Route::get('/courts', [\App\Modules\Booking\Http\Controllers\Admin\AdminCourtController::class, 'index']);
+        // Admin Emergency Court Lock
         Route::post('/courts/{id}/lock', [\App\Modules\Booking\Http\Controllers\Admin\AdminCourtController::class, 'toggleStatus']);
 
-        // Admin Orders Management
-        Route::get('/orders', [\App\Modules\Order\Http\Controllers\Admin\AdminOrderController::class, 'index']);
-        Route::put('/orders/{id}/status', [\App\Modules\Order\Http\Controllers\Admin\AdminOrderController::class, 'updateStatus']);
-
-        // Admin Reporting & Analytics
+        // Sensitive Financial & Utilization Reports
         Route::get('/reports/revenue', [\App\Modules\Report\Http\Controllers\ReportController::class, 'revenue']);
         Route::get('/reports/utilization-rate', [\App\Modules\Report\Http\Controllers\ReportController::class, 'utilization']);
 
-        // Blog Posts Management
-        Route::get('/posts', [\App\Http\Controllers\PostController::class, 'adminIndex']);
+        // Blog Post Modification
         Route::post('/posts', [\App\Http\Controllers\PostController::class, 'store']);
         Route::put('/posts/{id}', [\App\Http\Controllers\PostController::class, 'update']);
         Route::delete('/posts/{id}', [\App\Http\Controllers\PostController::class, 'destroy']);

@@ -2,9 +2,32 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import AppLayout from "@/components/AppLayout";
 import { adminService, TimeSlot } from "@/services/admin.service";
-import { format, addDays, startOfWeek } from "date-fns";
+import { format, addDays, isSameDay, nextSaturday, nextSunday } from "date-fns";
 import { vi } from "date-fns/locale";
-import { CalendarIcon, Lock, CheckCircle2, Clock, AlertTriangle, ShieldAlert, RefreshCw, Info, ZoomIn, ZoomOut, Maximize2, PlayCircle, History, ShoppingCart, PlusCircle, ArrowRight, CreditCard } from "lucide-react";
+import {
+  CalendarIcon,
+  Lock,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  ShieldAlert,
+  RefreshCw,
+  Info,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  PlayCircle,
+  History,
+  ShoppingCart,
+  PlusCircle,
+  ArrowRight,
+  CreditCard,
+  Building,
+  Sun,
+  Crown,
+  Layers,
+  Activity,
+} from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
@@ -18,6 +41,7 @@ export default function CourtMap() {
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<"day" | "week" | "month">("day");
+  const [selectedCluster, setSelectedCluster] = useState<"all" | "indoor" | "outdoor" | "vip">("all");
   const [policyOpen, setPolicyOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<number>(100);
   const dateStr = format(selectedDate, "yyyy-MM-dd");
@@ -26,14 +50,18 @@ export default function CourtMap() {
   const [slotClickData, setSlotClickData] = useState<{ courtName: string; time: string; status: string; price: number } | null>(null);
 
   // Pickleball Exclusive Courts
-  const pickleballCourts = [
-    { id: 1, name: "Sân Pickleball A1", type: "Pickleball Standard Indoor", hourly_rate: 140000, peak_hourly_rate: 180000 },
-    { id: 2, name: "Sân Pickleball A2", type: "Pickleball Standard Indoor", hourly_rate: 140000, peak_hourly_rate: 180000 },
-    { id: 3, name: "Sân Pickleball B1", type: "Pickleball Standard Outdoor", hourly_rate: 140000, peak_hourly_rate: 180000 },
-    { id: 4, name: "Sân Pickleball B2", type: "Pickleball Standard Outdoor", hourly_rate: 140000, peak_hourly_rate: 180000 },
-    { id: 5, name: "Sân Pickleball VIP C1", type: "Pickleball Premium VIP", hourly_rate: 180000, peak_hourly_rate: 220000 },
-    { id: 6, name: "Sân Pickleball VIP C2", type: "Pickleball Premium VIP", hourly_rate: 180000, peak_hourly_rate: 220000 },
+  const allPickleballCourts = [
+    { id: 1, name: "Sân Pickleball A1", cluster: "indoor", type: "Pickleball Standard Indoor", hourly_rate: 140000, peak_hourly_rate: 180000 },
+    { id: 2, name: "Sân Pickleball A2", cluster: "indoor", type: "Pickleball Standard Indoor", hourly_rate: 140000, peak_hourly_rate: 180000 },
+    { id: 3, name: "Sân Pickleball B1", cluster: "outdoor", type: "Pickleball Standard Outdoor", hourly_rate: 140000, peak_hourly_rate: 180000 },
+    { id: 4, name: "Sân Pickleball B2", cluster: "outdoor", type: "Pickleball Standard Outdoor", hourly_rate: 140000, peak_hourly_rate: 180000 },
+    { id: 5, name: "Sân Pickleball VIP C1", cluster: "vip", type: "Pickleball Premium VIP", hourly_rate: 180000, peak_hourly_rate: 220000 },
+    { id: 6, name: "Sân Pickleball VIP C2", cluster: "vip", type: "Pickleball Premium VIP", hourly_rate: 180000, peak_hourly_rate: 220000 },
   ];
+
+  const pickleballCourts = allPickleballCourts.filter(
+    (c) => selectedCluster === "all" || c.cluster === selectedCluster
+  );
 
   const { data: slots = [], isLoading } = useQuery({
     queryKey: ["admin-slots", dateStr],
@@ -93,25 +121,55 @@ export default function CourtMap() {
     navigate(`/pos?${params.toString()}`);
   };
 
+  // Quick date jump helpers
+  const handleSelectQuickDate = (type: "today" | "tomorrow" | "sat" | "sun") => {
+    const now = new Date();
+    if (type === "today") setSelectedDate(now);
+    else if (type === "tomorrow") setSelectedDate(addDays(now, 1));
+    else if (type === "sat") setSelectedDate(nextSaturday(now));
+    else if (type === "sun") setSelectedDate(nextSunday(now));
+  };
+
   // Smooth cell sizing calculations
   const colWidthPx = Math.round(90 * (zoomLevel / 100));
   const slotFontSizePx = (11.5 * (zoomLevel / 100)).toFixed(1);
   const slotPaddingPx = Math.max(4, Math.round(8 * (zoomLevel / 100)));
 
+  // Calculate daily stats for visible courts
+  const totalSlotsCount = pickleballCourts.length * timeHeaders.length;
+  let bookedSlotsCount = 0;
+  let inUseSlotsCount = 0;
+  let heldSlotsCount = 0;
+  let availableSlotsCount = 0;
+
+  pickleballCourts.forEach((court) => {
+    timeHeaders.forEach((t) => {
+      const st = getSlotDetailedStatus(court.id, t);
+      if (st === "booked") bookedSlotsCount++;
+      else if (st === "in_use") inUseSlotsCount++;
+      else if (st === "held") heldSlotsCount++;
+      else if (st === "available") availableSlotsCount++;
+    });
+  });
+
+  const occupiedSlotsCount = bookedSlotsCount + inUseSlotsCount + heldSlotsCount;
+  const occupancyRate = Math.round((occupiedSlotsCount / totalSlotsCount) * 100);
+
   return (
     <AppLayout
       title="Sơ Đồ Sân & Lịch Trình Đặt Khung Giờ Pickleball"
+      subtitle="Quản lý trực quan toàn bộ lịch thi đấu, tỷ lệ lấp đầy sân và đối soát ca giờ thời gian thực"
       headerRight={
         <div className="flex items-center gap-2">
-          <Button onClick={() => setPolicyOpen(true)} variant="outline" size="sm" className="bg-white border-slate-300 gap-1.5 text-xs font-semibold">
-            <Info className="h-3.5 w-3.5 text-primary" />
+          <Button onClick={() => setPolicyOpen(true)} variant="outline" size="sm" className="bg-white border-slate-300 gap-1.5 text-xs font-semibold rounded-xl">
+            <Info className="h-3.5 w-3.5 text-emerald-600" />
             <span>Chính sách Hủy & Hoàn tiền</span>
           </Button>
 
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="bg-white border-slate-300 font-semibold gap-2">
-                <CalendarIcon className="h-4 w-4 text-primary" />
+              <Button variant="outline" size="sm" className="bg-white border-slate-300 font-semibold gap-2 rounded-xl text-xs">
+                <CalendarIcon className="h-4 w-4 text-emerald-600" />
                 <span>{format(selectedDate, "EEEE, dd/MM/yyyy", { locale: vi })}</span>
               </Button>
             </PopoverTrigger>
@@ -128,9 +186,140 @@ export default function CourtMap() {
         </div>
       }
     >
-      <div className="space-y-6">
+      <div className="space-y-6 font-sans">
+        {/* 🟢 BỘ LỌC NHANH NGÀY & CỤM SÂN (GỢI Ý 3 NÂNG CẤP) */}
+        <div className="p-4 bg-white rounded-3xl border border-slate-200 shadow-sm space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            {/* Quick Date Buttons */}
+            <div className="flex items-center gap-1.5 overflow-x-auto">
+              <span className="text-xs font-semibold text-slate-500 mr-1 shrink-0">Chọn ngày nhanh:</span>
+              <button
+                type="button"
+                onClick={() => handleSelectQuickDate("today")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                  isSameDay(selectedDate, new Date())
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "bg-[#FAF8F5] text-slate-700 hover:bg-slate-100 border border-slate-200/80"
+                }`}
+              >
+                Hôm Nay ({format(new Date(), "dd/MM")})
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSelectQuickDate("tomorrow")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                  isSameDay(selectedDate, addDays(new Date(), 1))
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "bg-[#FAF8F5] text-slate-700 hover:bg-slate-100 border border-slate-200/80"
+                }`}
+              >
+                Ngày Mai ({format(addDays(new Date(), 1), "dd/MM")})
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSelectQuickDate("sat")}
+                className="px-3 py-1.5 rounded-xl text-xs font-medium bg-[#FAF8F5] text-slate-700 hover:bg-slate-100 border border-slate-200/80 shrink-0"
+              >
+                Thứ 7 Tuần Này
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSelectQuickDate("sun")}
+                className="px-3 py-1.5 rounded-xl text-xs font-medium bg-[#FAF8F5] text-slate-700 hover:bg-slate-100 border border-slate-200/80 shrink-0"
+              >
+                Chủ Nhật
+              </button>
+            </div>
+
+            {/* Quick Cluster Filter Tabs */}
+            <div className="flex items-center gap-1.5 overflow-x-auto border-t sm:border-t-0 pt-2 sm:pt-0">
+              <span className="text-xs font-semibold text-slate-500 mr-1 shrink-0">Cụm sân:</span>
+              <button
+                type="button"
+                onClick={() => setSelectedCluster("all")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 flex items-center gap-1 ${
+                  selectedCluster === "all"
+                    ? "bg-slate-900 text-white shadow-sm"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Tất cả (6 Sân)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedCluster("indoor")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 flex items-center gap-1 ${
+                  selectedCluster === "indoor"
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100"
+                }`}
+              >
+                <Building className="w-3.5 h-3.5" />
+                <span>Trong Nhà (A1, A2)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedCluster("outdoor")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 flex items-center gap-1 ${
+                  selectedCluster === "outdoor"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "bg-blue-50 text-blue-800 border border-blue-200 hover:bg-blue-100"
+                }`}
+              >
+                <Sun className="w-3.5 h-3.5" />
+                <span>Ngoài Trời (B1, B2)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedCluster("vip")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 flex items-center gap-1 ${
+                  selectedCluster === "vip"
+                    ? "bg-amber-600 text-white shadow-sm"
+                    : "bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100"
+                }`}
+              >
+                <Crown className="w-3.5 h-3.5" />
+                <span>Sân VIP (C1, C2)</span>
+              </button>
+            </div>
+          </div>
+
+          {/* DAILY OCCUPANCY METRICS STRIP */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-100">
+            <div className="p-3 bg-[#FAF8F5] rounded-2xl border border-slate-200/80">
+              <span className="text-[11px] text-slate-500 font-medium block">Tổng Ca Sân Trong Ngày:</span>
+              <strong className="text-base text-slate-900">{totalSlotsCount} Khung Giờ</strong>
+            </div>
+
+            <div className="p-3 bg-emerald-50/80 rounded-2xl border border-emerald-200/70">
+              <span className="text-[11px] text-emerald-700 font-medium block">Đã Đặt & Đang Chơi:</span>
+              <strong className="text-base text-emerald-800">{occupiedSlotsCount} Ca Sân</strong>
+            </div>
+
+            <div className="p-3 bg-blue-50/80 rounded-2xl border border-blue-200/70">
+              <span className="text-[11px] text-blue-700 font-medium block">Còn Trống Sẵn Sàng:</span>
+              <strong className="text-base text-blue-800">{availableSlotsCount} Khung Giờ</strong>
+            </div>
+
+            <div className="p-3 bg-slate-900 text-white rounded-2xl border border-slate-800 flex items-center justify-between">
+              <div>
+                <span className="text-[11px] text-slate-300 font-medium block">Tỷ Lệ Lấp Đầy:</span>
+                <strong className="text-base text-emerald-400 font-extrabold">{occupancyRate}%</strong>
+              </div>
+              <Activity className="w-6 h-6 text-emerald-400 opacity-80" />
+            </div>
+          </div>
+        </div>
+
         {/* Navigation & Controls Toolbar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center gap-2">
             {[
               { id: "day", label: "Theo Ngày" },
@@ -140,8 +329,9 @@ export default function CourtMap() {
               <button
                 key={v.id}
                 onClick={() => setViewMode(v.id as any)}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === v.id ? "bg-slate-900 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100"
-                  }`}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  viewMode === v.id ? "bg-slate-900 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100 font-medium"
+                }`}
               >
                 {v.label}
               </button>
@@ -149,7 +339,7 @@ export default function CourtMap() {
           </div>
 
           {/* Interactive Zoom Control Bar */}
-          <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 text-xs shadow-inner">
+          <div className="flex items-center gap-2 bg-[#FAF8F5] px-3 py-1.5 rounded-xl border border-slate-200 text-xs shadow-inner">
             <button
               type="button"
               onClick={() => setZoomLevel((prev) => Math.max(60, prev - 10))}
@@ -184,7 +374,7 @@ export default function CourtMap() {
             <button
               type="button"
               onClick={() => setZoomLevel(100)}
-              className="font-mono font-extrabold text-slate-800 hover:text-[#27c372] bg-white border border-slate-200 px-2 py-0.5 rounded-lg hover:border-[#27c372] active:scale-95 transition-all cursor-pointer text-xs ml-1 shadow-sm"
+              className="font-mono font-bold text-slate-800 hover:text-[#27c372] bg-white border border-slate-200 px-2 py-0.5 rounded-lg hover:border-[#27c372] active:scale-95 transition-all cursor-pointer text-xs ml-1 shadow-sm"
               title="Nhấn để đặt lại tỉ lệ chuẩn 100%"
             >
               {zoomLevel}%
@@ -192,7 +382,7 @@ export default function CourtMap() {
           </div>
 
           {/* Status Legends */}
-          <div className="flex items-center gap-4 text-xs font-semibold">
+          <div className="flex flex-wrap items-center gap-3 text-xs font-semibold">
             <div className="flex items-center gap-1.5">
               <span className="h-3 w-3 rounded-full bg-emerald-500" />
               <span>Trống (Sẵn sàng)</span>
@@ -218,7 +408,7 @@ export default function CourtMap() {
 
         {/* View Mode Content Switcher */}
         {viewMode === "day" && (
-          <div className="relative overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="relative overflow-x-auto rounded-3xl border border-slate-200 bg-white shadow-sm">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-100 border-b border-slate-200 text-xs font-bold text-slate-700 uppercase tracking-wider">
@@ -267,7 +457,8 @@ export default function CourtMap() {
                               fontSize: `${slotFontSizePx}px`,
                               transition: "all 0.2s ease-out",
                             }}
-                            className={`w-full px-1 rounded-lg font-bold flex flex-col items-center justify-center transition-transform active:scale-95 ${status === "expired"
+                            className={`w-full px-1 rounded-xl font-bold flex flex-col items-center justify-center transition-transform active:scale-95 ${
+                              status === "expired"
                                 ? "bg-slate-100 text-slate-400 line-through border border-slate-200"
                                 : status === "in_use"
                                   ? "bg-blue-600 text-white shadow-md animate-pulse border border-blue-700"
@@ -278,7 +469,7 @@ export default function CourtMap() {
                                       : isPeak
                                         ? "bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100"
                                         : "bg-emerald-50 text-emerald-900 border border-emerald-300 hover:bg-emerald-100"
-                              }`}
+                            }`}
                           >
                             {status === "expired" ? (
                               <div className="flex items-center gap-1 opacity-70">
@@ -319,7 +510,7 @@ export default function CourtMap() {
 
         {/* Modal Tương Tác Nhanh Cho Lễ Tân Khi Bấm Khung Giờ Sân */}
         <Dialog open={!!slotClickData} onOpenChange={() => setSlotClickData(null)}>
-          <DialogContent className="max-w-md bg-white">
+          <DialogContent className="max-w-md bg-white rounded-3xl p-6 font-sans">
             {slotClickData && (
               <div className="space-y-4">
                 <DialogHeader>
@@ -327,19 +518,19 @@ export default function CourtMap() {
                     <ShoppingCart className="h-5 w-5 text-emerald-600" />
                     {slotClickData.courtName} - Khung {slotClickData.time}
                   </DialogTitle>
-                  <DialogDescription>
+                  <DialogDescription className="text-xs text-slate-500">
                     Tùy chọn thanh toán tiền sân, bán nước uống, đồ ăn hoặc đặt sân tại quầy Lễ tân
                   </DialogDescription>
                 </DialogHeader>
 
-                <div className="p-3 bg-slate-50 rounded-xl space-y-2 text-xs border border-slate-200">
-                  <div className="flex justify-between">
+                <div className="p-3.5 bg-[#FAF8F5] rounded-2xl space-y-2 text-xs border border-slate-200">
+                  <div className="flex justify-between items-center">
                     <span className="text-slate-500">Trạng thái khung giờ:</span>
                     <Badge className={slotClickData.status === "in_use" ? "bg-blue-600 font-bold" : slotClickData.status === "booked" ? "bg-emerald-700 font-bold" : "bg-emerald-500 font-bold"}>
                       {slotClickData.status === "in_use" ? "Đang chơi" : slotClickData.status === "booked" ? "Đã đặt trước" : "Sẵn sàng (Trống)"}
                     </Badge>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span className="text-slate-500">Giá giờ sân:</span>
                     <strong className="text-emerald-700 text-sm">
                       {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(slotClickData.price)} / giờ
@@ -347,27 +538,31 @@ export default function CourtMap() {
                   </div>
                 </div>
 
-                <div className="space-y-2 pt-2 border-t">
-                  <p className="text-xs font-bold text-slate-700">Lễ tân chọn thao tác xử lý:</p>
-
+                <div className="space-y-2 pt-2 border-t border-slate-100">
                   <Button
                     onClick={handleGoToPosPayment}
-                    className="w-full justify-between h-10 font-bold bg-emerald-600 hover:bg-emerald-500 text-white text-xs"
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-11 rounded-xl text-xs gap-2 shadow-md shadow-emerald-500/20"
                   >
-                    <span>💳 Thanh Toán Tiền Sân & Đồ Uống Tại Quầy (Đưa Sang POS)</span>
-                    <CreditCard className="h-4 w-4" />
+                    <CreditCard className="w-4 h-4" />
+                    <span>Nạp Sân Này Vào Hóa Đơn POS & Thu Tiền</span>
                   </Button>
 
                   <Button
                     onClick={handleAttemptHoldSlot}
                     variant="outline"
-                    className={`w-full justify-between h-10 font-bold text-xs ${slotClickData.status === "in_use" || slotClickData.status === "booked"
-                        ? "border-amber-300 text-amber-800 bg-amber-50 hover:bg-amber-100"
-                        : "border-slate-300 text-slate-800"
-                      }`}
+                    className="w-full border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold h-10 rounded-xl text-xs gap-2"
                   >
-                    <span>⚡ Khóa Giữ Sân Nhanh Cho Khách Trực Tiếp</span>
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    <Lock className="w-4 h-4 text-amber-600" />
+                    <span>Khóa Giữ Chỗ Tạm Thời (10 Phút)</span>
+                  </Button>
+
+                  <Button
+                    onClick={handleSimulateConflict}
+                    variant="ghost"
+                    className="w-full text-rose-600 hover:bg-rose-50 font-normal text-xs gap-1.5 h-9"
+                  >
+                    <ShieldAlert className="w-4 h-4" />
+                    <span>Thử nghiệm xung đột đặt trùng lịch (Pessimistic Lock)</span>
                   </Button>
                 </div>
               </div>
@@ -375,44 +570,41 @@ export default function CourtMap() {
           </DialogContent>
         </Dialog>
 
-        {/* Cancellation & Refund Policy Dialog */}
+        {/* Dialog Chính sách Hủy Sân & Hoàn Tiền */}
         <Dialog open={policyOpen} onOpenChange={setPolicyOpen}>
-          <DialogContent className="max-w-md bg-white">
+          <DialogContent className="max-w-lg bg-white rounded-3xl p-6 font-sans">
             <DialogHeader>
               <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <RefreshCw className="h-5 w-5 text-primary" />
-                Chính Sách Thanh Toán VietQR & Hủy Hoàn Tiền
+                <Info className="w-5 h-5 text-emerald-600" />
+                Chính Sách Hủy Sân & Hoàn Tiền Tự Động
               </DialogTitle>
-              <DialogDescription>
-                Áp dụng chuẩn xác cho hệ thống Đặt Sân Pickleball DemoPick ONE
+              <DialogDescription className="text-xs text-slate-500">
+                Quy định đảm bảo quyền lợi vận động viên và năng lực vận hành cụm sân DemoPick
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-3 text-xs">
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1">
-                <div className="font-bold text-emerald-900 flex items-center justify-between">
-                  <span>Hủy trước giờ chơi ≥ 2 tiếng:</span>
-                  <Badge className="bg-emerald-600">Hoàn tiền 100%</Badge>
-                </div>
-                <p className="text-emerald-700">Tự động hoàn 100% tiền sân về tài khoản VietQR / MoMo của khách trong 15 phút.</p>
+            <div className="space-y-3 text-xs text-slate-600 pt-2 leading-relaxed">
+              <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200/80 space-y-1">
+                <strong className="text-emerald-900 font-bold block">1. Hủy trước 24 giờ thi đấu:</strong>
+                <p>Hoàn tiền 100% về tài khoản hoặc quy đổi thành Voucher đặt sân cho lần tiếp theo.</p>
               </div>
 
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1">
-                <div className="font-bold text-amber-900 flex items-center justify-between">
-                  <span>Hủy trước giờ chơi từ 1 - 2 tiếng:</span>
-                  <Badge className="bg-amber-600">Hoàn tiền 50%</Badge>
-                </div>
-                <p className="text-amber-700">Khách được hoàn lại 50% tiền sân, 50% còn lại giữ làm phí giữ sân.</p>
+              <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200/80 space-y-1">
+                <strong className="text-amber-900 font-bold block">2. Hủy từ 12 - 24 giờ trước giờ thi đấu:</strong>
+                <p>Hoàn tiền 50% giá trị đặt sân hoặc hỗ trợ dời lịch sang khung giờ khác nếu còn sân trống.</p>
               </div>
 
-              <div className="p-3 bg-red-50 border border-red-200 rounded-xl space-y-1">
-                <div className="font-bold text-red-900 flex items-center justify-between">
-                  <span>Hủy dưới 1 tiếng trước giờ chơi:</span>
-                  <Badge variant="destructive">Không hoàn tiền (0%)</Badge>
-                </div>
-                <p className="text-red-700">Khấu trừ 100% phí do cận giờ đấu không thể xếp ca mới.</p>
+              <div className="p-3 bg-rose-50 rounded-2xl border border-rose-200/80 space-y-1">
+                <strong className="text-rose-900 font-bold block">3. Hủy dưới 12 giờ hoặc vắng mặt (No-show):</strong>
+                <p>Không áp dụng hoàn tiền để đảm bảo quyền lợi giữ sân của hệ thống.</p>
               </div>
             </div>
+
+            <DialogFooter className="pt-2">
+              <Button onClick={() => setPolicyOpen(false)} className="w-full bg-slate-900 text-white rounded-xl text-xs">
+                Đã hiểu quy định
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

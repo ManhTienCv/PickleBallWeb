@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react'
-import { useLocation, useNavigate, Link } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { cartService } from '@/services/cart.service'
 import { orderService } from '@/services/order.service'
 import { notificationService } from '@/services/notification.service'
+import { shippingService, AVAILABLE_CARRIERS, ShippingCarrier } from '@/services/shipping.service'
+import { addressService, UserAddress } from '@/services/address.service'
+import MapLocationPicker, { SelectedLocationResult } from '@/components/MapLocationPicker'
 import { useCheckoutTimer } from '@/contexts/CheckoutTimerContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,23 +34,51 @@ import {
   CheckCircle2,
   Copy,
   Edit3,
+  Truck,
+  MapPin,
+  Sparkles,
+  Home,
+  Building,
 } from 'lucide-react'
 import { toast } from 'sonner'
+
+const PROVINCES = [
+  'Hà Nội',
+  'TP. Hồ Chí Minh',
+  'Đà Nẵng',
+  'Hải Phòng',
+  'Cần Thơ',
+  'Bình Dương',
+  'Đồng Nai',
+  'Quảng Ninh',
+  'Khánh Hòa (Nha Trang)',
+  'Tỉnh thành khác',
+]
 
 export default function CheckoutPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const holdId = location.state?.holdId
 
-  const { formattedTime, isActive, isExpired, startTimer, resetTimer } = useCheckoutTimer()
+  const { formattedTime, startTimer, resetTimer } = useCheckoutTimer()
 
   const [step, setStep] = useState<'info' | 'qr'>('info')
-  const [paymentMethod, setPaymentMethod] = useState<'bank_transfer' | 'momo' | 'cash'>('bank_transfer')
+  const [paymentMethod, setPaymentMethod] = useState<'bank_transfer' | 'cash'>('bank_transfer')
+  
+  // Saved addresses
+  const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([])
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
+
   const [customerName, setCustomerName] = useState('Nguyễn Văn An')
   const [customerPhone, setCustomerPhone] = useState('0987654321')
-  const [shippingAddress, setShippingAddress] = useState('Số 10 Đường Pickleball, Q. Cầu Giấy, Hà Nội')
+  const [selectedProvince, setSelectedProvince] = useState('Hà Nội')
+  const [streetAddress, setStreetAddress] = useState('Số 10 Đường Pickleball, Phường Dịch Vọng')
+  const [selectedCarrier, setSelectedCarrier] = useState<ShippingCarrier>('GHN')
   const [note, setNote] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Map Picker in Checkout Modal
+  const [showMapPickerModal, setShowMapPickerModal] = useState(false)
 
   // Dialog states
   const [showConfirmOrderModal, setShowConfirmOrderModal] = useState(false)
@@ -58,12 +89,50 @@ export default function CheckoutPage() {
     queryFn: cartService.getCart,
   })
 
-  // Start timer on mount if not active
+  // Start timer & load addresses on mount
   useEffect(() => {
     startTimer()
+    const addrs = addressService.getSavedAddresses()
+    setSavedAddresses(addrs)
+    const defaultAddr = addrs.find((a) => a.isDefault) || addrs[0]
+    if (defaultAddr) {
+      setSelectedAddressId(defaultAddr.id)
+      setCustomerName(defaultAddr.recipientName)
+      setCustomerPhone(defaultAddr.phone)
+      setStreetAddress(defaultAddr.streetAddress)
+      setSelectedProvince(defaultAddr.city)
+    }
   }, [startTimer])
 
+  const handleSelectSavedAddress = (addr: UserAddress) => {
+    setSelectedAddressId(addr.id)
+    setCustomerName(addr.recipientName)
+    setCustomerPhone(addr.phone)
+    setStreetAddress(addr.streetAddress)
+    setSelectedProvince(addr.city)
+    toast.info(`Đã chọn địa chỉ: ${addr.label === 'home' ? 'Nhà riêng' : addr.label === 'office' ? 'Văn phòng' : 'Sân bóng'}`)
+  }
+
+  const handleMapLocationConfirmed = (res: SelectedLocationResult) => {
+    setStreetAddress(`${res.street}${res.district ? `, ${res.district}` : ''}`)
+    setSelectedProvince(res.city)
+    setSelectedAddressId(null)
+    setShowMapPickerModal(false)
+    toast.success('Đã cập nhật vị trí giao hàng từ Bản đồ!')
+  }
+
   const cartTotal = cart?.total_amount || 0
+  const fullShippingAddress = `${streetAddress}, ${selectedProvince}`
+
+  // Calculate dynamic shipping fee
+  const { fee: shippingFee, isFreeship } = shippingService.calculateShippingFee(
+    selectedProvince,
+    650,
+    selectedCarrier,
+    cartTotal
+  )
+
+  const grandTotal = cartTotal + shippingFee
 
   // Copy helper
   const copyToClipboard = (text: string, label: string) => {
@@ -74,7 +143,7 @@ export default function CheckoutPage() {
   // Handle proceed to step 2 or submit
   const handleProceedToPayment = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!shippingAddress.trim()) {
+    if (!streetAddress.trim()) {
       toast.error('Vui lòng nhập địa chỉ nhận hàng')
       return
     }
@@ -92,34 +161,84 @@ export default function CheckoutPage() {
       const result = await orderService.checkout({
         payment_method: paymentMethod,
         hold_id: holdId,
-        shipping_address: shippingAddress,
+        shipping_address: fullShippingAddress,
         note,
       })
 
       const orderCode = result.order_code || `HD-${Math.floor(10000 + Math.random() * 90000)}`
+
+      // 1. Create simulated shipping registry entry
+      const itemsSummary =
+        cart?.items?.map((i) => `${i.quantity}x ${i.product?.name || 'Sản phẩm'}`).join(', ') ||
+        'Thiết bị Pickleball'
+      shippingService.createShippingOrder({
+        orderCode,
+        carrier: selectedCarrier,
+        receiverName: customerName,
+        receiverAddress: fullShippingAddress,
+        receiverPhone: customerPhone,
+        itemsSummary,
+        shippingFee,
+        codAmount: paymentMethod === 'cash' ? grandTotal : 0,
+        paymentMethod: paymentMethod === 'cash' ? 'COD' : 'VietQR',
+      })
+
+      // 2. Sync to Admin Order List
+      try {
+        const savedAdminOrders = localStorage.getItem('demopick_orders_admin')
+        const adminOrders = savedAdminOrders ? JSON.parse(savedAdminOrders) : []
+        const now = new Date()
+        const dateStr = now.toISOString().split('T')[0]
+        const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+
+        const newAdminOrder = {
+          code: orderCode,
+          customerName,
+          customerPhone,
+          staffName: 'Hệ thống Tự Động Online',
+          type: 'Đặt Sân Online',
+          totalAmount: grandTotal,
+          paymentMethod: paymentMethod === 'cash' ? 'COD' : 'VietQR',
+          status: 'PENDING',
+          createdAt: `${dateStr} ${timeStr}`,
+          dateStr,
+          shippingAddress: fullShippingAddress,
+          shippingCarrier: selectedCarrier,
+          shippingFee,
+          items:
+            cart?.items?.map((item, idx) => ({
+              id: idx + 1,
+              name: item.product?.name || 'Sản phẩm Pickleball',
+              qty: item.quantity,
+              price: item.product?.price || item.subtotal,
+            })) || [{ id: 1, name: 'Thiết bị Pickleball', qty: 1, price: grandTotal }],
+        }
+
+        localStorage.setItem('demopick_orders_admin', JSON.stringify([newAdminOrder, ...adminOrders]))
+        window.dispatchEvent(new Event('storage'))
+      } catch (err) {
+        console.error('Failed to sync to admin orders:', err)
+      }
 
       // Trigger email notice simulation
       notificationService.sendOrderPlacedNotice({
         orderCode,
         customerName,
         customerPhone,
-        shippingAddress,
-        totalAmount: cartTotal,
+        shippingAddress: fullShippingAddress,
+        totalAmount: grandTotal,
       })
 
       toast.success('Đặt hàng thành công!')
-      navigate(`/order-success/${orderCode}`, { state: { result, orderCode, shippingAddress, customerName, customerPhone } })
+      navigate(`/order-success/${orderCode}`, {
+        state: { result, orderCode, shippingAddress: fullShippingAddress, customerName, customerPhone },
+      })
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Thanh toán không thành công. Vui lòng thử lại.')
     } finally {
       setIsSubmitting(false)
       setShowConfirmOrderModal(false)
     }
-  }
-
-  const handleExitToCart = () => {
-    resetTimer()
-    navigate('/cart')
   }
 
   return (
@@ -136,7 +255,7 @@ export default function CheckoutPage() {
               <Badge className="bg-amber-100 text-amber-800 border-amber-300 text-[11px] font-bold">20 phút</Badge>
             </div>
             <p className="text-xs text-slate-600 font-medium">
-              Vui lòng hoàn tất thanh toán trước khi thời gian đếm ngược kết thúc. Quá 20 phút đơn sẽ tự hủy.
+              Vui lòng hoàn tất thanh toán trước khi thời gian đếm ngược kết thúc.
             </p>
           </div>
         </div>
@@ -151,7 +270,7 @@ export default function CheckoutPage() {
       <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-200">
         <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 flex items-center gap-3">
           <CreditCard className="h-7 w-7 text-[#27c372]" />
-          {step === 'info' ? 'Xác Nhận Thông Tin Đơn Hàng' : 'Thanh Toán Quét Mã VietQR'}
+          {step === 'info' ? 'Xác Nhận Đơn Hàng & Vận Chuyển' : 'Thanh Toán Quét Mã VietQR'}
         </h1>
 
         <Button
@@ -169,12 +288,65 @@ export default function CheckoutPage() {
         /* STEP 1: FILL SHIPPING INFO & CHOOSE PAYMENT METHOD */
         <form onSubmit={handleProceedToPayment} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
+            {/* SAVED ADDRESS SELECTOR CHIPS */}
+            {savedAddresses.length > 0 && (
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Chọn nhanh từ Sổ Địa Chỉ:</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowMapPickerModal(true)}
+                    className="text-xs font-bold text-emerald-700 hover:text-emerald-800 hover:underline flex items-center gap-1"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Ghim Vị Trí Trên Bản Đồ</span>
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  {savedAddresses.map((addr) => {
+                    const isSelected = selectedAddressId === addr.id
+                    return (
+                      <button
+                        key={addr.id}
+                        type="button"
+                        onClick={() => handleSelectSavedAddress(addr)}
+                        className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                          isSelected
+                            ? 'border-emerald-600 bg-emerald-50 text-emerald-800 shadow-xs'
+                            : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span>{addr.label === 'home' ? 'Nhà riêng' : addr.label === 'office' ? 'Văn phòng' : 'Sân bóng'}</span>
+                        {addr.isDefault && <span className="text-[9px] bg-emerald-200 text-emerald-900 px-1.5 py-0.2 rounded font-normal">Mặc định</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Customer Contact & Delivery Info */}
             <Card className="p-6 border-slate-200 space-y-4 rounded-2xl shadow-sm">
-              <h3 className="font-extrabold text-lg text-slate-900 flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-[#27c372]" />
-                Thông Tin Nhận Hàng & Liên Hệ
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="font-extrabold text-lg text-slate-900 flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5 text-[#27c372]" />
+                  Thông Tin Người Nhận & Địa Chỉ Giao Hàng
+                </h3>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowMapPickerModal(true)}
+                  className="h-8 px-3 rounded-xl border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 font-bold text-xs gap-1"
+                >
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span>Mở Bản Đồ</span>
+                </Button>
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
@@ -200,20 +372,37 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="address" className="font-bold text-xs text-slate-700">Địa chỉ giao hàng chi tiết *</Label>
-                <Input
-                  id="address"
-                  value={shippingAddress}
-                  onChange={(e) => setShippingAddress(e.target.value)}
-                  placeholder="Nhập số nhà, tên đường, phường/xã, quận/huyện..."
-                  className="rounded-xl font-medium"
-                  required
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="font-bold text-xs text-slate-700">Tỉnh / Thành phố *</Label>
+                  <select
+                    value={selectedProvince}
+                    onChange={(e) => setSelectedProvince(e.target.value)}
+                    className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    {PROVINCES.map((prov) => (
+                      <option key={prov} value={prov}>
+                        {prov}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="address" className="font-bold text-xs text-slate-700">Địa chỉ cụ thể (Số nhà, tên đường, quận) *</Label>
+                  <Input
+                    id="address"
+                    value={streetAddress}
+                    onChange={(e) => setStreetAddress(e.target.value)}
+                    placeholder="Ví dụ: Số 10 Đường Pickleball, Q. Cầu Giấy"
+                    className="rounded-xl font-medium"
+                    required
+                  />
+                </div>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="note" className="font-bold text-xs text-slate-700">Ghi chú giao hàng (không bắt buộc)</Label>
+                <Label htmlFor="note" className="font-bold text-xs text-slate-700">Ghi chú giao hàng (Không bắt buộc)</Label>
                 <Input
                   id="note"
                   placeholder="Ví dụ: Giao giờ hành chính, gọi trước khi giao 15 phút..."
@@ -221,6 +410,58 @@ export default function CheckoutPage() {
                   onChange={(e) => setNote(e.target.value)}
                   className="rounded-xl font-medium"
                 />
+              </div>
+            </Card>
+
+            {/* Carrier Selection */}
+            <Card className="p-6 border-slate-200 space-y-4 rounded-2xl shadow-sm">
+              <div className="flex items-center justify-between">
+                <h3 className="font-extrabold text-lg text-slate-900 flex items-center gap-2">
+                  <Truck className="h-5 w-5 text-[#27c372]" />
+                  Đối Tác Vận Chuyển Giao Hàng
+                </h3>
+                {isFreeship && (
+                  <Badge className="bg-emerald-50 text-emerald-800 border-emerald-200 font-bold text-xs gap-1">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Freeship Đơn &gt; 1 Triệu</span>
+                  </Badge>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {AVAILABLE_CARRIERS.map((c) => {
+                  const isSelected = selectedCarrier === c.id
+                  const { fee, isFreeship: carrierFreeship } = shippingService.calculateShippingFee(
+                    selectedProvince,
+                    650,
+                    c.id,
+                    cartTotal
+                  )
+
+                  return (
+                    <div
+                      key={c.id}
+                      onClick={() => setSelectedCarrier(c.id)}
+                      className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer space-y-1.5 relative ${
+                        isSelected
+                          ? 'border-emerald-600 bg-emerald-50/40 shadow-sm'
+                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-slate-900 text-xs">{c.name}</span>
+                        <Badge className={`${c.badgeColor} font-bold text-[10px]`}>{c.shortName}</Badge>
+                      </div>
+                      <p className="text-[11px] text-slate-500 leading-tight">{c.tagline}</p>
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs">
+                        <span className="text-slate-500">TG: <b className="text-slate-700">{c.estimatedTime}</b></span>
+                        <span className="font-black text-emerald-700">
+                          {carrierFreeship ? 'Miễn phí (0đ)' : `${new Intl.NumberFormat('vi-VN').format(fee)} đ`}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </Card>
 
@@ -233,32 +474,40 @@ export default function CheckoutPage() {
                 onValueChange={(val: any) => setPaymentMethod(val)}
                 className="space-y-3"
               >
-                <div className={`flex items-center space-x-3 rounded-2xl border p-4 transition-all cursor-pointer ${
-                  paymentMethod === 'bank_transfer'
-                    ? 'border-[#27c372] bg-[#27c372]/5 shadow-sm'
-                    : 'border-slate-200 hover:border-slate-300'
-                }`}>
+                <div
+                  className={`flex items-center space-x-3 rounded-2xl border p-4 transition-all cursor-pointer ${
+                    paymentMethod === 'bank_transfer'
+                      ? 'border-[#27c372] bg-[#27c372]/5 shadow-sm'
+                      : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                >
                   <RadioGroupItem value="bank_transfer" id="bank" />
                   <Label htmlFor="bank" className="flex items-center gap-3 cursor-pointer flex-1">
                     <QrCode className="h-6 w-6 text-[#27c372]" />
                     <div>
                       <div className="font-extrabold text-slate-900">Chuyển khoản Ngân hàng qua Mã VietQR (VietinBank)</div>
-                      <div className="text-xs text-slate-500 font-medium">Mở App ngân hàng quét mã QR tự động điền chính xác số tiền & nội dung</div>
+                      <div className="text-xs text-slate-500 font-medium">
+                        Mở App ngân hàng quét mã QR tự động điền chính xác số tiền & nội dung
+                      </div>
                     </div>
                   </Label>
                 </div>
 
-                <div className={`flex items-center space-x-3 rounded-2xl border p-4 transition-all cursor-pointer ${
-                  paymentMethod === 'cash'
-                    ? 'border-[#27c372] bg-[#27c372]/5 shadow-sm'
-                    : 'border-slate-200 hover:border-slate-300'
-                }`}>
+                <div
+                  className={`flex items-center space-x-3 rounded-2xl border p-4 transition-all cursor-pointer ${
+                    paymentMethod === 'cash'
+                      ? 'border-[#27c372] bg-[#27c372]/5 shadow-sm'
+                      : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                >
                   <RadioGroupItem value="cash" id="cash" />
                   <Label htmlFor="cash" className="flex items-center gap-3 cursor-pointer flex-1">
                     <Banknote className="h-6 w-6 text-amber-600" />
                     <div>
-                      <div className="font-extrabold text-slate-900">Thanh toán khi nhận hàng (COD) / Tại quầy sân</div>
-                      <div className="text-xs text-slate-500 font-medium">Thanh toán tiền mặt cho nhân viên giao hàng hoặc thu ngân</div>
+                      <div className="font-extrabold text-slate-900">Thanh toán khi nhận hàng (Thu COD Shipper)</div>
+                      <div className="text-xs text-slate-500 font-medium">
+                        Thanh toán tiền mặt cho Shipper {selectedCarrier} khi nhận được kiện hàng
+                      </div>
                     </div>
                   </Label>
                 </div>
@@ -268,7 +517,7 @@ export default function CheckoutPage() {
             <Button
               type="submit"
               size="lg"
-              className="w-full bg-[#27c372] hover:bg-[#22c55e] text-white font-black rounded-2xl h-14 text-base gap-2 shadow-lg shadow-[#27c372]/20"
+              className="w-full bg-[#27c372] hover:bg-[#22c55e] text-white font-black rounded-2xl h-14 text-base gap-2 shadow-lg shadow-[#27c372]/20 cursor-pointer"
             >
               <span>{paymentMethod === 'bank_transfer' ? 'Tiếp Tục Quét Mã VietQR App' : 'Xác Nhận Đặt Hàng Ngay'}</span>
               <ArrowRight className="h-5 w-5" />
@@ -292,7 +541,9 @@ export default function CheckoutPage() {
                   <div className="font-extrabold text-slate-800">Sản phẩm trong giỏ ({cart.items.length}):</div>
                   {cart.items.map((item) => (
                     <div key={item.id} className="flex justify-between text-slate-600 font-medium">
-                      <span className="truncate pr-2">{item.product?.name} x{item.quantity}</span>
+                      <span className="truncate pr-2">
+                        {item.product?.name} x{item.quantity}
+                      </span>
                       <span className="font-bold text-slate-900">
                         {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.subtotal)}
                       </span>
@@ -301,10 +552,32 @@ export default function CheckoutPage() {
                 </div>
               )}
 
+              {/* Shipping fee breakdown */}
+              <div className="space-y-2 pt-3 border-t border-slate-200 text-xs">
+                <div className="flex justify-between text-slate-600">
+                  <span>Tiền hàng:</span>
+                  <span className="font-semibold text-slate-800">
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(cartTotal)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-slate-600 items-center">
+                  <span>Phí ship ({selectedCarrier}):</span>
+                  <span className="font-bold text-emerald-700">
+                    {isFreeship ? (
+                      <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        Miễn phí (Freeship)
+                      </span>
+                    ) : (
+                      `${new Intl.NumberFormat('vi-VN').format(shippingFee)} đ`
+                    )}
+                  </span>
+                </div>
+              </div>
+
               <div className="pt-3 border-t border-slate-200 flex justify-between items-baseline">
                 <span className="font-black text-slate-900">Tổng thanh toán:</span>
                 <span className="text-xl font-black text-[#27c372]">
-                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(cartTotal)}
+                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(grandTotal)}
                 </span>
               </div>
             </Card>
@@ -324,18 +597,17 @@ export default function CheckoutPage() {
               </h2>
 
               <p className="text-xs sm:text-sm text-slate-600 font-medium max-w-md mx-auto">
-                Mở ứng dụng Ngân hàng (MBBank, Vietcombank, Techcombank, VPBank,...) để quét mã bên dưới. Số tiền và nội dung chuyển khoản đã được mã hóa chính xác.
+                Mở ứng dụng Ngân hàng để quét mã bên dưới. Số tiền và nội dung chuyển khoản đã được mã hóa chính xác.
               </p>
 
               {/* VietQR Code Image Box */}
               <div className="relative inline-block bg-slate-50 p-6 rounded-3xl border-2 border-slate-200/90 shadow-inner group">
                 <img
-                  src={`https://img.vietqr.io/image/ICB-102888888888-compact2.png?amount=${cartTotal}&addInfo=HD${Math.floor(10000 + Math.random() * 90000)}&accountName=NGUYEN%20MANH%20TIEN`}
+                  src={`https://img.vietqr.io/image/ICB-102888888888-compact2.png?amount=${grandTotal}&addInfo=HD${Math.floor(10000 + Math.random() * 90000)}&accountName=DEMOPICK%20PICKLEBALL`}
                   alt="Mã QR Thanh Toán VietQR"
                   className="w-56 h-56 sm:w-64 sm:h-64 object-contain mx-auto rounded-xl"
                   onError={(e: any) => {
-                    // Fallback to stylized SVG QR mockup if network blocked
-                    e.target.src = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=NGUYEN_MANH_TIEN_VIETINBANK'
+                    e.target.src = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=DEMOPICK_VIETINBANK'
                   }}
                 />
                 <div className="mt-3 text-[11px] font-extrabold text-emerald-700 bg-emerald-50 py-1 px-3 rounded-full inline-flex items-center gap-1.5 border border-emerald-200">
@@ -347,176 +619,148 @@ export default function CheckoutPage() {
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-left space-y-3 text-xs sm:text-sm font-semibold">
                 <div className="flex justify-between items-center pb-2 border-b border-slate-200">
                   <span className="text-slate-500">Ngân hàng thụ hưởng:</span>
-                  <span className="font-extrabold text-slate-900">VietinBank (Ngân hàng TMCP Công Thương Việt Nam)</span>
+                  <span className="font-extrabold text-slate-900">VietinBank (Công Thương)</span>
                 </div>
                 <div className="flex justify-between items-center pb-2 border-b border-slate-200">
                   <span className="text-slate-500">Số tài khoản:</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-extrabold text-[#27c372] font-mono">102888888888</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-black text-slate-900 text-sm sm:text-base">102888888888</span>
                     <button
+                      type="button"
                       onClick={() => copyToClipboard('102888888888', 'Số tài khoản')}
-                      className="p-1 text-slate-400 hover:text-slate-700 rounded"
+                      className="p-1.5 hover:bg-slate-200 rounded-lg text-slate-600 transition-colors"
+                      title="Sao chép STK"
                     >
-                      <Copy className="w-3.5 h-3.5" />
+                      <Copy className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
                 <div className="flex justify-between items-center pb-2 border-b border-slate-200">
                   <span className="text-slate-500">Chủ tài khoản:</span>
-                  <span className="font-extrabold text-slate-900">NGUYEN MANH TIEN</span>
+                  <span className="font-extrabold text-slate-900">DEMOPICK PICKLEBALL CLUB</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500">Số tiền thanh toán:</span>
-                  <span className="font-black text-[#27c372] text-base">
-                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(cartTotal)}
+                  <span className="font-black text-emerald-600 text-base sm:text-lg">
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(grandTotal)}
                   </span>
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <div className="pt-2">
                 <Button
-                  variant="outline"
-                  onClick={() => setStep('info')}
-                  className="rounded-2xl font-extrabold border-slate-300 gap-1.5 flex-1"
+                  onClick={executeCheckoutSubmit}
+                  disabled={isSubmitting}
+                  className="w-full bg-[#27c372] hover:bg-[#22c55e] text-white font-black rounded-2xl h-12 text-sm gap-2 shadow-lg shadow-[#27c372]/20 cursor-pointer"
                 >
-                  <Edit3 className="w-4 h-4" />
-                  <span>Sửa Thông Tin / Đổi PTTT</span>
-                </Button>
-
-                <Button
-                  onClick={() => setShowConfirmOrderModal(true)}
-                  className="bg-[#27c372] hover:bg-[#22c55e] text-white font-black rounded-2xl gap-1.5 flex-1 shadow-lg shadow-[#27c372]/20"
-                >
-                  <span>Xác Nhận Đã Quét Mã & Thanh Toán</span>
-                  <CheckCircle2 className="w-4 h-4" />
+                  <CheckCircle2 className="h-5 w-5" />
+                  <span>{isSubmitting ? 'Đang xác thực thanh toán...' : 'Tôi Đã Chuyển Khoản Xong'}</span>
                 </Button>
               </div>
             </Card>
           </div>
 
-          <div className="lg:col-span-5 space-y-4">
-            <Card className="p-6 border-slate-200 bg-slate-50/70 space-y-4 rounded-3xl">
-              <h3 className="font-extrabold text-base text-slate-900 pb-2 border-b border-slate-200">
-                Thông Tin Giao Hàng Đã Điền
-              </h3>
-
-              <div className="space-y-2 text-xs font-semibold text-slate-700">
-                <div>
-                  <span className="text-slate-400 font-medium">Người nhận: </span>
-                  <span className="font-bold text-slate-900">{customerName} ({customerPhone})</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 font-medium">Địa chỉ: </span>
-                  <span>{shippingAddress}</span>
-                </div>
-                {note && (
-                  <div>
-                    <span className="text-slate-400 font-medium">Ghi chú: </span>
-                    <span className="italic">{note}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-800 space-y-1 font-semibold">
-                <div className="font-black flex items-center gap-1.5 text-emerald-900">
-                  <ShieldCheck className="w-4 h-4 text-[#27c372]" /> Quyền lợi chỉnh sửa thông tin đơn hàng
-                </div>
-                <p className="text-[11px] leading-relaxed">
-                  Sau khi hoàn tất đặt hàng, đơn sẽ ở trạng thái <strong>CHỜ DUYỆT</strong>. Bạn có thể tự do chỉnh sửa địa chỉ nhận hàng tại mục "Đơn Hàng Của Tôi" trước khi đơn được giao cho đơn vị vận chuyển.
-                </p>
+          <div className="lg:col-span-5 space-y-6">
+            <Card className="p-6 border-slate-200 rounded-3xl bg-slate-50/80 space-y-4 text-xs font-medium">
+              <h3 className="font-black text-sm text-slate-900 uppercase tracking-wide">Chi tiết vận đơn</h3>
+              <div className="space-y-1.5 text-slate-700">
+                <div>Người nhận: <strong className="text-slate-900">{customerName}</strong></div>
+                <div>Điện thoại: <strong className="text-slate-900">{customerPhone}</strong></div>
+                <div>Địa chỉ: <strong className="text-slate-900">{fullShippingAddress}</strong></div>
+                <div>Đối tác giao: <strong className="text-emerald-700">{selectedCarrier} Express</strong></div>
               </div>
             </Card>
           </div>
         </div>
       )}
 
-      {/* MODAL 1: CONFIRM ORDER SUBMISSION ("Thực hiện điều này... Bạn chắc chắn chứ?") */}
-      <Dialog open={showConfirmOrderModal} onOpenChange={setShowConfirmOrderModal}>
-        <DialogContent className="sm:max-w-md rounded-3xl p-6 font-sans">
-          <DialogHeader className="space-y-2">
-            <DialogTitle className="text-xl font-black text-slate-900 flex items-center gap-2">
-              <CheckCircle2 className="w-6 h-6 text-[#27c372]" />
-              Xác Nhận Thực Hiện Đặt Hàng?
+      {/* MAP PICKER MODAL IN CHECKOUT */}
+      <Dialog open={showMapPickerModal} onOpenChange={setShowMapPickerModal}>
+        <DialogContent className="sm:max-w-4xl max-w-[95vw] w-full sm:rounded-3xl p-6 sm:p-8 bg-white border border-slate-200 shadow-2xl font-sans max-h-[92vh] overflow-y-auto overflow-x-hidden">
+          <DialogHeader className="space-y-1">
+            <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-emerald-600" />
+              <span>Ghim Vị Trí Nhận Hàng Trên Bản Đồ</span>
             </DialogTitle>
-            <DialogDescription className="text-slate-600 text-xs leading-relaxed font-medium">
-              Thực hiện điều này... Bạn có chắc chắn thông tin nhận hàng <strong>"{shippingAddress}"</strong> và hình thức thanh toán đã hoàn toàn chính xác chứ?
+            <DialogDescription className="text-xs text-slate-500">
+              Chọn toạ độ GPS chính xác để Shipper giao hàng tận cửa
             </DialogDescription>
           </DialogHeader>
+
+          <div className="py-2">
+            <MapLocationPicker
+              initialAddress={fullShippingAddress}
+              onSelectLocation={handleMapLocationConfirmed}
+              onCancel={() => setShowMapPickerModal(false)}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm COD Modal */}
+      <Dialog open={showConfirmOrderModal} onOpenChange={setShowConfirmOrderModal}>
+        <DialogContent className="sm:max-w-md bg-white rounded-3xl p-6 font-sans">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="text-lg font-black text-slate-900">
+              Xác Nhận Đặt Hàng (Thu Tiền COD)
+            </DialogTitle>
+            <DialogDescription className="text-slate-600 text-xs leading-relaxed font-medium">
+              Bạn đang chọn hình thức thanh toán khi nhận hàng. Đơn hàng sẽ được chuyển tới bộ phận đóng gói và bàn giao cho Shipper <strong className="text-slate-900">{selectedCarrier}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="p-3 bg-slate-50 rounded-2xl border text-xs space-y-1">
+            <div className="flex justify-between">
+              <span className="text-slate-500">Người nhận:</span>
+              <span className="font-bold text-slate-900">{customerName} ({customerPhone})</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Địa chỉ giao:</span>
+              <span className="font-semibold text-slate-800">{fullShippingAddress}</span>
+            </div>
+            <div className="flex justify-between border-t pt-1 mt-1">
+              <span className="text-slate-500">Tổng thanh toán COD:</span>
+              <span className="font-black text-emerald-600">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(grandTotal)}</span>
+            </div>
+          </div>
 
           <DialogFooter className="flex flex-row gap-3 justify-end pt-4 border-t border-slate-100">
             <Button
               variant="outline"
               onClick={() => setShowConfirmOrderModal(false)}
-              className="rounded-xl font-extrabold border-slate-300"
+              className="rounded-xl font-bold border-slate-300"
             >
-              Hủy / Xem lại
+              Hủy
             </Button>
             <Button
               onClick={executeCheckoutSubmit}
               disabled={isSubmitting}
-              className="bg-[#27c372] hover:bg-[#22c55e] text-white font-black rounded-xl gap-2 shadow-md"
+              className="bg-[#27c372] hover:bg-[#22c55e] text-white font-black rounded-xl shadow-md"
             >
-              {isSubmitting ? 'Đang tạo đơn...' : 'Đồng Ý Đặt Hàng'}
+              {isSubmitting ? 'Đang xử lý...' : 'Xác Nhận Đặt Hàng'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* MODAL 2: CONFIRM EXIT TO CART ("Rời khỏi thanh toán?") */}
+      {/* Exit Modal */}
       <Dialog open={showExitModal} onOpenChange={setShowExitModal}>
-        <DialogContent className="sm:max-w-md rounded-3xl p-6 font-sans">
+        <DialogContent className="sm:max-w-md bg-white rounded-3xl p-6 font-sans">
           <DialogHeader className="space-y-2">
             <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-amber-500" />
-              Xác Nhận Quay Về Giỏ Hàng?
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              <span>Quay Lại Giỏ Hàng?</span>
             </DialogTitle>
-            <DialogDescription className="text-slate-600 text-xs leading-relaxed font-medium">
-              Thực hiện điều này... Nếu bạn rời khỏi trang thanh toán về Giỏ hàng, bộ đếm ngược 20 phút sẽ bị <strong>hủy và tính lại từ đầu</strong> ở lượt thanh toán sau. Bạn có chắc chắn muốn rời đi?
+            <DialogDescription className="text-slate-600 text-xs font-medium">
+              Thời gian giữ đơn 20 phút sẽ bị hủy bỏ nếu bạn rời khỏi trang thanh toán.
             </DialogDescription>
           </DialogHeader>
-
           <DialogFooter className="flex flex-row gap-3 justify-end pt-4 border-t border-slate-100">
-            <Button
-              variant="outline"
-              onClick={() => setShowExitModal(false)}
-              className="rounded-xl font-extrabold border-slate-300"
-            >
-              Ở lại tiếp tục
+            <Button variant="outline" onClick={() => setShowExitModal(false)} className="rounded-xl font-bold">
+              Ở Lại Tiếp Tục
             </Button>
-
-            <Button
-              onClick={handleExitToCart}
-              variant="destructive"
-              className="rounded-xl font-black gap-1.5"
-            >
-              Quay về Giỏ hàng
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* MODAL 3: 20-MINUTE TIMER EXPIRED ALERT */}
-      <Dialog open={isExpired}>
-        <DialogContent className="sm:max-w-md rounded-3xl p-6 text-center space-y-4 font-sans" onPointerDownOutside={(e) => e.preventDefault()}>
-          <div className="w-14 h-14 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
-            <AlertTriangle className="w-8 h-8" />
-          </div>
-
-          <DialogHeader className="space-y-2">
-            <DialogTitle className="text-xl font-black text-slate-900">
-              Hết Hạn Thời Gian Thanh Toán!
-            </DialogTitle>
-            <DialogDescription className="text-slate-600 text-xs leading-relaxed font-semibold">
-              Thời gian thanh toán 20 phút cho lượt đặt hàng này đã kết thúc. Vui lòng thực hiện lại quá trình đặt hàng và thanh toán.
-            </DialogDescription>
-          </DialogHeader>
-
-          <DialogFooter className="pt-2">
-            <Button
-              onClick={handleExitToCart}
-              className="w-full bg-[#27c372] hover:bg-[#22c55e] text-white font-black rounded-xl h-12 shadow-md"
-            >
-              Thực Hiện Lại Đặt Hàng (Về Giỏ Hàng)
+            <Button onClick={() => { resetTimer(); navigate('/cart') }} variant="destructive" className="rounded-xl font-bold">
+              Rời Khỏi
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -161,58 +161,149 @@ export const adminService = {
         },
         {
           id: 3,
+          name: "Vợt CRBN 1X Power Series 14mm Raw Carbon",
+          slug: "vot-crbn-1x-power",
+          price: 4850000,
+          base_price: 4850000,
+          image_url: "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=400",
+          short_description: "Bề mặt sợi carbon nhám T700 trợ lực xoáy bóng",
+          in_stock: true,
+          category: { id: 1, name: "Vợt Pickleball" },
+          item_type: "product",
+          variants: [{ id: 103, sku: "CRBN-1X-14MM", color: "Đen", weight: "220g", option_name: "Độ dày", option_value: "14mm", price: 4850000, stock_quantity: 18 }]
+        },
+        {
+          id: 4,
           name: "Hộp 12 Bóng Franklin X-40 Outdoor (Vàng)",
           slug: "bong-franklin-x40",
           price: 420000,
           base_price: 420000,
           image_url: "https://images.unsplash.com/photo-1530549387789-4c1017266635?w=400",
-          short_description: "Bóng tiêu chuẩn thi đấu ngoài trời USAPA",
+          short_description: "Bóng tiêu chuẩn thi đấu ngoài trời USAPA Approved",
           in_stock: true,
           category: { id: 2, name: "Bóng Pickleball" },
           item_type: "product",
-          variants: [{ id: 103, sku: "FRA-X40-YELLOW-PACK12", color: "Vàng", weight: "26g", option_name: "Quy cách", option_value: "Hộp 12 Quả", price: 420000, stock_quantity: 50 }]
+          variants: [{ id: 104, sku: "FRA-X40-YELLOW-PACK12", color: "Vàng", weight: "26g", option_name: "Quy cách", option_value: "Hộp 12 Quả", price: 420000, stock_quantity: 50 }]
         },
         {
-          id: 4,
+          id: 5,
+          name: "Hộp 3 Quả Bóng Dura Fast 40 Chuyên Nghiệp",
+          slug: "bong-dura-fast-40",
+          price: 150000,
+          base_price: 150000,
+          image_url: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400",
+          short_description: "Bóng giải đấu PPA Tour tốc độ bay chuẩn",
+          in_stock: true,
+          category: { id: 2, name: "Bóng Pickleball" },
+          item_type: "product",
+          variants: [{ id: 105, sku: "DUR-FAST40-PACK3", color: "Vàng Neon", weight: "26g", option_name: "Quy cách", option_value: "Hộp 3 Quả", price: 150000, stock_quantity: 80 }]
+        },
+        {
+          id: 6,
+          name: "Băng Quấn Cán Vợt Chống Trơn Wilson Pro Grip (Set 3 cái)",
+          slug: "bang-quan-can-wilson-pro",
+          price: 105000,
+          base_price: 105000,
+          image_url: "https://images.unsplash.com/photo-1527661591475-527312dd65f5?w=400",
+          short_description: "Thấm hút mồ hôi êm ái chống trượt tay khi thi đấu",
+          in_stock: true,
+          category: { id: 3, name: "Phụ kiện & Quấn cán" },
+          item_type: "product",
+          variants: [{ id: 106, sku: "WIL-GRIP-SET3", color: "Trắng", weight: "15g", option_name: "Quy cách", option_value: "Set 3 Cuộn", price: 105000, stock_quantity: 120 }]
+        },
+        {
+          id: 7,
+          name: "Bao Vợt Pickleball Chống Sốc JOOLA Tour Pro",
+          slug: "bao-vot-joola-tour-pro",
+          price: 650000,
+          base_price: 650000,
+          image_url: "https://images.unsplash.com/photo-1582293041079-7814c2f12063?w=400",
+          short_description: "Bao chống sốc có ngăn đựng giày và phụ kiện",
+          in_stock: true,
+          category: { id: 3, name: "Phụ kiện & Quấn cán" },
+          item_type: "product",
+          variants: [{ id: 107, sku: "JOO-BAG-TOUR", color: "Đen / Xám", weight: "450g", option_name: "Kích thước", option_value: "Standard", price: 650000, stock_quantity: 30 }]
+        },
+        {
+          id: 8,
+          name: "Dây Chì Dán Cân Bằng Đầu Vợt Lead Tape 3g (Set 4 thanh)",
+          slug: "day-chi-lead-tape",
+          price: 90000,
+          base_price: 90000,
+          image_url: "https://images.unsplash.com/photo-1548839140-29a749e1bc4e?w=400",
+          short_description: "Tăng trọng lượng và độ mở rộng của sweet spot",
+          in_stock: true,
+          category: { id: 3, name: "Phụ kiện & Quấn cán" },
+          item_type: "product",
+          variants: [{ id: 108, sku: "LEAD-TAPE-3G", color: "Bạc", weight: "12g", option_name: "Quy cách", option_value: "Vỉ 4 Thanh", price: 90000, stock_quantity: 65 }]
+        },
+        {
+          id: 9,
           name: "Nước Điện Giải Pocari Sweat 500ml",
           slug: "nuoc-pocari-sweat-500ml",
           price: 25000,
           base_price: 25000,
           image_url: "https://images.unsplash.com/photo-1527661591475-527312dd65f5?w=400",
-          short_description: "Nước bù khoáng chất cho vận động viên Pickleball",
+          short_description: "Nước bù khoáng chất & ion điện giải cho VĐV",
           in_stock: true,
-          category: { id: 3, name: "Nước & Đồ ăn" },
+          category: { id: 5, name: "Đồ uống & Đồ ăn" },
           item_type: "drink_food",
-          variants: [{ id: 104, sku: "POC-500ML", color: "Xanh", weight: "500g", option_name: "Dung tích", option_value: "Chai 500ml", price: 25000, stock_quantity: 120 }]
+          variants: [{ id: 109, sku: "POC-500ML", color: "Xanh", weight: "500g", option_name: "Dung tích", option_value: "Chai 500ml", price: 25000, stock_quantity: 120 }]
         },
         {
-          id: 5,
+          id: 10,
           name: "Nước Suối Aquafina 500ml",
           slug: "nuoc-suoi-aquafina",
           price: 10000,
           base_price: 10000,
           image_url: "https://images.unsplash.com/photo-1548839140-29a749e1bc4e?w=400",
-          short_description: "Nước tinh khiết đóng chai tại quầy",
+          short_description: "Nước tinh khiết đóng chai ướp lạnh tại quầy",
           in_stock: true,
-          category: { id: 3, name: "Nước & Đồ ăn" },
+          category: { id: 5, name: "Đồ uống & Đồ ăn" },
           item_type: "drink_food",
-          variants: [{ id: 105, sku: "AQU-500ML", color: "Trong suốt", weight: "500g", option_name: "Quy cách", option_value: "Chai 500ml", price: 10000, stock_quantity: 300 }]
+          variants: [{ id: 110, sku: "AQU-500ML", color: "Trong suốt", weight: "500g", option_name: "Quy cách", option_value: "Chai 500ml", price: 10000, stock_quantity: 250 }]
         },
         {
-          id: 6,
+          id: 11,
+          name: "Nước Revive Chanh Muối Bù Nước 500ml",
+          slug: "nuoc-revive-chanh-muoi",
+          price: 20000,
+          base_price: 20000,
+          image_url: "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=400",
+          short_description: "Bổ sung muối khoáng và vitamin B3, B6, B12",
+          in_stock: true,
+          category: { id: 5, name: "Đồ uống & Đồ ăn" },
+          item_type: "drink_food",
+          variants: [{ id: 111, sku: "REV-500ML", color: "Vàng chanh", weight: "500g", option_name: "Dung tích", option_value: "Chai 500ml", price: 20000, stock_quantity: 150 }]
+        },
+        {
+          id: 12,
+          name: "Nước Tăng Lực Red Bull Thái Lan 250ml",
+          slug: "nuoc-redbull-thai",
+          price: 25000,
+          base_price: 25000,
+          image_url: "https://images.unsplash.com/photo-1582293041079-7814c2f12063?w=400",
+          short_description: "Bổ sung năng lượng và sự tỉnh táo trước trận đấu",
+          in_stock: true,
+          category: { id: 5, name: "Đồ uống & Đồ ăn" },
+          item_type: "drink_food",
+          variants: [{ id: 112, sku: "RED-BULL-250ML", color: "Vàng", weight: "250g", option_name: "Dung tích", option_value: "Lon 250ml", price: 25000, stock_quantity: 90 }]
+        },
+        {
+          id: 13,
           name: "Bánh Thể Thao Protein Bar Snickers 50g",
           slug: "banh-protein-snickers",
           price: 35000,
           base_price: 35000,
-          image_url: "https://images.unsplash.com/photo-1582293041079-7814c2f12063?w=400",
-          short_description: "Bổ sung năng lượng tức thì trước trận đấu",
+          image_url: "https://images.unsplash.com/photo-1587280501635-68a0e82cd5ff?w=400",
+          short_description: "Bổ sung Protein chống đói và phục hồi thể lực",
           in_stock: true,
-          category: { id: 3, name: "Nước & Đồ ăn" },
+          category: { id: 5, name: "Đồ uống & Đồ ăn" },
           item_type: "drink_food",
-          variants: [{ id: 106, sku: "SNK-50G", color: "Nâu", weight: "50g", option_name: "Khối lượng", option_value: "Thanh 50g", price: 35000, stock_quantity: 60 }]
+          variants: [{ id: 113, sku: "SNK-BAR-50G", color: "Nâu", weight: "50g", option_name: "Quy cách", option_value: "Thanh 50g", price: 35000, stock_quantity: 80 }]
         },
         {
-          id: 7,
+          id: 14,
           name: "Dịch Vụ Cho Thuê Vợt Tập JOOLA (30k/giờ)",
           slug: "dich-vu-thue-vot-tap",
           price: 30000,
@@ -222,10 +313,10 @@ export const adminService = {
           in_stock: true,
           category: { id: 4, name: "Cho thuê đồ" },
           item_type: "rental",
-          variants: [{ id: 107, sku: "RENT-PAD-01", color: "Mặc định", weight: "220g", option_name: "Thời lượng", option_value: "Gói 1 Giờ", price: 30000, stock_quantity: 20 }]
+          variants: [{ id: 114, sku: "RENT-PAD-01", color: "Mặc định", weight: "220g", option_name: "Thời lượng", option_value: "Gói 1 Giờ", price: 30000, stock_quantity: 20 }]
         },
         {
-          id: 8,
+          id: 15,
           name: "Dịch Vụ Cho Thuê Máy Bắn Bóng Tập Luyện (100k/giờ)",
           slug: "dich-vu-thue-may-ban-bong",
           price: 100000,
@@ -235,7 +326,7 @@ export const adminService = {
           in_stock: true,
           category: { id: 4, name: "Cho thuê đồ" },
           item_type: "rental",
-          variants: [{ id: 108, sku: "RENT-BALL-MACHINE", color: "Mặc định", weight: "15kg", option_name: "Thời lượng", option_value: "Gói 1 Giờ", price: 100000, stock_quantity: 3 }]
+          variants: [{ id: 115, sku: "RENT-BALL-MACHINE", color: "Mặc định", weight: "15kg", option_name: "Thời lượng", option_value: "Gói 1 Giờ", price: 100000, stock_quantity: 3 }]
         },
       ]
     }

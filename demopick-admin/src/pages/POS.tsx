@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Search, ShoppingCart, Trash2, Banknote, QrCode, Receipt, PlusCircle, User, ShieldCheck, Lock, CheckCircle2, Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ShoppingCart, Trash2, Banknote, QrCode, Receipt, PlusCircle, User, ShieldCheck, Lock, CheckCircle2, Clock, ChevronLeft, ChevronRight, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -33,8 +33,7 @@ interface CourtStatusItem {
   hours: number;
   rate: number;
   customerName: string | null;
-  customerRank: string | null;
-  discountPercent: number;
+  customerPhone?: string | null;
 }
 
 export default function POS() {
@@ -47,21 +46,36 @@ export default function POS() {
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "bank_transfer">("cash");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shiftReportOpen, setShiftReportOpen] = useState(false);
+  const [posReceiptModalOpen, setPosReceiptModalOpen] = useState(false);
+  const [lastPOSReceipt, setLastPOSReceipt] = useState<{
+    code: string;
+    customerName: string;
+    customerPhone?: string;
+    staffName: string;
+    items: CartItem[];
+    subtotal: number;
+    discount: number;
+    total: number;
+    paymentMethod: string;
+    time: string;
+  } | null>(null);
 
   // Pagination for Product Grid
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 6; // 6 products per page (2 rows x 3 cols) for perfect screen fit
 
-  // Selected customer info for membership discount
-  const [selectedCustomer, setSelectedCustomer] = useState<{
+  // Retail Customer Manual Input (Tên và SĐT khách mua trực tiếp)
+  const [retailCustomerName, setRetailCustomerName] = useState<string>("Khách vãng lai");
+  const [retailCustomerPhone, setRetailCustomerPhone] = useState<string>("");
+
+  // Court Customer Info (Tự động trích xuất khi bấm chọn sân)
+  const [courtCustomer, setCourtCustomer] = useState<{
     name: string;
-    rank: string;
-    discountPercent: number;
-  } | null>({
-    name: "Nguyễn Văn A",
-    rank: "Hạng VIP Diamond",
-    discountPercent: 15,
-  });
+    phone?: string;
+    courtName?: string;
+  } | null>(null);
+
+  const hasCourtFee = cartItems.some((i) => i.isCourtFee);
 
   // Quick Restock State for Staff
   const [quickRestockProduct, setQuickRestockProduct] = useState<Product | null>(null);
@@ -72,7 +86,7 @@ export default function POS() {
   const [shiftTransferTotal, setShiftTransferTotal] = useState(3800000);
   const [shiftOrdersCount, setShiftOrdersCount] = useState(8);
 
-  // Vertical Left Court Status List (Matches Ảnh 2)
+  // Vertical Left Court Status List
   const courtStatusList: CourtStatusItem[] = [
     {
       id: 1,
@@ -83,9 +97,8 @@ export default function POS() {
       time: "08:00 - 09:30 (1.5h)",
       hours: 1.5,
       rate: 140000,
-      customerName: "Nguyễn Văn A",
-      customerRank: "Hạng VIP Diamond",
-      discountPercent: 15,
+      customerName: "Nguyễn Văn An",
+      customerPhone: "0909 123 456",
     },
     {
       id: 2,
@@ -96,9 +109,8 @@ export default function POS() {
       time: "09:00 - 10:00 (15p còn lại)",
       hours: 1,
       rate: 140000,
-      customerName: "Trần Thị B",
-      customerRank: "Hạng Vàng",
-      discountPercent: 10,
+      customerName: "Trần Thị Bích",
+      customerPhone: "0912 345 678",
     },
     {
       id: 3,
@@ -109,9 +121,8 @@ export default function POS() {
       time: "08:30 - 10:30 (2h)",
       hours: 2,
       rate: 140000,
-      customerName: "Lê Minh C",
-      customerRank: "Thành viên Bạc",
-      discountPercent: 1,
+      customerName: "Lê Minh Cường",
+      customerPhone: "0988 776 655",
     },
     {
       id: 4,
@@ -123,25 +134,22 @@ export default function POS() {
       hours: 1,
       rate: 140000,
       customerName: null,
-      customerRank: null,
-      discountPercent: 0,
     },
     {
       id: 5,
-      name: "Sân VIP C1",
+      name: "Sân C1 (Cao Cấp)",
       status: "booked",
       statusLabel: "ĐÃ ĐẶT TỚI",
       statusColor: "bg-blue-100 text-blue-800 border-blue-300",
       time: "Khung 10:00 - 12:00 (2h)",
       hours: 2,
       rate: 180000,
-      customerName: "Phạm Quốc D",
-      customerRank: "Hạng VIP Diamond",
-      discountPercent: 15,
+      customerName: "Phạm Quốc Bảo",
+      customerPhone: "0933 445 566",
     },
     {
       id: 6,
-      name: "Sân VIP C2",
+      name: "Sân C2 (Cao Cấp)",
       status: "available",
       statusLabel: "TRỐNG",
       statusColor: "bg-slate-100 text-slate-500 border-slate-200",
@@ -149,8 +157,6 @@ export default function POS() {
       hours: 1,
       rate: 180000,
       customerName: null,
-      customerRank: null,
-      discountPercent: 0,
     },
   ];
 
@@ -188,39 +194,59 @@ export default function POS() {
     }
   }, [searchParams]);
 
-  // Category filter tabs (Clean labels matching Ảnh 2)
+  // Category filter tabs (Đồ uống & Đồ ăn, Vợt, Bóng, Phụ kiện, Thuê vợt)
   const categoriesList = [
     { id: "Tất cả", label: "Tất cả" },
-    { id: "Nước uống", label: "Đồ uống & Đồ ăn" },
-    { id: "Thuê vợt", label: "Thuê vợt & máy" },
-    { id: "Phụ kiện", label: "Phụ kiện & Vợt bán" },
+    { id: "Đồ uống", label: "Đồ uống & Đồ ăn" },
+    { id: "Vợt Pickleball", label: "Vợt Pickleball" },
+    { id: "Bóng Pickleball", label: "Bóng Pickleball" },
+    { id: "Phụ kiện", label: "Phụ kiện & Quấn cán" },
+    { id: "Thuê vợt", label: "Thuê vợt & Máy tập" },
   ];
 
-  const filteredProducts = products.filter((p) => {
-    const matchSearch =
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.slug.toLowerCase().includes(search.toLowerCase());
+  const filteredProducts = (products || []).filter((p) => {
+    if (!p) return false;
+    const pName = (p.name || "").toLowerCase();
+    const pSlug = (p.slug || "").toLowerCase();
+    const sQuery = (search || "").toLowerCase();
+
+    const matchSearch = pName.includes(sQuery) || pSlug.includes(sQuery);
 
     let matchCat = true;
-    if (activeCategory === "Nước uống") {
+    const catName = p.category?.name || "";
+
+    if (activeCategory === "Đồ uống") {
       matchCat =
         p.item_type === "drink_food" ||
-        p.category?.name?.includes("Nước") ||
-        p.name.toLowerCase().includes("nước") ||
-        p.name.toLowerCase().includes("bánh") ||
-        p.name.toLowerCase().includes("cà phê") ||
-        p.name.toLowerCase().includes("coca");
+        catName.includes("Nước") ||
+        catName.includes("Đồ ăn") ||
+        pName.includes("nước") ||
+        pName.includes("pocari") ||
+        pName.includes("aquafina") ||
+        pName.includes("revive") ||
+        pName.includes("red bull") ||
+        pName.includes("bánh");
+    } else if (activeCategory === "Vợt Pickleball") {
+      matchCat =
+        catName.includes("Vợt") ||
+        (pName.includes("vợt") && p.item_type !== "rental");
+    } else if (activeCategory === "Bóng Pickleball") {
+      matchCat =
+        catName.includes("Bóng") ||
+        pName.includes("bóng");
+    } else if (activeCategory === "Phụ kiện") {
+      matchCat =
+        catName.includes("Phụ kiện") ||
+        pName.includes("quấn") ||
+        pName.includes("bao") ||
+        pName.includes("chì") ||
+        pName.includes("grip") ||
+        pName.includes("băng");
     } else if (activeCategory === "Thuê vợt") {
       matchCat =
         p.item_type === "rental" ||
-        p.category?.name?.includes("Cho thuê") ||
-        p.name.toLowerCase().includes("thuê");
-    } else if (activeCategory === "Phụ kiện") {
-      matchCat =
-        p.category?.name?.includes("Phụ kiện") ||
-        p.name.toLowerCase().includes("vợt") ||
-        p.name.toLowerCase().includes("bóng") ||
-        p.name.toLowerCase().includes("băng");
+        catName.includes("Cho thuê") ||
+        pName.includes("thuê");
     }
 
     return matchSearch && matchCat;
@@ -251,14 +277,19 @@ export default function POS() {
     });
 
     if (court.customerName) {
-      setSelectedCustomer({
+      setCourtCustomer({
         name: court.customerName,
-        rank: court.customerRank || "Thành viên",
-        discountPercent: court.discountPercent,
+        phone: court.customerPhone || "",
+        courtName: court.name,
       });
-      toast.success(`Đã chọn ${court.name} của khách ${court.customerName} (${court.customerRank}) vào Hóa Đơn!`);
+      toast.success(`Đã chọn ${court.name} của khách "${court.customerName}" - Đã khóa ô nhập khách thủ công!`);
     } else {
-      toast.success(`Đã thêm Tiền ${court.name} (${court.hours}h = ${new Intl.NumberFormat("vi-VN").format(feeAmount)}đ) vào Hóa Đơn!`);
+      setCourtCustomer({
+        name: `Khách ${court.name}`,
+        phone: "",
+        courtName: court.name,
+      });
+      toast.success(`Đã thêm Tiền ${court.name} (${court.hours}h) vào Hóa Đơn!`);
     }
   };
 
@@ -318,12 +349,8 @@ export default function POS() {
 
   // Calculations
   const subtotalAmount = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-
-  // Calculate discount on court fee if customer has membership rank
-  const courtFeeItem = cartItems.find((i) => i.isCourtFee);
-  const courtFeeAmount = courtFeeItem ? courtFeeItem.price * courtFeeItem.quantity : 0;
-  const discountAmount = selectedCustomer ? (courtFeeAmount * selectedCustomer.discountPercent) / 100 : 0;
-  const finalTotalAmount = Math.max(0, subtotalAmount - discountAmount);
+  const discountAmount = 0;
+  const finalTotalAmount = subtotalAmount;
 
   const handleCheckout = async () => {
     if (cartItems.length === 0) {
@@ -366,10 +393,34 @@ export default function POS() {
       localStorage.setItem("demopick_synced_products", JSON.stringify(updatedProducts));
       window.dispatchEvent(new Event("storage"));
 
+      const hasCourt = cartItems.some((i) => i.isCourtFee);
+      const finalCustomerName = hasCourt
+        ? (courtCustomer?.name || "Khách Đặt Sân")
+        : (retailCustomerName.trim() || "Khách vãng lai");
+      const finalCustomerPhone = hasCourt
+        ? (courtCustomer?.phone || "")
+        : retailCustomerPhone.trim();
+
+      const receiptData = {
+        code: newOrderCode,
+        customerName: finalCustomerName,
+        customerPhone: finalCustomerPhone,
+        staffName: user?.name || "Phạm Văn Đức (Lễ Tân)",
+        items: [...cartItems],
+        subtotal: subtotalAmount,
+        discount: 0,
+        total: finalTotalAmount,
+        paymentMethod: paymentMethod === "cash" ? "Tiền mặt tại quầy" : "Chuyển khoản VietQR",
+        time: `${new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })} ${new Date().toLocaleDateString("vi-VN")}`,
+      };
+      setLastPOSReceipt(receiptData);
+      setPosReceiptModalOpen(true);
+
       toast.success(`Thanh toán hóa đơn #${newOrderCode} (${new Intl.NumberFormat("vi-VN").format(finalTotalAmount)}đ) thành công! Tồn kho POS & Web đã đồng bộ tự động.`, {
         duration: 5000,
       });
       setCartItems([]);
+      setCourtCustomer(null);
     }, 600);
   };
 
@@ -406,21 +457,13 @@ export default function POS() {
 
   return (
     <AppLayout
+      noScroll
       title="Bán Hàng POS Quầy Lễ Tân"
-      headerRight={
-        <Button
-          onClick={() => setShiftReportOpen(true)}
-          className="gap-2 bg-emerald-700 hover:bg-emerald-600 font-bold text-white shadow-sm"
-        >
-          <Receipt className="h-4 w-4" />
-          <span>Doanh Thu Ca Hiện Tại: {new Intl.NumberFormat("vi-VN").format(shiftTotalSum)}đ</span>
-        </Button>
-      }
     >
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* CỘT 1 (BÊN TRÁI PHÍA NGOÀI - 3 COLS): DANH SÁCH SÂN TRẠNG THÁI THỜI GIAN THỰC (Chuẩn Ảnh 2) */}
-        <div className="lg:col-span-3 space-y-3">
-          <div className="flex items-center justify-between">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 flex-1 min-h-0 h-full overflow-hidden">
+        {/* CỘT 1 (BÊN TRÁI PHÍA NGOÀI - 3 COLS): DANH SÁCH SÂN TRẠNG THÁI THỜI GIAN THỰC (CUỘN RIÊNG TẠI ĐÂY) */}
+        <div className="lg:col-span-3 flex flex-col min-h-0 h-full space-y-2">
+          <div className="flex items-center justify-between shrink-0">
             <h3 className="font-bold text-slate-900 text-xs uppercase flex items-center gap-1.5">
               DANH SÁCH SÂN
             </h3>
@@ -429,7 +472,8 @@ export default function POS() {
             </Badge>
           </div>
 
-          <div className="space-y-2 max-h-[calc(100vh-220px)] overflow-y-auto pr-1">
+          {/* Dedicated Scrollable Court List */}
+          <div className="space-y-2 flex-1 min-h-0 overflow-y-auto pr-1.5">
             {courtStatusList.map((court) => (
               <Card
                 key={court.id}
@@ -462,10 +506,10 @@ export default function POS() {
           </div>
         </div>
 
-        {/* CỘT 2 (Ở GIỮA - 6 COLS): KHOẢNG ĐỎ CÓ THANH CUỘN & PHÂN TRANG CHUYỂN TRANG */}
-        <div className="lg:col-span-6 space-y-3">
-          {/* Category Tabs (Chuẩn Thiết Kế Ảnh 2) */}
-          <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-2">
+        {/* CỘT 2 (Ở GIỮA - 6 COLS): KHOẢNG GIỮA CÓ PHÂN TRANG VÀ LƯỚI SẢN PHẨM */}
+        <div className="lg:col-span-6 flex flex-col min-h-0 h-full space-y-2.5">
+          {/* Category Tabs */}
+          <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-2 shrink-0">
             <div className="flex items-center gap-1.5 overflow-x-auto">
               {categoriesList.map((cat) => (
                 <button
@@ -483,11 +527,11 @@ export default function POS() {
           </div>
 
           {/* Search Bar */}
-          <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm">
+          <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm shrink-0">
             <div className="relative">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Tìm đồ uống, đồ ăn nhẹ, thuê vợt, phụ kiện..."
+                placeholder="Tìm đồ uống, đồ ăn nhẹ, vợt, bóng, phụ kiện, thuê sân..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10 text-xs h-8 bg-slate-50 border-slate-200"
@@ -495,24 +539,28 @@ export default function POS() {
             </div>
           </div>
 
-          {/* PRODUCT CONTAINER: SCROLLABLE & PAGINATED CONTAINER */}
-          <div className="max-h-[calc(100vh-270px)] overflow-y-auto pr-1 space-y-3 flex flex-col justify-between">
-            {/* Product Cards Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {/* PRODUCT CONTAINER: GRID CARDS (INDEPENDENT SCROLLABLE) */}
+          <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 items-start">
               {paginatedProducts.map((p) => {
                 const stock = p.variants?.[0]?.stock_quantity || 0;
                 const isAllowStaffRestock =
                   p.item_type === "drink_food" ||
                   p.category?.name?.includes("Nước") ||
-                  p.category?.name?.includes("Đồ ăn");
+                  p.category?.name?.includes("Đồ ăn") ||
+                  p.category?.name?.includes("Bóng") ||
+                  p.category?.name?.includes("Phụ kiện") ||
+                  p.name.toLowerCase().includes("nước") ||
+                  p.name.toLowerCase().includes("bóng") ||
+                  p.name.toLowerCase().includes("quấn");
 
                 return (
                   <Card
                     key={p.id}
-                    className="p-3 border-slate-200 hover:border-emerald-500 hover:shadow-md transition-all bg-white flex flex-col justify-between"
+                    className="p-2.5 border-slate-200 hover:border-emerald-500 hover:shadow-md transition-all bg-white flex flex-col justify-between h-[230px]"
                   >
-                    <div className="space-y-2">
-                      <div className="aspect-square bg-slate-50 rounded-xl overflow-hidden relative flex items-center justify-center p-2 border border-slate-100">
+                    <div className="space-y-1.5">
+                      <div className="h-28 bg-slate-50 rounded-xl overflow-hidden relative flex items-center justify-center p-2 border border-slate-100">
                         <img src={p.image_url || ""} alt={p.name} className="max-h-full max-w-full object-contain" />
                         <span className={`absolute bottom-1 right-1 text-[9px] font-bold px-1.5 py-0.5 rounded ${stock > 0 ? "bg-emerald-600 text-white" : "bg-red-600 text-white"}`}>
                           Tồn: {stock}
@@ -521,7 +569,7 @@ export default function POS() {
                       <h4 className="font-bold text-xs text-slate-900 line-clamp-2">{p.name}</h4>
                     </div>
 
-                    <div className="pt-2 mt-2 border-t space-y-2">
+                    <div className="pt-2 mt-auto border-t space-y-1.5">
                       <div className="flex items-center justify-between">
                         <span className="font-black text-emerald-600 text-xs">
                           {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(p.price)}
@@ -556,138 +604,182 @@ export default function POS() {
                 );
               })}
             </div>
+          </div>
 
-            {/* PAGINATION FOOTER CONTROL BAR */}
-            <div className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm text-xs font-bold mt-2">
-              <span className="text-slate-500 font-semibold text-[11px]">
-                Hiển thị {paginatedProducts.length}/{filteredProducts.length} mặt hàng
+          {/* PAGINATION FOOTER CONTROL BAR */}
+          <div className="flex items-center justify-between bg-white p-2 rounded-xl border border-slate-200 shadow-sm text-xs font-bold shrink-0">
+            <span className="text-slate-500 font-semibold text-[11px]">
+              Hiển thị {paginatedProducts.length}/{filteredProducts.length} mặt hàng
+            </span>
+
+            <div className="flex items-center gap-1.5">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                className="h-7 px-2.5 border-slate-300 text-xs font-bold gap-1"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+                <span>Trang trước</span>
+              </Button>
+
+              <span className="px-2 font-mono text-slate-800 text-xs font-extrabold bg-slate-100 py-1 rounded border">
+                {currentPage} / {totalPages}
               </span>
 
-              <div className="flex items-center gap-1.5">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                  className="h-7 px-2.5 border-slate-300 text-xs font-bold gap-1"
-                >
-                  <ChevronLeft className="h-3.5 w-3.5" />
-                  <span>Trang trước</span>
-                </Button>
-
-                <span className="px-2 font-mono text-slate-800 text-xs font-extrabold bg-slate-100 py-1 rounded border">
-                  {currentPage} / {totalPages}
-                </span>
-
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={currentPage >= totalPages}
-                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                  className="h-7 px-2.5 border-slate-300 text-xs font-bold gap-1"
-                >
-                  <span>Trang sau</span>
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </Button>
-              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                className="h-7 px-2.5 border-slate-300 text-xs font-bold gap-1"
+              >
+                <span>Trang sau</span>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
             </div>
           </div>
         </div>
 
-        {/* CỘT 3 (BÊN PHẢI - 3 COLS): HÓA ĐƠN POS TICKET CHUẨN (Chuẩn Ảnh 2) */}
-        <div className="lg:col-span-3 space-y-3">
-          <Card className="p-4 border-slate-200 bg-white shadow-sm space-y-3">
-            <div className="flex items-center justify-between border-b pb-2">
-              <h3 className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
-                Hóa đơn
-              </h3>
-              <span className="text-xs font-mono text-slate-400">Mã: #HD8829</span>
-            </div>
-
-            {/* Customer Info Box (Chuẩn Ảnh 2) */}
-            {selectedCustomer && (
-              <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl space-y-0.5 text-xs">
-                <div className="font-bold text-emerald-900 flex items-center gap-1.5">
-                  <User className="h-3.5 w-3.5 text-emerald-600" />
-                  <span>{selectedCustomer.name}</span>
-                  <Badge className="bg-emerald-700 text-[9px]">{selectedCustomer.rank}</Badge>
-                </div>
-                {selectedCustomer.discountPercent > 0 && (
-                  <p className="text-[10px] text-emerald-700 font-semibold pl-5">
-                    Ưu đãi: Giảm {selectedCustomer.discountPercent}% tiền sân
-                  </p>
-                )}
+        {/* CỘT 3 (BÊN PHẢI - 3 COLS): HÓA ĐƠN POS TICKET CHUẨN */}
+        <div className="lg:col-span-3 flex flex-col min-h-0 h-full">
+          <Card className="p-3.5 border-slate-200 bg-white shadow-sm flex flex-col min-h-0 h-full justify-between">
+            <div className="flex flex-col min-h-0 flex-1 space-y-2.5 overflow-hidden">
+              <div className="flex items-center justify-between border-b pb-2 shrink-0">
+                <h3 className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                  Hóa đơn
+                </h3>
+                <span className="text-xs font-mono text-slate-400">Mã: #HD8829</span>
               </div>
-            )}
 
-            {/* Cart Items List */}
-            <div className="divide-y divide-slate-100 max-h-[260px] overflow-y-auto pr-1 text-xs">
-              {cartItems.length === 0 ? (
-                <div className="py-8 text-center text-slate-400 space-y-2">
-                  <ShoppingCart className="h-8 w-8 mx-auto text-slate-200" />
-                  <p className="text-[11px] font-medium">Chưa chọn sản phẩm/tiền sân nào</p>
-                </div>
-              ) : (
-                cartItems.map((item) => (
-                  <div key={item.variantId} className="py-2 flex items-center justify-between gap-1">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-bold text-slate-900 truncate">{item.productName}</div>
-                      <div className="text-[10px] text-slate-400">{item.variantName}</div>
-                      <div className="text-emerald-600 font-bold">
-                        {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(item.price)}
+              {/* Customer Info Box (Dynamic: Retail Manual Inputs vs Auto Court Info) */}
+              <div className="shrink-0">
+                {hasCourtFee ? (
+                  <div className="p-2 bg-blue-50 border border-blue-200 rounded-xl space-y-1 text-xs">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 font-bold text-blue-900 truncate">
+                        <User className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                        <span className="truncate">{courtCustomer?.name || "Khách Đặt Sân"}</span>
                       </div>
+                      <Badge className="bg-blue-600 text-white text-[9px] font-bold shrink-0">
+                        🔒 Theo {courtCustomer?.courtName || "Sân"}
+                      </Badge>
                     </div>
-
-                    <div className="flex items-center gap-1 shrink-0">
-                      <div className="flex items-center border rounded bg-slate-50">
-                        <button
-                          onClick={() => handleQuantityChange(item.variantId, -1)}
-                          className="px-1.5 py-0.5 text-slate-600 hover:bg-slate-200 font-bold text-[10px]"
-                        >
-                          -
-                        </button>
-                        <span className="px-1.5 font-bold text-slate-900 text-[11px]">{item.quantity}</span>
-                        <button
-                          onClick={() => handleQuantityChange(item.variantId, 1)}
-                          className="px-1.5 py-0.5 text-slate-600 hover:bg-slate-200 font-bold text-[10px]"
-                        >
-                          +
-                        </button>
-                      </div>
-
+                    <div className="flex items-center justify-between text-[11px] text-blue-700 pt-0.5">
+                      <span>{courtCustomer?.phone ? `SĐT: ${courtCustomer.phone}` : "Khách theo lịch đặt sân"}</span>
                       <button
-                        onClick={() => handleRemoveFromCart(item.variantId)}
-                        className="text-slate-400 hover:text-red-500 p-0.5"
+                        type="button"
+                        onClick={() => {
+                          setCartItems((prev) => prev.filter((i) => !i.isCourtFee));
+                          setCourtCustomer(null);
+                          toast.info("Đã xóa tiền sân, mở lại ô nhập tên & SĐT cho khách bán lẻ.");
+                        }}
+                        className="text-[10px] text-red-600 hover:underline font-semibold"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        Hủy gộp sân
                       </button>
                     </div>
                   </div>
-                ))
-              )}
+                ) : (
+                  <div className="p-2 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-700 flex items-center gap-1.5 text-[11px]">
+                        <User className="h-3.5 w-3.5 text-emerald-600" />
+                        Thông tin khách mua lẻ
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRetailCustomerName("Khách vãng lai");
+                          setRetailCustomerPhone("");
+                        }}
+                        className="text-[10px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-100 hover:bg-emerald-200 px-2 py-0.5 rounded-full transition-colors"
+                      >
+                        ⚡ Khách lẻ
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                      <Input
+                        value={retailCustomerName}
+                        onChange={(e) => setRetailCustomerName(e.target.value)}
+                        placeholder="Tên khách (VD: Anh Nam)"
+                        className="h-7 text-xs bg-white border-slate-200"
+                      />
+                      <Input
+                        value={retailCustomerPhone}
+                        onChange={(e) => setRetailCustomerPhone(e.target.value)}
+                        placeholder="SĐT (VD: 0912 345 678)"
+                        className="h-7 text-xs bg-white border-slate-200"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Cart Items List - Scrollable */}
+              <div className="divide-y divide-slate-100 flex-1 min-h-0 overflow-y-auto pr-1 text-xs">
+                {cartItems.length === 0 ? (
+                  <div className="py-8 text-center text-slate-400 space-y-2">
+                    <ShoppingCart className="h-8 w-8 mx-auto text-slate-200" />
+                    <p className="text-[11px] font-medium">Chưa chọn sản phẩm/tiền sân nào</p>
+                  </div>
+                ) : (
+                  cartItems.map((item) => (
+                    <div key={item.variantId} className="py-1.5 flex items-center justify-between gap-1">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-slate-900 truncate">{item.productName}</div>
+                        <div className="text-[10px] text-slate-400">{item.variantName}</div>
+                        <div className="text-emerald-600 font-bold">
+                          {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(item.price)}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        <div className="flex items-center border rounded bg-slate-50">
+                          <button
+                            onClick={() => handleQuantityChange(item.variantId, -1)}
+                            className="px-1.5 py-0.5 text-slate-600 hover:bg-slate-200 font-bold text-[10px]"
+                          >
+                            -
+                          </button>
+                          <span className="px-1.5 font-bold text-slate-900 text-[11px]">{item.quantity}</span>
+                          <button
+                            onClick={() => handleQuantityChange(item.variantId, 1)}
+                            className="px-1.5 py-0.5 text-slate-600 hover:bg-slate-200 font-bold text-[10px]"
+                          >
+                            +
+                          </button>
+                        </div>
+
+                        <button
+                          onClick={() => handleRemoveFromCart(item.variantId)}
+                          className="text-slate-400 hover:text-red-500 p-0.5"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
 
-            {/* Calculations & Totals (Matching Ảnh 2) */}
-            <div className="pt-2 border-t space-y-2 text-xs">
+            {/* Calculations & Totals */}
+            <div className="pt-2 border-t space-y-2 text-xs shrink-0">
               <div className="space-y-1 text-slate-600">
                 <div className="flex justify-between">
                   <span>Tạm tính:</span>
                   <span className="font-bold text-slate-800">{new Intl.NumberFormat("vi-VN").format(subtotalAmount)}đ</span>
                 </div>
-                {discountAmount > 0 && (
-                  <div className="flex justify-between text-emerald-600 font-semibold">
-                    <span>Giảm giá thành viên ({selectedCustomer?.discountPercent}%):</span>
-                    <span>-{new Intl.NumberFormat("vi-VN").format(discountAmount)}đ</span>
-                  </div>
-                )}
               </div>
 
               <div className="flex justify-between items-center text-sm font-black text-emerald-600 pt-1.5 border-t">
-                <span>Tổng tiền:</span>
+                <span>Tổng thanh toán:</span>
                 <span className="text-base">{new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(finalTotalAmount)}</span>
               </div>
 
-              {/* Payment Buttons (Matching Ảnh 2) */}
+              {/* Payment Buttons */}
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <Button
                   size="sm"
@@ -702,9 +794,9 @@ export default function POS() {
                 <Button
                   size="sm"
                   type="button"
-                  variant={paymentMethod === "bank_transfer" ? "default" : "outline"}
-                  onClick={() => setPaymentMethod("bank_transfer")}
-                  className={`h-8 font-bold text-xs ${paymentMethod === "bank_transfer" ? "bg-emerald-600 text-white border-emerald-600" : ""}`}
+                  variant={paymentMethod === "transfer" ? "default" : "outline"}
+                  onClick={() => setPaymentMethod("transfer")}
+                  className={`h-8 font-bold text-xs ${paymentMethod === "transfer" ? "bg-slate-900 text-white" : ""}`}
                 >
                   <QrCode className="h-3.5 w-3.5 mr-1" /> Chuyển khoản
                 </Button>
@@ -731,7 +823,7 @@ export default function POS() {
               <DialogHeader>
                 <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
                   <PlusCircle className="h-5 w-5 text-amber-500" />
-                  Lễ Tân Nhập Nhanh Nước / Đồ Ăn Vào Quầy POS
+                  Lễ Tân Nhập Nhanh Nước / Đồ Ăn / Phụ Kiện Vào Quầy POS
                 </DialogTitle>
                 <DialogDescription>
                   Bổ sung số lượng vừa nhận tại quầy cho: <strong>{quickRestockProduct.name}</strong>
@@ -741,12 +833,12 @@ export default function POS() {
               <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 space-y-1">
                 <p className="font-bold"> Ghi nhật ký tự động (Audit Trail):</p>
                 <p className="text-[11px]">
-                  Hệ thống ghi nhận: Lễ tân <strong>{user?.name || "Phạm Văn Đức"}</strong> nhập thêm +{quickRestockQty} lốc nước vào lúc {new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}.
+                  Hệ thống ghi nhận: Lễ tân <strong>{user?.name || "Phạm Văn Đức"}</strong> nhập thêm +{quickRestockQty} sản phẩm vào lúc {new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}.
                 </p>
               </div>
 
               <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700">Số lượng lốc/chai vừa nhận thêm (*):</Label>
+                <Label className="font-bold text-slate-700">Số lượng vừa nhận thêm (*):</Label>
                 <Input
                   type="number"
                   min={1}
@@ -831,6 +923,129 @@ export default function POS() {
               In Báo Cáo Bàn Giao Ca Trực
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* MODAL IN PHIẾU THU & VÉ SÂN QR POS TỰ ĐỘNG */}
+      <Dialog open={posReceiptModalOpen} onOpenChange={setPosReceiptModalOpen}>
+        <DialogContent className="max-w-sm bg-white rounded-3xl p-6 font-sans shadow-2xl border border-slate-200">
+          {lastPOSReceipt && (
+            <div className="space-y-4">
+              <div className="p-4 bg-[#FAF8F5] rounded-2xl border border-slate-200/90 text-xs font-mono text-slate-800 space-y-3">
+                {/* STORE HEADER */}
+                <div className="text-center border-b border-dashed border-slate-300 pb-3 space-y-1">
+                  <div className="font-extrabold text-sm text-slate-900 tracking-wider">DEMOPICK PICKLEBALL CLUB</div>
+                  <div className="text-[10px] text-slate-500 font-sans">123 Đường Pickleball, Quận 7, TP.HCM</div>
+                  <div className="text-[10px] text-slate-500 font-sans">Hotline: 0909 123 456 • www.demopick.vn</div>
+                  <div className="pt-2 font-bold text-xs text-slate-900 uppercase">
+                    PHIẾU THU TIỀN TẠI QUẦY
+                  </div>
+                  <div className="text-[11px] font-bold text-emerald-800">Mã HĐ: #{lastPOSReceipt.code}</div>
+                  <div className="text-[10px] text-slate-500">{lastPOSReceipt.time}</div>
+                </div>
+
+                {/* CUSTOMER & CASHIER INFO */}
+                <div className="space-y-1 border-b border-dashed border-slate-300 pb-2.5 text-[11px]">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 font-sans">Khách hàng:</span>
+                    <strong className="text-slate-900">
+                      {lastPOSReceipt.customerName}
+                      {lastPOSReceipt.customerPhone ? ` (${lastPOSReceipt.customerPhone})` : ""}
+                    </strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 font-sans">Kênh bán:</span>
+                    <span className="font-sans font-medium text-emerald-700">
+                      {lastPOSReceipt.items.some((i) => i.isCourtFee) ? "POS Trả Sân & Dịch Vụ" : "POS Bán Lẻ Quầy"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 font-sans">Thu ngân:</span>
+                    <span>{lastPOSReceipt.staffName}</span>
+                  </div>
+                </div>
+
+                {/* ITEMS LIST */}
+                <div className="space-y-2 border-b border-dashed border-slate-300 pb-2.5">
+                  <div className="grid grid-cols-12 font-bold text-[10px] text-slate-500 uppercase pb-0.5">
+                    <div className="col-span-6 font-sans">Mặt hàng / Sân</div>
+                    <div className="col-span-2 text-center">SL</div>
+                    <div className="col-span-4 text-right">T.Tiền</div>
+                  </div>
+                  {lastPOSReceipt.items.map((item, idx) => (
+                    <div key={idx} className="grid grid-cols-12 text-[11px] items-start">
+                      <div className="col-span-6 font-sans text-slate-900 line-clamp-2">
+                        {item.productName}
+                        {item.isCourtFee && <span className="text-[10px] text-emerald-700 block font-bold">(Tiền Sân)</span>}
+                      </div>
+                      <div className="col-span-2 text-center font-bold">x{item.quantity}</div>
+                      <div className="col-span-4 text-right font-bold text-slate-900">
+                        {new Intl.NumberFormat("vi-VN").format(item.price * item.quantity)}đ
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* TOTALS */}
+                <div className="space-y-1 border-b border-dashed border-slate-300 pb-2.5 text-xs">
+                  <div className="flex justify-between items-center text-slate-600 font-sans">
+                    <span>Tạm tính:</span>
+                    <span>{new Intl.NumberFormat("vi-VN").format(lastPOSReceipt.subtotal)}đ</span>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-600 font-sans">
+                    <span>Phương thức:</span>
+                    <strong className="font-mono font-bold text-slate-800">{lastPOSReceipt.paymentMethod}</strong>
+                  </div>
+                  <div className="flex justify-between items-center font-extrabold text-sm pt-1 text-slate-900">
+                    <span className="font-sans">TỔNG THU:</span>
+                    <span className="text-emerald-700">
+                      {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(lastPOSReceipt.total)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* QR CHECK-IN TICKET */}
+                <div className="pt-2 text-center space-y-2">
+                  <div className="inline-block p-2 bg-white rounded-xl border border-slate-300 shadow-sm">
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=POS-${lastPOSReceipt.code}`}
+                      alt="QR Checkin"
+                      className="w-24 h-24 mx-auto"
+                    />
+                  </div>
+                  <div className="text-[10px] text-slate-500 font-sans leading-tight">
+                    Quét mã QR tại cổng kiểm soát hoặc lễ tân để check-in vào sân.
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-sans italic">
+                    Cảm ơn quý khách và chúc quý khách thi đấu tuyệt vời!
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter className="gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setPosReceiptModalOpen(false)}
+                  className="flex-1 rounded-xl text-xs font-normal border-slate-300"
+                >
+                  Đóng
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    window.print();
+                    toast.success(`Đã gửi lệnh in Phiếu Thu #${lastPOSReceipt.code} tới máy in nhiệt!`);
+                    setPosReceiptModalOpen(false);
+                  }}
+                  className="flex-1 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold gap-1.5 shadow-md"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>In Hóa Đơn (80mm)</span>
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </AppLayout>
