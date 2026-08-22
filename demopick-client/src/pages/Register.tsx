@@ -40,15 +40,15 @@ export default function Register() {
 
   return (
     <div className="flex min-h-[75vh] items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md shadow-lg border-primary/10">
+      <Card className="w-full max-w-md shadow-lg border-primary/10 bg-white dark:bg-card border-border">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-2">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
               <Trophy className="h-6 w-6" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold text-slate-900">Tạo Tài Khoản Mới</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-2xl font-bold text-slate-900 dark:text-slate-100">Tạo Tài Khoản Mới</CardTitle>
+          <CardDescription className="text-slate-500 dark:text-slate-400">
             Điền đầy đủ thông tin bên dưới để trải nghiệm Pick
           </CardDescription>
         </CardHeader>
@@ -61,7 +61,7 @@ export default function Register() {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="name">Họ và tên</Label>
+              <Label htmlFor="name" className="text-slate-700 dark:text-slate-300">Họ và tên</Label>
               <Input
                 id="name"
                 name="name"
@@ -69,10 +69,11 @@ export default function Register() {
                 value={formData.name}
                 onChange={handleChange}
                 required
+                className="bg-white dark:bg-slate-900/60"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-slate-700 dark:text-slate-300">Email</Label>
               <Input
                 id="email"
                 name="email"
@@ -81,10 +82,11 @@ export default function Register() {
                 value={formData.email}
                 onChange={handleChange}
                 required
+                className="bg-white dark:bg-slate-900/60"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Số điện thoại</Label>
+              <Label htmlFor="phone" className="text-slate-700 dark:text-slate-300">Số điện thoại</Label>
               <Input
                 id="phone"
                 name="phone"
@@ -92,10 +94,11 @@ export default function Register() {
                 value={formData.phone}
                 onChange={handleChange}
                 required
+                className="bg-white dark:bg-slate-900/60"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Mật khẩu</Label>
+              <Label htmlFor="password" className="text-slate-700 dark:text-slate-300">Mật khẩu</Label>
               <Input
                 id="password"
                 name="password"
@@ -103,10 +106,11 @@ export default function Register() {
                 value={formData.password}
                 onChange={handleChange}
                 required
+                className="bg-white dark:bg-slate-900/60"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password_confirmation">Xác nhận mật khẩu</Label>
+              <Label htmlFor="password_confirmation" className="text-slate-700 dark:text-slate-300">Xác nhận mật khẩu</Label>
               <Input
                 id="password_confirmation"
                 name="password_confirmation"
@@ -114,6 +118,7 @@ export default function Register() {
                 value={formData.password_confirmation}
                 onChange={handleChange}
                 required
+                className="bg-white dark:bg-slate-900/60"
               />
             </div>
           </CardContent>
@@ -121,7 +126,7 @@ export default function Register() {
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? 'Đang xử lý...' : 'Đăng Ký Tài Khoản'}
             </Button>
-            <p className="text-center text-sm text-slate-600">
+            <p className="text-center text-sm text-slate-600 dark:text-slate-400">
               Đã có tài khoản?{' '}
               <Link to="/login" className="font-medium text-primary hover:underline">
                 Đăng nhập

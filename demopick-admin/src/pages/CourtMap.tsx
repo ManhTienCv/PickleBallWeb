@@ -73,9 +73,40 @@ export default function CourtMap() {
     "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"
   ];
 
+  // Real-time calculation helper to check if a slot is past relative to actual local time
+  const isSlotExpired = (timeStr: string, date?: Date) => {
+    if (!date) return false;
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+    if (targetDate < today) return true;
+    if (targetDate > today) return false;
+
+    const slotHour = parseInt(timeStr.split(":")[0], 10);
+    const currentHour = now.getHours();
+    return slotHour <= currentHour;
+  };
+
   const getSlotDetailedStatus = (courtId: number, timeStr: string) => {
+    // 1. Check real API slots if returned from backend
+    if (slots && slots.length > 0) {
+      const match = slots.find((s: any) => s.court_id === courtId && s.start_time?.startsWith(timeStr.split(":")[0]));
+      if (match) {
+        if (match.status === "in_use") return "in_use";
+        if (match.status === "booked") return "booked";
+        if (match.status === "held") return "held";
+        if (match.status === "locked") return "locked";
+      }
+    }
+
+    // 2. Real-time expiration based on selected date
+    if (isSlotExpired(timeStr, selectedDate)) {
+      return "expired";
+    }
+
+    // 3. Consistent Demo/Mock data
     const hour = parseInt(timeStr.split(":")[0]);
-    if (hour < 7) return "expired";
     if (hour === 8 && courtId === 1) return "in_use";
     if (hour === 9 && courtId === 2) return "held";
     if ((hour === 10 || hour === 18) && (courtId === 1 || courtId === 5)) return "booked";
@@ -121,14 +152,21 @@ export default function CourtMap() {
     navigate(`/pos?${params.toString()}`);
   };
 
-  // Quick date jump helpers
-  const handleSelectQuickDate = (type: "today" | "tomorrow" | "sat" | "sun") => {
-    const now = new Date();
-    if (type === "today") setSelectedDate(now);
-    else if (type === "tomorrow") setSelectedDate(addDays(now, 1));
-    else if (type === "sat") setSelectedDate(nextSaturday(now));
-    else if (type === "sun") setSelectedDate(nextSunday(now));
-  };
+  // Generate 7 consecutive upcoming days starting from Today (No duplicate dates)
+  const quickDaysList = Array.from({ length: 7 }, (_, idx) => {
+    const d = addDays(new Date(), idx);
+    let label = "";
+    if (idx === 0) {
+      label = `Hôm Nay (${format(d, "dd/MM")})`;
+    } else if (idx === 1) {
+      label = `Ngày Mai (${format(d, "dd/MM")})`;
+    } else {
+      const dayName = format(d, "EEEE", { locale: vi });
+      const capitalized = dayName.charAt(0).toUpperCase() + dayName.slice(1);
+      label = `${capitalized} (${format(d, "dd/MM")})`;
+    }
+    return { date: d, label };
+  });
 
   // Smooth cell sizing calculations
   const colWidthPx = Math.round(90 * (zoomLevel / 100));
@@ -187,51 +225,29 @@ export default function CourtMap() {
       }
     >
       <div className="space-y-6 font-sans">
-        {/* 🟢 BỘ LỌC NHANH NGÀY & CỤM SÂN (GỢI Ý 3 NÂNG CẤP) */}
+        {/* 🟢 BỘ LỌC NHANH NGÀY & CỤM SÂN */}
         <div className="p-4 bg-white rounded-3xl border border-slate-200 shadow-sm space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            {/* Quick Date Buttons */}
-            <div className="flex items-center gap-1.5 overflow-x-auto">
+            {/* Quick Date Buttons (7 Ngày Liên Tiếp Tuyệt Đối Không Bị Trùng) */}
+            <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1">
               <span className="text-xs font-semibold text-slate-500 mr-1 shrink-0">Chọn ngày nhanh:</span>
-              <button
-                type="button"
-                onClick={() => handleSelectQuickDate("today")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                  isSameDay(selectedDate, new Date())
-                    ? "bg-emerald-600 text-white shadow-sm"
-                    : "bg-[#FAF8F5] text-slate-700 hover:bg-slate-100 border border-slate-200/80"
-                }`}
-              >
-                Hôm Nay ({format(new Date(), "dd/MM")})
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleSelectQuickDate("tomorrow")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                  isSameDay(selectedDate, addDays(new Date(), 1))
-                    ? "bg-emerald-600 text-white shadow-sm"
-                    : "bg-[#FAF8F5] text-slate-700 hover:bg-slate-100 border border-slate-200/80"
-                }`}
-              >
-                Ngày Mai ({format(addDays(new Date(), 1), "dd/MM")})
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleSelectQuickDate("sat")}
-                className="px-3 py-1.5 rounded-xl text-xs font-medium bg-[#FAF8F5] text-slate-700 hover:bg-slate-100 border border-slate-200/80 shrink-0"
-              >
-                Thứ 7 Tuần Này
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleSelectQuickDate("sun")}
-                className="px-3 py-1.5 rounded-xl text-xs font-medium bg-[#FAF8F5] text-slate-700 hover:bg-slate-100 border border-slate-200/80 shrink-0"
-              >
-                Chủ Nhật
-              </button>
+              {quickDaysList.map((item, idx) => {
+                const isSelected = isSameDay(selectedDate, item.date);
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setSelectedDate(item.date)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors duration-150 shrink-0 cursor-pointer border ${
+                      isSelected
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                        : "bg-[#FAF8F5] text-slate-700 hover:bg-slate-100 border-slate-200"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Quick Cluster Filter Tabs */}
@@ -240,10 +256,10 @@ export default function CourtMap() {
               <button
                 type="button"
                 onClick={() => setSelectedCluster("all")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 flex items-center gap-1 ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors duration-150 shrink-0 flex items-center gap-1 border ${
                   selectedCluster === "all"
-                    ? "bg-slate-900 text-white shadow-sm"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 border-transparent"
                 }`}
               >
                 <Layers className="w-3.5 h-3.5" />
@@ -253,10 +269,10 @@ export default function CourtMap() {
               <button
                 type="button"
                 onClick={() => setSelectedCluster("indoor")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 flex items-center gap-1 ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors duration-150 shrink-0 flex items-center gap-1 border ${
                   selectedCluster === "indoor"
-                    ? "bg-emerald-600 text-white shadow-sm"
-                    : "bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100"
+                    ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                    : "bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100"
                 }`}
               >
                 <Building className="w-3.5 h-3.5" />
@@ -266,10 +282,10 @@ export default function CourtMap() {
               <button
                 type="button"
                 onClick={() => setSelectedCluster("outdoor")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 flex items-center gap-1 ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors duration-150 shrink-0 flex items-center gap-1 border ${
                   selectedCluster === "outdoor"
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "bg-blue-50 text-blue-800 border border-blue-200 hover:bg-blue-100"
+                    ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                    : "bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100"
                 }`}
               >
                 <Sun className="w-3.5 h-3.5" />
@@ -279,10 +295,10 @@ export default function CourtMap() {
               <button
                 type="button"
                 onClick={() => setSelectedCluster("vip")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 flex items-center gap-1 ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors duration-150 shrink-0 flex items-center gap-1 border ${
                   selectedCluster === "vip"
-                    ? "bg-amber-600 text-white shadow-sm"
-                    : "bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100"
+                    ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                    : "bg-amber-50 text-amber-900 border-amber-200 hover:bg-amber-100"
                 }`}
               >
                 <Crown className="w-3.5 h-3.5" />
@@ -308,12 +324,12 @@ export default function CourtMap() {
               <strong className="text-base text-blue-800">{availableSlotsCount} Khung Giờ</strong>
             </div>
 
-            <div className="p-3 bg-slate-900 text-white rounded-2xl border border-slate-800 flex items-center justify-between">
+            <div className="p-3 bg-emerald-50/90 rounded-2xl border border-emerald-200/80 flex items-center justify-between">
               <div>
-                <span className="text-[11px] text-slate-300 font-medium block">Tỷ Lệ Lấp Đầy:</span>
-                <strong className="text-base text-emerald-400 font-extrabold">{occupancyRate}%</strong>
+                <span className="text-[11px] text-emerald-700 font-medium block">Tỷ Lệ Lấp Đầy:</span>
+                <strong className="text-base text-emerald-900 font-extrabold">{occupancyRate}%</strong>
               </div>
-              <Activity className="w-6 h-6 text-emerald-400 opacity-80" />
+              <Activity className="w-6 h-6 text-emerald-600 opacity-90" />
             </div>
           </div>
         </div>
@@ -329,8 +345,10 @@ export default function CourtMap() {
               <button
                 key={v.id}
                 onClick={() => setViewMode(v.id as any)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  viewMode === v.id ? "bg-slate-900 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100 font-medium"
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors duration-150 border ${
+                  viewMode === v.id
+                    ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                    : "text-slate-600 hover:bg-slate-100 border-transparent font-medium"
                 }`}
               >
                 {v.label}
@@ -400,8 +418,8 @@ export default function CourtMap() {
               <span>Đang chơi</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded-full bg-slate-300" />
-              <span className="text-slate-500">Đã quá giờ</span>
+              <span className="h-3 w-3 rounded-full bg-slate-400" />
+              <span className="text-slate-700 font-bold">Đã quá giờ</span>
             </div>
           </div>
         </div>
@@ -441,7 +459,7 @@ export default function CourtMap() {
                       const status = getSlotDetailedStatus(court.id, time);
                       const isPeak = parseInt(time.split(":")[0]) >= 17;
                       const price = isPeak ? court.peak_hourly_rate : court.hourly_rate;
-                      const formattedPrice = new Intl.NumberFormat("vi-VN", { notation: "compact" }).format(price);
+                      const formattedPrice = `${price / 1000}k VND`;
 
                       return (
                         <td
@@ -455,47 +473,46 @@ export default function CourtMap() {
                               paddingTop: `${slotPaddingPx}px`,
                               paddingBottom: `${slotPaddingPx}px`,
                               fontSize: `${slotFontSizePx}px`,
-                              transition: "all 0.2s ease-out",
                             }}
-                            className={`w-full px-1 rounded-xl font-bold flex flex-col items-center justify-center transition-transform active:scale-95 ${
+                            className={`w-full px-1 rounded-xl font-bold flex items-center justify-center transition-colors duration-150 border ${
                               status === "expired"
-                                ? "bg-slate-100 text-slate-400 line-through border border-slate-200"
+                                ? "bg-slate-100/90 text-slate-700 border-slate-300"
                                 : status === "in_use"
-                                  ? "bg-blue-600 text-white shadow-md animate-pulse border border-blue-700"
+                                  ? "bg-blue-600 text-white shadow-sm border-blue-600"
                                   : status === "held"
-                                    ? "bg-amber-500 text-white shadow-sm"
+                                    ? "bg-amber-500 text-white shadow-sm border-amber-500"
                                     : status === "booked"
-                                      ? "bg-emerald-700 text-white shadow-sm"
+                                      ? "bg-emerald-700 text-white shadow-sm border-emerald-700"
                                       : isPeak
-                                        ? "bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100"
-                                        : "bg-emerald-50 text-emerald-900 border border-emerald-300 hover:bg-emerald-100"
+                                        ? "bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100"
+                                        : "bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100"
                             }`}
                           >
                             {status === "expired" ? (
-                              <div className="flex items-center gap-1 opacity-70">
-                                <History className="h-3 w-3" />
-                                <span>Quá giờ</span>
+                              <div className="flex items-center justify-center gap-1 whitespace-nowrap">
+                                <History className="h-3 w-3 text-slate-600 shrink-0" />
+                                <span className="whitespace-nowrap font-bold text-slate-700 text-[11px]">Quá giờ</span>
                               </div>
                             ) : status === "in_use" ? (
-                              <div className="flex items-center gap-1">
-                                <PlayCircle className="h-3.5 w-3.5" />
-                                <span>Đang chơi</span>
+                              <div className="flex items-center justify-center gap-1 whitespace-nowrap">
+                                <PlayCircle className="h-3.5 w-3.5 shrink-0" />
+                                <span className="whitespace-nowrap">Đang chơi</span>
                               </div>
                             ) : status === "held" ? (
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                <span>Tạm giữ</span>
+                              <div className="flex items-center justify-center gap-1 whitespace-nowrap">
+                                <Clock className="h-3 w-3 shrink-0" />
+                                <span className="whitespace-nowrap">Tạm giữ</span>
                               </div>
                             ) : status === "booked" ? (
-                              <div className="flex items-center gap-1">
-                                <CheckCircle2 className="h-3 w-3" />
-                                <span>Đã đặt</span>
+                              <div className="flex items-center justify-center gap-1 whitespace-nowrap">
+                                <CheckCircle2 className="h-3 w-3 shrink-0" />
+                                <span className="whitespace-nowrap">Đã đặt</span>
                               </div>
                             ) : (
-                              <>
-                                <span>{formattedPrice}đ</span>
-                                {isPeak && <span className="text-[9px] text-amber-600 font-normal">Cao điểm</span>}
-                              </>
+                              <div className="flex items-center justify-center gap-1 whitespace-nowrap">
+                                <span>{formattedPrice}</span>
+                                {isPeak && <span className="text-[9px] text-amber-700 font-normal">Cao điểm</span>}
+                              </div>
                             )}
                           </div>
                         </td>

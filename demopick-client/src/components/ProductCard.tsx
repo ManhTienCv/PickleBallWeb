@@ -84,9 +84,9 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
 
   return (
     <>
-      <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:border-emerald-500/50">
+      <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200/90 dark:border-border bg-white dark:bg-card shadow-sm transition-all duration-300 hover:shadow-xl dark:hover:shadow-black/60 hover:border-emerald-500/50">
         {/* Product Image Box */}
-        <div className="aspect-[4/3] sm:aspect-square overflow-hidden bg-[#FAF8F5] relative block group/img">
+        <div className="aspect-[4/3] sm:aspect-square overflow-hidden bg-[#FAF8F5] dark:bg-slate-900/60 relative block group/img">
           <Link to={`/products/${product.slug || product.id}`}>
             <img
               src={product.image_url || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&q=80&w=600'}
@@ -112,7 +112,7 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
               </span>
             )}
             {product.in_stock && discountPercent === 0 && (
-              <span className="bg-slate-900 text-white text-xs font-medium px-2.5 py-0.5 rounded-full shadow-sm">
+              <span className="bg-slate-900 dark:bg-slate-800 text-white text-xs font-medium px-2.5 py-0.5 rounded-full shadow-sm">
                 Mới
               </span>
             )}
@@ -121,7 +121,7 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
           {/* Quick View Button on Image Hover */}
           <button
             onClick={() => setQuickViewOpen(true)}
-            className="absolute bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover/img:opacity-100 transition-all duration-300 bg-slate-900/90 hover:bg-slate-900 text-white text-xs font-medium px-4 py-2 rounded-full backdrop-blur-md shadow-lg flex items-center gap-1.5 z-20 scale-95 group-hover/img:scale-100"
+            className="absolute bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover/img:opacity-100 transition-all duration-300 bg-slate-900/90 dark:bg-slate-800/90 hover:bg-slate-900 dark:hover:bg-slate-700 text-white text-xs font-medium px-4 py-2 rounded-full backdrop-blur-md shadow-lg flex items-center gap-1.5 z-20 scale-95 group-hover/img:scale-100"
           >
             <Eye className="w-4 h-4 text-emerald-400" />
             <span>Xem nhanh</span>
@@ -131,12 +131,12 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
         {/* Content Details */}
         <div className="flex flex-1 flex-col p-4.5 sm:p-5 space-y-2">
           {/* Brand uppercase */}
-          <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             {brandName}
           </div>
 
           {/* Product Name (2 Lines Clamp) */}
-          <h3 className="font-semibold text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-2 text-base leading-snug min-h-[2.8rem]">
+          <h3 className="font-semibold text-slate-900 dark:text-slate-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-2 text-base leading-snug min-h-[2.8rem]">
             <Link to={`/products/${product.slug || product.id}`}>{product.name}</Link>
           </h3>
 
@@ -147,27 +147,27 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
                 <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
               ))}
             </div>
-            <span className="text-xs text-slate-400 font-normal ml-0.5">(54)</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium ml-0.5">(54)</span>
           </div>
 
           {/* Price & Action Button (Bottom Row) */}
-          <div className="pt-3.5 border-t border-slate-100 flex items-center justify-between gap-2 mt-auto">
+          <div className="pt-3.5 border-t border-slate-100 dark:border-border flex items-center justify-between gap-2 mt-auto">
             <div>
-              <div className="text-lg sm:text-xl font-bold text-slate-900 leading-tight">
+              <div className="text-lg sm:text-xl font-bold text-slate-900 dark:text-emerald-400 leading-tight">
                 {formattedPrice}
               </div>
               {formattedOriginalPrice && (
-                <div className="text-xs text-slate-400 line-through font-normal mt-0.5">
+                <div className="text-xs text-slate-400 dark:text-slate-400 line-through font-medium mt-0.5">
                   {formattedOriginalPrice}
                 </div>
               )}
             </div>
 
-            {/* Quick Add Shopping Bag Button (Chuẩn ảnh mẫu Ecommerce) */}
+            {/* Quick Add Shopping Bag Button */}
             <button
               disabled={!product.in_stock}
               onClick={() => (onAddToCart ? onAddToCart(product) : handleModalAddToCart())}
-              className="w-10 h-10 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white flex items-center justify-center transition-colors shadow-sm disabled:opacity-40 disabled:hover:bg-slate-900 shrink-0"
+              className="w-10 h-10 rounded-xl bg-slate-900 dark:bg-emerald-600 hover:bg-emerald-600 dark:hover:bg-emerald-500 text-white flex items-center justify-center transition-colors shadow-sm disabled:opacity-40 disabled:hover:bg-slate-900 shrink-0 cursor-pointer"
               title="Thêm nhanh vào giỏ hàng"
             >
               <ShoppingBag className="w-5 h-5 text-white" />
@@ -178,21 +178,21 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
 
       {/* QUICK VIEW PRODUCT MODAL DIALOG */}
       <Dialog open={quickViewOpen} onOpenChange={setQuickViewOpen}>
-        <DialogContent className="max-w-3xl sm:rounded-3xl p-0 overflow-hidden border border-slate-200 bg-white shadow-2xl font-sans">
+        <DialogContent className="max-w-3xl sm:rounded-3xl p-0 overflow-hidden border border-slate-200 dark:border-border bg-white dark:bg-card shadow-2xl font-sans text-card-foreground">
           <DialogHeader className="sr-only">
             <DialogTitle>Chi Tiết Sản Phẩm - {product.name}</DialogTitle>
           </DialogHeader>
 
           <div className="grid grid-cols-1 md:grid-cols-2">
             {/* Left Column: Image & Gallery */}
-            <div className="p-6 bg-[#FAF8F5] flex flex-col justify-center items-center border-b md:border-b-0 md:border-r border-slate-100 relative">
+            <div className="p-6 bg-[#FAF8F5] dark:bg-slate-900/60 flex flex-col justify-center items-center border-b md:border-b-0 md:border-r border-slate-100 dark:border-border relative">
               <img
                 src={product.image_url || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&q=80&w=600'}
                 alt={product.name}
                 className="max-h-72 w-full object-contain rounded-2xl shadow-sm"
               />
-              <div className="flex items-center gap-2 mt-4 text-xs text-slate-500 font-medium">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <div className="flex items-center gap-2 mt-4 text-xs text-slate-600 dark:text-slate-300 font-medium">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 <span>Cam kết chính hãng 100% bảo hành 12 tháng</span>
               </div>
             </div>
@@ -201,72 +201,72 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
             <div className="p-6 flex flex-col justify-between space-y-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wider">
+                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
                     {brandName}
                   </span>
                   {product.in_stock ? (
-                    <Badge className="bg-emerald-50 text-emerald-800 border-emerald-200 text-xs font-normal">
+                    <Badge className="bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 text-xs font-medium">
                       Còn hàng sẵn kho
                     </Badge>
                   ) : (
-                    <Badge variant="destructive" className="text-xs font-normal">
+                    <Badge variant="destructive" className="text-xs font-medium">
                       Hết hàng
                     </Badge>
                   )}
                 </div>
 
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900 leading-snug">
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 leading-snug">
                   {product.name}
                 </h2>
 
                 {/* Rating */}
-                <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                   <div className="flex text-amber-400">
                     {[...Array(5)].map((_, i) => (
                       <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
                     ))}
                   </div>
-                  <span className="font-semibold text-slate-800">4.9</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100">4.9</span>
                   <span>•</span>
-                  <span>Đã bán 142 cái</span>
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">Đã bán 142 cái</span>
                 </div>
 
                 {/* Price */}
-                <div className="p-3 bg-[#FAF8F5] rounded-xl border border-slate-200/80 flex items-baseline gap-2">
-                  <span className="text-2xl font-bold text-slate-900">
+                <div className="p-3 bg-[#FAF8F5] dark:bg-slate-900/80 rounded-xl border border-slate-200/80 dark:border-border flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-slate-900 dark:text-emerald-400">
                     {formattedPrice}
                   </span>
                   {formattedOriginalPrice && (
-                    <span className="text-sm text-slate-400 line-through">
+                    <span className="text-sm text-slate-400 dark:text-slate-400 line-through">
                       {formattedOriginalPrice}
                     </span>
                   )}
                 </div>
 
-                <p className="text-xs text-slate-600 leading-relaxed line-clamp-3">
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-3 font-normal">
                   {product.description || 'Sản phẩm Pickleball cao cấp đạt chuẩn thi đấu USAPA, tối ưu khả năng kiểm soát và tạo xoáy bóng mạnh mẽ.'}
                 </p>
               </div>
 
               {/* Quantity & Action Buttons */}
-              <div className="space-y-3 pt-3 border-t border-slate-100">
+              <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-border">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-slate-700">Số lượng:</span>
-                  <div className="flex items-center border border-slate-200 rounded-xl bg-white">
+                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Số lượng:</span>
+                  <div className="flex items-center border border-slate-200 dark:border-border rounded-xl bg-white dark:bg-slate-900">
                     <button
                       type="button"
                       onClick={() => setModalQuantity(Math.max(1, modalQuantity - 1))}
-                      className="p-2 text-slate-500 hover:text-slate-900"
+                      className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                     >
                       <Minus className="w-3.5 h-3.5" />
                     </button>
-                    <span className="px-3 text-xs font-semibold text-slate-900">
+                    <span className="px-3 text-xs font-bold text-slate-900 dark:text-slate-100">
                       {modalQuantity}
                     </span>
                     <button
                       type="button"
                       onClick={() => setModalQuantity(modalQuantity + 1)}
-                      className="p-2 text-slate-500 hover:text-slate-900"
+                      className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                     >
                       <Plus className="w-3.5 h-3.5" />
                     </button>
@@ -278,16 +278,16 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
                     variant="outline"
                     onClick={handleModalAddToCart}
                     disabled={!product.in_stock}
-                    className="h-10 text-xs font-medium rounded-xl border-slate-300 hover:bg-slate-50 gap-1.5"
+                    className="h-10 text-xs font-medium rounded-xl border-slate-300 dark:border-border bg-white dark:bg-card hover:bg-slate-50 dark:hover:bg-slate-800 text-foreground gap-1.5"
                   >
-                    <ShoppingBag className="w-4 h-4 text-emerald-600" />
+                    <ShoppingBag className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     <span>Thêm giỏ hàng</span>
                   </Button>
 
                   <Button
                     onClick={handleModalBuyNow}
                     disabled={!product.in_stock}
-                    className="h-10 text-xs font-medium rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-500/20 gap-1.5"
+                    className="h-10 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-500/20 gap-1.5"
                   >
                     <span>Mua ngay</span>
                     <ArrowRight className="w-4 h-4" />

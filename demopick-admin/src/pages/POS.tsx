@@ -41,7 +41,7 @@ export default function POS() {
   const isStaffOnly = user?.roles?.includes("staff") && !user?.roles?.includes("admin") && !user?.roles?.includes("super_admin");
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState("");
-  const [activeCategory, setActiveCategory] = useState<string>("Tất cả");
+  const [activeCategory, setActiveCategory] = useState<string>("Đồ uống");
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "bank_transfer">("cash");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -196,7 +196,6 @@ export default function POS() {
 
   // Category filter tabs (Đồ uống & Đồ ăn, Vợt, Bóng, Phụ kiện, Thuê vợt)
   const categoriesList = [
-    { id: "Tất cả", label: "Tất cả" },
     { id: "Đồ uống", label: "Đồ uống & Đồ ăn" },
     { id: "Vợt Pickleball", label: "Vợt Pickleball" },
     { id: "Bóng Pickleball", label: "Bóng Pickleball" },
@@ -515,9 +514,9 @@ export default function POS() {
                 <button
                   key={cat.id}
                   onClick={() => setActiveCategory(cat.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${activeCategory === cat.id
-                    ? "bg-emerald-600 text-white shadow-sm"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-colors duration-150 border ${activeCategory === cat.id
+                    ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200 border-transparent"
                     }`}
                 >
                   {cat.label}
@@ -794,9 +793,9 @@ export default function POS() {
                 <Button
                   size="sm"
                   type="button"
-                  variant={paymentMethod === "transfer" ? "default" : "outline"}
-                  onClick={() => setPaymentMethod("transfer")}
-                  className={`h-8 font-bold text-xs ${paymentMethod === "transfer" ? "bg-slate-900 text-white" : ""}`}
+                  variant={paymentMethod === "bank_transfer" ? "default" : "outline"}
+                  onClick={() => setPaymentMethod("bank_transfer")}
+                  className={`h-8 font-bold text-xs ${paymentMethod === "bank_transfer" ? "bg-slate-900 text-white" : ""}`}
                 >
                   <QrCode className="h-3.5 w-3.5 mr-1" /> Chuyển khoản
                 </Button>

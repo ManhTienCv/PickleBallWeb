@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Route, Routes, useNavigate, useLocation } from 'react-router-dom'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { ThemeProvider } from '@/contexts/ThemeContext'
 import { CheckoutTimerProvider } from '@/contexts/CheckoutTimerContext'
 import CustomerLayout from '@/components/CustomerLayout'
 import Home from '@/pages/Home'
@@ -53,30 +54,32 @@ function ResetToHomeOnReload() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <CheckoutTimerProvider>
-          <BrowserRouter>
-            <ResetToHomeOnReload />
-            <Routes>
-              <Route element={<CustomerLayout />}>
-                <Route path="/" element={<Home />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/products" element={<Products />} />
-                <Route path="/products/:slug" element={<ProductDetail />} />
-                <Route path="/booking" element={<CourtBooking />} />
-                <Route path="/cart" element={<CartPage />} />
-                <Route path="/checkout" element={<CheckoutPage />} />
-                <Route path="/order-success/:code" element={<OrderSuccess />} />
-                <Route path="/orders" element={<OrdersPage />} />
-              </Route>
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-          <Toaster position="top-right" richColors />
-        </CheckoutTimerProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <CheckoutTimerProvider>
+            <BrowserRouter>
+              <ResetToHomeOnReload />
+              <Routes>
+                <Route element={<CustomerLayout />}>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/products" element={<Products />} />
+                  <Route path="/products/:slug" element={<ProductDetail />} />
+                  <Route path="/booking" element={<CourtBooking />} />
+                  <Route path="/cart" element={<CartPage />} />
+                  <Route path="/checkout" element={<CheckoutPage />} />
+                  <Route path="/order-success/:code" element={<OrderSuccess />} />
+                  <Route path="/orders" element={<OrdersPage />} />
+                </Route>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+            <Toaster position="top-right" richColors />
+          </CheckoutTimerProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   )
 }

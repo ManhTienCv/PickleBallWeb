@@ -19,7 +19,7 @@ export default function ProtectedRoute() {
     return <Navigate to="/login" replace />
   }
 
-  const userRoles = user?.roles || ['admin']
+  const userRoles = user?.roles || []
   const isStaffOnly = userRoles.includes('staff') && !userRoles.includes('admin') && !userRoles.includes('super_admin')
 
   // If staff tries to access non-staff route, redirect to /pos

@@ -421,8 +421,24 @@ export default function MapLocationPicker({
     if (!mapContainerRef.current) return
     if (mapInstanceRef.current) return
 
+    // 1. Check if we have cached GPS coordinates from recent session
+    let startLat = initialLat
+    let startLng = initialLng
+    try {
+      const cached = sessionStorage.getItem('demopick_last_gps_pos')
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (parsed.lat && parsed.lng) {
+          startLat = parsed.lat
+          startLng = parsed.lng
+          setCurrentLat(startLat)
+          setCurrentLng(startLng)
+        }
+      }
+    } catch {}
+
     const map = L.map(mapContainerRef.current, {
-      center: [initialLat, initialLng],
+      center: [startLat, startLng],
       zoom: 16,
       zoomControl: true,
     })
@@ -458,7 +474,7 @@ export default function MapLocationPicker({
       iconAnchor: [28, 50],
     })
 
-    const marker = L.marker([initialLat, initialLng], {
+    const marker = L.marker([startLat, startLng], {
       icon: pinIcon,
       draggable: true,
     }).addTo(map)
@@ -483,7 +499,32 @@ export default function MapLocationPicker({
     markerRef.current = marker
 
     // Initial Geocode Trigger
-    performSmartReverseGeocode(initialLat, initialLng)
+    performSmartReverseGeocode(startLat, startLng)
+
+    // 2. Auto-detect user GPS on mount (if user previously granted permission or browser allows)
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords
+          setCurrentLat(latitude)
+          setCurrentLng(longitude)
+
+          if (mapInstanceRef.current && markerRef.current) {
+            mapInstanceRef.current.flyTo([latitude, longitude], 17, { duration: 1.2 })
+            markerRef.current.setLatLng([latitude, longitude])
+          }
+
+          await performSmartReverseGeocode(latitude, longitude)
+          try {
+            sessionStorage.setItem('demopick_last_gps_pos', JSON.stringify({ lat: latitude, lng: longitude }))
+          } catch {}
+        },
+        (err) => {
+          console.log('Auto geolocation skipped or blocked:', err.message)
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+      )
+    }
 
     const timer = setTimeout(() => {
       map.invalidateSize()
@@ -577,6 +618,9 @@ export default function MapLocationPicker({
         }
 
         await performSmartReverseGeocode(latitude, longitude)
+        try {
+          sessionStorage.setItem('demopick_last_gps_pos', JSON.stringify({ lat: latitude, lng: longitude }))
+        } catch {}
         setIsLocating(false)
         toast.success('Đã xác định vị trí GPS hiện tại của bạn!')
       },
@@ -604,17 +648,17 @@ export default function MapLocationPicker({
   }
 
   return (
-    <div className="space-y-4 font-sans text-sm w-full">
+    <div className="space-y-4 font-sans text-sm w-full text-foreground">
       {/* Search & Location Action Bar */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
             <Input
               value={searchQuery}
               onChange={(e) => handleSearchInput(e.target.value)}
               placeholder="Tìm kiếm địa chỉ, tên đường, số nhà, toà nhà..."
-              className="pl-10 pr-10 h-10 text-sm rounded-xl font-medium border-slate-300 bg-white shadow-xs focus:border-emerald-500"
+              className="pl-10 pr-10 h-10 text-sm rounded-xl font-medium border-slate-300 dark:border-border bg-white dark:bg-card text-slate-900 dark:text-slate-100 shadow-xs focus:border-emerald-500 dark:focus:border-emerald-500"
             />
 
             {searchQuery ? (
@@ -624,13 +668,13 @@ export default function MapLocationPicker({
                   setSearchQuery('')
                   setSearchResults([])
                 }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
               >
                 <X className="w-4 h-4" />
               </button>
             ) : isSearching ? (
               <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <Loader2 className="w-4 h-4 text-emerald-600 animate-spin" />
+                <Loader2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 animate-spin" />
               </div>
             ) : null}
           </div>
@@ -640,7 +684,7 @@ export default function MapLocationPicker({
             variant="outline"
             disabled={isLocating}
             onClick={handleGetCurrentLocation}
-            className="h-10 px-3 rounded-xl border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 font-semibold gap-1.5 shrink-0 text-xs shadow-xs"
+            className="h-10 px-3 rounded-xl border-emerald-300 dark:border-emerald-700/60 text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 font-semibold gap-1.5 shrink-0 text-xs shadow-xs"
             title="Định vị GPS vị trí của bạn"
           >
             <Crosshair className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin' : ''}`} />
@@ -651,28 +695,28 @@ export default function MapLocationPicker({
             type="button"
             variant="outline"
             onClick={toggleMapStyle}
-            className="h-10 px-3 rounded-xl border-slate-300 text-slate-700 bg-white hover:bg-slate-50 font-semibold gap-1.5 shrink-0 text-xs shadow-xs"
+            className="h-10 px-3 rounded-xl border-slate-300 dark:border-border text-slate-700 dark:text-slate-200 bg-white dark:bg-card hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold gap-1.5 shrink-0 text-xs shadow-xs"
             title="Chuyển đổi kiểu hiển thị bản đồ"
           >
-            <Layers className="w-3.5 h-3.5 text-slate-600" />
+            <Layers className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
             <span className="hidden sm:inline">{mapType === 'google' ? 'Vệ tinh' : 'Đường phố'}</span>
           </Button>
         </div>
 
         {/* Autocomplete Dropdown */}
         {searchResults.length > 0 && (
-          <div className="border border-slate-200 rounded-2xl bg-white shadow-2xl divide-y max-h-56 overflow-y-auto z-50 animate-in fade-in-50">
+          <div className="border border-slate-200 dark:border-border rounded-2xl bg-white dark:bg-card shadow-2xl divide-y divide-slate-100 dark:divide-border max-h-56 overflow-y-auto z-50 animate-in fade-in-50">
             {searchResults.map((place, idx) => (
               <div
                 key={idx}
                 onClick={() => handleSelectSearchResult(place)}
-                className="p-3.5 hover:bg-emerald-50/60 cursor-pointer transition-colors space-y-0.5"
+                className="p-3.5 hover:bg-emerald-50/60 dark:hover:bg-emerald-950/40 cursor-pointer transition-colors space-y-0.5"
               >
-                <div className="font-bold text-slate-900 flex items-center gap-2 text-sm">
-                  <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
+                <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 text-sm">
+                  <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>{place.name}</span>
                 </div>
-                <p className="text-xs text-slate-500 line-clamp-1 pl-6">{place.address}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 pl-6">{place.address}</p>
               </div>
             ))}
           </div>
@@ -680,39 +724,39 @@ export default function MapLocationPicker({
       </div>
 
       {/* Google Maps Canvas */}
-      <div className="relative rounded-2xl overflow-hidden border-2 border-slate-300 shadow-md h-80 sm:h-96 w-full">
+      <div className="relative rounded-2xl overflow-hidden border-2 border-slate-300 dark:border-border shadow-md h-80 sm:h-96 w-full">
         <div ref={mapContainerRef} className="w-full h-full z-0" />
 
         {/* Top Google Maps Floating Hint */}
-        <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md text-slate-800 px-3 py-1.5 rounded-xl text-xs font-semibold z-10 pointer-events-none shadow-md flex items-center gap-1.5 border border-slate-200">
-          <Compass className="w-3.5 h-3.5 text-emerald-600 animate-spin" />
+        <div className="absolute top-3 left-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md text-slate-800 dark:text-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold z-10 pointer-events-none shadow-md flex items-center gap-1.5 border border-slate-200 dark:border-slate-700">
+          <Compass className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 animate-spin" />
           <span>Kéo ghim hoặc click trên bản đồ để chọn vị trí</span>
         </div>
 
         {/* GPS Coordinates Badge */}
-        <div className="absolute bottom-3 right-3 bg-white/95 backdrop-blur-md text-slate-700 px-3 py-1 rounded-xl text-xs font-mono font-bold z-10 border border-slate-200 shadow-sm">
+        <div className="absolute bottom-3 right-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md text-slate-700 dark:text-slate-300 px-3 py-1 rounded-xl text-xs font-mono font-bold z-10 border border-slate-200 dark:border-slate-700 shadow-sm">
           📍 {currentLat.toFixed(4)}, {currentLng.toFixed(4)}
         </div>
       </div>
 
       {/* Modern Location Summary Card */}
-      <div className="p-4 bg-white rounded-3xl border border-slate-200 shadow-sm space-y-3">
+      <div className="p-4 bg-white dark:bg-card rounded-3xl border border-slate-200 dark:border-border shadow-sm space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
+            <div className="w-6 h-6 rounded-lg bg-emerald-600 dark:bg-emerald-500 text-white flex items-center justify-center font-bold text-xs">
               ✓
             </div>
-            <span className="text-xs font-black text-slate-900 uppercase tracking-wide">
+            <span className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-wide">
               THÔNG TIN VỊ TRÍ GIAO HÀNG ĐÃ CHỌN
             </span>
           </div>
 
           {isGeocoding ? (
-            <Badge className="bg-amber-100 text-amber-800 border-amber-300 text-xs font-bold gap-1 animate-pulse">
+            <Badge className="bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800 text-xs font-bold gap-1 animate-pulse">
               <Loader2 className="w-3 h-3 animate-spin" /> Đang định vị...
             </Badge>
           ) : (
-            <Badge className="bg-emerald-50 text-emerald-800 border-emerald-300 font-bold text-xs">
+            <Badge className="bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 font-bold text-xs">
               Vị trí chuẩn xác
             </Badge>
           )}
@@ -721,40 +765,40 @@ export default function MapLocationPicker({
         {/* Editable Street and Area Breakdown */}
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-1">
           <div className="sm:col-span-7 space-y-1">
-            <span className="text-[11px] font-bold text-slate-600 uppercase flex items-center gap-1">
-              <Home className="w-3.5 h-3.5 text-blue-600" /> Địa chỉ chi tiết (Số nhà, tên đường):
+            <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase flex items-center gap-1">
+              <Home className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Địa chỉ chi tiết (Số nhà, tên đường):
             </span>
             <Input
               value={resolvedStreet}
               onChange={(e) => setResolvedStreet(e.target.value)}
               placeholder="Ví dụ: Nhà số 1, Ngõ 23 Đường Phúc Diễn"
-              className="h-10 text-sm font-bold text-slate-900 border-slate-300 bg-slate-50/50 rounded-xl"
+              className="h-10 text-sm font-bold text-slate-900 dark:text-slate-100 border-slate-300 dark:border-border bg-slate-50/50 dark:bg-slate-900/60 rounded-xl focus:border-emerald-500 dark:focus:border-emerald-500"
             />
           </div>
 
           <div className="sm:col-span-5 space-y-1">
-            <span className="text-[11px] font-bold text-slate-600 uppercase flex items-center gap-1">
-              <Building className="w-3.5 h-3.5 text-blue-600" /> Khu vực hành chính:
+            <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase flex items-center gap-1">
+              <Building className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Khu vực hành chính:
             </span>
-            <div className="h-10 px-3 rounded-xl bg-slate-100 border border-slate-200 flex items-center text-xs font-bold text-slate-800 truncate">
+            <div className="h-10 px-3 rounded-xl bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-border flex items-center text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
               {resolvedDistrict}, {resolvedCity}
             </div>
           </div>
         </div>
 
-        <p className="text-xs text-slate-500 italic">
+        <p className="text-xs text-slate-500 dark:text-slate-400 italic">
           👉 Bấm <strong>"Xác Nhận Dùng Địa Chỉ Này"</strong> để áp dụng thông tin vị trí vào biểu mẫu.
         </p>
       </div>
 
       {/* Footer Buttons */}
-      <div className="flex items-center justify-end gap-3 pt-3 border-t">
+      <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-border">
         {onCancel && (
           <Button
             type="button"
             variant="outline"
             onClick={onCancel}
-            className="rounded-2xl font-bold border-slate-300 text-sm h-11 px-5"
+            className="rounded-2xl font-bold border-slate-300 dark:border-border text-sm h-11 px-5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
           >
             Hủy Bỏ
           </Button>

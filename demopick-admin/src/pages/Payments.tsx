@@ -139,7 +139,7 @@ export default function Payments() {
           ...t,
           transferContent: t.transferContent.startsWith("DP-") ? t.transferContent.split(" ")[0] : t.transferContent,
         }));
-      } catch {}
+      } catch { }
     }
     return initialTransactions;
   });
@@ -200,7 +200,7 @@ export default function Payments() {
         localStorage.setItem("demopick_online_orders", JSON.stringify(updated));
         window.dispatchEvent(new Event("storage"));
       }
-    } catch {}
+    } catch { }
 
     toast.success(`Đã xác nhận thanh toán đơn #${tx.orderCode} (${new Intl.NumberFormat("vi-VN").format(tx.amount)}đ)!`);
   };
@@ -218,7 +218,6 @@ export default function Payments() {
   return (
     <AppLayout
       title="Cổng Thanh Toán & Đối Soát Ngân Hàng"
-      subtitle="Theo dõi dòng tiền chuyển khoản VietQR, đối soát biến động số dư tự động và quản lý trạng thái thanh toán đơn hàng"
     >
       <div className="space-y-6 font-sans">
         {/* METRICS ROW */}

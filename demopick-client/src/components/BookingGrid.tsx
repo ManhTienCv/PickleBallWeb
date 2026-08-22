@@ -59,13 +59,13 @@ export default function BookingGrid({ courts: apiCourts, slots, selectedSlotIds,
   return (
     <div className="space-y-4">
       {/* Zoom Control Header for Customer Portal */}
-      <div className="flex items-center justify-between bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+      <div className="flex items-center justify-between bg-white dark:bg-card p-3.5 rounded-2xl border border-slate-200 dark:border-border shadow-sm">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-slate-700 uppercase">Tỷ lệ xem lịch sân:</span>
-          <div className="flex items-center gap-2 border border-slate-200 px-3 py-1.5 rounded-xl bg-slate-50">
+          <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wider">Tỷ lệ xem lịch sân:</span>
+          <div className="flex items-center gap-2 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-900/80">
             <ZoomOut
               onClick={() => setZoomLevel((prev) => Math.max(60, prev - 10))}
-              className="h-4 w-4 text-slate-500 cursor-pointer hover:text-slate-900 transition-colors"
+              className="h-4 w-4 text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors"
             />
 
             <input
@@ -75,63 +75,63 @@ export default function BookingGrid({ courts: apiCourts, slots, selectedSlotIds,
               step="2"
               value={zoomLevel}
               onChange={(e) => setZoomLevel(Number(e.target.value))}
-              className="w-28 accent-primary h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+              className="w-28 accent-emerald-500 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer"
               title="Kéo trượt để phóng to / thu nhỏ mịn màng"
             />
 
             <ZoomIn
               onClick={() => setZoomLevel((prev) => Math.min(160, prev + 10))}
-              className="h-4 w-4 text-slate-500 cursor-pointer hover:text-slate-900 transition-colors"
+              className="h-4 w-4 text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors"
             />
 
-            <span className="text-xs font-mono font-bold text-slate-700 min-w-[36px] text-center">
+            <span className="text-xs font-mono font-extrabold text-slate-900 dark:text-slate-100 min-w-[36px] text-center">
               {zoomLevel}%
             </span>
 
             <button
               onClick={() => setZoomLevel(100)}
-              className="text-[10px] text-slate-500 hover:text-primary font-bold ml-1 hover:underline"
+              className="text-[11px] text-emerald-700 dark:text-emerald-400 hover:underline font-bold ml-1 cursor-pointer"
             >
               100%
             </button>
           </div>
         </div>
 
-        <div className="text-xs text-slate-500 font-medium hidden sm:block">
-          💡 Nhấn nút <strong className="text-emerald-600">+ Chọn</strong> ở các ô ca sân bên dưới để đặt chỗ
+        <div className="text-xs text-slate-600 dark:text-slate-300 font-medium hidden sm:block">
+          💡 Nhấn nút <strong className="text-emerald-600 dark:text-emerald-400 font-bold">+ Chọn</strong> ở các ô ca sân bên dưới để đặt chỗ
         </div>
       </div>
 
       {/* Grid Table */}
-      <div className="relative overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="relative overflow-x-auto rounded-2xl border border-slate-200 dark:border-border bg-white dark:bg-card shadow-sm">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-slate-100 border-b border-slate-200 text-xs font-bold text-slate-700 uppercase tracking-wider">
+            <tr className="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-border text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
               {/* Sticky Fixed Left Header */}
-              <th className="py-3.5 px-4 min-w-[210px] w-[210px] sticky left-0 bg-slate-100 border-r border-slate-300 z-20 shadow-md">
+              <th className="py-3.5 px-4 min-w-[210px] w-[210px] sticky left-0 bg-slate-100 dark:bg-slate-900 border-r border-slate-300 dark:border-border z-20 shadow-md">
                 Tên Sân Pickleball / Giờ
               </th>
               {timeHeaders.map((time) => (
                 <th
                   key={time}
                   style={{ minWidth: `${colWidthPx}px`, transition: "min-width 0.2s ease-out" }}
-                  className="py-3.5 px-2 text-center border-r border-slate-200 font-extrabold"
+                  className="py-3.5 px-2 text-center border-r border-slate-200 dark:border-border font-extrabold text-slate-800 dark:text-slate-200"
                 >
                   {time}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 text-sm">
+          <tbody className="divide-y divide-slate-100 dark:divide-border text-sm">
             {pickleballCourts.map((court) => (
-              <tr key={court.id} className="hover:bg-slate-50/60">
+              <tr key={court.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
                 {/* Sticky Fixed Left Column Cell */}
-                <td className="py-4 px-4 font-bold text-slate-900 sticky left-0 bg-white border-r border-slate-200 z-20 shadow-md min-w-[210px] w-[210px]">
+                <td className="py-4 px-4 font-bold text-slate-900 dark:text-slate-100 sticky left-0 bg-white dark:bg-card border-r border-slate-200 dark:border-border z-20 shadow-md min-w-[210px] w-[210px]">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
-                    <span className="text-sm font-bold text-slate-900 truncate">{court.name}</span>
+                    <span className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{court.name}</span>
                   </div>
-                  <div className="text-xs text-slate-500 font-normal pl-4 truncate">{court.type}</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400 font-normal pl-4 truncate">{court.type}</div>
                 </td>
 
                 {timeHeaders.map((time) => {
@@ -139,15 +139,16 @@ export default function BookingGrid({ courts: apiCourts, slots, selectedSlotIds,
                   const slotId = slot ? slot.id : (court.id * 100 + parseInt(time.split(":")[0]))
                   const isSelected = selectedSlotIds.includes(slotId)
                   const isExpired = isSlotExpired(time, selectedDate)
-                  const isAvailable = (!slot || slot.status === 'available') && !isExpired
+                  const isHeld = slot?.status === 'held'
+                  const isBooked = slot?.status === 'booked' || slot?.status === 'locked'
+                  const isAvailable = (!slot || slot.status === 'available') && !isExpired && !isHeld && !isBooked
                   const isPeak = parseInt(time.split(":")[0]) >= 17
-                  const price = slot ? slot.price : (isPeak ? court.peak_hourly_rate : court.hourly_rate)
 
                   return (
                     <td
                       key={time}
                       style={{ minWidth: `${colWidthPx}px`, transition: "min-width 0.2s ease-out" }}
-                      className="p-1.5 border-r border-slate-100"
+                      className="p-1.5 border-r border-slate-100 dark:border-border"
                     >
                       <button
                         disabled={!isAvailable}
@@ -156,39 +157,52 @@ export default function BookingGrid({ courts: apiCourts, slots, selectedSlotIds,
                           paddingTop: `${slotPaddingPx}px`,
                           paddingBottom: `${slotPaddingPx}px`,
                           fontSize: `${slotFontSizePx}px`,
-                          transition: "all 0.2s ease-out",
                         }}
-                        className={`w-full px-1 rounded-lg font-bold flex flex-col items-center justify-center ${
+                        className={`w-full px-1 rounded-xl font-bold flex flex-col items-center justify-center cursor-pointer transition-colors duration-150 group border ${
                           isExpired
-                            ? 'bg-slate-100/90 text-slate-400 border border-slate-200/90 opacity-65 cursor-not-allowed line-through'
+                            ? 'bg-slate-100/90 dark:bg-slate-900/80 text-slate-700 dark:text-slate-300 border-slate-300/80 dark:border-slate-700/80 cursor-not-allowed'
                             : isSelected
-                            ? 'bg-primary text-white ring-2 ring-primary ring-offset-1 shadow-md scale-105'
+                            ? 'bg-emerald-600 dark:bg-emerald-500 text-white border-emerald-500 shadow-md font-bold'
+                            : isHeld
+                            ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800 cursor-not-allowed'
+                            : isBooked
+                            ? 'bg-slate-200/90 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 cursor-not-allowed'
                             : isAvailable
-                            ? isPeak
-                              ? 'bg-amber-50 text-amber-900 border border-amber-300 hover:border-primary hover:bg-amber-100'
-                              : 'bg-emerald-50 text-emerald-900 border border-emerald-300 hover:border-primary hover:bg-emerald-100'
-                            : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                            ? 'bg-[#FAF8F5] dark:bg-[#F7F5F0] text-slate-900 dark:text-slate-900 border-slate-300 dark:border-slate-200 hover:bg-white dark:hover:bg-white hover:border-emerald-500 dark:hover:border-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-700 shadow-sm dark:shadow-md'
+                            : 'bg-slate-200/90 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 cursor-not-allowed'
                         }`}
                       >
                         {isExpired ? (
-                          <div className="flex items-center gap-1 opacity-80">
-                            <Clock className="h-3 w-3 text-slate-400 shrink-0" />
-                            <span className="no-underline text-[10px]">Quá giờ</span>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3 text-slate-600 dark:text-slate-400 shrink-0" />
+                            <span className="text-[11px] text-slate-700 dark:text-slate-300 font-bold">Quá giờ</span>
                           </div>
                         ) : isSelected ? (
                           <div className="flex items-center gap-1">
-                            <Check className="h-3.5 w-3.5" />
-                            <span>Đã chọn</span>
+                            <Check className="h-3.5 w-3.5 text-white" />
+                            <span className="font-extrabold text-white">Đã chọn</span>
+                          </div>
+                        ) : isHeld ? (
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3 text-amber-700 dark:text-amber-400 shrink-0" />
+                            <span className="text-[10px] text-amber-800 dark:text-amber-300 font-bold">Tạm giữ</span>
+                          </div>
+                        ) : isBooked ? (
+                          <div className="flex items-center gap-1 opacity-90">
+                            <Lock className="h-3 w-3 text-slate-600 dark:text-slate-400 shrink-0" />
+                            <span className="text-[10px] text-slate-700 dark:text-slate-300 font-bold">Đã kín</span>
                           </div>
                         ) : isAvailable ? (
                           <div className="flex items-center gap-1">
-                            <Plus className="h-3 w-3 text-emerald-600" />
-                            <span>Chọn</span>
+                            <Plus className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-700 font-extrabold group-hover:scale-110 transition-transform" />
+                            <span className="font-extrabold text-slate-900 dark:text-slate-900 group-hover:text-emerald-700 dark:group-hover:text-emerald-700">
+                              Chọn
+                            </span>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-1 opacity-60">
-                            <Lock className="h-3 w-3" />
-                            <span>Đã kín</span>
+                          <div className="flex items-center gap-1 opacity-90">
+                            <Lock className="h-3 w-3 text-slate-600 dark:text-slate-400 shrink-0" />
+                            <span className="text-[10px] text-slate-700 dark:text-slate-300 font-bold">Đã kín</span>
                           </div>
                         )}
                       </button>

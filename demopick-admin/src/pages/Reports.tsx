@@ -214,7 +214,6 @@ export default function Reports() {
   return (
     <AppLayout
       title="Báo Cáo Phân Tích & Hiệu Suất Sân"
-      subtitle="Thống kê doanh thu đặt sân, bán lẻ POS, tỷ lệ lấp đầy khung giờ vàng và nhật ký hệ thống"
       headerRight={
         <div className="flex items-center gap-2">
           {/* Nút Xuất Excel Hoạt Động Thật */}
@@ -248,9 +247,8 @@ export default function Reports() {
                     setSelectedPeriod(period.id);
                     toast.info(`Đã lọc dữ liệu theo: ${period.label}`);
                   }}
-                  className={`text-xs rounded-xl py-2 px-3 cursor-pointer ${
-                    selectedPeriod === period.id ? "bg-emerald-50 text-emerald-700 font-semibold" : "text-slate-700"
-                  }`}
+                  className={`text-xs rounded-xl py-2 px-3 cursor-pointer ${selectedPeriod === period.id ? "bg-emerald-50 text-emerald-700 font-semibold" : "text-slate-700"
+                    }`}
                 >
                   {period.label}
                 </DropdownMenuItem>
@@ -278,11 +276,10 @@ export default function Reports() {
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id)}
-              className={`px-4 py-2.5 rounded-xl text-xs font-medium transition-all whitespace-nowrap ${
-                activeTab === t.id
-                  ? "bg-emerald-600 text-white font-semibold shadow-sm shadow-emerald-600/20"
-                  : "text-slate-600 hover:bg-slate-200/60"
-              }`}
+              className={`px-4 py-2.5 rounded-xl text-xs font-medium transition-all whitespace-nowrap ${activeTab === t.id
+                ? "bg-emerald-600 text-white font-semibold shadow-sm shadow-emerald-600/20"
+                : "text-slate-600 hover:bg-slate-200/60"
+                }`}
             >
               {t.label}
             </button>
@@ -705,7 +702,7 @@ export default function Reports() {
               <div>
                 <h3 className="font-semibold text-slate-900 text-base flex items-center gap-2">
                   <ShieldAlert className="h-5 w-5 text-emerald-600" />
-                  <span>Nhật Ký Thao Tác Hệ Thống (System Audit Trail Logs)</span>
+                  <span>Nhật Ký Thao Tác Hệ Thống </span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">Ghi nhận toàn bộ thao tác bảo mật và sự kiện thanh toán thời gian thực</p>
               </div>

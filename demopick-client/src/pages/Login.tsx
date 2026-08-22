@@ -27,15 +27,15 @@ export default function Login() {
 
   return (
     <div className="flex min-h-[75vh] items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md shadow-lg border-primary/10">
+      <Card className="w-full max-w-md shadow-lg border-primary/10 bg-white dark:bg-card border-border">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-2">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
               <Trophy className="h-6 w-6" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold text-slate-900">Đăng Nhập</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-2xl font-bold text-slate-900 dark:text-slate-100">Đăng Nhập</CardTitle>
+          <CardDescription className="text-slate-500 dark:text-slate-400">
             Nhập email và mật khẩu để đăng nhập tài khoản Pick
           </CardDescription>
         </CardHeader>
@@ -48,7 +48,7 @@ export default function Login() {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-slate-700 dark:text-slate-300">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -56,11 +56,12 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="bg-white dark:bg-slate-900/60"
               />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Mật khẩu</Label>
+                <Label htmlFor="password" className="text-slate-700 dark:text-slate-300">Mật khẩu</Label>
               </div>
               <Input
                 id="password"
@@ -68,11 +69,12 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                className="bg-white dark:bg-slate-900/60"
               />
             </div>
 
-            <div className="rounded-md bg-slate-50 p-3 text-xs text-slate-600 space-y-1 border border-slate-200">
-              <p className="font-semibold text-slate-700">Tài khoản demo có sẵn:</p>
+            <div className="rounded-md bg-slate-50 dark:bg-slate-900/60 p-3 text-xs text-slate-600 dark:text-slate-400 space-y-1 border border-slate-200 dark:border-border">
+              <p className="font-semibold text-slate-700 dark:text-slate-300">Tài khoản demo có sẵn:</p>
               <p>• Email: <code className="text-primary font-mono font-semibold">customer@demopick.vn</code></p>
               <p>• Mật khẩu: <code className="text-primary font-mono font-semibold">12345678</code></p>
             </div>
@@ -81,7 +83,7 @@ export default function Login() {
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? 'Đang xử lý...' : 'Đăng Nhập'}
             </Button>
-            <p className="text-center text-sm text-slate-600">
+            <p className="text-center text-sm text-slate-600 dark:text-slate-400">
               Chưa có tài khoản?{' '}
               <Link to="/register" className="font-medium text-primary hover:underline">
                 Đăng ký ngay

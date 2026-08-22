@@ -54,6 +54,53 @@
     --sidebar-ring: 151 67% 46%;
     --sidebar-muted: 215 14% 50%;
   }
+
+  .dark {
+    --background: 222 47% 10%; /* #0B1120 / #0F172A */
+    --foreground: 210 40% 98%;
+
+    --card: 222 40% 14%; /* #141E33 */
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 40% 14%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 151 67% 46%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 151 75% 55%;
+
+    --secondary: 217 33% 20%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 18%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 151 67% 18%;
+    --accent-foreground: 151 67% 90%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --success: 151 67% 46%;
+    --success-foreground: 0 0% 100%;
+
+    --border: 217 33% 22%;
+    --input: 217 33% 22%;
+    --ring: 151 67% 50%;
+
+    --sidebar-background: 222 47% 9%;
+    --sidebar-foreground: 215 20% 75%;
+    --sidebar-primary: 151 67% 46%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 19%;
+    --sidebar-ring: 151 67% 50%;
+    --sidebar-muted: 215 20% 50%;
+  }
 }
 
 @layer base {
@@ -75,10 +122,10 @@
   }
 
   body {
-    background-color: #FAF8F5;
-    color: #1E293B;
+    @apply bg-background text-foreground;
     font-family: 'Be Vietnam Pro', sans-serif;
     -webkit-font-smoothing: antialiased;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 }
 

@@ -416,13 +416,13 @@ export default function OrdersPage() {
 
   return (
     <div className="container mx-auto py-8 px-4 sm:px-6 max-w-4xl font-sans">
-      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 mb-6 flex items-center gap-3">
+      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 mb-6 flex items-center gap-3">
         <Package className="h-7 w-7 text-[#27c372]" />
         <span>Lịch Sử Đơn Hàng & Hành Trình Giao Hàng</span>
       </h1>
 
       {/* Status Filter Tabs */}
-      <div className="flex flex-wrap items-center gap-2 mb-6 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
+      <div className="flex flex-wrap items-center gap-2 mb-6 bg-white dark:bg-card p-2 rounded-2xl border border-slate-200 dark:border-border shadow-sm">
         {[
           { id: 'pending', label: 'Chờ đóng gói', count: pendingCount },
           { id: 'shipped', label: 'Đang giao hàng', count: shippedCount },
@@ -432,10 +432,10 @@ export default function OrdersPage() {
           <button
             key={tabItem.id}
             onClick={() => setActiveTab(tabItem.id as any)}
-            className={`px-3.5 py-1.5 rounded-xl text-xs transition-all ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors duration-150 cursor-pointer border ${
               activeTab === tabItem.id
-                ? 'bg-slate-900 text-white shadow-sm font-bold'
-                : 'text-slate-600 hover:bg-slate-100 font-semibold'
+                ? 'bg-slate-900 dark:bg-emerald-600 border-slate-900 dark:border-emerald-600 text-white shadow-sm'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-transparent'
             }`}
           >
             {tabItem.label} ({tabItem.count})
@@ -444,12 +444,12 @@ export default function OrdersPage() {
       </div>
 
       {filteredOrders.length === 0 ? (
-        <div className="container mx-auto py-16 px-4 text-center max-w-md bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 text-slate-400 mx-auto mb-4">
+        <div className="container mx-auto py-16 px-4 text-center max-w-md bg-white dark:bg-card rounded-3xl border border-slate-200 dark:border-border p-8 shadow-sm">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 mx-auto mb-4">
             <Package className="h-10 w-10" />
           </div>
-          <h2 className="text-xl font-bold text-slate-900">Không Tìm Thấy Đơn Hàng Nào</h2>
-          <p className="text-slate-500 mt-2 text-xs font-normal">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Không Tìm Thấy Đơn Hàng Nào</h2>
+          <p className="text-slate-500 dark:text-slate-400 mt-2 text-xs font-normal">
             {activeTab === 'completed'
               ? 'Chưa có đơn hàng sản phẩm nào hoàn thành giao tận nơi.'
               : activeTab === 'booking'
@@ -473,16 +473,16 @@ export default function OrdersPage() {
             const isCompleted = order.status === 'completed' && !isBooking
 
             return (
-              <Card key={order.id} className="p-6 border-slate-200 space-y-4 shadow-sm hover:shadow-md transition-all rounded-3xl bg-white">
+              <Card key={order.id} className="p-6 border-slate-200 dark:border-border space-y-4 shadow-sm hover:shadow-md transition-all rounded-3xl bg-white dark:bg-card">
                 {/* Header */}
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-border pb-4">
                   <div>
-                    <span className="text-xs text-slate-400 font-normal">Mã đơn hàng:</span>
-                    <div className="font-mono font-bold text-slate-900 text-base">#{order.order_code}</div>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Mã đơn hàng:</span>
+                    <div className="font-mono font-bold text-slate-900 dark:text-slate-100 text-base">#{order.order_code}</div>
                   </div>
                   <div className="flex items-center gap-3">
                     {getStatusBadge(order.status, isBooking, order.shipping_carrier)}
-                    <span className="text-xs text-slate-400 font-medium">
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                       {new Date(order.created_at).toLocaleDateString('vi-VN')}
                     </span>
                   </div>
@@ -491,15 +491,15 @@ export default function OrdersPage() {
                 {/* Items List */}
                 <div className="space-y-2">
                   {order.items?.map((item: any) => (
-                    <div key={item.id} className="flex justify-between items-center text-sm py-1.5 border-b border-slate-50 last:border-0">
+                    <div key={item.id} className="flex justify-between items-center text-sm py-1.5 border-b border-slate-50 dark:border-border/50 last:border-0">
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-[10px] font-bold">
+                        <Badge variant="outline" className="text-[10px] font-bold border-border">
                           {item.item_type === 'booking' ? 'Thuê Sân' : 'Thiết bị'}
                         </Badge>
-                        <span className="font-bold text-slate-800">{item.item_name}</span>
-                        <span className="text-slate-400 text-xs font-medium">x{item.quantity}</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200">{item.item_name}</span>
+                        <span className="text-slate-500 dark:text-slate-400 text-xs font-medium">x{item.quantity}</span>
                       </div>
-                      <span className="font-bold text-slate-900">
+                      <span className="font-bold text-slate-900 dark:text-slate-100">
                         {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.subtotal)}
                       </span>
                     </div>
@@ -508,9 +508,9 @@ export default function OrdersPage() {
 
                 {/* COURT BOOKING TICKET */}
                 {isBooking ? (
-                  <div className="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-200/90 space-y-3 text-xs text-emerald-950">
-                    <div className="flex items-center justify-between border-b border-emerald-200/80 pb-2">
-                      <div className="flex items-center gap-1.5 font-bold text-emerald-900 text-sm">
+                  <div className="bg-emerald-50/70 dark:bg-emerald-950/40 p-4 rounded-2xl border border-emerald-200/90 dark:border-emerald-800 space-y-3 text-xs text-emerald-950 dark:text-emerald-200">
+                    <div className="flex items-center justify-between border-b border-emerald-200/80 dark:border-emerald-800 pb-2">
+                      <div className="flex items-center gap-1.5 font-bold text-emerald-900 dark:text-emerald-300 text-sm">
                         <MapPin className="w-4 h-4 text-[#27c372]" /> Thông tin vị trí & Lịch thi đấu tại sân
                       </div>
                       <Badge className="bg-emerald-600 text-white font-bold text-[10px]">
@@ -520,34 +520,34 @@ export default function OrdersPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                       <div>
-                        <span className="text-emerald-700">Cụm sân thi đấu: </span>
-                        <span className="font-bold text-slate-900">{order.court_address || 'Số 188 Nguyễn Văn Cừ, Q. Long Biên, Hà Nội'}</span>
+                        <span className="text-emerald-700 dark:text-emerald-400">Cụm sân thi đấu: </span>
+                        <span className="font-bold text-slate-900 dark:text-slate-100">{order.court_address || 'Số 188 Nguyễn Văn Cừ, Q. Long Biên, Hà Nội'}</span>
                       </div>
                       <div>
-                        <span className="text-emerald-700">Khung giờ đặt: </span>
-                        <span className="font-bold text-slate-900">{order.play_time || '08:00 - 10:00 (15/08/2026)'}</span>
+                        <span className="text-emerald-700 dark:text-emerald-400">Khung giờ đặt: </span>
+                        <span className="font-bold text-slate-900 dark:text-slate-100">{order.play_time || '08:00 - 10:00 (15/08/2026)'}</span>
                       </div>
                     </div>
 
                     {/* QR Check-in Box */}
-                    <div className="pt-2 flex items-center justify-between bg-white p-3 rounded-xl border border-emerald-200 shadow-inner">
-                      <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+                    <div className="pt-2 flex items-center justify-between bg-white dark:bg-card p-3 rounded-xl border border-emerald-200 dark:border-emerald-800 shadow-inner">
+                      <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
                         <QrCode className="h-5 w-5 text-[#27c372]" />
                         <div>
                           <div>Mã QR Check-in nhận sân tại quầy:</div>
                           <div className="text-[11px] text-slate-400 font-normal">Đưa mã này cho Lễ tân khi đến sân chơi</div>
                         </div>
                       </div>
-                      <code className="font-mono font-black text-base text-[#27c372] bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200">
+                      <code className="font-mono font-black text-base text-[#27c372] bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800">
                         {order.qr_checkin_code || 'PK-90218-VIP'}
                       </code>
                     </div>
                   </div>
                 ) : (
                   /* PRODUCT ORDER: SHIPPING & RECEIVER DETAILS */
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 space-y-2.5 text-xs text-slate-700">
+                  <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200/80 dark:border-border space-y-2.5 text-xs text-slate-700 dark:text-slate-300">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 font-bold text-slate-900 text-sm">
+                      <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-slate-100 text-sm">
                         <Truck className="w-4 h-4 text-[#27c372]" /> Thông tin vận chuyển & Nhận hàng
                       </div>
                       <div className="flex items-center gap-2">
@@ -577,28 +577,28 @@ export default function OrdersPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                       <div>
-                        <span className="text-slate-500">Người nhận: </span>
-                        <span className="font-bold text-slate-900">
+                        <span className="text-slate-500 dark:text-slate-400">Người nhận: </span>
+                        <span className="font-bold text-slate-900 dark:text-slate-100">
                           {order.customer_name || 'Nguyễn Văn An'} ({order.customer_phone || '0987654321'})
                         </span>
                       </div>
                       <div>
-                        <span className="text-slate-500">Đối tác giao: </span>
-                        <span className="font-bold text-emerald-700">
+                        <span className="text-slate-500 dark:text-slate-400">Đối tác giao: </span>
+                        <span className="font-bold text-emerald-700 dark:text-emerald-400">
                           {order.shipping_carrier || 'GHN'} Express {order.tracking_number && `(#${order.tracking_number})`}
                         </span>
                       </div>
                     </div>
 
                     <div>
-                      <span className="text-slate-500">Địa chỉ nhận hàng: </span>
-                      <span className="font-bold text-slate-900">{order.shipping_address}</span>
+                      <span className="text-slate-500 dark:text-slate-400">Địa chỉ nhận hàng: </span>
+                      <span className="font-bold text-slate-900 dark:text-slate-100">{order.shipping_address}</span>
                     </div>
 
                     {/* Shipping status banner */}
                     {isPending && (
-                      <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-[11px] flex items-start gap-2">
-                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-900 dark:text-amber-200 text-[11px] flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                         <div>
                           <strong>Đơn hàng đang chờ xử lý:</strong> Nhân viên kho đang chuẩn bị và đóng gói sản phẩm. Đơn vị vận chuyển sẽ tiếp nhận kiện hàng sớm.
                         </div>
@@ -606,8 +606,8 @@ export default function OrdersPage() {
                     )}
 
                     {isShipped && (
-                      <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-900 text-[11px] flex items-start gap-2">
-                        <Truck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                      <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl text-blue-900 dark:text-blue-200 text-[11px] flex items-start gap-2">
+                        <Truck className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                         <div>
                           <strong>Đang vận chuyển:</strong> Đơn hàng #{order.order_code} đã được giao cho Shipper {order.shipping_carrier || 'GHN'}. Bấm nút <strong>"Tra Cứu Hành Trình"</strong> ở trên để theo dõi vị trí kiện hàng.
                         </div>
@@ -615,8 +615,8 @@ export default function OrdersPage() {
                     )}
 
                     {isCompleted && (
-                      <div className="mt-2 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-[11px] flex items-start gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <div className="mt-2 p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-emerald-900 dark:text-emerald-200 text-[11px] flex items-start gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                         <div>
                           <strong>Đã nhận hàng thành công:</strong> Kiện hàng #{order.order_code} đã được giao đến tay bạn. Bạn có thể bấm <strong>"Đánh giá sản phẩm"</strong> bên dưới để chia sẻ cảm nhận!
                         </div>
@@ -626,16 +626,16 @@ export default function OrdersPage() {
                 )}
 
                 {/* Footer Actions & Total */}
-                <div className="flex flex-wrap justify-between items-center pt-2 border-t border-slate-100 gap-3">
-                  <span className="text-xs text-slate-500">
-                    Thanh toán: <strong className="text-slate-800 uppercase font-bold">{order.payment_method === 'bank_transfer' ? 'VietQR Ngân Hàng' : 'Thu tiền khi nhận (COD)'}</strong>
+                <div className="flex flex-wrap justify-between items-center pt-2 border-t border-slate-100 dark:border-border gap-3">
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                    Thanh toán: <strong className="text-slate-800 dark:text-slate-200 uppercase font-bold">{order.payment_method === 'bank_transfer' ? 'VietQR Ngân Hàng' : 'Thu tiền khi nhận (COD)'}</strong>
                   </span>
 
                   <div className="flex items-center gap-3 ml-auto">
                     {isCompleted && (
                       <div className="flex items-center gap-2">
                         {reviewedOrders[order.order_code] ? (
-                          <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs font-bold gap-1 py-1.5 px-3 rounded-xl">
+                          <Badge className="bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 text-xs font-bold gap-1 py-1.5 px-3 rounded-xl">
                             <Check className="w-3.5 h-3.5" /> Đã Đánh Giá 5★
                           </Badge>
                         ) : (
@@ -643,7 +643,7 @@ export default function OrdersPage() {
                             size="sm"
                             variant="outline"
                             onClick={() => handleOpenReviewModal(order)}
-                            className="h-8 text-xs font-bold text-amber-700 border-amber-300 bg-amber-50 hover:bg-amber-100 gap-1.5 rounded-xl shadow-sm cursor-pointer"
+                            className="h-8 text-xs font-bold text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 gap-1.5 rounded-xl shadow-sm cursor-pointer"
                           >
                             <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
                             <span>Đánh giá 5★</span>
@@ -654,7 +654,7 @@ export default function OrdersPage() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleReorder(order)}
-                          className="h-8 text-xs font-bold text-slate-700 border-slate-300 hover:bg-slate-50 gap-1.5 rounded-xl shadow-sm cursor-pointer"
+                          className="h-8 text-xs font-bold text-slate-700 dark:text-slate-300 border-slate-300 dark:border-border hover:bg-slate-50 dark:hover:bg-slate-800 gap-1.5 rounded-xl shadow-sm cursor-pointer"
                         >
                           <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
                           <span>Mua lại</span>
@@ -678,28 +678,28 @@ export default function OrdersPage() {
 
       {/* CLIENT LIVE TRACKING TIMELINE MODAL */}
       <Dialog open={!!clientTrackingInfo} onOpenChange={() => setClientTrackingInfo(null)}>
-        <DialogContent className="sm:max-w-lg bg-white rounded-3xl p-6 font-sans shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-lg bg-white dark:bg-card rounded-3xl p-6 font-sans shadow-2xl border border-slate-200 dark:border-border max-h-[90vh] overflow-y-auto text-card-foreground">
           {clientTrackingInfo && (
             <div className="space-y-4">
               <DialogHeader className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <Badge className="bg-blue-50 text-blue-800 border border-blue-200 font-bold px-3 py-1">
+                  <Badge className="bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 font-bold px-3 py-1">
                     {clientTrackingInfo.carrier} Express
                   </Badge>
-                  <span className="text-xs text-slate-500 font-mono font-bold">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-mono font-bold">
                     #{clientTrackingInfo.trackingNumber}
                   </span>
                 </div>
-                <DialogTitle className="text-lg font-black text-slate-900">
+                <DialogTitle className="text-lg font-black text-slate-900 dark:text-slate-100">
                   Theo Dõi Hành Trình Đơn Hàng
                 </DialogTitle>
-                <DialogDescription className="text-xs text-slate-500">
+                <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
                   Đơn hàng #{clientTrackingInfo.orderCode} • Người nhận: {clientTrackingInfo.receiverName}
                 </DialogDescription>
               </DialogHeader>
 
               {/* Shipper Contact Card */}
-              <div className="p-3.5 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl space-y-2 shadow-md">
+              <div className="p-3.5 bg-gradient-to-r from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 text-white rounded-2xl space-y-2 shadow-md border border-slate-800">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center font-bold text-slate-900 text-sm">
@@ -726,8 +726,8 @@ export default function OrdersPage() {
 
               {/* Timeline List */}
               <div className="space-y-3 pt-2">
-                <Label className="font-bold text-slate-800 text-xs">Chi tiết tiến trình bưu phẩm:</Label>
-                <div className="relative pl-6 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                <Label className="font-bold text-slate-800 dark:text-slate-200 text-xs">Chi tiết tiến trình bưu phẩm:</Label>
+                <div className="relative pl-6 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-700">
                   {clientTrackingInfo.timeline.map((event, idx) => {
                     const isLatest = idx === 0
                     return (
@@ -735,19 +735,19 @@ export default function OrdersPage() {
                         <div
                           className={`absolute -left-6 top-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
                             isLatest
-                              ? 'bg-emerald-600 border-white ring-4 ring-emerald-100'
-                              : 'bg-slate-300 border-white'
+                              ? 'bg-emerald-600 border-white dark:border-card ring-4 ring-emerald-100 dark:ring-emerald-950'
+                              : 'bg-slate-300 dark:bg-slate-600 border-white dark:border-card'
                           }`}
                         >
                           {isLatest && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className={`text-xs font-bold ${isLatest ? 'text-emerald-700 font-black' : 'text-slate-800'}`}>
+                          <span className={`text-xs font-bold ${isLatest ? 'text-emerald-700 dark:text-emerald-400 font-black' : 'text-slate-800 dark:text-slate-200'}`}>
                             {event.title}
                           </span>
                           <span className="text-[10px] text-slate-400 font-mono">{event.time}</span>
                         </div>
-                        <p className="text-[11px] text-slate-600 leading-snug">{event.description}</p>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">{event.description}</p>
                         <div className="text-[10px] text-slate-400 flex items-center gap-1">
                           <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
                           <span>{event.location}</span>
@@ -758,11 +758,11 @@ export default function OrdersPage() {
                 </div>
               </div>
 
-              <DialogFooter className="pt-3 border-t">
+              <DialogFooter className="pt-3 border-t border-border">
                 <Button
                   variant="outline"
                   onClick={() => setClientTrackingInfo(null)}
-                  className="w-full rounded-xl font-bold border-slate-300 text-xs"
+                  className="w-full rounded-xl font-bold border-slate-300 dark:border-border text-xs"
                 >
                   Đóng
                 </Button>
@@ -774,20 +774,20 @@ export default function OrdersPage() {
 
       {/* Edit Address Modal */}
       <Dialog open={!!editingOrder} onOpenChange={() => setEditingOrder(null)}>
-        <DialogContent className="max-w-md sm:rounded-3xl p-6 bg-white border border-slate-200 shadow-2xl">
+        <DialogContent className="max-w-md sm:rounded-3xl p-6 bg-white dark:bg-card border border-slate-200 dark:border-border shadow-2xl text-card-foreground">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <DialogTitle className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
               <Edit3 className="w-5 h-5 text-[#27c372]" />
               <span>Sửa Thông Tin Giao Hàng Đơn #{editingOrder?.order_code}</span>
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
               Cập nhật tên, SĐT hoặc địa chỉ người nhận trước khi hệ thống duyệt chuyển đơn đi.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2 text-xs">
             <div className="space-y-1.5">
-              <Label className="font-bold text-slate-700 text-xs">Họ và tên người nhận</Label>
+              <Label className="font-bold text-slate-700 dark:text-slate-300 text-xs">Họ và tên người nhận</Label>
               <Input
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
@@ -797,7 +797,7 @@ export default function OrdersPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="font-bold text-slate-700 text-xs">Số điện thoại liên hệ</Label>
+              <Label className="font-bold text-slate-700 dark:text-slate-300 text-xs">Số điện thoại liên hệ</Label>
               <Input
                 value={editPhone}
                 onChange={(e) => setEditPhone(e.target.value)}
@@ -807,7 +807,7 @@ export default function OrdersPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="font-bold text-slate-700 text-xs">Địa chỉ nhận hàng đầy đủ</Label>
+              <Label className="font-bold text-slate-700 dark:text-slate-300 text-xs">Địa chỉ nhận hàng đầy đủ</Label>
               <Input
                 value={editAddress}
                 onChange={(e) => setEditAddress(e.target.value)}
@@ -817,7 +817,7 @@ export default function OrdersPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="font-bold text-slate-700 text-xs">Ghi chú cho tài xế giao hàng</Label>
+              <Label className="font-bold text-slate-700 dark:text-slate-300 text-xs">Ghi chú cho tài xế giao hàng</Label>
               <Input
                 value={editNote}
                 onChange={(e) => setEditNote(e.target.value)}
@@ -828,7 +828,7 @@ export default function OrdersPage() {
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setEditingOrder(null)} className="rounded-xl font-bold text-xs">
+            <Button variant="outline" onClick={() => setEditingOrder(null)} className="rounded-xl font-bold text-xs border-border">
               Hủy bỏ
             </Button>
             <Button onClick={handleSaveAddress} className="bg-[#27c372] hover:bg-[#22c55e] text-white font-bold rounded-xl text-xs">
@@ -840,31 +840,31 @@ export default function OrdersPage() {
 
       {/* Review Modal Dialog for Completed Orders */}
       <Dialog open={!!reviewingOrder} onOpenChange={() => setReviewingOrder(null)}>
-        <DialogContent className="max-w-md sm:rounded-3xl p-6 bg-white border border-slate-200 shadow-2xl">
+        <DialogContent className="max-w-md sm:rounded-3xl p-6 bg-white dark:bg-card border border-slate-200 dark:border-border shadow-2xl text-card-foreground">
           <DialogHeader>
-            <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <DialogTitle className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
               <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
               <span>Đánh Giá Đơn Hàng #{reviewingOrder?.order_code}</span>
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
               Chia sẻ cảm nhận về thiết bị sau khi nhận hàng để giúp cộng đồng người chơi
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmitOrderReview} className="space-y-4 py-2 text-xs">
-            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1.5">
-              <div className="text-[11px] font-bold text-slate-500 uppercase">Sản phẩm đánh giá:</div>
+            <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200/80 dark:border-border space-y-1.5">
+              <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase">Sản phẩm đánh giá:</div>
               {reviewingOrder?.items?.map((item: any) => (
-                <div key={item.id} className="font-bold text-slate-900 text-xs flex justify-between">
+                <div key={item.id} className="font-bold text-slate-900 dark:text-slate-100 text-xs flex justify-between">
                   <span>{item.item_name}</span>
-                  <span className="text-slate-500 font-medium">x{item.quantity}</span>
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">x{item.quantity}</span>
                 </div>
               ))}
             </div>
 
             {/* Interactive Stars */}
             <div className="space-y-1">
-              <Label className="text-xs font-bold text-slate-800">Chất lượng sản phẩm:</Label>
+              <Label className="text-xs font-bold text-slate-800 dark:text-slate-200">Chất lượng sản phẩm:</Label>
               <div className="flex items-center gap-1 text-amber-400 cursor-pointer pt-1">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
@@ -879,12 +879,12 @@ export default function OrdersPage() {
                       className={`w-6 h-6 ${
                         (orderHoverRating || orderRating) >= star
                           ? 'fill-amber-400 text-amber-400'
-                          : 'text-slate-300'
+                          : 'text-slate-300 dark:text-slate-600'
                       }`}
                     />
                   </button>
                 ))}
-                <span className="text-xs text-slate-600 font-bold ml-2">
+                <span className="text-xs text-slate-600 dark:text-slate-400 font-bold ml-2">
                   {orderRating === 5
                     ? '⭐ Rất Hài Lòng (5/5)'
                     : orderRating === 4
@@ -898,7 +898,7 @@ export default function OrdersPage() {
 
             {/* Comment */}
             <div className="space-y-1">
-              <Label className="text-xs font-bold text-slate-800">Nhận xét chi tiết:</Label>
+              <Label className="text-xs font-bold text-slate-800 dark:text-slate-200">Nhận xét chi tiết:</Label>
               <Textarea
                 placeholder="Cảm giác cầm nắm, bề mặt vợt, độ nảy bóng, thời gian giao hàng..."
                 value={orderComment}
@@ -910,10 +910,10 @@ export default function OrdersPage() {
             </div>
 
             {/* Real photo attachments */}
-            <div className="space-y-1.5 pt-1 border-t border-slate-100">
+            <div className="space-y-1.5 pt-1 border-t border-slate-100 dark:border-border">
               <div className="flex items-center justify-between">
-                <Label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <Camera className="w-4 h-4 text-emerald-600" />
+                <Label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <Camera className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   <span>Hình ảnh mở hộp / thực tế (Tối đa 3 ảnh):</span>
                 </Label>
                 <span className="text-[11px] text-slate-400">{orderImages.length}/3 ảnh</span>
@@ -930,7 +930,7 @@ export default function OrdersPage() {
 
               <div className="flex flex-wrap items-center gap-2.5">
                 {orderImages.map((imgSrc, idx) => (
-                  <div key={idx} className="relative w-14 h-14 rounded-xl overflow-hidden border border-slate-200 group">
+                  <div key={idx} className="relative w-14 h-14 rounded-xl overflow-hidden border border-slate-200 dark:border-border group">
                     <img src={imgSrc} alt={`Order upload ${idx + 1}`} className="w-full h-full object-cover" />
                     <button
                       type="button"
@@ -946,7 +946,7 @@ export default function OrdersPage() {
                   <button
                     type="button"
                     onClick={() => orderFileInputRef.current?.click()}
-                    className="w-14 h-14 rounded-xl border-2 border-dashed border-slate-300 hover:border-emerald-600 bg-slate-50 hover:bg-emerald-50/50 flex flex-col items-center justify-center text-slate-500 hover:text-emerald-700 transition-all text-[9px] font-bold gap-0.5 cursor-pointer"
+                    className="w-14 h-14 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-600 bg-slate-50 dark:bg-slate-900 hover:bg-emerald-50/50 flex flex-col items-center justify-center text-slate-500 hover:text-emerald-700 dark:hover:text-emerald-400 transition-all text-[9px] font-bold gap-0.5 cursor-pointer"
                   >
                     <Camera className="w-3.5 h-3.5" />
                     <span>Thêm ảnh</span>
@@ -955,8 +955,8 @@ export default function OrdersPage() {
               </div>
             </div>
 
-            <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t border-slate-100">
-              <Button type="button" variant="outline" size="sm" onClick={() => setReviewingOrder(null)} className="rounded-xl text-xs font-bold">
+            <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t border-slate-100 dark:border-border">
+              <Button type="button" variant="outline" size="sm" onClick={() => setReviewingOrder(null)} className="rounded-xl text-xs font-bold border-border">
                 Hủy Bỏ
               </Button>
               <Button type="submit" size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs">

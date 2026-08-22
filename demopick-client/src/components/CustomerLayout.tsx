@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { ShoppingCart, MapPin, Package, LogOut, User as UserIcon, Home, ShoppingBag, CalendarDays, BookOpen } from 'lucide-react'
+import { ShoppingCart, MapPin, Package, LogOut, User as UserIcon, Home, ShoppingBag, CalendarDays } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useQuery } from '@tanstack/react-query'
 import { cartService } from '@/services/cart.service'
 import { motion } from 'framer-motion'
+import ThemeToggle from '@/components/ThemeToggle'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,7 +24,6 @@ const navItems = [
 export default function CustomerLayout() {
   const location = useLocation()
   const navigate = useNavigate()
-  const [hoveredPath, setHoveredPath] = useState<string | null>(null)
   const { isAuthenticated, user, logout } = useAuth()
 
   // Always scroll to top of page on route change or navbar link click
@@ -51,10 +51,10 @@ export default function CustomerLayout() {
   const cartCount = cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] flex flex-col font-sans">
+    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans transition-colors duration-300">
       {/* Floating Capsule Header (Nổi chuẩn phong cách Châu Âu) */}
       <header className="sticky top-3 sm:top-5 z-50 px-3 sm:px-6 mb-6 sm:mb-8">
-        <div className="container mx-auto max-w-6xl bg-white/95 backdrop-blur-md rounded-full border border-slate-200/90 shadow-md shadow-slate-200/50 h-16 sm:h-18 flex items-center justify-between px-4 sm:px-6 transition-all">
+        <div className="container mx-auto max-w-6xl bg-card/90 dark:bg-card/85 backdrop-blur-md rounded-full border border-border shadow-md dark:shadow-black/50 h-16 sm:h-18 flex items-center justify-between px-4 sm:px-6 transition-all">
           {/* Left Group: Logo + Navigation side-by-side */}
           <div className="flex items-center gap-6 lg:gap-8">
             {/* European Styled Logo - Pick */}
@@ -67,7 +67,7 @@ export default function CustomerLayout() {
                 <MapPin className="w-5 h-5 text-white stroke-[2.5]" />
               </motion.div>
               <div className="flex items-baseline">
-                <span className="font-bold text-2xl sm:text-3xl text-slate-900 tracking-tight font-sans">Pick</span>
+                <span className="font-bold text-2xl sm:text-3xl text-foreground tracking-tight font-sans">Pick</span>
               </div>
             </Link>
 
@@ -82,7 +82,7 @@ export default function CustomerLayout() {
                     key={item.path}
                     to={item.path}
                     onClick={scrollToTop}
-                    className="relative flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-colors duration-200 hover:bg-slate-100/70"
+                    className="relative flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-colors duration-200 hover:bg-muted/70"
                   >
                     {isActive && (
                       <motion.div
@@ -93,19 +93,19 @@ export default function CustomerLayout() {
                           damping: 24,
                           mass: 0.9,
                         }}
-                        className="absolute inset-0 bg-[#27c372]/15 border border-[#27c372]/30 rounded-lg shadow-sm"
+                        className="absolute inset-0 bg-primary/15 dark:bg-primary/25 border border-primary/30 dark:border-primary/40 rounded-lg shadow-sm"
                       />
                     )}
                     <Icon
                       className={`w-4 h-4 z-10 transition-colors duration-200 ${
-                        isActive ? 'text-[#16a34a]' : 'text-slate-500'
+                        isActive ? 'text-primary dark:text-emerald-400' : 'text-muted-foreground'
                       }`}
                     />
                     <span
                       className={`z-10 transition-colors duration-200 ${
                         isActive
-                          ? 'text-[#16a34a] font-medium'
-                          : 'text-slate-700 font-medium hover:text-slate-900'
+                          ? 'text-primary dark:text-emerald-400 font-semibold'
+                          : 'text-muted-foreground font-medium hover:text-foreground'
                       }`}
                     >
                       {item.label}
@@ -116,15 +116,20 @@ export default function CustomerLayout() {
             </nav>
           </div>
 
-          {/* Right Group: Cart & Login Actions */}
-          <div className="flex items-center gap-3">
+          {/* Right Group: Theme Toggle, Cart & Login Actions */}
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            {/* Dark/Light Theme Toggle */}
+            <ThemeToggle />
+
+            {/* Cart Button */}
             <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
               <Link
                 to="/cart"
                 onClick={scrollToTop}
-                className="relative p-2.5 rounded-full text-slate-700 hover:bg-slate-100 transition-colors block"
+                aria-label="Giỏ hàng"
+                className="relative p-2.5 rounded-full text-foreground hover:bg-muted transition-colors block border border-transparent hover:border-border"
               >
-                <ShoppingCart className="w-5 h-5" />
+                <ShoppingCart className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
                 {cartCount > 0 && (
                   <motion.span
                     initial={{ scale: 0 }}
@@ -143,32 +148,32 @@ export default function CustomerLayout() {
                   <motion.button
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
-                    className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full hover:bg-slate-100 transition-colors border border-slate-200/90 shadow-sm"
+                    className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full hover:bg-muted transition-colors border border-border shadow-sm"
                   >
-                    <div className="w-8 h-8 bg-[#27c372]/20 text-[#16a34a] rounded-full flex items-center justify-center font-bold text-xs">
+                    <div className="w-8 h-8 bg-[#27c372]/20 text-[#16a34a] dark:text-emerald-400 rounded-full flex items-center justify-center font-bold text-xs">
                       {user?.name?.charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-sm font-semibold text-slate-800 hidden sm:block">
+                    <span className="text-sm font-semibold text-foreground hidden sm:block">
                       {user?.name}
                     </span>
                   </motion.button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 rounded-2xl p-2 shadow-xl border-slate-200">
-                  <DropdownMenuLabel className="font-bold text-slate-900 px-3 py-2">
+                <DropdownMenuContent align="end" className="w-56 rounded-2xl p-2 shadow-xl border-border bg-card text-card-foreground">
+                  <DropdownMenuLabel className="font-bold text-foreground px-3 py-2">
                     {user?.name}
-                    <div className="text-xs font-normal text-slate-500">{user?.email}</div>
+                    <div className="text-xs font-normal text-muted-foreground">{user?.email}</div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate('/orders')} className="gap-2 rounded-xl cursor-pointer font-medium text-slate-700">
-                    <Package className="h-4 w-4 text-slate-500" />
+                  <DropdownMenuItem onClick={() => navigate('/orders')} className="gap-2 rounded-xl cursor-pointer font-medium text-foreground hover:bg-muted">
+                    <Package className="h-4 w-4 text-muted-foreground" />
                     <span>Lịch sử đơn hàng</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/profile')} className="gap-2 rounded-xl cursor-pointer font-medium text-slate-700">
-                    <UserIcon className="h-4 w-4 text-slate-500" />
+                  <DropdownMenuItem onClick={() => navigate('/profile')} className="gap-2 rounded-xl cursor-pointer font-medium text-foreground hover:bg-muted">
+                    <UserIcon className="h-4 w-4 text-muted-foreground" />
                     <span>Hồ sơ cá nhân</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout} className="gap-2 text-destructive rounded-xl cursor-pointer font-medium">
+                  <DropdownMenuItem onClick={logout} className="gap-2 text-destructive rounded-xl cursor-pointer font-medium hover:bg-destructive/10">
                     <LogOut className="h-4 w-4" />
                     <span>Đăng xuất</span>
                   </DropdownMenuItem>
@@ -178,7 +183,7 @@ export default function CustomerLayout() {
               <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
                 <Link
                   to="/login"
-                  className="px-6 py-2.5 bg-[#27c372] hover:bg-[#22c55e] text-white rounded-full text-sm font-black shadow-md shadow-[#27c372]/25 transition-all block"
+                  className="px-5 sm:px-6 py-2 sm:py-2.5 bg-[#27c372] hover:bg-[#22c55e] text-white rounded-full text-xs sm:text-sm font-black shadow-md shadow-[#27c372]/25 transition-all block"
                 >
                   Đăng Nhập
                 </Link>
@@ -194,12 +199,12 @@ export default function CustomerLayout() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200/80 bg-white py-8 mt-12">
+      <footer className="border-t border-border bg-card text-card-foreground py-8 mt-12 transition-colors duration-300">
         <div className="container mx-auto px-4 text-center space-y-1.5">
-          <p className="text-sm font-bold text-slate-800">
+          <p className="text-sm font-bold text-foreground">
             © 2026 Pick Web — Hệ thống Thiết bị thể thao & Đặt sân Pickleball hàng đầu
           </p>
-          <p className="text-xs text-slate-500 font-normal">
+          <p className="text-xs text-muted-foreground font-normal">
             Cung cấp vợt bóng chính hãng, dịch vụ đặt sân chuyên nghiệp & giao hàng toàn quốc
           </p>
         </div>

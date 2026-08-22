@@ -122,7 +122,6 @@ export default function CRM() {
   return (
     <AppLayout
       title="Quản Lý Tài Khoản & Phân Ca Nhân Viên Lễ Tân"
-      subtitle="Cấp quyền đăng nhập hệ thống POS và phân ca trực cho nhân viên quầy"
       headerRight={
         <Button onClick={() => setAddStaffOpen(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-500 font-bold text-white shadow-sm">
           <UserPlus className="h-4 w-4" />

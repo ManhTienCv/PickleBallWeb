@@ -182,20 +182,20 @@ export default function Home() {
       {/* 1. HERO SECTION (ELEVATED PURE WHITE CANVAS & ARCHITECTURAL) */}
       {/* ========================================================= */}
       <section className="container mx-auto max-w-7xl px-3 sm:px-6">
-        <div className="relative bg-white text-slate-900 rounded-3xl p-6 sm:p-12 border border-slate-200/90 shadow-xl shadow-slate-200/50 overflow-hidden">
+        <div className="relative bg-white dark:bg-card text-slate-900 dark:text-foreground rounded-3xl p-6 sm:p-12 border border-slate-200/90 dark:border-border shadow-xl shadow-slate-200/50 dark:shadow-black/50 overflow-hidden transition-colors duration-300">
           {/* Ambient Lighting Orbs */}
-          <div className="absolute -top-28 -right-28 w-[450px] h-[450px] bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none" />
-          <div className="absolute -bottom-28 -left-28 w-[450px] h-[450px] bg-emerald-600/10 rounded-full blur-[100px] pointer-events-none" />
+          <div className="absolute -top-28 -right-28 w-[450px] h-[450px] bg-emerald-500/10 dark:bg-emerald-500/15 rounded-full blur-[100px] pointer-events-none" />
+          <div className="absolute -bottom-28 -left-28 w-[450px] h-[450px] bg-emerald-600/10 dark:bg-emerald-600/15 rounded-full blur-[100px] pointer-events-none" />
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center relative z-10">
             {/* Left Hero Content */}
             <div className="lg:col-span-7 space-y-6">
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight text-slate-900">
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight text-slate-900 dark:text-slate-100">
                 Thiết Bị Thể Thao & <br />
-                <span className="text-emerald-600">Sân Pickleball Class-A</span>
+                <span className="text-emerald-600 dark:text-emerald-400">Sân Pickleball Class-A</span>
               </h1>
 
-              <p className="text-slate-600 text-sm sm:text-base leading-relaxed max-w-2xl font-normal">
+              <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl font-normal">
                 Hệ thống thể thao liên thông tiện lợi: Giữ chỗ 4 cụm sân thi đấu tự động 24/7 và mua sắm vợt bóng chính hãng chuẩn quốc tế chỉ trong một nền tảng duy nhất.
               </p>
 
@@ -216,36 +216,36 @@ export default function Home() {
                   <Button
                     size="lg"
                     variant="outline"
-                    className="gap-2 bg-white border border-slate-200/90 hover:bg-slate-50 text-slate-800 font-medium rounded-2xl px-6 py-3.5 shadow-xs text-sm cursor-pointer"
+                    className="gap-2 bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-border hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium rounded-2xl px-6 py-3.5 shadow-xs text-sm cursor-pointer"
                   >
-                    <ShoppingBag className="h-4.5 w-4.5 text-emerald-600" />
+                    <ShoppingBag className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
                     <span>Khám Phá Sản Phẩm</span>
                   </Button>
                 </Link>
               </div>
 
               {/* Quick Stats Badges */}
-              <div className="pt-6 grid grid-cols-3 gap-4 border-t border-slate-200/80 text-xs sm:text-sm">
+              <div className="pt-6 grid grid-cols-3 gap-4 border-t border-slate-200/80 dark:border-border text-xs sm:text-sm">
                 <div>
-                  <div className="text-xl sm:text-2xl font-bold text-slate-900">4 Sân Đấu</div>
-                  <div className="text-slate-500 font-normal">Chuẩn USAPA Pro</div>
+                  <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">4 Sân Đấu</div>
+                  <div className="text-slate-600 dark:text-slate-300 font-medium">Chuẩn USAPA Pro</div>
                 </div>
                 <div>
-                  <div className="text-xl sm:text-2xl font-bold text-emerald-600">10 Phút</div>
-                  <div className="text-slate-500 font-normal">Khóa lịch tự động</div>
+                  <div className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400">10 Phút</div>
+                  <div className="text-slate-600 dark:text-slate-300 font-medium">Khóa lịch tự động</div>
                 </div>
                 <div>
-                  <div className="text-xl sm:text-2xl font-bold text-slate-900">100%</div>
-                  <div className="text-slate-500 font-normal">Hàng chính hãng</div>
+                  <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">100%</div>
+                  <div className="text-slate-600 dark:text-slate-300 font-medium">Hàng chính hãng</div>
                 </div>
               </div>
             </div>
 
             {/* Right Interactive Showcase Card */}
             <div className="lg:col-span-5 relative pt-4 sm:pt-0">
-              <div className="relative rounded-3xl overflow-hidden border border-slate-200/90 bg-white p-4 shadow-xl shadow-slate-200/50 space-y-4">
+              <div className="relative rounded-3xl overflow-hidden border border-slate-200/90 dark:border-border bg-white dark:bg-card p-4 shadow-xl shadow-slate-200/50 dark:shadow-black/50 space-y-4">
                 {/* Court Image Banner */}
-                <div className="aspect-video rounded-2xl overflow-hidden relative border border-slate-200 shadow-inner group">
+                <div className="aspect-video rounded-2xl overflow-hidden relative border border-slate-200 dark:border-border shadow-inner group">
                   <img
                     src="https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&q=80&w=800"
                     alt="Sân Pickleball Pick Center"
@@ -254,16 +254,16 @@ export default function Home() {
                 </div>
 
                 {/* Quick Info */}
-                <div className="bg-[#FAF8F5] p-4 rounded-2xl border border-slate-200/80 space-y-3">
-                  <div className="flex items-center text-xs text-slate-500">
-                    <span className="flex items-center gap-1 font-semibold text-slate-800">
-                      <MapPin className="h-3.5 w-3.5 text-emerald-600" />
+                <div className="bg-[#FAF8F5] dark:bg-slate-900/70 p-4 rounded-2xl border border-slate-200/80 dark:border-border space-y-3">
+                  <div className="flex items-center text-xs text-slate-600 dark:text-slate-300">
+                    <span className="flex items-center gap-1 font-bold text-slate-800 dark:text-slate-200">
+                      <MapPin className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                       Cầu Giấy, Hà Nội
                     </span>
                   </div>
 
-                  <h3 className="font-bold text-slate-900 text-base">Cụm Sân Pickleball Pick Center</h3>
-                  <p className="text-xs text-slate-600 leading-relaxed font-normal">
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">Cụm Sân Pickleball Pick Center</h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
                     Đèn LED chống chói thi đấu chuyên nghiệp, lounge máy lạnh, phòng tắm nóng lạnh & pro shop hỗ trợ mượn vợt dùng thử.
                   </p>
 
@@ -284,29 +284,29 @@ export default function Home() {
       </section>
 
       {/* ========================================================= */}
-      {/* 2. ✨ DANH MỤC NỔI BẬT (KHỚP 100% HÌNH 1 BẠN GỬI) */}
+      {/* 2. ✨ DANH MỤC NỔI BẬT */}
       {/* ========================================================= */}
       <section className="container mx-auto max-w-7xl px-3 sm:px-6 space-y-5">
-        <div className="flex items-end justify-between border-b border-slate-200/80 pb-4">
+        <div className="flex items-end justify-between border-b border-slate-200/80 dark:border-border pb-4">
           <div className="space-y-1">
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
               Danh mục nổi bật
             </h2>
-            <p className="text-sm text-slate-500 font-normal">
+            <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">
               Khám phá theo loại sản phẩm và dịch vụ
             </p>
           </div>
 
           <Link
             to="/products"
-            className="text-sm font-semibold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 transition-colors group"
+            className="text-sm font-semibold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 flex items-center gap-1 transition-colors group"
           >
             <span>Xem tất cả</span>
-            <ArrowRight className="w-4 h-4 text-emerald-600 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
 
-        {/* 5 Distinct Category Cards in a Row (Khớp Ảnh 1) */}
+        {/* 5 Distinct Category Cards in a Row */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-5">
           {featuredCategories.map((cat) => {
             const Icon = cat.icon
@@ -316,18 +316,18 @@ export default function Home() {
               <Link
                 key={cat.id}
                 to={destination}
-                className="group relative bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm hover:shadow-lg hover:border-emerald-500/50 transition-all duration-300 flex flex-col items-center text-center space-y-3 cursor-pointer"
+                className="group relative bg-white dark:bg-card rounded-2xl p-5 border border-slate-200/90 dark:border-border shadow-sm hover:shadow-lg dark:hover:shadow-black/50 hover:border-emerald-500/50 transition-all duration-300 flex flex-col items-center text-center space-y-3 cursor-pointer"
               >
-                {/* Soft Icon Box (Khớp Ảnh 1) */}
-                <div className="w-16 h-16 rounded-2xl bg-[#FAF8F5] group-hover:bg-emerald-50 border border-slate-100 group-hover:border-emerald-200 flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-xs">
-                  <Icon className={`w-7 h-7 ${cat.iconColor}`} />
+                {/* Soft Icon Box */}
+                <div className="w-16 h-16 rounded-2xl bg-[#FAF8F5] dark:bg-slate-900/80 group-hover:bg-emerald-50 dark:group-hover:bg-emerald-950/60 border border-slate-100 dark:border-border group-hover:border-emerald-200 dark:group-hover:border-emerald-800 flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-xs">
+                  <Icon className={`w-7 h-7 ${cat.iconColor} dark:text-emerald-400`} />
                 </div>
 
                 <div className="space-y-0.5">
-                  <h3 className="font-semibold text-slate-900 text-sm group-hover:text-emerald-700 transition-colors">
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
                     {cat.name}
                   </h3>
-                  <p className="text-xs text-slate-400 font-normal">
+                  <p className="text-xs text-slate-500 dark:text-slate-300 font-medium">
                     {cat.count}
                   </p>
                 </div>
@@ -342,12 +342,12 @@ export default function Home() {
       {/* ========================================================= */}
       <section className="container mx-auto max-w-7xl px-3 sm:px-6 space-y-6">
         {/* Section Header with Category Tabs */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/80 pb-5">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/80 dark:border-border pb-5">
           <div className="space-y-1.5 max-w-xl">
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
               Sản Phẩm Được Mua Nhiều Nhất
             </h2>
-            <p className="text-slate-500 text-xs sm:text-sm font-normal">
+            <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm font-normal">
               Vợt carbon 3S, bóng thi đấu và phụ kiện chính hãng JOOLA, Selkirk, Franklin.
             </p>
           </div>
@@ -376,15 +376,15 @@ export default function Home() {
                         damping: 26,
                         mass: 0.8,
                       }}
-                      className="absolute inset-0 bg-slate-900 rounded-full shadow-sm z-0"
+                      className="absolute inset-0 bg-slate-900 dark:bg-emerald-600 rounded-full shadow-sm z-0"
                     />
                   )}
                   {!isActive && (
-                    <div className="absolute inset-0 bg-white border border-slate-200/90 rounded-full hover:bg-slate-50 transition-colors z-0" />
+                    <div className="absolute inset-0 bg-white dark:bg-card border border-slate-200/90 dark:border-border rounded-full hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors z-0" />
                   )}
                   <span
                     className={`relative z-10 transition-colors ${
-                      isActive ? 'text-white font-semibold' : 'text-slate-700 hover:text-slate-900'
+                      isActive ? 'text-white font-semibold' : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
                     {tab.label}
@@ -397,7 +397,7 @@ export default function Home() {
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-1 text-xs font-medium text-slate-700 border-slate-300 rounded-full h-8 px-3.5 hover:bg-slate-100"
+                className="gap-1 text-xs font-medium text-slate-700 dark:text-slate-300 border-slate-300 dark:border-border rounded-full h-8 px-3.5 hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 <span>Xem tất cả</span>
                 <ChevronRight className="h-3.5 w-3.5" />
@@ -410,7 +410,7 @@ export default function Home() {
         {isLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-5">
             {[1, 2, 3, 4].map((n) => (
-              <div key={n} className="h-80 rounded-2xl bg-slate-200/70 animate-pulse border border-slate-200" />
+              <div key={n} className="h-80 rounded-2xl bg-slate-200/70 dark:bg-slate-800 animate-pulse border border-slate-200 dark:border-border" />
             ))}
           </div>
         ) : (
@@ -426,12 +426,12 @@ export default function Home() {
       {/* 4. CỤM SÂN THI ĐẤU (FEATURED COURTS) */}
       {/* ========================================================= */}
       <section className="container mx-auto max-w-7xl px-3 sm:px-6 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200/80 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200/80 dark:border-border pb-4">
           <div className="space-y-1">
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
               Hệ Thống 4 Sân Đấu Chuẩn USAPA
             </h2>
-            <p className="text-sm text-slate-500 font-normal">
+            <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">
               Mặt sân Decoturf thi đấu chống trơn trượt, đèn LED 500 Lux chuẩn giải đấu
             </p>
           </div>
@@ -440,7 +440,7 @@ export default function Home() {
             <Button
               variant="outline"
               size="sm"
-              className="rounded-xl border-slate-300 text-xs font-semibold gap-1.5 hover:bg-slate-100"
+              className="rounded-xl border-slate-300 dark:border-border text-xs font-semibold gap-1.5 hover:bg-slate-100 dark:hover:bg-slate-800"
             >
               <span>Xem sơ đồ & lịch trống</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -452,7 +452,7 @@ export default function Home() {
           {courts.map((court) => (
             <div
               key={court.id}
-              className="bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
+              className="bg-white dark:bg-card rounded-2xl overflow-hidden border border-slate-200/90 dark:border-border shadow-sm hover:shadow-lg dark:hover:shadow-black/50 transition-all duration-300 flex flex-col justify-between"
             >
               <div className="aspect-[16/10] overflow-hidden relative group">
                 <img
@@ -460,7 +460,7 @@ export default function Home() {
                   alt={court.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
-                <Badge className="absolute top-2.5 left-2.5 bg-slate-900/90 text-white text-[11px] font-medium backdrop-blur-sm">
+                <Badge className="absolute top-2.5 left-2.5 bg-slate-900/90 dark:bg-slate-800/90 text-white text-[11px] font-medium backdrop-blur-sm">
                   {court.type}
                 </Badge>
               </div>
@@ -468,19 +468,19 @@ export default function Home() {
               <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                    <span className="text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1">
                       <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
                       {court.status}
                     </span>
                   </div>
-                  <h3 className="font-bold text-slate-900 text-base">{court.name}</h3>
-                  <div className="text-sm font-bold text-slate-900">{court.price}</div>
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">{court.name}</h3>
+                  <div className="text-sm font-bold text-slate-900 dark:text-emerald-400">{court.price}</div>
                 </div>
 
                 <Link to="/booking" className="block pt-1">
                   <Button
                     size="sm"
-                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl h-9"
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl h-9"
                   >
                     Đặt sân này
                   </Button>
@@ -492,15 +492,15 @@ export default function Home() {
       </section>
 
       {/* ========================================================= */}
-      {/* 5. ✨ THƯƠNG HIỆU THỂ THAO ĐỒNG HÀNH (TOP BRANDS STRIP) */}
+      {/* 5. ✨ THƯƠNG HIỆU THỂ THAO ĐỒNG HÀNH */}
       {/* ========================================================= */}
       <section className="container mx-auto max-w-7xl px-3 sm:px-6">
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-5">
+        <div className="bg-white dark:bg-card rounded-3xl p-6 sm:p-8 border border-slate-200/90 dark:border-border shadow-sm space-y-5">
           <div className="text-center space-y-1">
-            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
+            <h3 className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">
               Đối Tác Phân Phối Chính Hãng
             </h3>
-            <p className="text-base sm:text-lg font-bold text-slate-900">
+            <p className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
               Các thương hiệu Pickleball hàng đầu thế giới
             </p>
           </div>
@@ -510,12 +510,12 @@ export default function Home() {
               <Link
                 key={brand.name}
                 to={`/products?search=${encodeURIComponent(brand.name)}`}
-                className="p-3.5 rounded-2xl bg-[#FAF8F5] border border-slate-200/70 hover:border-emerald-500/50 hover:bg-white hover:shadow-md transition-all text-center space-y-1 group"
+                className="p-3.5 rounded-2xl bg-[#FAF8F5] dark:bg-slate-900/60 border border-slate-200/70 dark:border-border hover:border-emerald-500/50 hover:bg-white dark:hover:bg-slate-800 hover:shadow-md transition-all text-center space-y-1 group cursor-pointer"
               >
-                <div className="font-extrabold text-sm sm:text-base text-slate-800 group-hover:text-emerald-700 tracking-wider">
+                <div className="font-extrabold text-sm sm:text-base text-slate-800 dark:text-slate-200 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 tracking-wider">
                   {brand.name}
                 </div>
-                <div className="text-[11px] text-slate-500 font-normal">
+                <div className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">
                   {brand.desc}
                 </div>
               </Link>
@@ -529,43 +529,43 @@ export default function Home() {
       {/* ========================================================= */}
       <section className="container mx-auto max-w-7xl px-3 sm:px-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="flex items-center gap-3 bg-white p-4.5 rounded-2xl border border-slate-200/90 shadow-sm">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-100">
-              <Award className="w-5 h-5" />
+          <div className="flex items-center gap-3.5 bg-white dark:bg-card p-5 rounded-2xl border border-slate-200/90 dark:border-border shadow-sm hover:shadow-md hover:border-emerald-500/40 transition-all group">
+            <div className="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-900/50 group-hover:scale-105 transition-transform">
+              <Award className="w-5.5 h-5.5" />
             </div>
             <div>
-              <p className="font-bold text-slate-900 text-sm">100% Chính Hãng</p>
-              <p className="text-xs text-slate-500 font-normal">Đạt chuẩn USAPA Pro</p>
+              <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">100% Chính Hãng</p>
+              <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">Đạt chuẩn USAPA Pro</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 bg-white p-4.5 rounded-2xl border border-slate-200/90 shadow-sm">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-100">
-              <Truck className="w-5 h-5" />
+          <div className="flex items-center gap-3.5 bg-white dark:bg-card p-5 rounded-2xl border border-slate-200/90 dark:border-border shadow-sm hover:shadow-md hover:border-emerald-500/40 transition-all group">
+            <div className="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-900/50 group-hover:scale-105 transition-transform">
+              <Truck className="w-5.5 h-5.5" />
             </div>
             <div>
-              <p className="font-bold text-slate-900 text-sm">Giao Hỏa Tốc 2H</p>
-              <p className="text-xs text-slate-500 font-normal">Nội thành Hà Nội</p>
+              <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">Giao Hỏa Tốc 2H</p>
+              <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">Nội thành Hà Nội</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 bg-white p-4.5 rounded-2xl border border-slate-200/90 shadow-sm">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-100">
-              <RotateCcw className="w-5 h-5" />
+          <div className="flex items-center gap-3.5 bg-white dark:bg-card p-5 rounded-2xl border border-slate-200/90 dark:border-border shadow-sm hover:shadow-md hover:border-emerald-500/40 transition-all group">
+            <div className="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-900/50 group-hover:scale-105 transition-transform">
+              <RotateCcw className="w-5.5 h-5.5" />
             </div>
             <div>
-              <p className="font-bold text-slate-900 text-sm">Đổi Trả 7 Ngày</p>
-              <p className="text-xs text-slate-500 font-normal">Lỗi nhà sản xuất</p>
+              <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">Đổi Trả 7 Ngày</p>
+              <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">Lỗi nhà sản xuất</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 bg-white p-4.5 rounded-2xl border border-slate-200/90 shadow-sm">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-100">
-              <ShieldCheck className="w-5 h-5" />
+          <div className="flex items-center gap-3.5 bg-white dark:bg-card p-5 rounded-2xl border border-slate-200/90 dark:border-border shadow-sm hover:shadow-md hover:border-emerald-500/40 transition-all group">
+            <div className="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-900/50 group-hover:scale-105 transition-transform">
+              <ShieldCheck className="w-5.5 h-5.5" />
             </div>
             <div>
-              <p className="font-bold text-slate-900 text-sm">Bảo Hành 12 Tháng</p>
-              <p className="text-xs text-slate-500 font-normal">Mặt vợt carbon 3S</p>
+              <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">Bảo Hành 12 Tháng</p>
+              <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">Mặt vợt carbon 3S</p>
             </div>
           </div>
         </div>

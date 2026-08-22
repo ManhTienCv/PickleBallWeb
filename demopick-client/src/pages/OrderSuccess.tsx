@@ -15,27 +15,27 @@ export default function OrderSuccess() {
 
   return (
     <div className="container mx-auto py-12 px-4 sm:px-6 max-w-2xl text-center">
-      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 mx-auto mb-4 animate-in zoom-in-50">
+      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 mx-auto mb-4 animate-in zoom-in-50">
         <CheckCircle2 className="h-12 w-12" />
       </div>
 
-      <h1 className="text-3xl font-extrabold text-slate-900">Đặt Hàng Thành Công!</h1>
-      <p className="text-slate-600 mt-2 text-sm">
+      <h1 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100">Đặt Hàng Thành Công!</h1>
+      <p className="text-slate-600 dark:text-slate-400 mt-2 text-sm">
         Cảm ơn bạn đã tin tưởng dịch vụ của Pick. Mã đơn hàng của bạn là{' '}
         <span className="font-mono font-bold text-primary">{code}</span>
       </p>
 
       {/* VietQR Bank Transfer Block */}
       {bankInfo && (
-        <Card className="mt-8 p-6 border-emerald-200 bg-emerald-50/50 text-left space-y-4 shadow-sm">
-          <div className="flex items-center gap-2 text-emerald-800 font-bold border-b border-emerald-200 pb-3">
+        <Card className="mt-8 p-6 border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-card text-left space-y-4 shadow-sm">
+          <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold border-b border-emerald-200 dark:border-emerald-800 pb-3">
             <QrCode className="h-5 w-5" />
             <span>Thanh Toán Chuyển Khoản Ngân Hàng (VietQR)</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
             {qrUrl && (
-              <div className="flex flex-col items-center p-3 bg-white rounded-xl border border-emerald-100 shadow-inner">
+              <div className="flex flex-col items-center p-3 bg-white dark:bg-slate-900 rounded-xl border border-emerald-100 dark:border-emerald-900 shadow-inner">
                 <img src={qrUrl} alt="Mã VietQR" className="h-44 w-44 object-contain" />
                 <span className="text-[11px] text-slate-400 mt-1">Quét mã bằng App Ngân Hàng</span>
               </div>
@@ -43,20 +43,20 @@ export default function OrderSuccess() {
 
             <div className="space-y-2 text-sm">
               <div>
-                <span className="text-slate-500 text-xs">Ngân hàng:</span>
-                <div className="font-semibold text-slate-900">{bankInfo.bank_name}</div>
+                <span className="text-slate-500 dark:text-slate-400 text-xs">Ngân hàng:</span>
+                <div className="font-semibold text-slate-900 dark:text-slate-100">{bankInfo.bank_name}</div>
               </div>
               <div>
-                <span className="text-slate-500 text-xs">Số tài khoản:</span>
-                <div className="font-mono font-bold text-emerald-700 text-base">{bankInfo.account_no}</div>
+                <span className="text-slate-500 dark:text-slate-400 text-xs">Số tài khoản:</span>
+                <div className="font-mono font-bold text-emerald-700 dark:text-emerald-400 text-base">{bankInfo.account_no}</div>
               </div>
               <div>
-                <span className="text-slate-500 text-xs">Chủ tài khoản:</span>
-                <div className="font-semibold text-slate-900">{bankInfo.account_name}</div>
+                <span className="text-slate-500 dark:text-slate-400 text-xs">Chủ tài khoản:</span>
+                <div className="font-semibold text-slate-900 dark:text-slate-100">{bankInfo.account_name}</div>
               </div>
               <div>
-                <span className="text-slate-500 text-xs">Nội dung chuyển khoản (bắt buộc):</span>
-                <div className="font-mono font-bold text-primary bg-white p-2 rounded border border-slate-200">
+                <span className="text-slate-500 dark:text-slate-400 text-xs">Nội dung chuyển khoản (bắt buộc):</span>
+                <div className="font-mono font-bold text-primary bg-white dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-border">
                   {bankInfo.transfer_content}
                 </div>
               </div>
@@ -66,7 +66,7 @@ export default function OrderSuccess() {
       )}
 
       <div className="flex flex-wrap justify-center gap-4 mt-8">
-        <Button variant="outline" onClick={() => navigate(`/orders`)} className="gap-2">
+        <Button variant="outline" onClick={() => navigate(`/orders`)} className="gap-2 border-border">
           <CalendarDays className="h-4 w-4" />
           <span>Quản lý đơn hàng của tôi</span>
         </Button>

@@ -446,13 +446,13 @@ export default function Inventory() {
 
   // Search & Filters for Products Tab
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState(isAdmin ? "all" : "Đồ uống & Đồ ăn");
+  const [selectedCategory, setSelectedCategory] = useState(isAdmin ? "Vợt Pickleball" : "Đồ uống & Đồ ăn");
 
   useEffect(() => {
     if (!isAdmin) {
       setSelectedCategory("Đồ uống & Đồ ăn");
     } else {
-      setSelectedCategory("all");
+      setSelectedCategory("Vợt Pickleball");
     }
   }, [isAdmin]);
 
@@ -1055,11 +1055,6 @@ export default function Inventory() {
   return (
     <AppLayout
       title={isAdmin ? "Quản Lý Kho & Bài Đăng Sản Phẩm" : "Kho Hàng Quầy Dịch Vụ — Lễ Tân"}
-      subtitle={
-        isAdmin
-          ? "Hệ thống kho hàng tập trung — Đồng bộ tồn kho 100% giữa Website Online & Quầy POS tại sân"
-          : "Quản lý tồn kho & Bổ sung số lượng Đồ uống, Đồ ăn & Thiết bị cho thuê tại quầy sân"
-      }
       headerRight={
         isAdmin ? (
           <div className="flex items-center gap-2">
@@ -1121,11 +1116,10 @@ export default function Inventory() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setActiveMainTab("products")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-                  activeMainTab === "products"
-                    ? "bg-slate-900 text-white shadow-sm"
-                    : "bg-transparent text-slate-600 hover:bg-slate-100 font-medium"
-                }`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors duration-150 border ${activeMainTab === "products"
+                  ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                  : "bg-transparent text-slate-600 hover:bg-slate-100 border-transparent font-semibold"
+                  }`}
               >
                 <Boxes className="w-4 h-4" />
                 <span>Danh Sách Sản Phẩm & Tồn Kho ({products.length})</span>
@@ -1133,21 +1127,14 @@ export default function Inventory() {
 
               <button
                 onClick={() => setActiveMainTab("categories_brands")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-                  activeMainTab === "categories_brands"
-                    ? "bg-emerald-600 text-white shadow-sm"
-                    : "bg-transparent text-slate-600 hover:bg-slate-100 font-medium"
-                }`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors duration-150 border ${activeMainTab === "categories_brands"
+                  ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                  : "bg-transparent text-slate-600 hover:bg-slate-100 border-transparent font-semibold"
+                  }`}
               >
                 <FolderTree className="w-4 h-4" />
                 <span>Quản Lý Danh Mục & Thương Hiệu ({categories.length} DM • {brands.length} Hãng)</span>
               </button>
-            </div>
-
-            <div className="text-[11px] text-slate-400 font-normal px-2">
-              {activeMainTab === "products"
-                ? "Tự động phân trang 10 sản phẩm/trang"
-                : "Dễ dàng thêm các hãng & danh mục mới khi mở rộng"}
             </div>
           </div>
         )}
@@ -1232,28 +1219,23 @@ export default function Inventory() {
                     <button
                       key={cat.id}
                       onClick={() => setSelectedCategory(cat.id)}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs transition-all shrink-0 font-semibold ${
-                        selectedCategory === cat.id
-                          ? "bg-slate-900 text-white shadow-sm"
-                          : "bg-slate-100 text-slate-600 hover:bg-slate-200 font-medium"
-                      }`}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs transition-colors duration-150 shrink-0 font-semibold border ${selectedCategory === cat.id
+                        ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200 border-transparent"
+                        }`}
                     >
                       {cat.label}
                     </button>
                   ))
                 ) : (
-                  [
-                    { id: "all", label: "Tất cả mặt hàng" },
-                    ...categories.map((c) => ({ id: c.name, label: c.name })),
-                  ].map((cat) => (
+                  categories.map((c) => ({ id: c.name, label: c.name })).map((cat) => (
                     <button
                       key={cat.id}
                       onClick={() => setSelectedCategory(cat.id)}
-                      className={`px-3 py-1.5 rounded-xl text-xs transition-all shrink-0 font-semibold ${
-                        selectedCategory === cat.id
-                          ? "bg-slate-900 text-white shadow-sm"
-                          : "bg-slate-100 text-slate-600 hover:bg-slate-200 font-medium"
-                      }`}
+                      className={`px-3 py-1.5 rounded-xl text-xs transition-colors duration-150 shrink-0 font-semibold border ${selectedCategory === cat.id
+                        ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200 border-transparent"
+                        }`}
                     >
                       {cat.label}
                     </button>
@@ -1327,11 +1309,10 @@ export default function Inventory() {
                             {/* STOCK BADGE (CLEAN & SPACIOUS) */}
                             <td className="py-3.5 px-4 text-center whitespace-nowrap">
                               <span
-                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold ${
-                                  isOutOfStock
-                                    ? "bg-rose-50 text-rose-700 border border-rose-200"
-                                    : "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                                }`}
+                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold ${isOutOfStock
+                                  ? "bg-rose-50 text-rose-700 border border-rose-200"
+                                  : "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                                  }`}
                               >
                                 <span className={`w-2 h-2 rounded-full ${isOutOfStock ? "bg-rose-500" : "bg-emerald-500"}`} />
                                 {isOutOfStock ? "Hết hàng (0)" : `Tồn kho: ${p.stock}`}
@@ -1439,11 +1420,10 @@ export default function Inventory() {
                         <button
                           key={page}
                           onClick={() => setCurrentPage(page)}
-                          className={`w-8 h-8 rounded-lg text-xs transition-all flex items-center justify-center ${
-                            currentPage === page
-                              ? "bg-emerald-600 text-white font-medium shadow-sm shadow-emerald-500/20"
-                              : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 font-normal"
-                          }`}
+                          className={`w-8 h-8 rounded-lg text-xs transition-all flex items-center justify-center ${currentPage === page
+                            ? "bg-emerald-600 text-white font-medium shadow-sm shadow-emerald-500/20"
+                            : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 font-normal"
+                            }`}
                         >
                           {page}
                         </button>
@@ -1501,9 +1481,7 @@ export default function Inventory() {
                     <FolderTree className="w-5 h-5 text-emerald-600" />
                     <span>Quản lý Danh mục</span>
                   </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Danh sách phân loại sản phẩm thể thao và dịch vụ tại cụm sân DemoPick
-                  </p>
+
                 </div>
 
                 <Button
@@ -1579,9 +1557,6 @@ export default function Inventory() {
                     <Tag className="w-5 h-5 text-emerald-600" />
                     <span>Quản lý Thương hiệu (Brands)</span>
                   </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Quản lý danh sách các hãng vợt, bóng, phụ kiện và trang phục được phân phối
-                  </p>
                 </div>
 
                 <Button
@@ -1825,22 +1800,20 @@ export default function Inventory() {
             <button
               type="button"
               onClick={() => setStaffModalTab("restock")}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                staffModalTab === "restock"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${staffModalTab === "restock"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-600 hover:text-slate-900"
+                }`}
             >
               Bổ sung số lượng
             </button>
             <button
               type="button"
               onClick={() => setStaffModalTab("new_item")}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                staffModalTab === "new_item"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${staffModalTab === "new_item"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-600 hover:text-slate-900"
+                }`}
             >
               + Thêm món quầy mới
             </button>
@@ -1902,11 +1875,10 @@ export default function Inventory() {
                       key={qty}
                       type="button"
                       onClick={() => setStaffRestockQty(qty)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${
-                        staffRestockQty === qty
-                          ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                          : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                      }`}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${staffRestockQty === qty
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                        : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                        }`}
                     >
                       +{qty}
                     </button>
@@ -2067,11 +2039,10 @@ export default function Inventory() {
                       key={qty}
                       type="button"
                       onClick={() => setRestockQty(qty)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${
-                        restockQty === qty
-                          ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                          : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                      }`}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${restockQty === qty
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                        : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                        }`}
                     >
                       +{qty}
                     </button>
@@ -2123,11 +2094,10 @@ export default function Inventory() {
                 <button
                   type="button"
                   onClick={() => setFormProductType("online")}
-                  className={`px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-2 ${
-                    formProductType === "online"
-                      ? "bg-emerald-600 text-white font-semibold shadow-md shadow-emerald-500/20"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200 font-normal"
-                  }`}
+                  className={`px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-2 ${formProductType === "online"
+                    ? "bg-emerald-600 text-white font-semibold shadow-md shadow-emerald-500/20"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 font-normal"
+                    }`}
                 >
                   <ShoppingBag className="w-3.5 h-3.5" />
                   <span>Sản Phẩm Đăng Bán Online & Quầy (Vợt, bóng, phụ kiện...)</span>
@@ -2136,11 +2106,10 @@ export default function Inventory() {
                 <button
                   type="button"
                   onClick={() => setFormProductType("pos")}
-                  className={`px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-2 ${
-                    formProductType === "pos"
-                      ? "bg-blue-600 text-white font-semibold shadow-md shadow-blue-500/20"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200 font-normal"
-                  }`}
+                  className={`px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-2 ${formProductType === "pos"
+                    ? "bg-blue-600 text-white font-semibold shadow-md shadow-blue-500/20"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 font-normal"
+                    }`}
                 >
                   <Store className="w-3.5 h-3.5" />
                   <span>Dịch Vụ Bán Tại Quầy (Đồ uống, thuê sân...)</span>
@@ -2443,11 +2412,10 @@ export default function Inventory() {
 
               <Button
                 type="submit"
-                className={`font-medium text-xs h-10 px-7 rounded-xl text-white shadow-md ${
-                  formProductType === "online"
-                    ? "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20"
-                    : "bg-blue-600 hover:bg-blue-500 shadow-blue-500/20"
-                }`}
+                className={`font-medium text-xs h-10 px-7 rounded-xl text-white shadow-md ${formProductType === "online"
+                  ? "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20"
+                  : "bg-blue-600 hover:bg-blue-500 shadow-blue-500/20"
+                  }`}
               >
                 {editingProduct ? "Lưu Cập Nhật Mặt Hàng" : "Thêm Mặt Hàng Vào Kho"}
               </Button>

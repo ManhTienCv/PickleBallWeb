@@ -32,7 +32,7 @@ export default function StaffTable({
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse text-xs">
           <thead>
-            <tr className="bg-slate-900 text-white font-bold uppercase tracking-wider text-[11px]">
+            <tr className="bg-emerald-700 text-white font-bold uppercase tracking-wider text-[11px]">
               <th className="py-3 px-4">Tên Nhân Viên</th>
               <th className="py-3 px-4">Email Đăng Nhập</th>
               <th className="py-3 px-4">Số Điện Thoại</th>

@@ -271,6 +271,22 @@ export default function Orders() {
     localStorage.setItem("demopick_orders_admin", JSON.stringify(ordersList));
   }, [ordersList]);
 
+  // Sync orders in realtime when updated via localStorage in client app
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "demopick_orders_admin" && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) {
+            setOrdersList(parsed);
+          }
+        } catch { }
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [printReceiptOrder, setPrintReceiptOrder] = useState<Order | null>(null);
@@ -495,10 +511,10 @@ export default function Orders() {
                     setDatePeriod(p.id);
                     setCurrentPage(1);
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-150 border ${
                     datePeriod === p.id
-                      ? "bg-emerald-600 text-white shadow-sm"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200 border-transparent"
                   }`}
                 >
                   {p.label}
@@ -549,10 +565,10 @@ export default function Orders() {
                     setPosSubFilter(sub.id as any);
                     setCurrentPage(1);
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-150 border ${
                     posSubFilter === sub.id
-                      ? "bg-slate-900 text-white shadow-sm"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200 border-transparent"
                   }`}
                 >
                   {sub.label}
@@ -577,10 +593,10 @@ export default function Orders() {
                     setStatusFilter(st.id);
                     setCurrentPage(1);
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-150 border ${
                     statusFilter === st.id
-                      ? "bg-emerald-600 text-white shadow-sm"
-                      : "bg-slate-50 text-slate-600 hover:bg-slate-100 font-medium"
+                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                      : "bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200"
                   }`}
                 >
                   {st.label}
@@ -597,10 +613,10 @@ export default function Orders() {
                     setStatusFilter(st.id);
                     setCurrentPage(1);
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-150 border ${
                     statusFilter === st.id
-                      ? "bg-emerald-600 text-white shadow-sm"
-                      : "bg-slate-50 text-slate-600 hover:bg-slate-100 font-medium"
+                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                      : "bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200"
                   }`}
                 >
                   {st.label}
