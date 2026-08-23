@@ -92,7 +92,7 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
               src={product.image_url || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&q=80&w=600'}
               alt={product.name}
               onError={(e) => {
-                ;(e.target as HTMLImageElement).src =
+                (e.target as HTMLImageElement).src =
                   'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&q=80&w=600'
               }}
               className="h-full w-full object-cover object-center transition-transform duration-500 group-hover/img:scale-105"

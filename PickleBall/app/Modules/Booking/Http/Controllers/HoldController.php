@@ -3,10 +3,10 @@
 namespace App\Modules\Booking\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\Shared\Traits\HasStandardResponse;
 use App\Modules\Booking\Http\Requests\CreateHoldRequest;
 use App\Modules\Booking\Http\Resources\HoldResource;
 use App\Modules\Booking\Services\HoldService;
+use App\Modules\Shared\Traits\HasStandardResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -14,9 +14,7 @@ class HoldController extends Controller
 {
     use HasStandardResponse;
 
-    public function __construct(protected HoldService $holdService)
-    {
-    }
+    public function __construct(protected HoldService $holdService) {}
 
     public function store(CreateHoldRequest $request): JsonResponse
     {

@@ -3,10 +3,10 @@
 namespace App\Modules\Order\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\Shared\Traits\HasStandardResponse;
+use App\Modules\Booking\Models\CourtSlot;
 use App\Modules\Order\Models\Order;
 use App\Modules\Order\Models\Payment;
-use App\Modules\Booking\Models\CourtSlot;
+use App\Modules\Shared\Traits\HasStandardResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -29,7 +29,7 @@ class PaymentWebhookController extends Controller
 
         $order = Order::where('order_code', $orderCode)->first();
 
-        if (!$order) {
+        if (! $order) {
             return $this->error('Order not found', 404);
         }
 
@@ -71,7 +71,7 @@ class PaymentWebhookController extends Controller
         $content = $request->input('content') ?? $request->input('description') ?? $request->input('transferContent') ?? '';
         $amount = (float) ($request->input('transferAmount') ?? $request->input('amount') ?? 0);
         $gateway = $request->input('gateway') ?? $request->input('bankName') ?? 'VietQR Bank';
-        $refCode = $request->input('referenceCode') ?? $request->input('transactionId') ?? ('TX-' . rand(10000, 99999));
+        $refCode = $request->input('referenceCode') ?? $request->input('transactionId') ?? ('TX-'.rand(10000, 99999));
 
         Log::info("VietQR/Bank Webhook (Cấp 2) received: amount={$amount}, gateway={$gateway}, content={$content}");
 
@@ -79,15 +79,17 @@ class PaymentWebhookController extends Controller
         preg_match('/DP-[\w\d]+/i', $content, $matches);
         $orderCode = $matches[0] ?? $request->input('orderCode') ?? null;
 
-        if (!$orderCode) {
+        if (! $orderCode) {
             Log::warning("VietQR Webhook: Không tìm thấy mã đơn hàng hợp lệ trong nội dung: '{$content}'");
+
             return $this->error('Không tìm thấy mã đơn hàng trong nội dung thanh toán', 422);
         }
 
         $order = Order::where('order_code', strtoupper($orderCode))->first();
 
-        if (!$order) {
+        if (! $order) {
             Log::warning("VietQR Webhook: Đơn hàng '{$orderCode}' không tồn tại trong hệ thống.");
+
             return $this->error("Không tìm thấy đơn hàng #{$orderCode}", 404);
         }
 
@@ -135,14 +137,14 @@ class PaymentWebhookController extends Controller
         try {
             $orderItems = $order->items()->where('item_type', 'booking')->get();
             foreach ($orderItems as $item) {
-                if (!empty($item->court_slot_id)) {
+                if (! empty($item->court_slot_id)) {
                     CourtSlot::where('id', $item->court_slot_id)->update([
                         'status' => 'booked',
                     ]);
                 }
             }
         } catch (\Throwable $e) {
-            Log::error("Lỗi khi xác nhận slot đặt sân từ Webhook: " . $e->getMessage());
+            Log::error('Lỗi khi xác nhận slot đặt sân từ Webhook: '.$e->getMessage());
         }
     }
 }

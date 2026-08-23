@@ -30,10 +30,10 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('demopick_token')
       localStorage.removeItem('demopick_user')
-      // Only redirect if not already on login page
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login'
-      }
+      // Mở modal đăng nhập khi bị 401
+      import('@/stores/useAuthModalStore').then(({ useAuthModalStore }) => {
+        useAuthModalStore.getState().openLogin()
+      })
     }
     return Promise.reject(error)
   }

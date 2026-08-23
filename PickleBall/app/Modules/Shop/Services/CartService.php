@@ -53,6 +53,7 @@ class CartService
                     'quantity' => $newQty,
                     'unit_price' => $price,
                 ]);
+
                 return $item->fresh('variant');
             }
 

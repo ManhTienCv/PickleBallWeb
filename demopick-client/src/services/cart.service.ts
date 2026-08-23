@@ -67,7 +67,7 @@ export const cartService = {
       (item) => item.product_variant_id === variantId || item.id === variantId
     )
 
-    let updatedItems = [...currentCart.items]
+    const updatedItems = [...currentCart.items]
 
     if (existingIndex >= 0) {
       const existing = updatedItems[existingIndex]

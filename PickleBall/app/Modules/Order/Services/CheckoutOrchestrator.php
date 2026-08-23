@@ -26,8 +26,7 @@ class CheckoutOrchestrator
     public function __construct(
         protected HoldService $holdService,
         protected PaymentService $paymentService
-    ) {
-    }
+    ) {}
 
     public function processCheckout(int $userId, int $cartId, string $paymentGateway, ?string $pickupNotes = null): array
     {
@@ -37,7 +36,7 @@ class CheckoutOrchestrator
             throw new ApiException('Giỏ hàng của bạn đang trống.', 400);
         }
 
-        $orderCode = 'ORD-' . date('Ymd') . '-' . strtoupper(Str::random(6));
+        $orderCode = 'ORD-'.date('Ymd').'-'.strtoupper(Str::random(6));
 
         // Saga step tracking variables
         $reservedVariants = [];
@@ -63,7 +62,7 @@ class CheckoutOrchestrator
                 } elseif ($item->item_type === 'booking_slot') {
                     $hasBooking = true;
                     $hold = Hold::with('slot.court')->where('slot_id', $item->slot_id)->first();
-                    if (!$hold || $hold->status !== 'active' || $hold->isExpired()) {
+                    if (! $hold || $hold->status !== 'active' || $hold->isExpired()) {
                         throw new HoldExpiredException('Vẫn còn khung giờ giữ chỗ đã hết hạn. Vui lòng chọn lại.');
                     }
                     $subtotal += $hold->slot->price;
@@ -166,7 +165,7 @@ class CheckoutOrchestrator
 
             if ($hasBooking) {
                 DB::connection('booking')->transaction(function () use ($cart, $userId, $createdOrder, &$convertedBookings) {
-                    $bookingCode = 'BK-' . date('Ymd') . '-' . strtoupper(Str::random(5));
+                    $bookingCode = 'BK-'.date('Ymd').'-'.strtoupper(Str::random(5));
                     $qrToken = Str::uuid()->toString();
 
                     $bookingItemsData = [];
@@ -242,7 +241,7 @@ class CheckoutOrchestrator
             $this->logSagaStep($orderId, 99, 'compensation', 'pending', ['error' => $e->getMessage()]);
 
             // Compensate Step 2: Release reserved stock
-            if (!empty($reservedVariants)) {
+            if (! empty($reservedVariants)) {
                 DB::connection('shop')->transaction(function () use ($reservedVariants) {
                     foreach ($reservedVariants as $res) {
                         $variant = ProductVariant::find($res['variant_id']);
@@ -255,7 +254,7 @@ class CheckoutOrchestrator
             }
 
             // Compensate Step 4: Cancel bookings & reset slots
-            if (!empty($convertedBookings)) {
+            if (! empty($convertedBookings)) {
                 DB::connection('booking')->transaction(function () use ($convertedBookings) {
                     foreach ($convertedBookings as $bookingId) {
                         $booking = Booking::with('items')->find($bookingId);

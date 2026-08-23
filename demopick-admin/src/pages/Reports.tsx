@@ -143,7 +143,7 @@ export default function Reports() {
   const handleExportExcel = () => {
     let csvContent = "\uFEFF"; // Byte Order Mark for UTF-8 Excel support
     const dateStamp = new Date().toISOString().slice(0, 10);
-    let fileName = `Bao_Cao_DemoPick_${activeTab}_${dateStamp}.csv`;
+    const fileName = `Bao_Cao_DemoPick_${activeTab}_${dateStamp}.csv`;
 
     if (activeTab === "overview") {
       csvContent += "BÁO CÁO TỔNG QUAN DOANH THU DEMOPICK PICKLEBALL\n";

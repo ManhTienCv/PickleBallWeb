@@ -98,7 +98,7 @@ class AddressService {
     const target = list.find((a) => a.id === id);
     if (!target) return null;
 
-    let updatedList = list.map((a) => {
+    const updatedList = list.map((a) => {
       if (a.id === id) {
         return { ...a, ...data };
       }
@@ -113,7 +113,7 @@ class AddressService {
   }
 
   public deleteAddress(id: string): void {
-    let list = this.getSavedAddresses().filter((a) => a.id !== id);
+    const list = this.getSavedAddresses().filter((a) => a.id !== id);
     if (list.length > 0 && !list.some((a) => a.isDefault)) {
       list[0].isDefault = true;
     }

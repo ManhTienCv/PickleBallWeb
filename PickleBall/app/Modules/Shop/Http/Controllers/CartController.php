@@ -17,9 +17,7 @@ class CartController extends Controller
 {
     use HasStandardResponse;
 
-    public function __construct(protected CartService $cartService)
-    {
-    }
+    public function __construct(protected CartService $cartService) {}
 
     public function index(Request $request): JsonResponse
     {

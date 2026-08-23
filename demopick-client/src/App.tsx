@@ -6,8 +6,6 @@ import { ThemeProvider } from '@/contexts/ThemeContext'
 import { CheckoutTimerProvider } from '@/contexts/CheckoutTimerContext'
 import CustomerLayout from '@/components/CustomerLayout'
 import Home from '@/pages/Home'
-import Login from '@/pages/Login'
-import Register from '@/pages/Register'
 import Profile from '@/pages/Profile'
 import Products from '@/pages/Products'
 import ProductDetail from '@/pages/ProductDetail'
@@ -17,6 +15,7 @@ import CheckoutPage from '@/pages/Checkout'
 import OrderSuccess from '@/pages/OrderSuccess'
 import OrdersPage from '@/pages/Orders'
 import NotFound from '@/pages/NotFound'
+import { AuthModal } from '@/components/AuthModal'
 import { Toaster } from 'sonner'
 
 const queryClient = new QueryClient({
@@ -40,7 +39,7 @@ function ResetToHomeOnReload() {
         (navEntries && navEntries.length > 0 && navEntries[0]?.type === 'reload') ||
         (performance as any)?.navigation?.type === 1
 
-      if (isReload && location.pathname !== '/' && location.pathname !== '/login') {
+      if (isReload && location.pathname !== '/') {
         navigate('/', { replace: true })
       }
     } catch {
@@ -59,11 +58,10 @@ function App() {
           <CheckoutTimerProvider>
             <BrowserRouter>
               <ResetToHomeOnReload />
+              <AuthModal />
               <Routes>
                 <Route element={<CustomerLayout />}>
                   <Route path="/" element={<Home />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/products" element={<Products />} />
                   <Route path="/products/:slug" element={<ProductDetail />} />

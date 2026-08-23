@@ -14,7 +14,7 @@ trait HasStandardResponse
             'message' => $message,
         ];
 
-        if (!empty($meta)) {
+        if (! empty($meta)) {
             $response['meta'] = $meta;
         }
 

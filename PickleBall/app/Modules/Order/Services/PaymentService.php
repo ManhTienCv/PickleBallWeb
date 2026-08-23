@@ -24,7 +24,7 @@ class PaymentService
         $amount = (int) $order->total_amount;
         $addInfo = urlencode($order->order_code);
 
-        $qrCodeUrl = "https://img.vietqr.io/image/{$bankId}-{$accountNo}-compact2.png?amount={$amount}&addInfo={$addInfo}&accountName=" . urlencode($accountName);
+        $qrCodeUrl = "https://img.vietqr.io/image/{$bankId}-{$accountNo}-compact2.png?amount={$amount}&addInfo={$addInfo}&accountName=".urlencode($accountName);
 
         return [
             'payment_method' => 'bank_transfer',
@@ -42,7 +42,7 @@ class PaymentService
     protected function generateMomoPayload(Order $order): array
     {
         // Sandbox MoMo mock payload for MVP demo
-        $redirectUrl = config('services.momo.redirect_url', env('FRONTEND_URL', 'http://localhost:5173') . '/order/success?code=' . $order->order_code);
+        $redirectUrl = config('services.momo.redirect_url', env('FRONTEND_URL', 'http://localhost:5173').'/order/success?code='.$order->order_code);
 
         return [
             'payment_method' => 'momo',

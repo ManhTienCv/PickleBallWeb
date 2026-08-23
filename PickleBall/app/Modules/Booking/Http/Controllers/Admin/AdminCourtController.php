@@ -16,6 +16,7 @@ class AdminCourtController extends Controller
     public function index(): JsonResponse
     {
         $courts = Court::with('pricingRules')->get();
+
         return $this->success(CourtResource::collection($courts), 'Danh sách sân admin.');
     }
 
@@ -24,7 +25,7 @@ class AdminCourtController extends Controller
         $court = Court::findOrFail($id);
         $newStatus = $request->input('status');
 
-        if (!in_array($newStatus, ['active', 'maintenance', 'inactive'])) {
+        if (! in_array($newStatus, ['active', 'maintenance', 'inactive'])) {
             $newStatus = $court->status === 'active' ? 'maintenance' : 'active';
         }
 

@@ -10,6 +10,7 @@ class OrderSagaLog extends Model
     use HasFactory;
 
     public $timestamps = false;
+
     protected $connection = 'main';
 
     protected $fillable = [

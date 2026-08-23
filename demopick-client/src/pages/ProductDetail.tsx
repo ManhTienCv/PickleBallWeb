@@ -3,8 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { shopService, ProductVariant, ProductReview } from '@/services/shop.service'
 import { cartService } from '@/services/cart.service'
-import ProductGallery from '@/components/product/ProductGallery'
 import TechnicalSpecsTable from '@/components/product/TechnicalSpecsTable'
+import ProductCard from '@/components/ProductCard'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
@@ -19,28 +19,22 @@ import {
 import {
   ShoppingCart,
   Check,
-  ArrowLeft,
-  ShieldCheck,
-  Truck,
   Star,
   Sparkles,
-  RefreshCw,
-  Info,
   Plus,
-  Award,
-  PackageCheck,
-  Flame,
   ThumbsUp,
   MessageSquarePlus,
   Layers,
   Palette,
   Ruler,
-  User,
-  Heart,
-  Share2,
   Camera,
   X,
   ImageIcon,
+  PackagePlus,
+  CheckSquare,
+  Square,
+  ArrowRight,
+  Gift,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -119,11 +113,102 @@ export default function ProductDetail() {
   // Lightbox Zoom Image Modal
   const [lightboxImage, setLightboxImage] = useState<string | null>(null)
 
+  // Frequently Bought Together Bundle States
+  const [includeBundleBall, setIncludeBundleBall] = useState(true)
+  const [includeBundleGrip, setIncludeBundleGrip] = useState(true)
+  const [isAddingBundle, setIsAddingBundle] = useState(false)
+
   const { data: product, isLoading, isError } = useQuery({
     queryKey: ['product', slug],
     queryFn: () => shopService.getProductBySlug(slug!),
     enabled: !!slug,
   })
+
+  // Fetch all products for Related Products & Cross-Sell
+  const { data: allProductsData } = useQuery({
+    queryKey: ['products'],
+    queryFn: () => shopService.getProducts(),
+  })
+
+  // Calculate Related Products (Same category/brand or top items)
+  const relatedProducts = React.useMemo(() => {
+    if (!allProductsData?.items || !product) return []
+    const others = allProductsData.items.filter((p) => p && p.id !== product.id && p.slug !== product.slug)
+
+    const sameCat = product.category?.id
+      ? others.filter((p) => p.category?.id === product.category?.id)
+      : []
+
+    const sameBrand = product.brand?.id
+      ? others.filter((p) => p.brand?.id === product.brand?.id && !sameCat.some((sc) => sc.id === p.id))
+      : []
+
+    const remaining = others.filter(
+      (p) => !sameCat.some((sc) => sc.id === p.id) && !sameBrand.some((sb) => sb.id === p.id)
+    )
+
+    return [...sameCat, ...sameBrand, ...remaining].slice(0, 4)
+  }, [allProductsData, product])
+
+  // Bundle Pricing calculations
+  const bundleBallPrice = 150000
+  const bundleGripPrice = 45000
+  const bundleDiscount = 20000
+
+  const currentMainPrice = (selectedVariant ? selectedVariant.price : product?.price) || 0
+  const isBothAccessoriesSelected = includeBundleBall && includeBundleGrip
+
+  const bundleTotalPrice =
+    currentMainPrice +
+    (includeBundleBall ? bundleBallPrice : 0) +
+    (includeBundleGrip ? bundleGripPrice : 0) -
+    (isBothAccessoriesSelected ? bundleDiscount : 0)
+
+  const handleAddBundleToCart = async () => {
+    if (!product) return
+    setIsAddingBundle(true)
+    try {
+      const variantId = selectedVariant ? selectedVariant.id : product.variants?.[0]?.id || product.id || Date.now()
+      await cartService.addToCart(variantId, 1, product)
+
+      if (includeBundleBall) {
+        await cartService.addToCart(99901, 1, {
+          id: 99901,
+          name: 'Hộp 3 Quả Bóng Thi Đấu Pickleball USAPA',
+          slug: 'hop-3-qua-bong-thi-dau-usapa',
+          description: 'Bóng thi đấu đục lỗ ngoài trời chính hãng',
+          price: bundleBallPrice,
+          image_url: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=400',
+          in_stock: true,
+          variants: [],
+        })
+      }
+
+      if (includeBundleGrip) {
+        await cartService.addToCart(99902, 1, {
+          id: 99902,
+          name: 'Cuộn Quấn Cán Vợt Chống Mồ Hôi Cao Cấp',
+          slug: 'cuon-quan-can-vot-chong-mo-hoi',
+          description: 'Bọc tay cầm chống trượt thấm hút mồ hôi',
+          price: bundleGripPrice,
+          image_url: 'https://images.unsplash.com/photo-1527661591475-527312dd65f5?w=400',
+          in_stock: true,
+          variants: [],
+        })
+      }
+
+      toast.success('Đã thêm trọn bộ combo vào giỏ hàng thành công!', {
+        action: {
+          label: 'Xem giỏ hàng →',
+          onClick: () => navigate('/cart'),
+        },
+      })
+    } catch {
+      toast.error('Có lỗi xảy ra khi thêm combo vào giỏ hàng.')
+    } finally {
+      setIsAddingBundle(false)
+    }
+  }
 
   const isPaddle = product?.name
     ? product.name.toLowerCase().includes('vợt') ||
@@ -1004,6 +1089,220 @@ export default function ProductDetail() {
             </div>
           )}
         </Card>
+
+        {/* COMBO KHUYÊN DÙNG (Frequently Bought Together Bundle) */}
+        <Card className="p-6 sm:p-8 bg-white dark:bg-card border-slate-200/80 dark:border-border rounded-3xl shadow-sm space-y-6 overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-border pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 font-bold px-2.5 py-0.5 text-xs">
+                  <Gift className="w-3.5 h-3.5 mr-1" />
+                  Combo Tiết Kiệm
+                </Badge>
+                <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100">
+                  Thường được mua cùng
+                </h3>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Trang bị đầy đủ phụ kiện thi đấu cần thiết với mức giá ưu đãi đặc biệt
+              </p>
+            </div>
+            {isBothAccessoriesSelected && (
+              <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold self-start sm:self-auto">
+                <Sparkles className="w-3.5 h-3.5 mr-1" />
+                Tiết kiệm 20.000₫ khi mua trọn bộ
+              </Badge>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+            {/* Left: 3 Product Cards in a responsive Grid (No squishing/cramping) */}
+            <div className="lg:col-span-8">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                {/* Item 1: Main Product */}
+                <div className="p-3.5 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-14 h-14 rounded-xl bg-white dark:bg-slate-800 p-1 shrink-0 overflow-hidden border border-slate-200/60 dark:border-slate-700 shadow-sm">
+                      <img
+                        src={product.image_url || DEFAULT_COLOR_VARIANTS[0].image}
+                        alt={product.name}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">
+                        Sản phẩm này
+                      </span>
+                      <h4 className="text-xs font-semibold text-slate-900 dark:text-slate-100 line-clamp-2 leading-snug">
+                        {product.name}
+                      </h4>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between">
+                    <span className="text-[11px] text-slate-400">Giá:</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-emerald-400">
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(currentMainPrice)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Item 2: Pickleball Balls */}
+                <div
+                  onClick={() => setIncludeBundleBall(!includeBundleBall)}
+                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer select-none flex flex-col justify-between space-y-3 ${
+                    includeBundleBall
+                      ? 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-700 shadow-sm'
+                      : 'bg-slate-50/40 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800 opacity-60'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-14 h-14 rounded-xl bg-white dark:bg-slate-800 p-1 shrink-0 overflow-hidden border border-slate-200/60 dark:border-slate-700 shadow-sm relative">
+                      <img
+                        src="https://images.unsplash.com/photo-1530549387789-4c1017266635?auto=format&fit=crop&q=80&w=400"
+                        alt="Hộp 3 Bóng USAPA"
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">
+                        Phụ kiện 1
+                      </span>
+                      <h4 className="text-xs font-semibold text-slate-900 dark:text-slate-100 line-clamp-2 leading-snug">
+                        Hộp 3 Bóng USAPA
+                      </h4>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 font-medium">
+                      {includeBundleBall ? (
+                        <CheckSquare className="w-4 h-4 text-emerald-600 fill-emerald-100 dark:fill-emerald-950" />
+                      ) : (
+                        <Square className="w-4 h-4 text-slate-400" />
+                      )}
+                      <span>Mua kèm</span>
+                    </div>
+                    <span className="text-xs font-bold text-slate-900 dark:text-emerald-400">
+                      + 150.000₫
+                    </span>
+                  </div>
+                </div>
+
+                {/* Item 3: Overgrip Tape */}
+                <div
+                  onClick={() => setIncludeBundleGrip(!includeBundleGrip)}
+                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer select-none flex flex-col justify-between space-y-3 ${
+                    includeBundleGrip
+                      ? 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-700 shadow-sm'
+                      : 'bg-slate-50/40 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800 opacity-60'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-14 h-14 rounded-xl bg-white dark:bg-slate-800 p-1 shrink-0 overflow-hidden border border-slate-200/60 dark:border-slate-700 shadow-sm relative">
+                      <img
+                        src="https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?auto=format&fit=crop&q=80&w=400"
+                        alt="Quấn Cán Vợt Overgrip"
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">
+                        Phụ kiện 2
+                      </span>
+                      <h4 className="text-xs font-semibold text-slate-900 dark:text-slate-100 line-clamp-2 leading-snug">
+                        Quấn Cán Chống Trượt
+                      </h4>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 font-medium">
+                      {includeBundleGrip ? (
+                        <CheckSquare className="w-4 h-4 text-emerald-600 fill-emerald-100 dark:fill-emerald-950" />
+                      ) : (
+                        <Square className="w-4 h-4 text-slate-400" />
+                      )}
+                      <span>Mua kèm</span>
+                    </div>
+                    <span className="text-xs font-bold text-slate-900 dark:text-emerald-400">
+                      + 45.000₫
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Bundle Summary & Add Button */}
+            <div className="lg:col-span-4 bg-slate-50 dark:bg-slate-900/70 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between space-y-4">
+              <div>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block">
+                  Tổng giá trị combo ({1 + (includeBundleBall ? 1 : 0) + (includeBundleGrip ? 1 : 0)} món):
+                </span>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-2xl font-black text-slate-900 dark:text-emerald-400">
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(bundleTotalPrice)}
+                  </span>
+                  {isBothAccessoriesSelected && (
+                    <span className="text-xs text-slate-400 line-through font-medium">
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(bundleTotalPrice + bundleDiscount)}
+                    </span>
+                  )}
+                </div>
+                {isBothAccessoriesSelected && (
+                  <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1">
+                    ✓ Đã giảm trừ trực tiếp 20.000₫ ưu đãi
+                  </p>
+                )}
+              </div>
+
+              <Button
+                onClick={handleAddBundleToCart}
+                disabled={isAddingBundle || !product.in_stock}
+                className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-500/20 gap-2 transition-all active:scale-[0.99]"
+              >
+                <PackagePlus className="w-4 h-4" />
+                <span>{isAddingBundle ? 'Đang thêm combo...' : 'Thêm trọn bộ vào giỏ hàng'}</span>
+              </Button>
+            </div>
+          </div>
+        </Card>
+
+        {/* SẢN PHẨM TƯƠNG TỰ (Related & Similar Products Grid) */}
+        <div className="space-y-6 pt-4">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 border-b border-slate-200/80 dark:border-border pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">
+                  Sản phẩm tương tự
+                </h3>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Các mẫu trang bị cùng phân khúc được nhiều người chơi Pickleball đánh giá cao
+              </p>
+            </div>
+
+            <Link
+              to="/products"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline shrink-0"
+            >
+              <span>Xem tất cả sản phẩm</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          {relatedProducts.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+              {relatedProducts.map((relProduct) => (
+                <ProductCard key={relProduct.id} product={relProduct} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-white dark:bg-card rounded-3xl border border-slate-200/80 dark:border-border">
+              <p className="text-xs text-slate-500">Đang cập nhật thêm các sản phẩm cùng loại...</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Lightbox Phóng To Ảnh Đánh Giá */}

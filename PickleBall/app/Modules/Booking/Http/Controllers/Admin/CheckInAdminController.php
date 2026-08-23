@@ -3,12 +3,12 @@
 namespace App\Modules\Booking\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Modules\Shared\Exceptions\ApiException;
-use App\Modules\Shared\Traits\HasStandardResponse;
 use App\Modules\Booking\Http\Requests\CheckInScanRequest;
 use App\Modules\Booking\Http\Resources\BookingResource;
 use App\Modules\Booking\Models\Booking;
 use App\Modules\Booking\Models\CheckInLog;
+use App\Modules\Shared\Exceptions\ApiException;
+use App\Modules\Shared\Traits\HasStandardResponse;
 use Illuminate\Http\JsonResponse;
 
 class CheckInAdminController extends Controller
@@ -24,7 +24,7 @@ class CheckInAdminController extends Controller
             ->where('qr_token', $qrToken)
             ->first();
 
-        if (!$booking) {
+        if (! $booking) {
             throw new ApiException('Mã QR check-in không hợp lệ hoặc không tồn tại.', 404);
         }
 

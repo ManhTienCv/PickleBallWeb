@@ -3,9 +3,9 @@
 namespace App\Modules\Booking\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\Shared\Traits\HasStandardResponse;
 use App\Modules\Booking\Http\Resources\CourtResource;
 use App\Modules\Booking\Models\Court;
+use App\Modules\Shared\Traits\HasStandardResponse;
 use Illuminate\Http\JsonResponse;
 
 class CourtController extends Controller

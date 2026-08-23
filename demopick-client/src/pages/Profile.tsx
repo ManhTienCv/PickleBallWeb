@@ -75,7 +75,10 @@ export default function Profile() {
 
   useEffect(() => {
     if (!isAuthenticated && !user) {
-      navigate('/login', { replace: true })
+      navigate('/', { replace: true })
+      import('@/stores/useAuthModalStore').then(({ useAuthModalStore }) => {
+        useAuthModalStore.getState().openLogin()
+      })
       return
     }
     if (user) {

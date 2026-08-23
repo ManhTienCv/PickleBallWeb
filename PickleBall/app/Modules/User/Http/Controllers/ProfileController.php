@@ -59,7 +59,7 @@ class ProfileController extends Controller
         $otp = sprintf('%06d', mt_rand(100000, 999999));
 
         // Lưu vào Cache trong vòng 5 phút (300 giây)
-        $cacheKey = 'email_otp_' . $user->id;
+        $cacheKey = 'email_otp_'.$user->id;
         Cache::put($cacheKey, [
             'email' => $newEmail,
             'otp' => $otp,
@@ -73,7 +73,7 @@ class ProfileController extends Controller
                     ->subject('Mã xác thực OTP đổi địa chỉ Email - DemoPick');
             });
         } catch (\Throwable $e) {
-            Log::warning('Không thể gửi mail OTP thực tế, ghi log: ' . $e->getMessage());
+            Log::warning('Không thể gửi mail OTP thực tế, ghi log: '.$e->getMessage());
         }
 
         Log::info("OTP đổi Email cho User #{$user->id} ({$newEmail}): {$otp}");
@@ -82,7 +82,7 @@ class ProfileController extends Controller
             'email' => $newEmail,
             'expires_in' => 300,
             'otp' => config('app.debug') ? $otp : null, // Trả về mã OTP khi debug để tiện test demo
-        ], 'Mã xác thực OTP đã được gửi tới địa chỉ ' . $newEmail);
+        ], 'Mã xác thực OTP đã được gửi tới địa chỉ '.$newEmail);
     }
 
     /**
@@ -100,10 +100,10 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
-        $cacheKey = 'email_otp_' . $user->id;
+        $cacheKey = 'email_otp_'.$user->id;
         $cachedData = Cache::get($cacheKey);
 
-        if (!$cachedData) {
+        if (! $cachedData) {
             return $this->error('Mã OTP đã hết hạn hoặc chưa được tạo. Vui lòng yêu cầu gửi lại mã.', 422);
         }
 

@@ -3,10 +3,10 @@
 namespace App\Modules\Booking\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\Shared\Traits\HasStandardResponse;
 use App\Modules\Booking\Http\Resources\TimeSlotResource;
 use App\Modules\Booking\Models\TimeSlot;
 use App\Modules\Booking\Services\HoldService;
+use App\Modules\Shared\Traits\HasStandardResponse;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,9 +15,7 @@ class SlotController extends Controller
 {
     use HasStandardResponse;
 
-    public function __construct(protected HoldService $holdService)
-    {
-    }
+    public function __construct(protected HoldService $holdService) {}
 
     public function index(Request $request): JsonResponse
     {

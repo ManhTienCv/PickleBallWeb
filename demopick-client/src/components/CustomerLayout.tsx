@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { ShoppingCart, MapPin, Package, LogOut, User as UserIcon, Home, ShoppingBag, CalendarDays } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useAuthModalStore } from '@/stores/useAuthModalStore'
 import { useQuery } from '@tanstack/react-query'
 import { cartService } from '@/services/cart.service'
 import { motion } from 'framer-motion'
 import ThemeToggle from '@/components/ThemeToggle'
+import PickleballLogo from '@/components/PickleballLogo'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +27,7 @@ export default function CustomerLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const { isAuthenticated, user, logout } = useAuth()
+  const openLogin = useAuthModalStore((s) => s.openLogin)
 
   // Always scroll to top of page on route change or navbar link click
   useEffect(() => {
@@ -62,9 +65,9 @@ export default function CustomerLayout() {
               <motion.div
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
-                className="w-10 h-10 bg-[#27c372] rounded-full flex items-center justify-center shadow-md shadow-[#27c372]/30 transition-transform"
+                className="w-10 h-10 rounded-xl bg-emerald-500/15 dark:bg-emerald-500/25 border border-emerald-500/30 flex items-center justify-center shadow-md shadow-emerald-500/10 transition-transform"
               >
-                <MapPin className="w-5 h-5 text-white stroke-[2.5]" />
+                <PickleballLogo size={24} />
               </motion.div>
               <div className="flex items-baseline">
                 <span className="font-bold text-2xl sm:text-3xl text-foreground tracking-tight font-sans">Pick</span>
@@ -181,12 +184,12 @@ export default function CustomerLayout() {
               </DropdownMenu>
             ) : (
               <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
-                <Link
-                  to="/login"
+                <button
+                  onClick={openLogin}
                   className="px-5 sm:px-6 py-2 sm:py-2.5 bg-[#27c372] hover:bg-[#22c55e] text-white rounded-full text-xs sm:text-sm font-black shadow-md shadow-[#27c372]/25 transition-all block"
                 >
                   Đăng Nhập
-                </Link>
+                </button>
               </motion.div>
             )}
           </div>

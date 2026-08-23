@@ -2,10 +2,10 @@
 
 namespace App\Modules\Booking\Services;
 
-use App\Modules\Shared\Exceptions\ApiException;
-use App\Modules\Shared\Exceptions\HoldExpiredException;
 use App\Modules\Booking\Models\Hold;
 use App\Modules\Booking\Models\TimeSlot;
+use App\Modules\Shared\Exceptions\ApiException;
+use App\Modules\Shared\Exceptions\HoldExpiredException;
 use Illuminate\Support\Facades\DB;
 
 class HoldService
@@ -40,7 +40,7 @@ class HoldService
             /** @var TimeSlot $slot */
             $slot = TimeSlot::where('id', $slotId)->lockForUpdate()->first();
 
-            if (!$slot) {
+            if (! $slot) {
                 throw new ApiException('Khung giờ không tồn tại.', 404);
             }
 
@@ -89,7 +89,7 @@ class HoldService
 
         $hold = Hold::with('slot')->find($holdId);
 
-        if (!$hold || $hold->status !== 'active' || $hold->isExpired()) {
+        if (! $hold || $hold->status !== 'active' || $hold->isExpired()) {
             throw new HoldExpiredException('Thời gian giữ chỗ của bạn đã hết hạn (10 phút). Vui lòng chọn lại sân.');
         }
 

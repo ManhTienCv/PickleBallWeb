@@ -3,9 +3,9 @@
 namespace App\Modules\Order\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\Shared\Traits\HasStandardResponse;
 use App\Modules\Order\Http\Resources\OrderResource;
 use App\Modules\Order\Models\Order;
+use App\Modules\Shared\Traits\HasStandardResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

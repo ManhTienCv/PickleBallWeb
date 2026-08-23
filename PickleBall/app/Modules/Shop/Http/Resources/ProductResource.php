@@ -15,8 +15,8 @@ class ProductResource extends JsonResource
             $inStock = $this->variants->sum('stock_quantity') > 0;
         }
 
-        $firstImage = is_array($this->images) && count($this->images) > 0 
-            ? $this->images[0] 
+        $firstImage = is_array($this->images) && count($this->images) > 0
+            ? $this->images[0]
             : 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&q=80&w=600';
 
         return [

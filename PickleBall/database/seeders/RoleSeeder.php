@@ -2,16 +2,17 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Modules\User\Models\Role;
 use App\Modules\Shared\Enums\UserRole;
+use App\Modules\User\Models\Role;
+use Illuminate\Database\Seeder;
+use Spatie\Permission\PermissionRegistrar;
 
 class RoleSeeder extends Seeder
 {
     public function run(): void
     {
-        if (class_exists(\Spatie\Permission\PermissionRegistrar::class)) {
-            app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        if (class_exists(PermissionRegistrar::class)) {
+            app()[PermissionRegistrar::class]->forgetCachedPermissions();
         }
 
         $roles = [

@@ -16,6 +16,7 @@ class AdminOrderController extends Controller
     public function index(Request $request): JsonResponse
     {
         $orders = Order::with(['items', 'payment'])->latest()->get();
+
         return $this->success(OrderResource::collection($orders), 'Danh sách tất cả hóa đơn admin.');
     }
 
@@ -33,6 +34,7 @@ class AdminOrderController extends Controller
         $order->save();
 
         $order->load(['items', 'payment']);
+
         return $this->success(new OrderResource($order), 'Cập nhật trạng thái đơn hàng thành công.');
     }
 }

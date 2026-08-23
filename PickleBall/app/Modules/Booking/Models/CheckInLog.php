@@ -11,6 +11,7 @@ class CheckInLog extends Model
     use HasFactory;
 
     protected $connection = 'booking';
+
     protected $table = 'checkin_logs';
 
     protected $fillable = [

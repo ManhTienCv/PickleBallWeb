@@ -11,6 +11,7 @@ class BookingStatusHistory extends Model
     use HasFactory;
 
     protected $connection = 'booking';
+
     protected $table = 'booking_status_history';
 
     protected $fillable = [

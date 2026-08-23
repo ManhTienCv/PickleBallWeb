@@ -19,6 +19,7 @@ class AdminProductController extends Controller
     public function index(Request $request): JsonResponse
     {
         $products = Product::with(['category', 'brand', 'variants'])->latest()->get();
+
         return $this->success(ProductResource::collection($products), 'Danh sách sản phẩm admin.');
     }
 
@@ -38,22 +39,22 @@ class AdminProductController extends Controller
             'specs' => 'nullable|array',
         ]);
 
-        $slug = Str::slug($validated['name']) . '-' . Str::random(4);
+        $slug = Str::slug($validated['name']).'-'.Str::random(4);
 
         $product = Product::create([
             'name' => $validated['name'],
             'slug' => $slug,
             'base_price' => $validated['price'],
             'category_id' => $validated['category_id'] ?? 1,
-            'short_description' => $validated['short_description'] ?? ($validated['name'] . ' - Hàng chính hãng'),
-            'description' => $validated['description'] ?? ($validated['name'] . ' - Phục vụ tại quầy POS & Web'),
+            'short_description' => $validated['short_description'] ?? ($validated['name'].' - Hàng chính hãng'),
+            'description' => $validated['description'] ?? ($validated['name'].' - Phục vụ tại quầy POS & Web'),
             'images' => [$validated['image_url'] ?? 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=400'],
             'status' => 'active',
             'specifications' => $validated['specs'] ?? [],
         ]);
 
         $initialStock = (int) ($validated['stock_quantity'] ?? 10);
-        $sku = $validated['sku'] ?? ('SKU-' . strtoupper(Str::random(6)));
+        $sku = $validated['sku'] ?? ('SKU-'.strtoupper(Str::random(6)));
 
         $variant = ProductVariant::create([
             'product_id' => $product->id,
@@ -74,6 +75,7 @@ class AdminProductController extends Controller
         }
 
         $product->load(['category', 'brand', 'variants']);
+
         return $this->success(new ProductResource($product), 'Thêm sản phẩm mới thành công.', 201);
     }
 
@@ -135,7 +137,7 @@ class AdminProductController extends Controller
         $product = Product::with('variants')->findOrFail($id);
         $variant = $product->variants->first();
 
-        if (!$variant) {
+        if (! $variant) {
             return $this->error('Sản phẩm không có biến thể tồn kho.', 400);
         }
 
@@ -156,6 +158,7 @@ class AdminProductController extends Controller
         ]);
 
         $product->load(['category', 'brand', 'variants']);
+
         return $this->success(new ProductResource($product), 'Cập nhật tồn kho thành công.');
     }
 }

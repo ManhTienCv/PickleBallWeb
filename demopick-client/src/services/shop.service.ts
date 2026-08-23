@@ -81,15 +81,187 @@ export interface ProductQueryParams {
 const SYNCED_PRODUCTS_KEY = 'demopick_synced_products'
 const REVIEWS_STORAGE_PREFIX = 'demopick_product_reviews_'
 
+export const DEFAULT_CLIENT_PRODUCTS: Product[] = [
+  {
+    id: 1,
+    name: 'Vợt JOOLA Perseus 3S Carbon 16mm Ben Johns Edition',
+    slug: 'vot-joola-perseus-3s',
+    price: 5490000,
+    sale_price: 5990000,
+    image_url: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&q=80&w=600',
+    description: 'Vợt thi đấu đỉnh cao của tay vợt số 1 thế giới Ben Johns với công nghệ Carbon T700 Charged, lõi Propulsion Core trợ lực tối đa.',
+    category: { id: 1, name: 'Vợt Pickleball', slug: 'vot-pickleball' },
+    brand: { id: 1, name: 'JOOLA', slug: 'joola' },
+    in_stock: true,
+    variants: [
+      { id: 101, sku: 'JOO-PER-3S-16MM', option_name: 'Độ dày', option_value: '16mm', price: 5490000, stock_quantity: 15 },
+      { id: 102, sku: 'JOO-PER-3S-14MM', option_name: 'Độ dày', option_value: '14mm', price: 5490000, stock_quantity: 10 },
+    ],
+    specs: {
+      material: 'Raw Carbon T700 Charged',
+      thickness: '16mm & 14mm',
+      weight: '225g - 235g',
+      usapa_certified: true,
+      origin: 'Mỹ / Nhập khẩu chính hãng',
+    },
+  },
+  {
+    id: 2,
+    name: 'Vợt Selkirk Vanguard Power Air Invikta Pro',
+    slug: 'vot-selkirk-vanguard',
+    price: 6200000,
+    sale_price: 6800000,
+    image_url: 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?auto=format&fit=crop&q=80&w=600',
+    description: 'Dòng vợt cao cấp không viền Air Dynamic Throttle tăng tốc độ vung vợt, màng ProSpin+ NextGen tạo xoáy bóng tối đa.',
+    category: { id: 1, name: 'Vợt Pickleball', slug: 'vot-pickleball' },
+    brand: { id: 2, name: 'Selkirk', slug: 'selkirk' },
+    in_stock: true,
+    variants: [
+      { id: 201, sku: 'SEL-POW-AIR-STD', option_name: 'Quy cách', option_value: 'Tiêu chuẩn', price: 6200000, stock_quantity: 12 },
+    ],
+    specs: {
+      material: 'QuadFlex 4 Layer Hybrid Face',
+      thickness: '13mm Aerodynamic',
+      weight: '220g - 230g',
+      usapa_certified: true,
+      origin: 'USA Made',
+    },
+  },
+  {
+    id: 3,
+    name: 'Vợt CRBN 1X Power Series 14mm Raw Carbon',
+    slug: 'vot-crbn-1x-power',
+    price: 4850000,
+    sale_price: 5200000,
+    image_url: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&q=80&w=600',
+    description: 'Bề mặt Toray T700 Raw Carbon nhám tự nhiên siêu bám bóng, hỗ trợ lực xoáy bóng và smash uy lực vùng cuối sân.',
+    category: { id: 1, name: 'Vợt Pickleball', slug: 'vot-pickleball' },
+    brand: { id: 3, name: 'CRBN', slug: 'crbn' },
+    in_stock: true,
+    variants: [
+      { id: 301, sku: 'CRBN-1X-14MM', option_name: 'Độ dày', option_value: '14mm', price: 4850000, stock_quantity: 18 },
+      { id: 302, sku: 'CRBN-1X-16MM', option_name: 'Độ dày', option_value: '16mm', price: 4850000, stock_quantity: 20 },
+    ],
+    specs: {
+      material: 'Toray T700 Carbon Fiber',
+      thickness: '14mm & 16mm',
+      weight: '225g',
+      usapa_certified: true,
+      origin: 'USA Design',
+    },
+  },
+  {
+    id: 4,
+    name: 'Vợt Franklin Signature Pro Carbon 16mm',
+    slug: 'vot-franklin-signature-pro',
+    price: 3450000,
+    sale_price: 3800000,
+    image_url: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&q=80&w=600',
+    description: 'Vợt chính thức của giải thi đấu US Open Pickleball Championships, điểm ngọt lớn, kiểm soát bóng êm ái.',
+    category: { id: 1, name: 'Vợt Pickleball', slug: 'vot-pickleball' },
+    brand: { id: 4, name: 'Franklin', slug: 'franklin' },
+    in_stock: true,
+    variants: [
+      { id: 401, sku: 'FRA-SIG-16MM', option_name: 'Độ dày', option_value: '16mm', price: 3450000, stock_quantity: 25 },
+    ],
+    specs: {
+      material: 'Carbon Fiber Surface + MaxGrit',
+      thickness: '16mm Polypropylene Core',
+      weight: '215g - 225g',
+      usapa_certified: true,
+      origin: 'Chính hãng',
+    },
+  },
+  {
+    id: 5,
+    name: 'Hộp 12 Bóng Franklin X-40 Outdoor USAPA Approved',
+    slug: 'bong-franklin-x40',
+    price: 420000,
+    sale_price: 460000,
+    image_url: 'https://images.unsplash.com/photo-1530549387789-4c1017266635?auto=format&fit=crop&q=80&w=600',
+    description: 'Bóng thi đấu ngoài trời chuẩn 40 lỗ đục khí động học, độ nảy đồng đều và độ bền cao không lo nứt vỡ.',
+    category: { id: 2, name: 'Bóng Pickleball', slug: 'bong-pickleball' },
+    brand: { id: 4, name: 'Franklin', slug: 'franklin' },
+    in_stock: true,
+    variants: [
+      { id: 501, sku: 'FRA-X40-12PACK', option_name: 'Quy cách', option_value: 'Hộp 12 Quả', price: 420000, stock_quantity: 50 },
+    ],
+  },
+  {
+    id: 6,
+    name: 'Bao Vợt Pickleball Chống Sốc JOOLA Tour Pro Backpack',
+    slug: 'bao-vot-joola-tour-pro',
+    price: 1650000,
+    sale_price: 1850000,
+    image_url: 'https://images.unsplash.com/photo-1582293041079-7814c2f12063?auto=format&fit=crop&q=80&w=600',
+    description: 'Balo đựng vợt chuyên nghiệp có ngăn cách nhiệt bảo vệ 4 cây vợt, ngăn thông gió đựng giày và móc treo sân tiện lợi.',
+    category: { id: 3, name: 'Phụ kiện & Bao vợt', slug: 'phu-kien-bao-vot' },
+    brand: { id: 1, name: 'JOOLA', slug: 'joola' },
+    in_stock: true,
+    variants: [
+      { id: 601, sku: 'JOO-BAG-TOUR', option_name: 'Màu sắc', option_value: 'Đen / Xám', price: 1650000, stock_quantity: 30 },
+    ],
+  },
+  {
+    id: 7,
+    name: 'Set 3 Cuộn Quấn Cán Chống Trơn Wilson Pro Overgrip',
+    slug: 'cuon-quan-can-wilson-pro',
+    price: 125000,
+    sale_price: 140000,
+    image_url: 'https://images.unsplash.com/photo-1527661591475-527312dd65f5?auto=format&fit=crop&q=80&w=600',
+    description: 'Bọc tay cầm siêu thấm hút mồ hôi, bề mặt mỏng êm ái tạo độ bám chắc chắn khi vận động cường độ cao.',
+    category: { id: 3, name: 'Phụ kiện & Bao vợt', slug: 'phu-kien-bao-vot' },
+    brand: { id: 2, name: 'Wilson', slug: 'wilson' },
+    in_stock: true,
+    variants: [
+      { id: 701, sku: 'WIL-GRIP-3PK', option_name: 'Màu sắc', option_value: 'Trắng', price: 125000, stock_quantity: 80 },
+    ],
+  },
+  {
+    id: 8,
+    name: 'Áo Thi Đấu Pickleball Dry-Fit Unisex Thấm Hút Mồ Hôi',
+    slug: 'ao-thi-dau-dryfit-unisex',
+    price: 350000,
+    sale_price: 390000,
+    image_url: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&q=80&w=600',
+    description: 'Chất liệu vải mè thể thao co giãn 4 chiều, công nghệ thoát nhiệt QuickDry giúp cơ thể luôn khô thoáng suốt trận đấu.',
+    category: { id: 4, name: 'Quần áo & Trang phục', slug: 'quan-ao-trang-phuc' },
+    brand: { id: 1, name: 'DEMOPICK', slug: 'demopick' },
+    in_stock: true,
+    variants: [
+      { id: 801, sku: 'APP-SHIRT-M', option_name: 'Size', option_value: 'M (55-65kg)', price: 350000, stock_quantity: 40 },
+      { id: 802, sku: 'APP-SHIRT-L', option_name: 'Size', option_value: 'L (65-75kg)', price: 350000, stock_quantity: 50 },
+    ],
+  },
+]
+
 export const shopService = {
   async getCategories(): Promise<Category[]> {
-    const response = await api.get<ApiResponse<Category[]>>('/categories')
-    return response.data.data
+    try {
+      const response = await api.get<ApiResponse<Category[]>>('/categories')
+      return response.data.data || []
+    } catch {
+      return [
+        { id: 1, name: 'Vợt Pickleball', slug: 'vot-pickleball' },
+        { id: 2, name: 'Bóng Pickleball', slug: 'bong-pickleball' },
+        { id: 3, name: 'Phụ kiện & Bao vợt', slug: 'phu-kien-bao-vot' },
+        { id: 4, name: 'Quần áo & Trang phục', slug: 'quan-ao-trang-phuc' },
+      ]
+    }
   },
 
   async getBrands(): Promise<Brand[]> {
-    const response = await api.get<ApiResponse<Brand[]>>('/brands')
-    return response.data.data
+    try {
+      const response = await api.get<ApiResponse<Brand[]>>('/brands')
+      return response.data.data || []
+    } catch {
+      return [
+        { id: 1, name: 'JOOLA', slug: 'joola' },
+        { id: 2, name: 'Selkirk', slug: 'selkirk' },
+        { id: 3, name: 'CRBN', slug: 'crbn' },
+        { id: 4, name: 'Franklin', slug: 'franklin' },
+      ]
+    }
   },
 
   async getProducts(params?: ProductQueryParams): Promise<{ items: Product[]; meta?: ApiResponse['meta'] }> {
@@ -114,6 +286,10 @@ export const shopService = {
         }
       }
 
+      if (!items || items.length === 0) {
+        items = DEFAULT_CLIENT_PRODUCTS
+      }
+
       return {
         items,
         meta: response.data.meta,
@@ -123,12 +299,15 @@ export const shopService = {
       const syncedRaw = localStorage.getItem(SYNCED_PRODUCTS_KEY)
       if (syncedRaw) {
         try {
-          return { items: JSON.parse(syncedRaw) }
+          const parsed = JSON.parse(syncedRaw)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return { items: parsed }
+          }
         } catch {
           // ignore
         }
       }
-      return { items: [] }
+      return { items: DEFAULT_CLIENT_PRODUCTS }
     }
   },
 
@@ -150,12 +329,18 @@ export const shopService = {
       if (syncedProduct) {
         product = { ...product, ...syncedProduct }
       }
+      if (!product) {
+        const found = DEFAULT_CLIENT_PRODUCTS.find((p) => p.slug === slug || String(p.id) === slug)
+        if (found) return found
+      }
       return product
     } catch (err) {
       if (syncedProduct) {
         return syncedProduct
       }
-      throw err
+      const found = DEFAULT_CLIENT_PRODUCTS.find((p) => p.slug === slug || String(p.id) === slug)
+      if (found) return found
+      return DEFAULT_CLIENT_PRODUCTS[0]
     }
   },
 

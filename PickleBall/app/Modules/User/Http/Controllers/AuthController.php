@@ -44,7 +44,7 @@ class AuthController extends Controller
     {
         $credentials = $request->validated();
 
-        if (!Auth::attempt($credentials)) {
+        if (! Auth::attempt($credentials)) {
             return $this->error('Email hoặc mật khẩu không chính xác.', 401);
         }
 

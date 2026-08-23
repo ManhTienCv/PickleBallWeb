@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import CheckInDialog from "@/components/CheckInDialog";
+import PickleballLogo from "@/components/PickleballLogo";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -80,7 +81,7 @@ const AppLayout = ({ children, title, subtitle, headerRight, noScroll = false }:
     });
   };
 
-  const userRoles = user?.roles || ["admin"];
+  const userRoles = user?.roles || [];
   const isStaffOnly = userRoles.includes("staff") && !userRoles.includes("super_admin") && !userRoles.includes("admin");
 
   const visibleMenuItems = menuItems.filter((item) =>
@@ -117,8 +118,8 @@ const AppLayout = ({ children, title, subtitle, headerRight, noScroll = false }:
           {!isCollapsed ? (
             <>
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 bg-emerald-600 rounded-xl flex items-center justify-center shadow-md shadow-emerald-600/20 text-white font-bold shrink-0">
-                  <MapPin className="w-5 h-5 text-white" />
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shadow-sm shrink-0">
+                  <PickleballLogo size={22} />
                 </div>
                 <div className="truncate">
                   <h1 className="font-bold text-slate-900 text-base tracking-tight">PickleBall</h1>

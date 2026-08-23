@@ -1544,7 +1544,7 @@ export default function Orders() {
                           size="sm"
                           onClick={() => {
                             const existing = editingOrder.items.find((i) => i.name === prod.name);
-                            let updatedItems: OrderItem[] = existing
+                            const updatedItems: OrderItem[] = existing
                               ? editingOrder.items.map((i) => (i.name === prod.name ? { ...i, qty: i.qty + 1 } : i))
                               : [...editingOrder.items, { id: Date.now(), name: prod.name, qty: 1, price: prod.price }];
                             const newTotal = updatedItems.reduce((sum, i) => sum + i.price * i.qty, 0);

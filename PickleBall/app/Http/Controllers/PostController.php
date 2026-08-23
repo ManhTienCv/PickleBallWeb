@@ -25,7 +25,7 @@ class PostController extends Controller
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('excerpt', 'like', "%{$search}%");
+                    ->orWhere('excerpt', 'like', "%{$search}%");
             });
         }
 
@@ -81,7 +81,7 @@ class PostController extends Controller
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('excerpt', 'like', "%{$search}%");
+                    ->orWhere('excerpt', 'like', "%{$search}%");
             });
         }
 
@@ -142,7 +142,7 @@ class PostController extends Controller
             $validated['slug'] = Str::slug($validated['title']);
         }
 
-        if (isset($validated['status']) && $validated['status'] === 'published' && !$post->published_at) {
+        if (isset($validated['status']) && $validated['status'] === 'published' && ! $post->published_at) {
             $validated['published_at'] = now();
         }
 

@@ -1,14 +1,21 @@
 <?php
 
+use App\Modules\Booking\BookingServiceProvider;
+use App\Modules\Order\OrderServiceProvider;
+use App\Modules\Report\ReportServiceProvider;
+use App\Modules\Shop\ShopServiceProvider;
+use App\Modules\User\UserServiceProvider;
 use App\Providers\AppServiceProvider;
+use Laravel\Sanctum\SanctumServiceProvider;
+use Spatie\Permission\PermissionServiceProvider;
 
 return [
-    App\Providers\AppServiceProvider::class,
-    Laravel\Sanctum\SanctumServiceProvider::class,
-    Spatie\Permission\PermissionServiceProvider::class,
-    App\Modules\User\UserServiceProvider::class,
-    App\Modules\Shop\ShopServiceProvider::class,
-    App\Modules\Booking\BookingServiceProvider::class,
-    App\Modules\Order\OrderServiceProvider::class,
-    App\Modules\Report\ReportServiceProvider::class,
+    AppServiceProvider::class,
+    SanctumServiceProvider::class,
+    PermissionServiceProvider::class,
+    UserServiceProvider::class,
+    ShopServiceProvider::class,
+    BookingServiceProvider::class,
+    OrderServiceProvider::class,
+    ReportServiceProvider::class,
 ];

@@ -1,8 +1,3 @@
-import { create } from 'zustand'
-
-// Note: We're not using zustand as a dependency to keep it simple.
-// Using React context instead. This file is a placeholder for future migration.
-
 export interface User {
   id: number
   name: string

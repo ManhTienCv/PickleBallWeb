@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { ShieldAlert, AlertCircle, UserCheck, ShieldCheck } from 'lucide-react'
+import PickleballLogo from '@/components/PickleballLogo'
 import { toast } from 'sonner'
 
 export default function Login() {
@@ -45,11 +46,11 @@ export default function Login() {
       <Card className="w-full max-w-md bg-slate-950 border-slate-800 text-white shadow-2xl">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-2">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/20 text-primary border border-primary/30">
-              <ShieldAlert className="h-6 w-6" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/15 border border-emerald-500/30 shadow-md shadow-emerald-500/10">
+              <PickleballLogo size={36} />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold tracking-tight">Pick Admin Portal</CardTitle>
+          <CardTitle className="text-2xl font-bold tracking-tight">Pickleball Admin Portal</CardTitle>
           <CardDescription className="text-slate-400">
             Hệ thống Quản Trị Sân & Bán Hàng POS Pickleball
           </CardDescription>
