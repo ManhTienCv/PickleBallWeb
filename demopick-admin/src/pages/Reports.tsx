@@ -228,7 +228,7 @@ export default function Reports() {
           </Button>
 
           {/* Menu Chọn Thời Gian Hoạt Động Thật */}
-          <DropdownMenu>
+          <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
               <Button
                 size="sm"

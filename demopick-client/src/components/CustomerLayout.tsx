@@ -53,6 +53,8 @@ export default function CustomerLayout() {
 
   const cartCount = cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0
 
+  const [hoveredDropdownItem, setHoveredDropdownItem] = useState<string | null>(null)
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans transition-colors duration-300">
       {/* Floating Capsule Header (Nổi chuẩn phong cách Châu Âu) */}
@@ -146,7 +148,7 @@ export default function CustomerLayout() {
             </motion.div>
 
             {isAuthenticated ? (
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <motion.button
                     whileHover={{ scale: 1.03 }}
@@ -167,18 +169,54 @@ export default function CustomerLayout() {
                     <div className="text-xs font-normal text-muted-foreground">{user?.email}</div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate('/orders')} className="gap-2 rounded-xl cursor-pointer font-medium text-foreground hover:bg-muted">
-                    <Package className="h-4 w-4 text-muted-foreground" />
-                    <span>Lịch sử đơn hàng</span>
+                  <DropdownMenuItem
+                    onClick={() => navigate('/orders')}
+                    onMouseEnter={() => setHoveredDropdownItem('orders')}
+                    onMouseLeave={() => setHoveredDropdownItem(null)}
+                    className="gap-2 rounded-xl cursor-pointer font-medium text-foreground hover:bg-transparent focus:bg-transparent relative z-0"
+                  >
+                    {hoveredDropdownItem === 'orders' && (
+                      <motion.div
+                        layoutId="customer-dropdown-capsule"
+                        className="absolute inset-0 bg-muted rounded-xl -z-10"
+                        transition={{ type: 'spring', stiffness: 250, damping: 25 }}
+                      />
+                    )}
+                    <Package className="h-4 w-4 text-muted-foreground relative z-10" />
+                    <span className="relative z-10">Lịch sử đơn hàng</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/profile')} className="gap-2 rounded-xl cursor-pointer font-medium text-foreground hover:bg-muted">
-                    <UserIcon className="h-4 w-4 text-muted-foreground" />
-                    <span>Hồ sơ cá nhân</span>
+                  <DropdownMenuItem
+                    onClick={() => navigate('/profile')}
+                    onMouseEnter={() => setHoveredDropdownItem('profile')}
+                    onMouseLeave={() => setHoveredDropdownItem(null)}
+                    className="gap-2 rounded-xl cursor-pointer font-medium text-foreground hover:bg-transparent focus:bg-transparent relative z-0"
+                  >
+                    {hoveredDropdownItem === 'profile' && (
+                      <motion.div
+                        layoutId="customer-dropdown-capsule"
+                        className="absolute inset-0 bg-muted rounded-xl -z-10"
+                        transition={{ type: 'spring', stiffness: 250, damping: 25 }}
+                      />
+                    )}
+                    <UserIcon className="h-4 w-4 text-muted-foreground relative z-10" />
+                    <span className="relative z-10">Hồ sơ cá nhân</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout} className="gap-2 text-destructive rounded-xl cursor-pointer font-medium hover:bg-destructive/10">
-                    <LogOut className="h-4 w-4" />
-                    <span>Đăng xuất</span>
+                  <DropdownMenuItem
+                    onClick={logout}
+                    onMouseEnter={() => setHoveredDropdownItem('logout')}
+                    onMouseLeave={() => setHoveredDropdownItem(null)}
+                    className="gap-2 text-destructive rounded-xl cursor-pointer font-medium hover:bg-transparent focus:bg-transparent hover:text-destructive relative z-0"
+                  >
+                    {hoveredDropdownItem === 'logout' && (
+                      <motion.div
+                        layoutId="customer-dropdown-capsule"
+                        className="absolute inset-0 bg-destructive/10 rounded-xl -z-10"
+                        transition={{ type: 'spring', stiffness: 250, damping: 25 }}
+                      />
+                    )}
+                    <LogOut className="h-4 w-4 relative z-10" />
+                    <span className="relative z-10">Đăng xuất</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

@@ -233,7 +233,7 @@ const AppLayout = ({ children, title, subtitle, headerRight, noScroll = false }:
 
           {/* User Profile Avatar with Dropdown Menu */}
           <div className="pt-1.5 border-t border-slate-200/60 flex justify-center">
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 {isCollapsed ? (
                   <button
