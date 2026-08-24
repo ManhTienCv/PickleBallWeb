@@ -1,8 +1,8 @@
 import React from 'react'
-import { useParams, useLocation, useNavigate, Link } from 'react-router-dom'
+import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { CheckCircle2, QrCode, ArrowRight, ShoppingBag, CalendarDays } from 'lucide-react'
+import { CheckCircle2, QrCode, ShoppingBag, CalendarDays } from 'lucide-react'
 
 export default function OrderSuccess() {
   const { code } = useParams<{ code: string }>()

@@ -20,6 +20,12 @@ export default function ProtectedRoute() {
   }
 
   const userRoles = user?.roles || []
+  
+  // If user has no valid roles for admin panel, kick them out
+  if (!userRoles.includes('admin') && !userRoles.includes('super_admin') && !userRoles.includes('staff')) {
+    return <Navigate to="/login" replace />
+  }
+
   const isStaffOnly = userRoles.includes('staff') && !userRoles.includes('admin') && !userRoles.includes('super_admin')
 
   // If staff tries to access non-staff route, redirect to /pos

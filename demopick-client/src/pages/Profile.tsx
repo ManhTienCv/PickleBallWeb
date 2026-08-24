@@ -21,14 +21,10 @@ import {
   ShieldCheck,
   Mail,
   KeyRound,
-  CheckCircle2,
   MapPin,
-  Home,
-  Building,
   Plus,
   Trash2,
   Edit2,
-  Star,
   Sparkles,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'

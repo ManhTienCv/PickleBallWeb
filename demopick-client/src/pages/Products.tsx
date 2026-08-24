@@ -2,24 +2,20 @@ import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { shopService, Category, Brand, Product } from '@/services/shop.service'
+import { shopService, Product } from '@/services/shop.service'
 import { cartService } from '@/services/cart.service'
 import ProductCard from '@/components/ProductCard'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+
 import {
   Search,
   Truck,
   ShieldCheck,
   Zap,
   RefreshCw,
-  Sparkles,
-  ChevronLeft,
-  ChevronRight,
   ChevronDown,
   ShoppingBag,
-  SlidersHorizontal,
   X,
   Check,
 } from 'lucide-react'
@@ -42,12 +38,12 @@ export default function Products() {
   const [sortDropdownOpen, setSortDropdownOpen] = useState<boolean>(false)
 
   // Fetch Categories & Brands
-  const { data: categories = [] } = useQuery({
+  useQuery({
     queryKey: ['categories'],
     queryFn: shopService.getCategories,
   })
 
-  const { data: brands = [] } = useQuery({
+  useQuery({
     queryKey: ['brands'],
     queryFn: shopService.getBrands,
   })
@@ -113,7 +109,9 @@ export default function Products() {
             setAllBrandNames(parsed.map((b: any) => b.name))
           }
         }
-      } catch {}
+      } catch (error) {
+        // ignore
+      }
     }
 
     syncFromStorage()

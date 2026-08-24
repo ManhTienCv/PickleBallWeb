@@ -567,7 +567,7 @@ export default function ProductDetail() {
                       return (
                         <button
                           key={item.thickness}
-                          onClick={() => setSelectedThickness(item.thickness as any)}
+                          onClick={() => setSelectedThickness(item.thickness as '14mm' | '16mm')}
                           className={`p-3.5 rounded-xl text-left border transition-colors duration-150 text-xs cursor-pointer ${isSelected
                             ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-50 dark:bg-emerald-950/80 text-slate-900 dark:text-slate-100 shadow-sm ring-1 ring-emerald-500'
                             : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-500'
@@ -757,7 +757,7 @@ export default function ProductDetail() {
                 </div>
 
                 <div className="md:col-span-5 space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
-                  {starCounts.map(({ star, count, percentage }) => (
+                  {starCounts.map(({ star, percentage }) => (
                     <div key={star} className="flex items-center gap-2">
                       <span className="w-12 text-right font-bold text-slate-700 dark:text-slate-200">{star} sao</span>
                       <div className="flex-1 h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">

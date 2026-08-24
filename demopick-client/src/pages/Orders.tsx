@@ -25,9 +25,7 @@ import {
   ShoppingBag,
   Edit3,
   Truck,
-  ShieldCheck,
   CheckCircle2,
-  Lock,
   AlertCircle,
   Clock,
   MapPin,
@@ -213,6 +211,7 @@ export default function OrdersPage() {
     }
     window.addEventListener('storage', handleStorageChange)
     return () => window.removeEventListener('storage', handleStorageChange)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiOrders])
 
   const filteredOrders = orders.filter((order) => {

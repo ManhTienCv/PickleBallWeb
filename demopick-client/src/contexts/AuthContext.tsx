@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, ReactNode } from 'react'
 import api, { ApiResponse } from '@/lib/api'
 import { User, authHelpers } from '@/stores/useAuthStore'
 

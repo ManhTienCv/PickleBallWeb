@@ -6,16 +6,15 @@ import HoldTimerToast from '@/components/HoldTimerToast'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { format, addDays } from 'date-fns'
 import { vi } from 'date-fns/locale'
-import { CalendarIcon, CalendarDays, ShieldAlert, ArrowRight, Info, Award, RefreshCw, Tag, MapPin, Phone, Clock, Navigation, CheckCircle2 } from 'lucide-react'
+import { CalendarIcon, CalendarDays, RefreshCw, Tag, MapPin, Phone, Clock, Navigation, CheckCircle2, Info, ArrowRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 
 export default function CourtBooking() {
-  const navigate = useNavigate()
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [selectedSlotIds, setSelectedSlotIds] = useState<number[]>([])
   const [currentHold, setCurrentHold] = useState<Hold | null>(null)

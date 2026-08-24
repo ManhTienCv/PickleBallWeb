@@ -33,12 +33,9 @@ import {
   AlertTriangle,
   CheckCircle2,
   Copy,
-  Edit3,
   Truck,
   MapPin,
   Sparkles,
-  Home,
-  Building,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
