@@ -148,7 +148,12 @@ export default function CustomerLayout() {
             </motion.div>
 
             {isAuthenticated ? (
-              <DropdownMenu modal={false}>
+              <DropdownMenu 
+              modal={false}
+              onOpenChange={(open) => {
+                if (!open) setHoveredDropdownItem(null)
+              }}
+            >
                 <DropdownMenuTrigger asChild>
                   <motion.button
                     whileHover={{ scale: 1.03 }}
