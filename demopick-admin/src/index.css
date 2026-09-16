@@ -77,6 +77,13 @@
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Be Vietnam Pro', sans-serif;
   }
+
+  /* Anti-layout-shift and button click stability rules */
+  button,
+  [role="button"] {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
 @layer components {

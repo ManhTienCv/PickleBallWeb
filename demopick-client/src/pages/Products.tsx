@@ -193,19 +193,18 @@ export default function Products() {
     )
   }
 
-  const handleAddToCart = async (product: Product) => {
+  const handleAddToCart = (product: Product) => {
     const variantId = product.variants?.[0]?.id || product.id || Date.now()
-    try {
-      await cartService.addToCart(variantId, 1, product)
-      toast.success(`Đã thêm "${product.name}" vào giỏ hàng!`, {
-        action: {
-          label: 'Xem giỏ hàng →',
-          onClick: () => navigate('/cart'),
-        },
-      })
-    } catch {
+    // Instant 0ms feedback to user
+    toast.success(`Đã thêm "${product.name}" vào giỏ hàng!`, {
+      action: {
+        label: 'Xem giỏ hàng →',
+        onClick: () => navigate('/cart'),
+      },
+    })
+    cartService.addToCart(variantId, 1, product).catch(() => {
       toast.error('Có lỗi xảy ra khi thêm vào giỏ hàng.')
-    }
+    })
   }
 
   const sortOptions = [
@@ -296,7 +295,7 @@ export default function Products() {
                       damping: 26,
                       mass: 0.8,
                     }}
-                    className="absolute inset-0 bg-slate-900 dark:bg-emerald-600 rounded-full shadow-md z-0"
+                    className="absolute inset-0 bg-slate-900 dark:bg-emerald-600 border border-slate-900 dark:border-emerald-600 rounded-full shadow-md z-0"
                   />
                 )}
                 {!isActive && (

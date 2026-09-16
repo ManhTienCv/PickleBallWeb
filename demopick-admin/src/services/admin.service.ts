@@ -19,7 +19,7 @@ export interface TimeSlot {
   end_time: string
   price: number
   is_peak: boolean
-  status: 'available' | 'held' | 'booked' | 'locked'
+  status: 'available' | 'held' | 'booked' | 'locked' | 'in_use'
   held_expires_at: string | null
 }
 

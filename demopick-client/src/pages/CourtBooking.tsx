@@ -272,13 +272,21 @@ export default function CourtBooking() {
 
       {/* Selected Action Footer */}
       {selectedSlotIds.length > 0 && !currentHold && (
-        <div className="sticky bottom-6 mt-8 bg-slate-900 dark:bg-slate-950 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between gap-4 border border-primary/30 animate-in slide-in-from-bottom-4">
-          <div>
-            <div className="font-bold text-base text-slate-100">
-              Đã chọn <span className="text-emerald-400 font-extrabold">{selectedSlotIds.length}</span> khung giờ sân
+        <div className="sticky bottom-6 z-40 mt-8 bg-slate-900/95 dark:bg-slate-950/95 backdrop-blur-md text-white p-4 sm:p-5 rounded-2xl shadow-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border border-emerald-500/40 ring-1 ring-white/10 animate-in slide-in-from-bottom-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+              <Clock className="w-5 h-5 animate-pulse" />
             </div>
-            <div className="text-xs text-slate-300 font-medium">
-              Nhấn "Tạm giữ sân" để giữ chỗ trong 10 phút
+            <div>
+              <div className="font-bold text-base text-slate-100 flex items-center gap-2">
+                <span>Đã chọn</span>
+                <span className="bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-lg font-mono font-black text-sm">
+                  {selectedSlotIds.length} ca sân
+                </span>
+              </div>
+              <div className="text-xs text-slate-300 font-medium">
+                Khóa giữ chỗ tự động trong 10 phút sau khi xác nhận
+              </div>
             </div>
           </div>
 
@@ -286,7 +294,7 @@ export default function CourtBooking() {
             size="lg"
             onClick={handleHoldSlots}
             disabled={isHolding}
-            className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-md shadow-emerald-600/30"
+            className="gap-2 bg-[#27c372] hover:bg-[#22c55e] text-white font-black rounded-xl shadow-lg shadow-[#27c372]/25 shrink-0 h-12 px-6 cursor-pointer"
           >
             <span>{isHolding ? 'Đang giữ sân...' : 'Tạm Giữ Sân Ngay'}</span>
             <ArrowRight className="h-5 w-5" />
@@ -340,7 +348,7 @@ export default function CourtBooking() {
                 <span>Hủy dưới 1 tiếng trước giờ chơi:</span>
                 <Badge variant="destructive">Không hoàn tiền (0%)</Badge>
               </div>
-              <p className="text-red-700 dark:text-red-300">Khấu trừ 100% chi phí giữ sân do quá cận giờ thi đấu không thể mở ca lại cho hội viên khác.</p>
+              <p className="text-red-700 dark:text-red-300">Khấu trừ 100% chi phí giữ sân do quá cận giờ thi đấu không thể mở ca lại cho khách hàng khác.</p>
             </div>
           </div>
         </DialogContent>

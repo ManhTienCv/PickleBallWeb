@@ -130,7 +130,7 @@ const AppLayout = ({ children, title, subtitle, headerRight, noScroll = false }:
                 <TooltipTrigger asChild>
                   <button
                     onClick={toggleSidebar}
-                    className="w-9 h-9 rounded-xl bg-white hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 border border-slate-200 hover:border-emerald-300 flex items-center justify-center transition-all shadow-sm shrink-0"
+                    className="w-9 h-9 rounded-xl bg-white hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 border border-slate-200 hover:border-emerald-300 flex items-center justify-center transition-colors shadow-sm shrink-0"
                     aria-label="Thu gọn thanh bên"
                   >
                     <PanelLeftClose className="w-4.5 h-4.5" />
@@ -146,7 +146,7 @@ const AppLayout = ({ children, title, subtitle, headerRight, noScroll = false }:
               <TooltipTrigger asChild>
                 <button
                   onClick={toggleSidebar}
-                  className="w-10 h-10 rounded-xl bg-white hover:bg-emerald-50 text-emerald-600 border border-slate-200 hover:border-emerald-300 flex items-center justify-center transition-all shadow-sm"
+                  className="w-9 h-9 rounded-xl bg-white hover:bg-emerald-50 text-emerald-600 border border-slate-200 hover:border-emerald-300 flex items-center justify-center transition-colors shadow-sm"
                   aria-label="Mở thanh bên"
                 >
                   <PanelLeft className="w-5 h-5 text-emerald-600" />
@@ -212,7 +212,7 @@ const AppLayout = ({ children, title, subtitle, headerRight, noScroll = false }:
               <TooltipTrigger asChild>
                 <button
                   onClick={() => setCheckInOpen(true)}
-                  className="w-10 h-10 mx-auto bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl flex items-center justify-center transition-all shadow-sm"
+                  className="w-10 h-10 mx-auto bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl flex items-center justify-center transition-colors shadow-sm"
                 >
                   <QrCode className="w-5 h-5 text-emerald-600" />
                 </button>
@@ -237,7 +237,7 @@ const AppLayout = ({ children, title, subtitle, headerRight, noScroll = false }:
               <DropdownMenuTrigger asChild>
                 {isCollapsed ? (
                   <button
-                    className="w-10 h-10 mx-auto bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 rounded-full flex items-center justify-center font-bold text-xs cursor-pointer transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                    className="w-10 h-10 mx-auto bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 rounded-full flex items-center justify-center font-bold text-xs cursor-pointer transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
                     title="Tùy chọn tài khoản"
                   >
                     {user?.name?.charAt(0).toUpperCase() || "P"}

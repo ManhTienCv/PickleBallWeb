@@ -1,4 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
+import { useAuthModalStore } from '@/stores/useAuthModalStore'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
 
@@ -11,29 +12,36 @@ const api = axios.create({
   withCredentials: true,
 })
 
-// Request interceptor: attach Bearer token
+// Request interceptor: attach Bearer token and persistent X-Session-Id
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem('demopick_token')
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`
     }
+
+    let sessionId = localStorage.getItem('demopick_session_id')
+    if (!sessionId) {
+      sessionId = 'sess_' + Math.random().toString(36).substring(2, 11) + Date.now().toString(36)
+      localStorage.setItem('demopick_session_id', sessionId)
+    }
+    if (config.headers) {
+      config.headers['X-Session-Id'] = sessionId
+    }
+
     return config
   },
   (error) => Promise.reject(error)
 )
 
-// Response interceptor: handle 401 (redirect to login)
+// Response interceptor: handle 401 (open login modal)
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('demopick_token')
       localStorage.removeItem('demopick_user')
-      // Mở modal đăng nhập khi bị 401
-      import('@/stores/useAuthModalStore').then(({ useAuthModalStore }) => {
-        useAuthModalStore.getState().openLogin()
-      })
+      useAuthModalStore.getState().openLogin()
     }
     return Promise.reject(error)
   }

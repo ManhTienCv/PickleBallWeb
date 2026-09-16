@@ -477,7 +477,7 @@ export default function POS() {
               <Card
                 key={court.id}
                 onClick={() => handleSelectCourtFromSidebar(court)}
-                className="p-3 bg-white border-slate-200 hover:border-emerald-500 hover:shadow-md transition-all cursor-pointer space-y-1.5"
+                className="p-3 bg-white border-slate-200 hover:border-emerald-500 hover:shadow-md transition-colors cursor-pointer space-y-1.5"
               >
                 <div className="flex items-center justify-between">
                   <span className="font-extrabold text-xs text-slate-900">{court.name}</span>
@@ -556,7 +556,7 @@ export default function POS() {
                 return (
                   <Card
                     key={p.id}
-                    className="p-2.5 border-slate-200 hover:border-emerald-500 hover:shadow-md transition-all bg-white flex flex-col justify-between h-[230px]"
+                    className="p-2.5 border-slate-200 hover:border-emerald-500 hover:shadow-md transition-colors bg-white flex flex-col justify-between h-[230px]"
                   >
                     <div className="space-y-1.5">
                       <div className="h-28 bg-slate-50 rounded-xl overflow-hidden relative flex items-center justify-center p-2 border border-slate-100">
@@ -662,7 +662,7 @@ export default function POS() {
                         <span className="truncate">{courtCustomer?.name || "Khách Đặt Sân"}</span>
                       </div>
                       <Badge className="bg-blue-600 text-white text-[9px] font-bold shrink-0">
-                        🔒 Theo {courtCustomer?.courtName || "Sân"}
+                        Theo {courtCustomer?.courtName || "Sân"}
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between text-[11px] text-blue-700 pt-0.5">
@@ -695,7 +695,7 @@ export default function POS() {
                         }}
                         className="text-[10px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-100 hover:bg-emerald-200 px-2 py-0.5 rounded-full transition-colors"
                       >
-                        ⚡ Khách lẻ
+                        Khách lẻ
                       </button>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">

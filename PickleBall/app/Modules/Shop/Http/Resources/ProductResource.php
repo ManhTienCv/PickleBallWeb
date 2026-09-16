@@ -11,8 +11,15 @@ class ProductResource extends JsonResource
     {
         $variants = $this->whenLoaded('variants');
         $inStock = true;
-        if ($this->relationLoaded('variants') && $this->variants->count() > 0) {
-            $inStock = $this->variants->sum('stock_quantity') > 0;
+        if ($this->relationLoaded('variants')) {
+            if ($this->variants->count() > 0) {
+                $totalStock = $this->variants->sum(function ($v) {
+                    return (int) ($v->stock_qty ?? $v->available_stock ?? $v->stock_quantity ?? 0);
+                });
+                $inStock = $totalStock > 0;
+            } else {
+                $inStock = true;
+            }
         }
 
         $firstImage = is_array($this->images) && count($this->images) > 0

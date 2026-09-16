@@ -103,7 +103,7 @@ export default function BookingGrid({ courts: apiCourts, slots, selectedSlotIds,
       </div>
 
       {/* Grid Table */}
-      <div className="relative overflow-x-auto rounded-2xl border border-slate-200 dark:border-border bg-white dark:bg-card shadow-sm">
+      <div className="relative overflow-x-auto rounded-2xl border border-slate-200 dark:border-border bg-white dark:bg-card shadow-sm isolate">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-border text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">

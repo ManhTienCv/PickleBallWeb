@@ -300,7 +300,7 @@ export default function ProductDetail() {
     ? selectedVariant.price ?? product?.price ?? 0
     : product?.price ?? 0
   const isOutOfStock = selectedVariant
-    ? selectedVariant.stock_quantity <= 0
+    ? ((selectedVariant.stock_quantity ?? selectedVariant.stock_qty ?? 10) <= 0)
     : !product?.in_stock
 
   // Variant label for cart and review
@@ -310,16 +310,21 @@ export default function ProductDetail() {
       ? `Size ${selectedSize} • ${selectedColor.name}`
       : selectedColor.name
 
-  const handleAddToCart = async () => {
-    try {
-      const variantId = selectedVariant?.id || product.id || 1
-      await cartService.addToCart(variantId, quantity)
-      toast.success(
-        `Đã thêm ${quantity} x "${product.name} (${fullVariantLabel})" vào giỏ hàng!`
-      )
-    } catch {
-      toast.error('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.')
-    }
+  const handleAddToCart = () => {
+    const variantId = selectedVariant?.id || product.id || 1
+    // Instant 0ms toast notification
+    toast.success(
+      `Đã thêm ${quantity} x "${product.name} (${fullVariantLabel})" vào giỏ hàng!`,
+      {
+        action: {
+          label: 'Xem giỏ hàng →',
+          onClick: () => navigate('/cart'),
+        },
+      }
+    )
+    cartService.addToCart(variantId, quantity, product).catch(() => {
+      toast.error('Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng.')
+    })
   }
 
   // Handle submit review

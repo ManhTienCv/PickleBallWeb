@@ -104,7 +104,7 @@ export function AuthModal() {
               <h3 className="text-white font-bold text-xl leading-tight">
                 {view === 'login' 
                   ? 'Trọn vẹn đam mê trên từng đường bóng' 
-                  : 'Trở thành hội viên chính thức ngay hôm nay'}
+                  : 'Tạo tài khoản DemoPick ngay hôm nay'}
               </h3>
               <p className="text-slate-200/90 text-xs leading-relaxed">
                 Hệ thống tự động đồng bộ lịch sân trực tiếp, thanh toán một chạm và ưu đãi độc quyền dành riêng cho bạn.

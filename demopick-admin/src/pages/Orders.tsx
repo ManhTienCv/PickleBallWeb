@@ -1000,7 +1000,7 @@ export default function Orders() {
                         <div
                           key={c.id}
                           onClick={() => setSelectedCarrier(c.id)}
-                          className={`p-3 rounded-2xl border-2 transition-all cursor-pointer space-y-1 relative ${
+                          className={`p-3 rounded-2xl border-2 transition-colors cursor-pointer space-y-1 relative ${
                             isSelected
                               ? "border-emerald-600 bg-emerald-50/40 shadow-sm"
                               : "border-slate-200 hover:border-slate-300 bg-white"

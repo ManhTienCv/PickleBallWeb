@@ -1331,7 +1331,7 @@ export default function Inventory() {
                                         setStaffModalTab("restock");
                                         setStaffModalOpen(true);
                                       }}
-                                      className="h-8 px-3.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shadow-sm shadow-emerald-600/20 cursor-pointer whitespace-nowrap"
+                                      className="h-8 px-3.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-colors shadow-sm shadow-emerald-600/20 cursor-pointer whitespace-nowrap"
                                       title="Nhập thêm số lượng vào kho"
                                     >
                                       <PlusCircle className="w-3.5 h-3.5 shrink-0" />
@@ -1340,7 +1340,7 @@ export default function Inventory() {
 
                                     <button
                                       onClick={() => handleOpenPreviewModal(p)}
-                                      className="h-8 px-3 bg-slate-800 hover:bg-slate-700 active:scale-95 text-white rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
+                                      className="h-8 px-3 bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-white rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
                                     >
                                       <Eye className="w-3.5 h-3.5 shrink-0" />
                                       <span>Xem</span>
@@ -1420,9 +1420,9 @@ export default function Inventory() {
                         <button
                           key={page}
                           onClick={() => setCurrentPage(page)}
-                          className={`w-8 h-8 rounded-lg text-xs transition-all flex items-center justify-center ${currentPage === page
-                            ? "bg-emerald-600 text-white font-medium shadow-sm shadow-emerald-500/20"
-                            : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 font-normal"
+                          className={`w-8 h-8 rounded-lg text-xs transition-colors flex items-center justify-center border ${currentPage === page
+                            ? "bg-emerald-600 text-white font-medium border-emerald-600 shadow-sm shadow-emerald-500/20"
+                            : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 font-normal"
                             }`}
                         >
                           {page}
@@ -1875,7 +1875,7 @@ export default function Inventory() {
                       key={qty}
                       type="button"
                       onClick={() => setStaffRestockQty(qty)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${staffRestockQty === qty
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${staffRestockQty === qty
                         ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
                         : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
                         }`}
@@ -2039,7 +2039,7 @@ export default function Inventory() {
                       key={qty}
                       type="button"
                       onClick={() => setRestockQty(qty)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${restockQty === qty
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${restockQty === qty
                         ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
                         : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
                         }`}

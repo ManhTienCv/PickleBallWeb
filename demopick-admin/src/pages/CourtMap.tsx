@@ -91,7 +91,7 @@ export default function CourtMap() {
   const getSlotDetailedStatus = (courtId: number, timeStr: string) => {
     // 1. Check real API slots if returned from backend
     if (slots && slots.length > 0) {
-      const match = slots.find((s: any) => s.court_id === courtId && s.start_time?.startsWith(timeStr.split(":")[0]));
+      const match = slots.find((s: TimeSlot) => s.court_id === courtId && s.start_time?.startsWith(timeStr.split(":")[0]));
       if (match) {
         if (match.status === "in_use") return "in_use";
         if (match.status === "booked") return "booked";
@@ -196,7 +196,7 @@ export default function CourtMap() {
   return (
     <AppLayout
       title="Sơ Đồ Sân & Lịch Trình Đặt Khung Giờ Pickleball"
-      subtitle="Quản lý trực quan toàn bộ lịch thi đấu, tỷ lệ lấp đầy sân và đối soát ca giờ thời gian thực"
+
       headerRight={
         <div className="flex items-center gap-2">
           <Button onClick={() => setPolicyOpen(true)} variant="outline" size="sm" className="bg-white border-slate-300 gap-1.5 text-xs font-semibold rounded-xl">
@@ -238,11 +238,10 @@ export default function CourtMap() {
                     key={idx}
                     type="button"
                     onClick={() => setSelectedDate(item.date)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors duration-150 shrink-0 cursor-pointer border ${
-                      isSelected
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors duration-150 shrink-0 cursor-pointer border ${isSelected
                         ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
                         : "bg-[#FAF8F5] text-slate-700 hover:bg-slate-100 border-slate-200"
-                    }`}
+                      }`}
                   >
                     {item.label}
                   </button>
@@ -256,11 +255,10 @@ export default function CourtMap() {
               <button
                 type="button"
                 onClick={() => setSelectedCluster("all")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors duration-150 shrink-0 flex items-center gap-1 border ${
-                  selectedCluster === "all"
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors duration-150 shrink-0 flex items-center gap-1 border ${selectedCluster === "all"
                     ? "bg-slate-900 text-white border-slate-900 shadow-sm"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200 border-transparent"
-                }`}
+                  }`}
               >
                 <Layers className="w-3.5 h-3.5" />
                 <span>Tất cả (6 Sân)</span>
@@ -269,11 +267,10 @@ export default function CourtMap() {
               <button
                 type="button"
                 onClick={() => setSelectedCluster("indoor")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors duration-150 shrink-0 flex items-center gap-1 border ${
-                  selectedCluster === "indoor"
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors duration-150 shrink-0 flex items-center gap-1 border ${selectedCluster === "indoor"
                     ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
                     : "bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100"
-                }`}
+                  }`}
               >
                 <Building className="w-3.5 h-3.5" />
                 <span>Trong Nhà (A1, A2)</span>
@@ -282,11 +279,10 @@ export default function CourtMap() {
               <button
                 type="button"
                 onClick={() => setSelectedCluster("outdoor")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors duration-150 shrink-0 flex items-center gap-1 border ${
-                  selectedCluster === "outdoor"
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors duration-150 shrink-0 flex items-center gap-1 border ${selectedCluster === "outdoor"
                     ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
                     : "bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100"
-                }`}
+                  }`}
               >
                 <Sun className="w-3.5 h-3.5" />
                 <span>Ngoài Trời (B1, B2)</span>
@@ -295,11 +291,10 @@ export default function CourtMap() {
               <button
                 type="button"
                 onClick={() => setSelectedCluster("vip")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors duration-150 shrink-0 flex items-center gap-1 border ${
-                  selectedCluster === "vip"
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors duration-150 shrink-0 flex items-center gap-1 border ${selectedCluster === "vip"
                     ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
                     : "bg-amber-50 text-amber-900 border-amber-200 hover:bg-amber-100"
-                }`}
+                  }`}
               >
                 <Crown className="w-3.5 h-3.5" />
                 <span>Sân VIP (C1, C2)</span>
@@ -345,11 +340,10 @@ export default function CourtMap() {
               <button
                 key={v.id}
                 onClick={() => setViewMode(v.id as any)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors duration-150 border ${
-                  viewMode === v.id
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors duration-150 border ${viewMode === v.id
                     ? "bg-slate-900 text-white border-slate-900 shadow-sm"
                     : "text-slate-600 hover:bg-slate-100 border-transparent font-medium"
-                }`}
+                  }`}
               >
                 {v.label}
               </button>
@@ -362,7 +356,7 @@ export default function CourtMap() {
               type="button"
               onClick={() => setZoomLevel((prev) => Math.max(60, prev - 10))}
               disabled={zoomLevel <= 60}
-              className="p-1 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-200 active:scale-95 disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
+              className="p-1 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-200 active:bg-slate-300 disabled:opacity-40 disabled:hover:bg-transparent transition-colors cursor-pointer"
               title="Thu nhỏ (-10%)"
             >
               <ZoomOut className="h-4 w-4 text-slate-700" />
@@ -383,7 +377,7 @@ export default function CourtMap() {
               type="button"
               onClick={() => setZoomLevel((prev) => Math.min(160, prev + 10))}
               disabled={zoomLevel >= 160}
-              className="p-1 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-200 active:scale-95 disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
+              className="p-1 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-200 active:bg-slate-300 disabled:opacity-40 disabled:hover:bg-transparent transition-colors cursor-pointer"
               title="Phóng to (+10%)"
             >
               <ZoomIn className="h-4 w-4 text-slate-700" />
@@ -392,7 +386,7 @@ export default function CourtMap() {
             <button
               type="button"
               onClick={() => setZoomLevel(100)}
-              className="font-mono font-bold text-slate-800 hover:text-[#27c372] bg-white border border-slate-200 px-2 py-0.5 rounded-lg hover:border-[#27c372] active:scale-95 transition-all cursor-pointer text-xs ml-1 shadow-sm"
+              className="font-mono font-bold text-slate-800 hover:text-[#27c372] bg-white border border-slate-200 px-2 py-0.5 rounded-lg hover:border-[#27c372] transition-colors cursor-pointer text-xs ml-1 shadow-sm"
               title="Nhấn để đặt lại tỉ lệ chuẩn 100%"
             >
               {zoomLevel}%
@@ -474,8 +468,7 @@ export default function CourtMap() {
                               paddingBottom: `${slotPaddingPx}px`,
                               fontSize: `${slotFontSizePx}px`,
                             }}
-                            className={`w-full px-1 rounded-xl font-bold flex items-center justify-center transition-colors duration-150 border ${
-                              status === "expired"
+                            className={`w-full px-1 rounded-xl font-bold flex items-center justify-center transition-colors duration-150 border ${status === "expired"
                                 ? "bg-slate-100/90 text-slate-700 border-slate-300"
                                 : status === "in_use"
                                   ? "bg-blue-600 text-white shadow-sm border-blue-600"
@@ -486,7 +479,7 @@ export default function CourtMap() {
                                       : isPeak
                                         ? "bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100"
                                         : "bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100"
-                            }`}
+                              }`}
                           >
                             {status === "expired" ? (
                               <div className="flex items-center justify-center gap-1 whitespace-nowrap">

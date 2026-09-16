@@ -114,7 +114,7 @@ export default function Home() {
     {
       id: 'Dịch vụ Đặt Sân',
       name: 'Sân Thi Đấu Pro',
-      count: '4 Sân chuẩn quốc tế',
+      count: '6 Sân chuẩn quốc tế',
       icon: Calendar,
       color: 'from-rose-500/10 to-rose-500/5',
       iconColor: 'text-rose-700',
@@ -132,37 +132,53 @@ export default function Home() {
     { name: 'HEAD', tag: 'Radical Tour', desc: 'Sức mạnh vượt trội' },
   ]
 
-  // 4 Featured Courts
+  // 6 Featured Courts (Khớp 100% cơ sở dữ liệu sân thi đấu)
   const courts = [
     {
       id: 'A1',
-      name: 'Sân A1 - Pro USAPA',
-      type: 'Trong nhà / Máy lạnh',
-      price: '180.000 đ/h',
+      name: 'Sân A1 (Khu A - Tầng 1)',
+      type: 'Trong nhà / Pro Concrete',
+      price: 'Từ 90.000 - 160.000 đ/h',
       status: 'Sẵn sàng đón khách',
       image: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&q=80&w=500',
     },
     {
       id: 'A2',
-      name: 'Sân A2 - Pro USAPA',
-      type: 'Đèn LED 500 Lux',
-      price: '180.000 đ/h',
+      name: 'Sân A2 (Khu A - Tầng 1)',
+      type: 'Trong nhà / Đèn LED 500 Lux',
+      price: 'Từ 90.000 - 160.000 đ/h',
       status: 'Sẵn sàng đón khách',
       image: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&q=80&w=500',
     },
     {
-      id: 'A3',
-      name: 'Sân A3 - Standard',
-      type: 'Luyện tập & Giao lưu',
-      price: '150.000 đ/h',
+      id: 'B1',
+      name: 'Sân B1 (Khu B - Ngoài trời)',
+      type: 'Ngoài trời / Cushioned Acrylic',
+      price: 'Từ 90.000 - 180.000 đ/h',
+      status: 'Sẵn sàng đón khách',
+      image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=500',
+    },
+    {
+      id: 'B2',
+      name: 'Sân B2 (Khu B - Ngoài trời)',
+      type: 'Ngoài trời / Chuẩn thi đấu',
+      price: 'Từ 90.000 - 180.000 đ/h',
       status: 'Sẵn sàng đón khách',
       image: 'https://images.unsplash.com/photo-1599474924187-334a4ae5bd3c?auto=format&fit=crop&q=80&w=500',
     },
     {
-      id: 'VIP',
-      name: 'Sân VIP Center',
-      type: 'Khán đài & Lounge riêng',
-      price: '250.000 đ/h',
+      id: 'C1',
+      name: 'Sân C1 VIP (Khu C - Mái che)',
+      type: 'VIP Mái che / Wooden Flex',
+      price: 'Từ 120.000 - 220.000 đ/h',
+      status: 'Sẵn sàng đón khách',
+      image: 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?auto=format&fit=crop&q=80&w=500',
+    },
+    {
+      id: 'C2',
+      name: 'Sân C2 VIP (Khu C - Mái che)',
+      type: 'VIP Khán đài & Lounge',
+      price: 'Từ 120.000 - 220.000 đ/h',
       status: 'Sẵn sàng đón khách',
       image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=500',
     },
@@ -171,28 +187,33 @@ export default function Home() {
   return (
     <div className="space-y-16 pb-20 font-sans">
       {/* ========================================================= */}
-      {/* 1. HERO SECTION (ELEVATED PURE WHITE CANVAS & ARCHITECTURAL) */}
+      {/* 1. HERO SECTION (FULL-WIDTH SEAMLESS & ARCHITECTURAL) */}
       {/* ========================================================= */}
-      <section className="container mx-auto max-w-7xl px-3 sm:px-6">
-        <div className="relative bg-white dark:bg-card text-slate-900 dark:text-foreground rounded-3xl p-6 sm:p-12 border border-slate-200/90 dark:border-border shadow-xl shadow-slate-200/50 dark:shadow-black/50 overflow-hidden transition-colors duration-300">
-          {/* Ambient Lighting Orbs */}
-          <div className="absolute -top-28 -right-28 w-[450px] h-[450px] bg-emerald-500/10 dark:bg-emerald-500/15 rounded-full blur-[100px] pointer-events-none" />
-          <div className="absolute -bottom-28 -left-28 w-[450px] h-[450px] bg-emerald-600/10 dark:bg-emerald-600/15 rounded-full blur-[100px] pointer-events-none" />
+      <section className="relative w-full overflow-hidden border-b border-border bg-gradient-to-b from-card via-card/95 to-background dark:from-card/70 dark:via-background/90 dark:to-background py-10 sm:py-14 lg:py-16 transition-colors duration-300">
+        {/* Ambient Lighting Orbs */}
+        <div className="absolute -top-32 -right-16 w-[550px] h-[550px] bg-emerald-500/10 dark:bg-emerald-500/15 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute -bottom-32 -left-16 w-[550px] h-[550px] bg-emerald-600/10 dark:bg-emerald-600/15 rounded-full blur-[120px] pointer-events-none" />
+        {/* Subtle Architectural Dot Pattern Overlay */}
+        <div className="absolute inset-0 bg-[radial-gradient(#27c372_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.06] dark:opacity-[0.1] pointer-events-none" />
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center relative z-10">
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             {/* Left Hero Content */}
             <div className="lg:col-span-7 space-y-6">
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight text-slate-900 dark:text-slate-100">
-                Thiết Bị Thể Thao & <br />
-                <span className="text-emerald-600 dark:text-emerald-400">Sân Pickleball Class-A</span>
+              {/* Badge trên cùng tạo điểm nhấn chuyên nghiệp */}
+
+
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-[54px] font-extrabold tracking-tight leading-[1.16] text-slate-900 dark:text-slate-100">
+                Thiết Bị Thể Thao & <br className="hidden sm:inline" />
+                <span className="text-emerald-600 dark:text-emerald-400 whitespace-nowrap">Sân Pickleball Class-A</span>
               </h1>
 
               <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl font-normal">
-                Hệ thống thể thao liên thông tiện lợi: Giữ chỗ 4 cụm sân thi đấu tự động 24/7 và mua sắm vợt bóng chính hãng chuẩn quốc tế chỉ trong một nền tảng duy nhất.
+                Hệ thống thể thao liên thông tiện lợi: Giữ chỗ 6 cụm sân thi đấu tự động 24/7 với 10 phút giữ chỗ an toàn và mua sắm vợt bóng chính hãng chuẩn quốc tế chỉ trong một nền tảng duy nhất.
               </p>
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-3.5 pt-2">
+              <div className="flex flex-wrap items-center gap-3.5 pt-1">
                 <Link to="/booking">
                   <Button
                     size="lg"
@@ -208,7 +229,7 @@ export default function Home() {
                   <Button
                     size="lg"
                     variant="outline"
-                    className="gap-2 bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-border hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium rounded-2xl px-6 py-3.5 shadow-xs text-sm cursor-pointer"
+                    className="gap-2 bg-white/80 dark:bg-card/80 backdrop-blur-sm border border-slate-200/90 dark:border-border hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-medium rounded-2xl px-6 py-3.5 shadow-xs text-sm cursor-pointer"
                   >
                     <ShoppingBag className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
                     <span>Khám Phá Sản Phẩm</span>
@@ -219,16 +240,16 @@ export default function Home() {
               {/* Quick Stats Badges */}
               <div className="pt-6 grid grid-cols-3 gap-4 border-t border-slate-200/80 dark:border-border text-xs sm:text-sm">
                 <div>
-                  <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">4 Sân Đấu</div>
-                  <div className="text-slate-600 dark:text-slate-300 font-medium">Chuẩn USAPA Pro</div>
+                  <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">6 Sân Đấu</div>
+                  <div className="text-slate-600 dark:text-slate-400 font-medium">Chuẩn USAPA Pro</div>
                 </div>
                 <div>
                   <div className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400">10 Phút</div>
-                  <div className="text-slate-600 dark:text-slate-300 font-medium">Khóa lịch tự động</div>
+                  <div className="text-slate-600 dark:text-slate-400 font-medium">Khóa lịch tự động</div>
                 </div>
                 <div>
                   <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">100%</div>
-                  <div className="text-slate-600 dark:text-slate-300 font-medium">Hàng chính hãng</div>
+                  <div className="text-slate-600 dark:text-slate-400 font-medium">Hàng chính hãng</div>
                 </div>
               </div>
             </div>
@@ -236,22 +257,20 @@ export default function Home() {
             {/* Right Interactive Showcase Card */}
             <div className="lg:col-span-5 relative pt-4 sm:pt-0">
               <div className="relative rounded-3xl overflow-hidden border border-slate-200/90 dark:border-border bg-white dark:bg-card p-4 shadow-xl shadow-slate-200/50 dark:shadow-black/50 space-y-4">
-                {/* Court Image Banner */}
-                <div className="aspect-video rounded-2xl overflow-hidden relative border border-slate-200 dark:border-border shadow-inner group">
+                {/* Court Image Banner with Badge */}
+                <div className="aspect-video rounded-2xl overflow-hidden relative border border-slate-200/80 dark:border-border shadow-inner group">
                   <img
                     src="https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&q=80&w=800"
                     alt="Sân Pickleball Pick Center"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
+
                 </div>
 
                 {/* Quick Info */}
-                <div className="bg-[#FAF8F5] dark:bg-slate-900/70 p-4 rounded-2xl border border-slate-200/80 dark:border-border space-y-3">
+                <div className="bg-[#FAF8F5] dark:bg-slate-900/70 p-4 rounded-2xl border border-slate-200/80 dark:border-border space-y-2.5">
                   <div className="flex items-center text-xs text-slate-600 dark:text-slate-300">
-                    <span className="flex items-center gap-1 font-bold text-slate-800 dark:text-slate-200">
-                      <MapPin className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                      Cầu Giấy, Hà Nội
-                    </span>
+
                   </div>
 
                   <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">Cụm Sân Pickleball Pick Center</h3>
@@ -368,16 +387,15 @@ export default function Home() {
                         damping: 26,
                         mass: 0.8,
                       }}
-                      className="absolute inset-0 bg-slate-900 dark:bg-emerald-600 rounded-full shadow-sm z-0"
+                      className="absolute inset-0 bg-slate-900 dark:bg-emerald-600 border border-slate-900 dark:border-emerald-600 rounded-full shadow-sm z-0"
                     />
                   )}
                   {!isActive && (
                     <div className="absolute inset-0 bg-white dark:bg-card border border-slate-200/90 dark:border-border rounded-full hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors z-0" />
                   )}
                   <span
-                    className={`relative z-10 transition-colors ${
-                      isActive ? 'text-white font-semibold' : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-                    }`}
+                    className={`relative z-10 transition-colors ${isActive ? 'text-white font-semibold' : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                      }`}
                   >
                     {tab.label}
                   </span>
@@ -421,7 +439,7 @@ export default function Home() {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200/80 dark:border-border pb-4">
           <div className="space-y-1">
             <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-              Hệ Thống 4 Sân Đấu Chuẩn USAPA
+              Hệ Thống 6 Sân Đấu Chuẩn USAPA
             </h2>
             <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">
               Mặt sân Decoturf thi đấu chống trơn trượt, đèn LED 500 Lux chuẩn giải đấu
@@ -440,7 +458,7 @@ export default function Home() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {courts.map((court) => (
             <div
               key={court.id}

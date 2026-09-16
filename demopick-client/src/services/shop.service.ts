@@ -18,12 +18,16 @@ export interface Brand {
 export interface ProductVariant {
   id: number
   sku: string
-  option_name: string
-  option_value: string
+  option_name?: string
+  option_value?: string
   price: number
-  stock_quantity: number
+  stock_quantity?: number
+  stock_qty?: number
+  color?: string
   color_name?: string
   color_hex?: string
+  weight?: string
+  grip_size?: string
   image_url?: string
   thickness?: string // e.g. "14mm" | "16mm"
   size?: string // e.g. "S" | "M" | "L" | "XL" | "XXL"

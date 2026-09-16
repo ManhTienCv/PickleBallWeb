@@ -239,9 +239,9 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4 sm:px-6 max-w-4xl font-sans">
+    <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 max-w-6xl xl:max-w-7xl font-sans">
       {/* Sticky Countdown Header */}
-      <div className="bg-amber-500/10 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/60 p-4 rounded-2xl mb-6 flex items-center justify-between shadow-xs">
+      <div className="bg-amber-500/10 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/60 p-4 rounded-2xl mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-amber-500/20 dark:bg-amber-900/50 flex items-center justify-center shrink-0">
             <Clock className="w-5 h-5 animate-pulse text-amber-600 dark:text-amber-400" />
@@ -257,7 +257,7 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-white dark:bg-card px-4 py-2 rounded-xl border border-amber-300 dark:border-amber-700 shadow-inner">
+        <div className="flex items-center gap-2 bg-white dark:bg-card px-4 py-2 rounded-xl border border-amber-300 dark:border-amber-700 shadow-inner shrink-0 self-start sm:self-auto">
           <span className="text-xs font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Thời gian còn lại:</span>
           <span className="font-mono text-xl font-black text-emerald-600 dark:text-emerald-400 tracking-wider">{formattedTime}</span>
         </div>
@@ -267,7 +267,7 @@ export default function CheckoutPage() {
       <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-200 dark:border-border">
         <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-3">
           <CreditCard className="h-7 w-7 text-[#27c372]" />
-          {step === 'info' ? 'Xác Nhận Đơn Hàng & Vận Chuyển' : 'Thanh Toán Quét Mã VietQR'}
+          <span>{step === 'info' ? 'Xác Nhận Đơn Hàng & Vận Chuyển' : 'Thanh Toán Quét Mã VietQR'}</span>
         </h1>
 
         <Button
@@ -283,99 +283,109 @@ export default function CheckoutPage() {
 
       {step === 'info' ? (
         /* STEP 1: FILL SHIPPING INFO & CHOOSE PAYMENT METHOD */
-        <form onSubmit={handleProceedToPayment} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            {/* SAVED ADDRESS SELECTOR CHIPS */}
-            {savedAddresses.length > 0 && (
-              <div className="bg-white dark:bg-card p-4 rounded-2xl border border-slate-200 dark:border-border space-y-2 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                    <span>Chọn nhanh từ Sổ Địa Chỉ:</span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowMapPickerModal(true)}
-                    className="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:underline flex items-center gap-1"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Ghim Vị Trí Trên Bản Đồ</span>
-                  </button>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 pt-1">
-                  {savedAddresses.map((addr) => {
-                    const isSelected = selectedAddressId === addr.id
-                    return (
-                      <button
-                        key={addr.id}
-                        type="button"
-                        onClick={() => handleSelectSavedAddress(addr)}
-                        className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                          isSelected
-                            ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 shadow-xs'
-                            : 'border-slate-200 dark:border-border text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-                        }`}
-                      >
-                        <span>{addr.label === 'home' ? 'Nhà riêng' : addr.label === 'office' ? 'Văn phòng' : 'Sân bóng'}</span>
-                        {addr.isDefault && <span className="text-[9px] bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100 px-1.5 py-0.2 rounded font-normal">Mặc định</span>}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-
+        <form onSubmit={handleProceedToPayment} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="lg:col-span-7 xl:col-span-8 space-y-6">
             {/* Customer Contact & Delivery Info */}
-            <Card className="p-6 border-slate-200 dark:border-border bg-white dark:bg-card space-y-4 rounded-2xl shadow-sm">
-              <div className="flex items-center justify-between">
-                <h3 className="font-extrabold text-lg text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                  <ShieldCheck className="h-5 w-5 text-[#27c372]" />
-                  Thông Tin Người Nhận & Địa Chỉ Giao Hàng
-                </h3>
+            <Card className="p-6 border-slate-200 dark:border-border bg-white dark:bg-card space-y-5 rounded-3xl shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-border">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                    <MapPin className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-slate-100">
+                      Thông Tin Nhận Hàng
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-normal">
+                      Điền thông tin để nhân viên giao hàng liên hệ nhanh chóng
+                    </p>
+                  </div>
+                </div>
+
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
                   onClick={() => setShowMapPickerModal(true)}
-                  className="h-8 px-3 rounded-xl border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 font-bold text-xs gap-1"
+                  className="h-8.5 px-3 rounded-xl border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 font-bold text-xs gap-1.5 shrink-0 cursor-pointer"
                 >
-                  <MapPin className="w-3.5 h-3.5" />
-                  <span>Mở Bản Đồ</span>
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Ghim Vị Trí Bản Đồ</span>
                 </Button>
               </div>
 
+              {/* SAVED ADDRESS SELECTOR CHIPS */}
+              {savedAddresses.length > 0 && (
+                <div className="flex items-center gap-2 flex-wrap bg-[#FAF8F5] dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200/80 dark:border-border">
+                  <span className="text-xs font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                    Sổ địa chỉ:
+                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {savedAddresses.map((addr) => {
+                      const isSelected = selectedAddressId === addr.id
+                      return (
+                        <button
+                          key={addr.id}
+                          type="button"
+                          onClick={() => handleSelectSavedAddress(addr)}
+                          className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                            isSelected
+                              ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 shadow-xs'
+                              : 'border-slate-200 dark:border-border bg-white dark:bg-card text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          <span>{addr.label === 'home' ? 'Nhà riêng' : addr.label === 'office' ? 'Văn phòng' : 'Sân bóng'}</span>
+                          {addr.isDefault && (
+                            <span className="text-[9px] bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100 px-1.5 py-0.2 rounded font-normal">
+                              Mặc định
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Row 1: Name & Phone */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="cName" className="font-bold text-xs text-slate-700 dark:text-slate-300">Họ và tên người nhận *</Label>
+                  <Label htmlFor="cName" className="font-bold text-xs text-slate-700 dark:text-slate-300">
+                    Họ và tên người nhận <span className="text-rose-500">*</span>
+                  </Label>
                   <Input
                     id="cName"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
-                    className="rounded-xl font-medium"
+                    className="rounded-xl font-medium h-11"
                     required
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="cPhone" className="font-bold text-xs text-slate-700 dark:text-slate-300">Số điện thoại nhận hàng *</Label>
+                  <Label htmlFor="cPhone" className="font-bold text-xs text-slate-700 dark:text-slate-300">
+                    Số điện thoại nhận hàng <span className="text-rose-500">*</span>
+                  </Label>
                   <Input
                     id="cPhone"
                     value={customerPhone}
                     onChange={(e) => setCustomerPhone(e.target.value)}
-                    className="rounded-xl font-medium"
+                    className="rounded-xl font-medium h-11"
                     required
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="font-bold text-xs text-slate-700 dark:text-slate-300">Tỉnh / Thành phố *</Label>
+              {/* Row 2: Province (1/3) & Specific Address (2/3) */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-1.5 sm:col-span-1">
+                  <Label className="font-bold text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                    Tỉnh / Thành phố <span className="text-rose-500">*</span>
+                  </Label>
                   <select
                     value={selectedProvince}
                     onChange={(e) => setSelectedProvince(e.target.value)}
-                    className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-border bg-white dark:bg-card text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full h-11 px-3 rounded-xl border border-slate-200 dark:border-border bg-white dark:bg-card text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
                     {PROVINCES.map((prov) => (
                       <option key={prov} value={prov}>
@@ -385,37 +395,42 @@ export default function CheckoutPage() {
                   </select>
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="address" className="font-bold text-xs text-slate-700 dark:text-slate-300">Địa chỉ cụ thể (Số nhà, tên đường, quận) *</Label>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label htmlFor="address" className="font-bold text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                    Địa chỉ cụ thể (Số nhà, tên đường, phường/xã) <span className="text-rose-500">*</span>
+                  </Label>
                   <Input
                     id="address"
                     value={streetAddress}
                     onChange={(e) => setStreetAddress(e.target.value)}
-                    placeholder="Ví dụ: Số 10 Đường Pickleball, Q. Cầu Giấy"
-                    className="rounded-xl font-medium"
+                    placeholder="Ví dụ: Số 10 Đường Pickleball, Phường Dịch Vọng, Q. Cầu Giấy"
+                    className="rounded-xl font-medium h-11"
                     required
                   />
                 </div>
               </div>
 
+              {/* Row 3: Note */}
               <div className="space-y-1.5">
-                <Label htmlFor="note" className="font-bold text-xs text-slate-700 dark:text-slate-300">Ghi chú giao hàng (Không bắt buộc)</Label>
+                <Label htmlFor="note" className="font-bold text-xs text-slate-700 dark:text-slate-300">
+                  Ghi chú giao hàng (Không bắt buộc)
+                </Label>
                 <Input
                   id="note"
                   placeholder="Ví dụ: Giao giờ hành chính, gọi trước khi giao 15 phút..."
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  className="rounded-xl font-medium"
+                  className="rounded-xl font-medium h-11"
                 />
               </div>
             </Card>
 
             {/* Carrier Selection */}
-            <Card className="p-6 border-slate-200 dark:border-border bg-white dark:bg-card space-y-4 rounded-2xl shadow-sm">
-              <div className="flex items-center justify-between">
-                <h3 className="font-extrabold text-lg text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <Card className="p-6 border-slate-200 dark:border-border bg-white dark:bg-card space-y-4 rounded-3xl shadow-sm">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-border">
+                <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-slate-100 flex items-center gap-2">
                   <Truck className="h-5 w-5 text-[#27c372]" />
-                  Đối Tác Vận Chuyển Giao Hàng
+                  <span>Đối Tác Vận Chuyển Giao Hàng</span>
                 </h3>
                 {isFreeship && (
                   <Badge className="bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 font-bold text-xs gap-1">
@@ -425,7 +440,7 @@ export default function CheckoutPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 {AVAILABLE_CARRIERS.map((c) => {
                   const isSelected = selectedCarrier === c.id
                   const { fee, isFreeship: carrierFreeship } = shippingService.calculateShippingFee(
@@ -439,19 +454,19 @@ export default function CheckoutPage() {
                     <div
                       key={c.id}
                       onClick={() => setSelectedCarrier(c.id)}
-                      className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer space-y-1.5 relative ${
+                      className={`p-4 rounded-2xl border-2 transition-all cursor-pointer space-y-2 relative ${
                         isSelected
-                          ? 'border-emerald-600 bg-emerald-50/40 dark:bg-emerald-950/40 shadow-sm'
+                          ? 'border-emerald-600 bg-emerald-50/40 dark:bg-emerald-950/40 shadow-xs'
                           : 'border-slate-200 dark:border-border hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-card'
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-extrabold text-slate-900 dark:text-slate-100 text-xs">{c.name}</span>
+                        <span className="font-extrabold text-slate-900 dark:text-slate-100 text-xs sm:text-sm">{c.name}</span>
                         <Badge className={`${c.badgeColor} font-bold text-[10px]`}>{c.shortName}</Badge>
                       </div>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">{c.tagline}</p>
-                      <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-border text-xs">
-                        <span className="text-slate-500 dark:text-slate-400">TG: <b className="text-slate-700 dark:text-slate-300">{c.estimatedTime}</b></span>
+                      <div className="flex items-center justify-between pt-1.5 border-t border-slate-100 dark:border-border text-xs">
+                        <span className="text-slate-500 dark:text-slate-400">Thời gian: <b className="text-slate-700 dark:text-slate-300">{c.estimatedTime}</b></span>
                         <span className="font-black text-emerald-700 dark:text-emerald-400">
                           {carrierFreeship ? 'Miễn phí (0đ)' : `${new Intl.NumberFormat('vi-VN').format(fee)} đ`}
                         </span>
@@ -463,8 +478,10 @@ export default function CheckoutPage() {
             </Card>
 
             {/* Payment Method Selection */}
-            <Card className="p-6 border-slate-200 dark:border-border bg-white dark:bg-card space-y-4 rounded-2xl shadow-sm">
-              <h3 className="font-extrabold text-lg text-slate-900 dark:text-slate-100">Phương Thức Thanh Toán</h3>
+            <Card className="p-6 border-slate-200 dark:border-border bg-white dark:bg-card space-y-4 rounded-3xl shadow-sm">
+              <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-slate-100 pb-3 border-b border-slate-100 dark:border-border">
+                Phương Thức Thanh Toán
+              </h3>
 
               <RadioGroup
                 value={paymentMethod}
@@ -474,15 +491,17 @@ export default function CheckoutPage() {
                 <div
                   className={`flex items-center space-x-3 rounded-2xl border p-4 transition-all cursor-pointer ${
                     paymentMethod === 'bank_transfer'
-                      ? 'border-[#27c372] bg-[#27c372]/5 dark:bg-emerald-950/40 shadow-sm'
+                      ? 'border-[#27c372] bg-[#27c372]/5 dark:bg-emerald-950/40 shadow-xs'
                       : 'border-slate-200 dark:border-border hover:border-slate-300 dark:hover:border-slate-600'
                   }`}
                 >
                   <RadioGroupItem value="bank_transfer" id="bank" />
                   <Label htmlFor="bank" className="flex items-center gap-3 cursor-pointer flex-1">
-                    <QrCode className="h-6 w-6 text-[#27c372]" />
+                    <QrCode className="h-6 w-6 text-[#27c372] shrink-0" />
                     <div>
-                      <div className="font-extrabold text-slate-900 dark:text-slate-100">Chuyển khoản Ngân hàng qua Mã VietQR (VietinBank)</div>
+                      <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm">
+                        Chuyển khoản Ngân hàng qua Mã VietQR (VietinBank)
+                      </div>
                       <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                         Mở App ngân hàng quét mã QR tự động điền chính xác số tiền & nội dung
                       </div>
@@ -493,15 +512,17 @@ export default function CheckoutPage() {
                 <div
                   className={`flex items-center space-x-3 rounded-2xl border p-4 transition-all cursor-pointer ${
                     paymentMethod === 'cash'
-                      ? 'border-[#27c372] bg-[#27c372]/5 dark:bg-emerald-950/40 shadow-sm'
+                      ? 'border-[#27c372] bg-[#27c372]/5 dark:bg-emerald-950/40 shadow-xs'
                       : 'border-slate-200 dark:border-border hover:border-slate-300 dark:hover:border-slate-600'
                   }`}
                 >
                   <RadioGroupItem value="cash" id="cash" />
                   <Label htmlFor="cash" className="flex items-center gap-3 cursor-pointer flex-1">
-                    <Banknote className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                    <Banknote className="h-6 w-6 text-amber-600 dark:text-amber-400 shrink-0" />
                     <div>
-                      <div className="font-extrabold text-slate-900 dark:text-slate-100">Thanh toán khi nhận hàng (Thu COD Shipper)</div>
+                      <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm">
+                        Thanh toán khi nhận hàng (Thu COD Shipper)
+                      </div>
                       <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                         Thanh toán tiền mặt cho Shipper {selectedCarrier} khi nhận được kiện hàng
                       </div>
@@ -510,21 +531,19 @@ export default function CheckoutPage() {
                 </div>
               </RadioGroup>
             </Card>
-
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full bg-[#27c372] hover:bg-[#22c55e] text-white font-black rounded-2xl h-14 text-base gap-2 shadow-lg shadow-[#27c372]/20 cursor-pointer"
-            >
-              <span>{paymentMethod === 'bank_transfer' ? 'Tiếp Tục Quét Mã VietQR App' : 'Xác Nhận Đặt Hàng Ngay'}</span>
-              <ArrowRight className="h-5 w-5" />
-            </Button>
           </div>
 
-          {/* Sidebar Order Summary */}
-          <div>
-            <Card className="p-6 border-slate-200 dark:border-border bg-slate-50/70 dark:bg-card space-y-4 rounded-2xl sticky top-24">
-              <h3 className="font-extrabold text-lg text-slate-900 dark:text-slate-100 pb-3 border-b border-slate-200 dark:border-border">Đơn Hàng Tóm Tắt</h3>
+          {/* Sidebar Order Summary (Right Column) */}
+          <div className="lg:col-span-5 xl:col-span-4 sticky top-28 space-y-4">
+            <Card className="p-6 border-slate-200 dark:border-border bg-white dark:bg-card space-y-4 rounded-3xl shadow-sm">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-border">
+                <h3 className="font-extrabold text-lg text-slate-900 dark:text-slate-100">
+                  Tóm Tắt Đơn Hàng
+                </h3>
+                <Badge variant="outline" className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                  {cart?.items?.length || 0} sản phẩm
+                </Badge>
+              </div>
 
               {holdId && (
                 <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-xs text-amber-800 dark:text-amber-200 space-y-1 font-semibold">
@@ -534,14 +553,18 @@ export default function CheckoutPage() {
               )}
 
               {cart && cart.items.length > 0 && (
-                <div className="space-y-2 text-xs">
-                  <div className="font-extrabold text-slate-800 dark:text-slate-200">Sản phẩm trong giỏ ({cart.items.length}):</div>
+                <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
                   {cart.items.map((item) => (
-                    <div key={item.id} className="flex justify-between text-slate-600 dark:text-slate-300 font-medium">
-                      <span className="truncate pr-2">
-                        {item.product?.name} x{item.quantity}
-                      </span>
-                      <span className="font-bold text-slate-900 dark:text-slate-100">
+                    <div key={item.id} className="flex justify-between items-center gap-3 text-xs font-medium">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-slate-800 dark:text-slate-200 truncate" title={item.product?.name}>
+                          {item.product?.name}
+                        </p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Số lượng: <b className="text-slate-700 dark:text-slate-300">{item.quantity}</b>
+                        </p>
+                      </div>
+                      <span className="font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap shrink-0">
                         {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.subtotal)}
                       </span>
                     </div>
@@ -550,18 +573,18 @@ export default function CheckoutPage() {
               )}
 
               {/* Shipping fee breakdown */}
-              <div className="space-y-2 pt-3 border-t border-slate-200 dark:border-border text-xs">
-                <div className="flex justify-between text-slate-600 dark:text-slate-300">
-                  <span>Tiền hàng:</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+              <div className="space-y-2.5 pt-3 border-t border-slate-100 dark:border-border text-xs">
+                <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
+                  <span className="whitespace-nowrap">Tiền hàng:</span>
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">
                     {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(cartTotal)}
                   </span>
                 </div>
-                <div className="flex justify-between text-slate-600 dark:text-slate-300 items-center">
-                  <span>Phí ship ({selectedCarrier}):</span>
+                <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
+                  <span className="whitespace-nowrap">Phí ship ({selectedCarrier}):</span>
                   <span className="font-bold text-emerald-700 dark:text-emerald-400">
                     {isFreeship ? (
-                      <span className="text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+                      <span className="text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold">
                         Miễn phí (Freeship)
                       </span>
                     ) : (
@@ -571,11 +594,39 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-200 dark:border-border flex justify-between items-baseline">
-                <span className="font-black text-slate-900 dark:text-slate-100">Tổng thanh toán:</span>
-                <span className="text-xl font-black text-[#27c372]">
-                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(grandTotal)}
-                </span>
+              {/* Grand Total Row */}
+              <div className="pt-3 border-t border-slate-200 dark:border-border space-y-1">
+                <div className="flex justify-between items-center gap-3">
+                  <span className="font-black text-sm sm:text-base text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                    Tổng thanh toán:
+                  </span>
+                  <span className="text-xl sm:text-2xl font-black text-[#27c372] whitespace-nowrap">
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(grandTotal)}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 text-right">Đã bao gồm thuế VAT & phí dịch vụ</p>
+              </div>
+
+              {/* Action Button inside sticky sidebar */}
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full bg-[#27c372] hover:bg-[#22c55e] text-white font-black rounded-2xl h-12 text-sm sm:text-base gap-2 shadow-lg shadow-[#27c372]/20 cursor-pointer transition-all"
+              >
+                <span>{paymentMethod === 'bank_transfer' ? 'Tiếp Tục Quét Mã VietQR' : 'Xác Nhận Đặt Hàng Ngay'}</span>
+                <ArrowRight className="h-4.5 w-4.5" />
+              </Button>
+
+              <div className="pt-2 flex items-center justify-center gap-4 text-[11px] text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-border">
+                <div className="flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>Bảo mật SSL</span>
+                </div>
+                <div>•</div>
+                <div className="flex items-center gap-1">
+                  <Truck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>Giao toàn quốc</span>
+                </div>
               </div>
             </Card>
           </div>

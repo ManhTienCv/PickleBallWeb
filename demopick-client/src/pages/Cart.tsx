@@ -26,20 +26,39 @@ export default function CartPage() {
   const { data: cart, isLoading } = useQuery({
     queryKey: ['cart'],
     queryFn: cartService.getCart,
+    initialData: () => cartService.getLocalCart(),
   })
+
+  useEffect(() => {
+    const handleCartUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent<any>
+      const freshCart = customEvent.detail || cartService.getLocalCart()
+      queryClient.setQueryData(['cart'], freshCart)
+    }
+    const handleStorage = () => {
+      const freshCart = cartService.getLocalCart()
+      queryClient.setQueryData(['cart'], freshCart)
+    }
+    window.addEventListener('cart-updated', handleCartUpdated)
+    window.addEventListener('storage', handleStorage)
+    return () => {
+      window.removeEventListener('cart-updated', handleCartUpdated)
+      window.removeEventListener('storage', handleStorage)
+    }
+  }, [queryClient])
 
   const updateMutation = useMutation({
     mutationFn: ({ itemId, quantity }: { itemId: number; quantity: number }) =>
       cartService.updateQuantity(itemId, quantity),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart'] })
+    onSuccess: (updatedCart) => {
+      queryClient.setQueryData(['cart'], updatedCart)
     },
   })
 
   const removeMutation = useMutation({
     mutationFn: (itemId: number) => cartService.removeItem(itemId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart'] })
+    onSuccess: (updatedCart) => {
+      queryClient.setQueryData(['cart'], updatedCart)
       toast.success('Đã xóa sản phẩm khỏi giỏ hàng')
     },
   })
@@ -83,20 +102,26 @@ export default function CartPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Cart Items List */}
         <div className="lg:col-span-2 space-y-4">
-          {items.map((item: CartItem) => (
-            <Card key={item.id} className="p-4 flex items-center gap-4 border-slate-200 dark:border-border bg-white dark:bg-card">
-              <img
-                src={item.product?.image_url || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&q=80&w=200'}
-                alt={item.product?.name}
-                className="h-20 w-20 object-cover rounded-lg bg-slate-100 dark:bg-slate-850 border border-slate-100 dark:border-border"
-              />
+          {items.map((item: CartItem) => {
+            const variantProduct = (item.variant as any)?.product
+            const displayName = item.product?.name || variantProduct?.name || (item as any).metadata?.product_name || 'Vợt Pickleball'
+            const displaySlug = item.product?.slug || variantProduct?.slug || 'vot-pickleball'
+            const displayImage = item.product?.image_url || variantProduct?.image_url || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&q=80&w=200'
 
-              <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-slate-900 dark:text-slate-100 truncate">
-                  <Link to={`/products/${item.product?.slug}`} className="hover:text-primary">
-                    {item.product?.name}
-                  </Link>
-                </h4>
+            return (
+              <Card key={item.product_variant_id || item.variant_id || item.id} className="p-4 flex items-center gap-4 border-slate-200 dark:border-border bg-white dark:bg-card">
+                <img
+                  src={displayImage}
+                  alt={displayName}
+                  className="h-20 w-20 object-cover rounded-lg bg-slate-100 dark:bg-slate-850 border border-slate-100 dark:border-border"
+                />
+
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-slate-900 dark:text-slate-100 truncate">
+                    <Link to={`/products/${displaySlug}`} className="hover:text-primary">
+                      {displayName}
+                    </Link>
+                  </h4>
                 {item.variant && (
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     {item.variant.option_name}: {item.variant.option_value}
@@ -136,8 +161,9 @@ export default function CartPage() {
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
-            </Card>
-          ))}
+              </Card>
+            )
+          })}
         </div>
 
         {/* Order Summary */}

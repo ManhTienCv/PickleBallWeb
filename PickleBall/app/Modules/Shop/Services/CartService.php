@@ -16,6 +16,34 @@ class CartService
                 ['user_id' => $userId],
                 ['expires_at' => now()->addDays(7)]
             );
+
+            // If user had items in a guest session before logging in, transfer them to their account cart
+            if ($sessionId) {
+                $guestCart = Cart::where('session_id', $sessionId)
+                    ->where(function ($query) use ($userId) {
+                        $query->whereNull('user_id')->orWhere('user_id', '!=', $userId);
+                    })
+                    ->first();
+
+                if ($guestCart && $guestCart->id !== $cart->id) {
+                    foreach ($guestCart->items as $guestItem) {
+                        $existing = CartItem::where('cart_id', $cart->id)
+                            ->where('item_type', $guestItem->item_type)
+                            ->where('variant_id', $guestItem->variant_id)
+                            ->first();
+
+                        if ($existing) {
+                            $existing->update([
+                                'quantity' => $existing->quantity + $guestItem->quantity,
+                            ]);
+                            $guestItem->delete();
+                        } else {
+                            $guestItem->update(['cart_id' => $cart->id]);
+                        }
+                    }
+                    $guestCart->delete();
+                }
+            }
         } else {
             $cart = Cart::firstOrCreate(
                 ['session_id' => $sessionId],
@@ -31,7 +59,30 @@ class CartService
     public function addItem(Cart $cart, array $data): CartItem
     {
         if ($data['item_type'] === 'product') {
-            $variant = ProductVariant::with('product')->findOrFail($data['variant_id']);
+            $variantId = $data['variant_id'] ?? $data['product_variant_id'] ?? null;
+            $variant = ProductVariant::with('product')->find($variantId);
+            if (!$variant && $variantId) {
+                $variant = ProductVariant::with('product')->where('product_id', $variantId)->first();
+            }
+            if (!$variant && $variantId) {
+                $prod = \App\Modules\Shop\Models\Product::find($variantId);
+                if ($prod) {
+                    $variant = ProductVariant::firstOrCreate(
+                        ['product_id' => $prod->id, 'sku' => 'SKU-' . $prod->id . '-DEF'],
+                        [
+                            'color' => 'Mặc định',
+                            'weight' => 'Tiêu chuẩn',
+                            'stock_qty' => 50,
+                            'status' => 'active',
+                        ]
+                    );
+                    $variant->load('product');
+                }
+            }
+
+            if (!$variant) {
+                throw new \Exception("Không tìm thấy thông tin sản phẩm hoặc biến thể để thêm vào giỏ.");
+            }
 
             if ($variant->available_stock < $data['quantity']) {
                 throw new InsufficientStockException("Sản phẩm {$variant->product->name} (SKU: {$variant->sku}) không đủ số lượng tồn kho.");

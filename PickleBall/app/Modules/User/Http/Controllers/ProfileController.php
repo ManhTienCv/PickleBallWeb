@@ -9,6 +9,7 @@ use App\Modules\User\Http\Resources\UserResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
@@ -125,5 +126,37 @@ class ProfileController extends Controller
         Log::info("User #{$user->id} đã đổi Email thành công sang {$user->email}");
 
         return $this->success(new UserResource($user->fresh()), 'Đã thay đổi địa chỉ Email thành công!');
+    }
+
+    /**
+     * Đổi mật khẩu tài khoản
+     */
+    public function changePassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'current_password' => ['required', 'string'],
+            'new_password' => ['required', 'string', 'min:6', 'different:current_password'],
+            'new_password_confirmation' => ['required', 'same:new_password'],
+        ], [
+            'current_password.required' => 'Vui lòng nhập mật khẩu hiện tại.',
+            'new_password.required' => 'Vui lòng nhập mật khẩu mới.',
+            'new_password.min' => 'Mật khẩu mới phải có tối thiểu 6 ký tự.',
+            'new_password.different' => 'Mật khẩu mới không được trùng với mật khẩu hiện tại.',
+            'new_password_confirmation.required' => 'Vui lòng xác nhận lại mật khẩu mới.',
+            'new_password_confirmation.same' => 'Mật khẩu xác nhận không trùng khớp.',
+        ]);
+
+        $user = $request->user();
+
+        if (! Hash::check($request->current_password, $user->password)) {
+            return $this->error('Mật khẩu hiện tại không chính xác.', 422);
+        }
+
+        $user->password = Hash::make($request->new_password);
+        $user->save();
+
+        Log::info("User #{$user->id} đã đổi mật khẩu thành công.");
+
+        return $this->success(null, 'Đổi mật khẩu thành công!');
     }
 }

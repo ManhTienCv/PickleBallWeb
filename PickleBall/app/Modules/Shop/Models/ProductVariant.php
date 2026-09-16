@@ -45,11 +45,16 @@ class ProductVariant extends Model
 
     public function getEffectivePriceAttribute(): float
     {
-        return (float) ($this->price_override ?? $this->product->base_price);
+        return (float) ($this->price_override ?? $this->product?->base_price ?? 0);
     }
 
     public function getAvailableStockAttribute(): int
     {
         return max(0, $this->stock_qty - $this->reserved_qty);
+    }
+
+    public function getStockQuantityAttribute(): int
+    {
+        return $this->getAvailableStockAttribute();
     }
 }

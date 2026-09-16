@@ -74,6 +74,7 @@ Route::prefix('v1')->group(function () {
         Route::put('/user/profile', [ProfileController::class, 'update']);
         Route::post('/user/email/send-otp', [ProfileController::class, 'sendEmailOtp']);
         Route::post('/user/email/verify-otp', [ProfileController::class, 'verifyEmailOtp']);
+        Route::post('/user/change-password', [ProfileController::class, 'changePassword']);
 
         // Checkout Saga
         Route::post('/checkout', [CheckoutController::class, 'store']);

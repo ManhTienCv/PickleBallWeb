@@ -112,6 +112,35 @@
   html {
     font-size: 16px; /* Standard 100% rem font scale for clear legibility */
     height: 100%;
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
+  }
+
+  /* Custom Slim Scrollbar to prevent layout shift & look modern */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.4);
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.7);
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.4);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.7);
   }
 
   body, #root {
