@@ -68,7 +68,14 @@ export default function Products() {
     { id: 'Vợt Pickleball', label: 'Vợt Pickleball' },
     { id: 'Bóng Pickleball', label: 'Bóng Pickleball' },
     { id: 'Phụ kiện & Bao vợt', label: 'Phụ kiện & Bao vợt' },
-    { id: 'Quần áo & Trang phục', label: 'Quần áo & Trang phục' },
+    {
+    id: 'Quần áo & Trang phục',
+    label: 'Quần áo & Trang phục',
+  },
+  {
+    id: 'Đồ uống & Đồ ăn',
+    label: 'Đồ uống & Đồ ăn',
+  },
   ])
 
   // Dynamic Available Brands List for Checkboxes
@@ -77,10 +84,21 @@ export default function Products() {
     'Selkirk',
     'CRBN',
     'Franklin',
-    'Gamma',
-    'Head',
+    'Six Zero',
+    'Engage',
+    'Gearbox',
     'Diadem',
+    'Paddletek',
+    'ProXR',
+    'Dura',
+    'Onix',
     'Babolat',
+    'Wilson',
+    'Pocari',
+    'Revive',
+    'Red Bull',
+    'LaVie',
+    'DEMOPICK',
   ])
 
   // Sync Categories & Brands from Admin storage in Realtime

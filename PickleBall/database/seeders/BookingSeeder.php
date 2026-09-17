@@ -12,12 +12,12 @@ class BookingSeeder extends Seeder
     public function run(SlotGenerationService $slotService): void
     {
         $courtsData = [
-            ['name' => 'Sân A1', 'code' => 'COURT_A1', 'location' => 'Khu A - Tầng 1', 'surface_type' => 'Pro Concrete', 'image_url' => 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=600'],
-            ['name' => 'Sân A2', 'code' => 'COURT_A2', 'location' => 'Khu A - Tầng 1', 'surface_type' => 'Pro Concrete', 'image_url' => 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=600'],
-            ['name' => 'Sân B1', 'code' => 'COURT_B1', 'location' => 'Khu B - Ngoài trời', 'surface_type' => 'Cushioned Acrylic', 'image_url' => 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600'],
-            ['name' => 'Sân B2', 'code' => 'COURT_B2', 'location' => 'Khu B - Ngoài trời', 'surface_type' => 'Cushioned Acrylic', 'image_url' => 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600'],
-            ['name' => 'Sân C1 (VIP)', 'code' => 'COURT_C1_VIP', 'location' => 'Khu C - VIP Mái che', 'surface_type' => 'Indoor Wooden Flex', 'image_url' => 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?w=600'],
-            ['name' => 'Sân C2 (VIP)', 'code' => 'COURT_C2_VIP', 'location' => 'Khu C - VIP Mái che', 'surface_type' => 'Indoor Wooden Flex', 'image_url' => 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?w=600'],
+            ['name' => 'Sân A1', 'code' => 'COURT_A1', 'location' => 'Khu A - Tầng 1', 'surface_type' => 'Pro Concrete', 'image_url' => '/images/pickleball_court.jpg'],
+            ['name' => 'Sân A2', 'code' => 'COURT_A2', 'location' => 'Khu A - Tầng 1', 'surface_type' => 'Pro Concrete', 'image_url' => '/images/pickleball_court_indoor.jpg'],
+            ['name' => 'Sân B1', 'code' => 'COURT_B1', 'location' => 'Khu B - Ngoài trời', 'surface_type' => 'Cushioned Acrylic', 'image_url' => '/images/pickleball_court_outdoor.jpg'],
+            ['name' => 'Sân B2', 'code' => 'COURT_B2', 'location' => 'Khu B - Ngoài trời', 'surface_type' => 'Cushioned Acrylic', 'image_url' => '/images/pickleball_court.jpg'],
+            ['name' => 'Sân C1 (VIP)', 'code' => 'COURT_C1_VIP', 'location' => 'Khu C - VIP Mái che', 'surface_type' => 'Indoor Wooden Flex', 'image_url' => '/images/pickleball_match.jpg'],
+            ['name' => 'Sân C2 (VIP)', 'code' => 'COURT_C2_VIP', 'location' => 'Khu C - VIP Mái che', 'surface_type' => 'Indoor Wooden Flex', 'image_url' => '/images/pickleball_court_indoor.jpg'],
         ];
 
         foreach ($courtsData as $cData) {

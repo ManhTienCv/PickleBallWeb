@@ -113,13 +113,16 @@ export default function CartPage() {
             const variantProduct = (item.variant as any)?.product
             const displayName = item.product?.name || variantProduct?.name || (item as any).metadata?.product_name || 'Vợt Pickleball'
             const displaySlug = item.product?.slug || variantProduct?.slug || 'vot-pickleball'
-            const displayImage = item.product?.image_url || variantProduct?.image_url || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&q=80&w=200'
+            const displayImage = item.product?.image_url || variantProduct?.image_url || '/images/pickleball_paddle_joola.jpg'
 
             return (
               <Card key={item.product_variant_id || item.variant_id || item.id} className="p-4 flex items-center gap-4 border-slate-200 dark:border-border bg-white dark:bg-card">
                 <img
                   src={displayImage}
                   alt={displayName}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/images/pickleball_paddle_joola.jpg'
+                  }}
                   className="h-20 w-20 object-cover rounded-lg bg-slate-100 dark:bg-slate-850 border border-slate-100 dark:border-border"
                 />
 

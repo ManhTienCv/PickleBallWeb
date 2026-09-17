@@ -42,27 +42,27 @@ import { wishlistService } from '@/services/wishlist.service'
 import { authHelpers } from '@/stores/useAuthStore'
 import { useAuthModalStore } from '@/stores/useAuthModalStore'
 
-// Default color palettes with realistic Pickleball high-res images
+// Default color palettes with authentic Pickleball local assets
 const DEFAULT_COLOR_VARIANTS = [
   {
     name: 'Đen Carbon Pro',
     hex: '#0f172a',
-    image: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&q=80&w=800',
+    image: '/images/pickleball_paddle_joola.jpg',
   },
   {
     name: 'Xanh Neon Cyber',
     hex: '#06b6d4',
-    image: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&q=80&w=800',
+    image: '/images/pickleball_paddle_balls.jpg',
   },
   {
-    name: 'Hồng Pastel Sweet',
-    hex: '#f43f5e',
-    image: 'https://images.unsplash.com/photo-1527661591475-527312dd65f5?auto=format&fit=crop&q=80&w=800',
+    name: 'Carbon Raw T700',
+    hex: '#334155',
+    image: '/images/pickleball_carbon_technology.png',
   },
   {
     name: 'Trắng Bạc Titan',
     hex: '#e2e8f0',
-    image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&q=80&w=800',
+    image: '/images/pickleball_paddles_collection.jpg',
   },
 ]
 
@@ -187,7 +187,7 @@ export default function ProductDetail() {
           slug: 'hop-3-qua-bong-thi-dau-usapa',
           description: 'Bóng thi đấu đục lỗ ngoài trời chính hãng',
           price: bundleBallPrice,
-          image_url: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=400',
+          image_url: '/images/pickleball_balls_yellow.jpg',
           in_stock: true,
           variants: [],
         })
@@ -200,7 +200,7 @@ export default function ProductDetail() {
           slug: 'cuon-quan-can-vot-chong-mo-hoi',
           description: 'Bọc tay cầm chống trượt thấm hút mồ hôi',
           price: bundleGripPrice,
-          image_url: 'https://images.unsplash.com/photo-1527661591475-527312dd65f5?w=400',
+          image_url: '/images/pickleball_overgrip_tape.jpg',
           in_stock: true,
           variants: [],
         })
@@ -1235,7 +1235,7 @@ export default function ProductDetail() {
                   <div className="flex items-start gap-3">
                     <div className="w-14 h-14 rounded-xl bg-white dark:bg-slate-800 p-1 shrink-0 overflow-hidden border border-slate-200/60 dark:border-slate-700 shadow-sm relative">
                       <img
-                        src="https://images.unsplash.com/photo-1530549387789-4c1017266635?auto=format&fit=crop&q=80&w=400"
+                        src="/images/pickleball_balls_yellow.jpg"
                         alt="Hộp 3 Bóng USAPA"
                         className="w-full h-full object-cover rounded-lg"
                       />
@@ -1276,7 +1276,7 @@ export default function ProductDetail() {
                   <div className="flex items-start gap-3">
                     <div className="w-14 h-14 rounded-xl bg-white dark:bg-slate-800 p-1 shrink-0 overflow-hidden border border-slate-200/60 dark:border-slate-700 shadow-sm relative">
                       <img
-                        src="https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?auto=format&fit=crop&q=80&w=400"
+                        src="/images/pickleball_overgrip_tape.jpg"
                         alt="Quấn Cán Vợt Overgrip"
                         className="w-full h-full object-cover rounded-lg"
                       />

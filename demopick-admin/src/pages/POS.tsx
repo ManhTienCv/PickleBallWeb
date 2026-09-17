@@ -313,12 +313,13 @@ export default function POS() {
     }
   }, [searchParams]);
 
-  // Category filter tabs (Đồ uống & Đồ ăn, Vợt, Bóng, Phụ kiện, Thuê vợt)
+  // Category filter tabs (Tất cả, Đồ uống & Đồ ăn, Vợt, Bóng, Phụ kiện, Thuê vợt)
   const categoriesList = [
+    { id: "all", label: "Tất cả" },
     { id: "Đồ uống", label: "Đồ uống & Đồ ăn" },
     { id: "Vợt Pickleball", label: "Vợt Pickleball" },
     { id: "Bóng Pickleball", label: "Bóng Pickleball" },
-    { id: "Phụ kiện", label: "Phụ kiện & Quấn cán" },
+    { id: "Phụ kiện", label: "Phụ kiện & Trang phục" },
     { id: "Thuê vợt", label: "Thuê vợt & Máy tập" },
   ];
 
@@ -333,17 +334,27 @@ export default function POS() {
     let matchCat = true;
     const catName = p.category?.name || "";
 
-    if (activeCategory === "Đồ uống") {
+    if (activeCategory === "all") {
+      matchCat = true;
+    } else if (activeCategory === "Đồ uống") {
       matchCat =
         p.item_type === "drink_food" ||
         catName.includes("Nước") ||
         catName.includes("Đồ ăn") ||
+        catName.includes("Đồ uống") ||
         pName.includes("nước") ||
         pName.includes("pocari") ||
         pName.includes("aquafina") ||
         pName.includes("revive") ||
         pName.includes("red bull") ||
-        pName.includes("bánh");
+        pName.includes("bánh") ||
+        pName.includes("trà") ||
+        pName.includes("cà phê") ||
+        pName.includes("chuối") ||
+        pName.includes("snickers") ||
+        pName.includes("granola") ||
+        pName.includes("dừa") ||
+        pName.includes("la vie");
     } else if (activeCategory === "Vợt Pickleball") {
       matchCat =
         catName.includes("Vợt") ||
@@ -355,15 +366,27 @@ export default function POS() {
     } else if (activeCategory === "Phụ kiện") {
       matchCat =
         catName.includes("Phụ kiện") ||
+        catName.includes("Quần áo") ||
+        catName.includes("Trang phục") ||
+        catName.includes("Giày") ||
         pName.includes("quấn") ||
         pName.includes("bao") ||
         pName.includes("chì") ||
         pName.includes("grip") ||
-        pName.includes("băng");
+        pName.includes("băng") ||
+        pName.includes("balo") ||
+        pName.includes("giày") ||
+        pName.includes("áo") ||
+        pName.includes("quần") ||
+        pName.includes("nón") ||
+        pName.includes("lưới") ||
+        pName.includes("gôm") ||
+        pName.includes("cover");
     } else if (activeCategory === "Thuê vợt") {
       matchCat =
         p.item_type === "rental" ||
         catName.includes("Cho thuê") ||
+        catName.includes("thuê") ||
         pName.includes("thuê");
     }
 
@@ -697,7 +720,7 @@ export default function POS() {
       setShiftOrdersCount((prev) => prev + 1);
 
       // Deduct stock quantity for purchased POS items & sync with Web store
-      const syncedRaw = localStorage.getItem("demopick_synced_products");
+      const syncedRaw = localStorage.getItem("demopick_synced_products_v3");
       let currentProductsList = products;
       if (syncedRaw) {
         try { currentProductsList = JSON.parse(syncedRaw); } catch { }
@@ -716,7 +739,7 @@ export default function POS() {
         return p;
       });
       setProductsState(updatedProducts);
-      localStorage.setItem("demopick_synced_products", JSON.stringify(updatedProducts));
+      localStorage.setItem("demopick_synced_products_v3", JSON.stringify(updatedProducts));
       window.dispatchEvent(new Event("storage"));
 
       const hasCourt = cartItems.some((i) => i.isCourtFee);
@@ -769,7 +792,7 @@ export default function POS() {
     });
 
     setProductsState(updated);
-    localStorage.setItem("demopick_synced_products", JSON.stringify(updated));
+    localStorage.setItem("demopick_synced_products_v3", JSON.stringify(updated));
     window.dispatchEvent(new Event("storage"));
     const nowTimeStr = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
     toast.success(

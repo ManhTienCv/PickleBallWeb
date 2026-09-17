@@ -169,11 +169,10 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
         <div className="aspect-[4/3] sm:aspect-square overflow-hidden bg-[#FAF8F5] dark:bg-slate-900/60 relative block group/img">
           <Link to={`/products/${product.slug || product.id}`}>
             <img
-              src={product.image_url || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&q=80&w=600'}
+              src={product.image_url || '/images/pickleball_paddle_joola.jpg'}
               alt={product.name}
               onError={(e) => {
-                (e.target as HTMLImageElement).src =
-                  'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&q=80&w=600'
+                (e.target as HTMLImageElement).src = '/images/pickleball_paddle_joola.jpg'
               }}
               className="h-full w-full object-cover object-center transition-transform duration-500 group-hover/img:scale-105"
             />
@@ -311,8 +310,11 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
             {/* Left Column: Image & Gallery */}
             <div className="p-6 bg-[#FAF8F5] dark:bg-slate-900/60 flex flex-col justify-center items-center border-b md:border-b-0 md:border-r border-slate-100 dark:border-border relative">
               <img
-                src={product.image_url || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&q=80&w=600'}
+                src={product.image_url || '/images/pickleball_paddle_joola.jpg'}
                 alt={product.name}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/images/pickleball_paddle_joola.jpg'
+                }}
                 className="max-h-72 w-full object-contain rounded-2xl shadow-sm"
               />
               <div className="flex items-center gap-2 mt-4 text-xs text-slate-600 dark:text-slate-300 font-medium">

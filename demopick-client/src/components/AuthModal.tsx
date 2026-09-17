@@ -349,8 +349,8 @@ export function AuthModal() {
           {/* Left Column - Image & Branding (Desktop) */}
           <div className="hidden md:flex md:col-span-2 relative bg-slate-900 flex-col justify-between p-8 overflow-hidden select-none">
             <img
-              src="https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&q=80&w=800"
-              alt="Pickleball Court"
+              src="/images/pickleball_court.jpg"
+              alt="Sân Pickleball Chuẩn Thi Đấu"
               className="absolute inset-0 w-full h-full object-cover scale-105 transition-transform duration-700 hover:scale-110"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900/95 via-slate-900/40 to-slate-900/10" />

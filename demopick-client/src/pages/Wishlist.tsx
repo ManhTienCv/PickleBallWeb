@@ -137,7 +137,7 @@ export default function WishlistPage() {
             const firstImg =
               product.image_url ||
               (Array.isArray(product.gallery) && product.gallery[0]) ||
-              'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=400'
+              '/images/pickleball_paddle_joola.jpg'
 
             return (
               <Card

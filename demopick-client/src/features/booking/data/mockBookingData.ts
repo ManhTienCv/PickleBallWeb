@@ -10,7 +10,7 @@ export const MOCK_COURTS: Court[] = [
     peak_hourly_rate: 180000,
     status: 'active',
     description: 'Mặt thảm Cushion Master 8 lớp đạt chuẩn USAPA, điều hòa mát mẻ 24/7 và hệ thống đèn LED chống lóa chuyên nghiệp.',
-    image_url: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format&fit=crop&q=80',
+    image_url: '/images/pickleball_court.jpg',
   },
   {
     id: 2,
@@ -21,7 +21,7 @@ export const MOCK_COURTS: Court[] = [
     peak_hourly_rate: 180000,
     status: 'active',
     description: 'Mặt thảm Cushion Master chuẩn thi đấu quốc tế, tích hợp camera bắt vạch biên và ghi hình highlight tự động.',
-    image_url: 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?w=800&auto=format&fit=crop&q=80',
+    image_url: '/images/pickleball_court_indoor.jpg',
   },
   {
     id: 3,
@@ -32,7 +32,7 @@ export const MOCK_COURTS: Court[] = [
     peak_hourly_rate: 180000,
     status: 'active',
     description: 'Sân ngoài trời có mái vòm thông minh che nắng mưa, gió tự nhiên thoáng mát, thảm chống trơn trượt tối đa.',
-    image_url: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800&auto=format&fit=crop&q=80',
+    image_url: '/images/pickleball_court_outdoor.jpg',
   },
   {
     id: 4,
@@ -43,7 +43,7 @@ export const MOCK_COURTS: Court[] = [
     peak_hourly_rate: 180000,
     status: 'active',
     description: 'Mặt sân thoáng rộng có khu vực khán đài mini, thích hợp tổ chức các buổi giao lưu câu lạc bộ và thi đấu hội nhóm.',
-    image_url: 'https://images.unsplash.com/photo-1511067007798-44672d7b52b0?w=800&auto=format&fit=crop&q=80',
+    image_url: '/images/pickleball_court.jpg',
   },
   {
     id: 5,
@@ -54,7 +54,7 @@ export const MOCK_COURTS: Court[] = [
     peak_hourly_rate: 220000,
     status: 'active',
     description: 'Sân trung tâm có ghế sofa da thư giãn riêng biệt, tủ lạnh mini phục vụ nước suối & khăn lạnh miễn phí.',
-    image_url: 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=800&auto=format&fit=crop&q=80',
+    image_url: '/images/pickleball_match.jpg',
   },
   {
     id: 6,
@@ -65,7 +65,7 @@ export const MOCK_COURTS: Court[] = [
     peak_hourly_rate: 220000,
     status: 'active',
     description: 'Sân thi đấu trang bị hệ thống màn hình hiển thị tỉ số kỹ thuật số, hỗ trợ livestream độ phân giải 4K sắc nét.',
-    image_url: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&auto=format&fit=crop&q=80',
+    image_url: '/images/pickleball_court_indoor.jpg',
   },
   {
     id: 7,
@@ -76,7 +76,7 @@ export const MOCK_COURTS: Court[] = [
     peak_hourly_rate: 180000,
     status: 'active',
     description: 'Sân tiêu chuẩn thi đấu trang bị mặt sân chống lóa và hệ thống đèn chiếu sáng công nghệ cao.',
-    image_url: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&auto=format&fit=crop&q=80',
+    image_url: '/images/pickleball_court_outdoor.jpg',
   },
   {
     id: 8,
@@ -87,7 +87,7 @@ export const MOCK_COURTS: Court[] = [
     peak_hourly_rate: 180000,
     status: 'active',
     description: 'Sân mặt thảm êm ái, độ đàn hồi chuẩn thi đấu giúp bảo vệ tốt cổ chân và đầu gối vận động viên.',
-    image_url: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&auto=format&fit=crop&q=80',
+    image_url: '/images/pickleball_court.jpg',
   },
 ]
 

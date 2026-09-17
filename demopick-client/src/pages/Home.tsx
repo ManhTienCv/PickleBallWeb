@@ -148,7 +148,7 @@ export default function Home() {
       type: 'Trong nhà / Pro Concrete',
       price: 'Từ 90.000 - 160.000 đ/h',
       status: 'Sẵn sàng đón khách',
-      image: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&q=80&w=500',
+      image: '/images/pickleball_court.jpg',
     },
     {
       id: 'A2',
@@ -156,7 +156,7 @@ export default function Home() {
       type: 'Trong nhà / Đèn LED 500 Lux',
       price: 'Từ 90.000 - 160.000 đ/h',
       status: 'Sẵn sàng đón khách',
-      image: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&q=80&w=500',
+      image: '/images/pickleball_court_indoor.jpg',
     },
     {
       id: 'B1',
@@ -164,7 +164,7 @@ export default function Home() {
       type: 'Ngoài trời / Cushioned Acrylic',
       price: 'Từ 90.000 - 180.000 đ/h',
       status: 'Sẵn sàng đón khách',
-      image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=500',
+      image: '/images/pickleball_court_outdoor.jpg',
     },
     {
       id: 'B2',
@@ -172,7 +172,7 @@ export default function Home() {
       type: 'Ngoài trời / Chuẩn thi đấu',
       price: 'Từ 90.000 - 180.000 đ/h',
       status: 'Sẵn sàng đón khách',
-      image: 'https://images.unsplash.com/photo-1599474924187-334a4ae5bd3c?auto=format&fit=crop&q=80&w=500',
+      image: '/images/pickleball_court.jpg',
     },
     {
       id: 'C1',
@@ -180,7 +180,7 @@ export default function Home() {
       type: 'VIP Mái che / Wooden Flex',
       price: 'Từ 120.000 - 220.000 đ/h',
       status: 'Sẵn sàng đón khách',
-      image: 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?auto=format&fit=crop&q=80&w=500',
+      image: '/images/pickleball_match.jpg',
     },
     {
       id: 'C2',
@@ -188,7 +188,7 @@ export default function Home() {
       type: 'VIP Khán đài & Lounge',
       price: 'Từ 120.000 - 220.000 đ/h',
       status: 'Sẵn sàng đón khách',
-      image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=500',
+      image: '/images/pickleball_court_indoor.jpg',
     },
   ]
 
@@ -268,7 +268,7 @@ export default function Home() {
                 {/* Court Image Banner with Badge */}
                 <div className="aspect-video rounded-2xl overflow-hidden relative border border-slate-200/80 dark:border-border shadow-inner group">
                   <img
-                    src="https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&q=80&w=800"
+                    src="/images/pickleball_court.jpg"
                     alt="Sân Pickleball Pick Center"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />

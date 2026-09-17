@@ -67,7 +67,7 @@ export const normalizeCart = (rawCart: any): Cart => {
           name: item.metadata?.product_name || 'Vợt Pickleball Cao Cấp',
           slug: 'vot-pickleball',
           price: price,
-          image_url: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=400',
+          image_url: '/images/pickleball_paddle_joola.jpg',
         },
         variant: item.variant || {
           id: vId,
@@ -206,7 +206,7 @@ export const cartService = {
           name: 'Vợt Pickleball Cao Cấp',
           slug: 'vot-pickleball',
           price: unitPrice,
-          image_url: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=400',
+          image_url: '/images/pickleball_paddle_joola.jpg',
         },
         variant: {
           id: targetVariantId,
