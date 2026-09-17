@@ -229,7 +229,7 @@ export default function AdminChat() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden divide-y divide-slate-100">
             {filteredConversations.length === 0 ? (
               <div className="p-8 text-center text-slate-400 text-xs">
                 Không tìm thấy cuộc trò chuyện nào.
@@ -241,12 +241,17 @@ export default function AdminChat() {
                   <button
                     key={conv.session_id}
                     onClick={() => handleSelectSession(conv.session_id)}
-                    className={`w-full text-left p-3.5 flex items-start gap-3 transition-colors cursor-pointer ${
+                    className={`w-full text-left p-3.5 flex items-start gap-3 transition-colors cursor-pointer relative ${
                       isSelected
-                        ? "bg-emerald-50/80 border-l-4 border-l-emerald-600"
+                        ? "bg-emerald-50/80"
                         : "hover:bg-slate-100/70"
                     }`}
                   >
+                    {/* Cột sáng màu xanh báo hiệu cuộc hội thoại đang chọn */}
+                    {isSelected && (
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-600 rounded-r z-10" />
+                    )}
+
                     <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center justify-center font-bold text-xs shrink-0">
                       {conv.customer_name.charAt(0).toUpperCase()}
                     </div>
