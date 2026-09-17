@@ -18,9 +18,11 @@ import {
   Plus,
   Minus,
   ArrowRight,
+  Heart,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cartService } from '@/services/cart.service'
+import { wishlistService } from '@/services/wishlist.service'
 import { authHelpers } from '@/stores/useAuthStore'
 import { useAuthModalStore } from '@/stores/useAuthModalStore'
 
@@ -37,6 +39,39 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
     product?.variants && product.variants.length > 0 ? product.variants[0] : null
   )
   const [modalQuantity, setModalQuantity] = useState(1)
+  const [isWishlisted, setIsWishlisted] = useState<boolean>(() =>
+    product ? wishlistService.isInWishlist(product.id) : false
+  )
+
+  React.useEffect(() => {
+    if (product) {
+      setIsWishlisted(wishlistService.isInWishlist(product.id))
+    }
+    const handler = () => {
+      if (product) {
+        setIsWishlisted(wishlistService.isInWishlist(product.id))
+      }
+    }
+    window.addEventListener('wishlist-updated', handler)
+    return () => window.removeEventListener('wishlist-updated', handler)
+  }, [product])
+
+  const handleToggleWishlist = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const res = await wishlistService.toggleWishlist(product)
+    setIsWishlisted(res.in_wishlist)
+    if (res.in_wishlist) {
+      toast.success(`Đã thêm "${product.name}" vào danh sách yêu thích!`, {
+        action: {
+          label: 'Xem yêu thích',
+          onClick: () => navigate('/wishlist'),
+        },
+      })
+    } else {
+      toast.info(`Đã bỏ "${product.name}" khỏi danh sách yêu thích.`)
+    }
+  }
 
   const handleOpenQuickView = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -162,6 +197,22 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
               </span>
             )}
           </div>
+
+          {/* Top Right Wishlist Button */}
+          <button
+            type="button"
+            onClick={handleToggleWishlist}
+            className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center shadow-sm transition-all duration-200 hover:scale-110 active:scale-95 cursor-pointer"
+            title={isWishlisted ? 'Bỏ khỏi yêu thích' : 'Thêm vào yêu thích'}
+          >
+            <Heart
+              className={`w-4 h-4 transition-colors ${
+                isWishlisted
+                  ? 'fill-rose-500 text-rose-500'
+                  : 'text-slate-400 hover:text-rose-500'
+              }`}
+            />
+          </button>
 
           {/* Quick View Button on Image Hover */}
           <button

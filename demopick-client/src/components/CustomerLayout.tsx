@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { ShoppingCart, Package, LogOut, User as UserIcon, Home, ShoppingBag, CalendarDays } from 'lucide-react'
+import { ShoppingCart, Package, LogOut, User as UserIcon, Home, ShoppingBag, CalendarDays, Heart } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAuthModalStore } from '@/stores/useAuthModalStore'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { cartService, Cart } from '@/services/cart.service'
+import { wishlistService } from '@/services/wishlist.service'
 import { motion } from 'framer-motion'
 import ThemeToggle from '@/components/ThemeToggle'
 import PickleballLogo from '@/components/PickleballLogo'
@@ -65,6 +66,28 @@ export default function CustomerLayout() {
   }, [queryClient])
 
   const cartCount = cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0
+
+  const [wishlistCount, setWishlistCount] = useState<number>(() => wishlistService.getLocalWishlistIds().length)
+
+  useEffect(() => {
+    wishlistService.getWishlist().then((res) => {
+      setWishlistCount(res.count)
+    })
+
+    const handleWishlistUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent<{ count: number; ids: number[] }>
+      if (customEvent.detail?.count !== undefined) {
+        setWishlistCount(customEvent.detail.count)
+      } else {
+        setWishlistCount(wishlistService.getLocalWishlistIds().length)
+      }
+    }
+
+    window.addEventListener('wishlist-updated', handleWishlistUpdated)
+    return () => {
+      window.removeEventListener('wishlist-updated', handleWishlistUpdated)
+    }
+  }, [])
 
   const [hoveredDropdownItem, setHoveredDropdownItem] = useState<string | null>(null)
 
@@ -137,6 +160,23 @@ export default function CustomerLayout() {
             {/* Dark/Light Theme Toggle */}
             <ThemeToggle className="p-3" />
 
+            {/* Wishlist Button */}
+            <Link
+              to="/wishlist"
+              onClick={scrollToTop}
+              aria-label="Danh sách yêu thích"
+              className="relative p-3 rounded-full text-foreground hover:bg-muted transition-colors block border border-transparent hover:border-border cursor-pointer select-none"
+            >
+              <Heart className="w-[22px] h-[22px] text-muted-foreground hover:text-red-500 transition-colors" />
+              {wishlistCount > 0 && (
+                <span
+                  className="absolute -top-1 -right-1 min-w-[22px] h-[22px] px-1 bg-red-500 text-white text-xs font-black rounded-full flex items-center justify-center shadow-md ring-2 ring-white dark:ring-slate-900 pointer-events-none"
+                >
+                  {wishlistCount > 99 ? '99+' : wishlistCount}
+                </span>
+              )}
+            </Link>
+
             {/* Cart Button (Solid, no bounce) */}
             <Link
               to="/cart"
@@ -195,6 +235,22 @@ export default function CustomerLayout() {
                     )}
                     <Package className="h-4 w-4 text-muted-foreground relative z-10" />
                     <span className="relative z-10">Lịch sử đơn hàng</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => navigate('/wishlist')}
+                    onMouseEnter={() => setHoveredDropdownItem('wishlist')}
+                    onMouseLeave={() => setHoveredDropdownItem(null)}
+                    className="gap-2 rounded-xl cursor-pointer font-medium text-foreground hover:bg-transparent focus:bg-transparent relative z-0"
+                  >
+                    {hoveredDropdownItem === 'wishlist' && (
+                      <motion.div
+                        layoutId="customer-dropdown-capsule"
+                        className="absolute inset-0 bg-muted rounded-xl -z-10"
+                        transition={{ type: 'spring', stiffness: 250, damping: 25 }}
+                      />
+                    )}
+                    <Heart className="h-4 w-4 text-muted-foreground relative z-10" />
+                    <span className="relative z-10">Sản phẩm yêu thích</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => navigate('/profile')}

@@ -5,7 +5,7 @@ import { cartService, CartItem } from '@/services/cart.service'
 import { useCheckoutTimer } from '@/contexts/CheckoutTimerContext'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { ShoppingCart, Trash2, ArrowRight, ArrowLeft, ShoppingBag } from 'lucide-react'
+import { ShoppingCart, Trash2, ArrowRight, ArrowLeft, ShoppingBag, Ticket } from 'lucide-react'
 import { toast } from 'sonner'
 import { authHelpers } from '@/stores/useAuthStore'
 import { useAuthModalStore } from '@/stores/useAuthModalStore'
@@ -198,10 +198,15 @@ export default function CartPage() {
               </span>
             </div>
 
+            <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-center gap-2.5 text-xs text-amber-800 dark:text-amber-200 font-semibold">
+              <Ticket className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <span>Có mã giảm giá hoặc voucher ưu đãi? Bạn có thể nhập và áp dụng tại bước thanh toán kế tiếp!</span>
+            </div>
+
             <Button
               size="lg"
               onClick={handleProceedToCheckout}
-              className="w-full gap-2 font-bold mt-4"
+              className="w-full gap-2 font-bold mt-2"
             >
               <span>Tiến Hành Đặt Hàng</span>
               <ArrowRight className="h-4 w-4" />

@@ -380,7 +380,7 @@ export default function OrdersPage() {
     setOrderImages(orderImages.filter((_, idx) => idx !== indexToRemove))
   }
 
-  const handleSubmitOrderReview = (e: React.FormEvent) => {
+  const handleSubmitOrderReview = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!orderComment.trim()) {
       toast.error('Vui lòng nhập nhận xét đánh giá sản phẩm')
@@ -388,11 +388,11 @@ export default function OrdersPage() {
     }
 
     if (reviewingOrder) {
-      reviewingOrder.items?.forEach((item: any) => {
+      for (const item of reviewingOrder.items || []) {
         if (item.item_type !== 'booking') {
-          shopService.addReview(item.id || 1, {
+          await shopService.addReview(item.id || 1, {
             productId: item.id || 1,
-            userName: reviewingOrder.customer_name || 'Nguyễn Văn An',
+            userName: reviewingOrder.customer_name || 'Khách hàng DemoPick',
             rating: orderRating,
             comment: orderComment.trim(),
             variantPurchased: item.item_name,
@@ -400,7 +400,7 @@ export default function OrdersPage() {
             images: orderImages.length > 0 ? orderImages : undefined,
           })
         }
-      })
+      }
 
       const updatedReviewed = { ...reviewedOrders, [reviewingOrder.order_code]: true }
       setReviewedOrders(updatedReviewed)

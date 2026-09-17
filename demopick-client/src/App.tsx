@@ -15,6 +15,7 @@ import CheckoutPage from '@/pages/Checkout'
 import OrderSuccess from '@/pages/OrderSuccess'
 import OrdersPage from '@/pages/Orders'
 import MomoCallbackPage from '@/pages/MomoCallback'
+import WishlistPage from '@/pages/Wishlist'
 import NotFound from '@/pages/NotFound'
 import { AuthModal } from '@/components/AuthModal'
 import { Toaster } from 'sonner'
@@ -49,6 +50,7 @@ function App() {
                   <Route path="/order-success/:code" element={<OrderSuccess />} />
                   <Route path="/payment/momo/callback" element={<MomoCallbackPage />} />
                   <Route path="/orders" element={<OrdersPage />} />
+                  <Route path="/wishlist" element={<WishlistPage />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>

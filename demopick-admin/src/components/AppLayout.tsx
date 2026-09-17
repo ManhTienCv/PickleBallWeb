@@ -17,6 +17,8 @@ import {
   PanelLeft,
   ChevronRight,
   MessageSquare,
+  Star,
+  Ticket,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import CheckInDialog from "@/components/CheckInDialog";
@@ -66,6 +68,8 @@ const menuSections: MenuSection[] = [
       { icon: Globe, label: "Đơn hàng Online", path: "/orders?tab=online", roles: ["admin", "super_admin"] },
       { icon: Receipt, label: "Đơn hàng tại sân", path: "/orders?tab=pos", roles: ["admin", "super_admin", "staff"] },
       { icon: CreditCard, label: "Quản lý Thanh toán", path: "/payments", roles: ["admin", "super_admin"] },
+      { icon: Star, label: "Đánh giá & Phản hồi", path: "/reviews", roles: ["admin", "super_admin", "staff"] },
+      { icon: Ticket, label: "Mã Giảm Giá (Voucher)", path: "/vouchers", roles: ["admin", "super_admin"] },
     ],
   },
   {

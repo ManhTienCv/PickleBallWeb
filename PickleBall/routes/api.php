@@ -20,6 +20,9 @@ use App\Modules\Order\Http\Controllers\ShippingController;
 use App\Modules\Order\Http\Controllers\OrderApiController;
 use App\Modules\User\Http\Controllers\AuthController;
 use App\Modules\User\Http\Controllers\ProfileController;
+use App\Modules\Shop\Http\Controllers\ReviewController;
+use App\Modules\Shop\Http\Controllers\VoucherController;
+use App\Modules\Shop\Http\Controllers\WishlistController;
 use App\Http\Controllers\ChatController;
 use Illuminate\Support\Facades\Route;
 
@@ -72,6 +75,20 @@ Route::prefix('v1')->group(function () {
     Route::get('/products/{slug}', [ProductController::class, 'show']);
     Route::get('/categories', [CategoryController::class, 'index']);
     Route::get('/brands', [BrandController::class, 'index']);
+
+    // Public Product Reviews
+    Route::get('/products/{id}/reviews', [ReviewController::class, 'index']);
+    Route::post('/products/{id}/reviews', [ReviewController::class, 'store']);
+    Route::post('/reviews/{id}/like', [ReviewController::class, 'like']);
+
+    // Public Vouchers / Coupons
+    Route::get('/vouchers', [VoucherController::class, 'index']);
+    Route::post('/vouchers/apply', [VoucherController::class, 'apply']);
+
+    // Customer Wishlist
+    Route::get('/wishlist', [WishlistController::class, 'index']);
+    Route::post('/wishlist/{productId}/toggle', [WishlistController::class, 'toggle']);
+    Route::delete('/wishlist/{productId}', [WishlistController::class, 'destroy']);
 
     // Public Blog Posts
     Route::get('/posts', [PostController::class, 'index']);
@@ -133,6 +150,10 @@ Route::prefix('v1')->group(function () {
         Route::get('/chat/conversations', [ChatController::class, 'getAdminConversations']);
         Route::get('/chat/messages/{sessionId}', [ChatController::class, 'getAdminConversationMessages']);
         Route::post('/chat/send', [ChatController::class, 'sendAdminReply']);
+
+        // Product Reviews Moderation
+        Route::get('/reviews', [ReviewController::class, 'adminIndex']);
+        Route::put('/reviews/{id}/status', [ReviewController::class, 'updateStatus']);
     });
 
     // ── 4. Admin Only Operations (Stock Adjustments, Deletions, Reports & Locks) ──
@@ -142,6 +163,12 @@ Route::prefix('v1')->group(function () {
         Route::put('/products/{id}', [AdminProductController::class, 'update']);
         Route::delete('/products/{id}', [AdminProductController::class, 'destroy']);
         Route::post('/products/{id}/stock', [AdminProductController::class, 'adjustStock']);
+
+        // Vouchers Management
+        Route::get('/vouchers', [VoucherController::class, 'adminIndex']);
+        Route::post('/vouchers', [VoucherController::class, 'store']);
+        Route::put('/vouchers/{id}', [VoucherController::class, 'update']);
+        Route::delete('/vouchers/{id}', [VoucherController::class, 'destroy']);
 
         // Admin Emergency Court Lock
         Route::post('/courts/{id}/lock', [AdminCourtController::class, 'toggleStatus']);

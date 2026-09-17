@@ -8,6 +8,8 @@ export interface CreateOrderParams {
   ghnDistrictId?: number
   ghnWardCode?: string
   paymentMethod: 'momo' | 'cod'
+  voucherCode?: string
+  discount?: number
   items: Array<{
     id: number
     product_id?: number

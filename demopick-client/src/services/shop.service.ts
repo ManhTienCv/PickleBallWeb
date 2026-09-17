@@ -308,8 +308,34 @@ export const shopService = {
     return found || DEFAULT_CLIENT_PRODUCTS[0]
   },
 
-  // ── Product Reviews System (5-Star Ratings & Real Photos) ───────────
-  getProductReviews(productId: number): ProductReview[] {
+  // ── Product Reviews System (5-Star Ratings & Real Photos via MySQL API) ───────────
+  async getProductReviews(productId: number): Promise<ProductReview[]> {
+    try {
+      const response = await api.get<ApiResponse<{ reviews: any[]; average_rating: number; total_reviews: number }>>(
+        `/products/${productId}/reviews`
+      )
+      const data = response.data?.data
+      if (data && Array.isArray(data.reviews) && data.reviews.length > 0) {
+        const mapped: ProductReview[] = data.reviews.map((r: any) => ({
+          id: String(r.id),
+          productId: Number(r.productId || productId),
+          userName: r.userName || 'Khách hàng DemoPick',
+          userAvatar: r.userAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
+          rating: Number(r.rating) || 5,
+          comment: r.comment || '',
+          createdAt: r.createdAt || new Date().toLocaleDateString('vi-VN'),
+          variantPurchased: r.variantPurchased,
+          isVerifiedPurchase: Boolean(r.isVerifiedPurchase),
+          likes: Number(r.likes) || 0,
+          images: Array.isArray(r.images) ? r.images : [],
+        }))
+        localStorage.setItem(`${REVIEWS_STORAGE_PREFIX}${productId}`, JSON.stringify(mapped))
+        return mapped
+      }
+    } catch (err) {
+      console.warn('Backend reviews API offline, using cached fallback:', err)
+    }
+
     const key = `${REVIEWS_STORAGE_PREFIX}${productId}`
     const raw = localStorage.getItem(key)
     if (raw) {
@@ -318,80 +344,77 @@ export const shopService = {
       } catch {}
     }
 
-    // Default Seed Reviews per product with real photo evidence
-    const defaultReviews: ProductReview[] = [
-      {
-        id: `rev-${productId}-1`,
-        productId,
-        userName: 'Trần Văn Mạnh',
-        userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
-        rating: 5,
-        comment:
-          'Vợt đánh cực kỳ đầm tay! Mặt nhám Carbon T700 tạo độ xoáy bóng rất gắt, dink bóng ở vùng Non-Volley Zone (Kitchen) kiểm soát cực kỳ chuẩn xác. Bóc hộp nguyên seal xịn sò.',
-        createdAt: '16/08/2026',
-        variantPurchased: '16mm - Đen Carbon',
-        isVerifiedPurchase: true,
-        likes: 12,
-        images: [
-          'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=400',
-          'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=400',
-        ],
-      },
-      {
-        id: `rev-${productId}-2`,
-        productId,
-        userName: 'Nguyễn Bích Ngọc',
-        userAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
-        rating: 5,
-        comment:
-          'Giao hàng siêu nhanh trong 2h tại Hà Nội. Màu hồng phấn bên ngoài đẹp hơn cả trên ảnh! Cầm nhẹ và cán vợt bọc êm tay không bị mỏi khi chơi 2 trận liên tục.',
-        createdAt: '14/08/2026',
-        variantPurchased: '14mm - Hồng Pastel',
-        isVerifiedPurchase: true,
-        likes: 8,
-        images: [
-          'https://images.unsplash.com/photo-1527661591475-527312dd65f5?w=400',
-        ],
-      },
-      {
-        id: `rev-${productId}-3`,
-        productId,
-        userName: 'Lê Hoàng Long',
-        userAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
-        rating: 4,
-        comment:
-          'Chất lượng hoàn thiện tuyệt vời, viền bảo vệ chắc chắn. Bản 16mm giảm chấn động cổ tay rất tốt. Đã giới thiệu cho cả CLB mua cùng.',
-        createdAt: '10/08/2026',
-        variantPurchased: '16mm - Xanh Neon',
-        isVerifiedPurchase: true,
-        likes: 5,
-      },
-    ]
-
-    localStorage.setItem(key, JSON.stringify(defaultReviews))
-    return defaultReviews
+    return []
   },
 
-  addReview(
+  async addReview(
     productId: number,
     review: Omit<ProductReview, 'id' | 'createdAt' | 'likes'>
-  ): ProductReview {
-    const reviews = this.getProductReviews(productId)
-    const newRev: ProductReview = {
+  ): Promise<ProductReview> {
+    try {
+      const response = await api.post<ApiResponse<any>>(`/products/${productId}/reviews`, {
+        rating: review.rating,
+        comment: review.comment,
+        user_name: review.userName,
+        variant_purchased: review.variantPurchased,
+        images: review.images,
+      })
+      const r = response.data?.data
+      if (r) {
+        const newRev: ProductReview = {
+          id: String(r.id),
+          productId: Number(r.productId || productId),
+          userName: r.userName || review.userName,
+          userAvatar: r.userAvatar || review.userAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
+          rating: Number(r.rating) || review.rating,
+          comment: r.comment || review.comment,
+          createdAt: r.createdAt || new Date().toLocaleDateString('vi-VN'),
+          variantPurchased: r.variantPurchased || review.variantPurchased,
+          isVerifiedPurchase: Boolean(r.isVerifiedPurchase),
+          likes: Number(r.likes) || 0,
+          images: r.images || review.images,
+        }
+        const cachedRaw = localStorage.getItem(`${REVIEWS_STORAGE_PREFIX}${productId}`)
+        const existing: ProductReview[] = cachedRaw ? JSON.parse(cachedRaw) : []
+        localStorage.setItem(`${REVIEWS_STORAGE_PREFIX}${productId}`, JSON.stringify([newRev, ...existing]))
+        return newRev
+      }
+    } catch (err) {
+      console.warn('Could not post review to backend, using local storage fallback:', err)
+    }
+
+    const key = `${REVIEWS_STORAGE_PREFIX}${productId}`
+    const raw = localStorage.getItem(key)
+    const existing: ProductReview[] = raw ? JSON.parse(raw) : []
+    const fallbackRev: ProductReview = {
       ...review,
       id: `rev-${productId}-${Date.now()}`,
       createdAt: new Date().toLocaleDateString('vi-VN'),
       likes: 0,
     }
-    const updated = [newRev, ...reviews]
-    localStorage.setItem(`${REVIEWS_STORAGE_PREFIX}${productId}`, JSON.stringify(updated))
-    return newRev
+    localStorage.setItem(key, JSON.stringify([fallbackRev, ...existing]))
+    return fallbackRev
   },
 
-  likeReview(productId: number, reviewId: string): void {
-    const reviews = this.getProductReviews(productId)
-    const updated = reviews.map((r) => (r.id === reviewId ? { ...r, likes: r.likes + 1 } : r))
-    localStorage.setItem(`${REVIEWS_STORAGE_PREFIX}${productId}`, JSON.stringify(updated))
+  async likeReview(productId: number, reviewId: string): Promise<void> {
+    try {
+      const numericId = parseInt(reviewId.replace(/\D/g, ''), 10)
+      if (numericId && !isNaN(numericId)) {
+        await api.post(`/reviews/${numericId}/like`)
+      }
+    } catch (err) {
+      console.warn('Failed to like review on backend:', err)
+    }
+
+    const key = `${REVIEWS_STORAGE_PREFIX}${productId}`
+    const raw = localStorage.getItem(key)
+    if (raw) {
+      try {
+        const reviews: ProductReview[] = JSON.parse(raw)
+        const updated = reviews.map((r) => (r.id === reviewId ? { ...r, likes: r.likes + 1 } : r))
+        localStorage.setItem(key, JSON.stringify(updated))
+      } catch {}
+    }
   },
 }
 

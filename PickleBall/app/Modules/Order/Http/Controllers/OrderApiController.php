@@ -32,6 +32,8 @@ class OrderApiController extends Controller
             'ghnDistrictId' => 'nullable|integer',
             'ghnWardCode' => 'nullable|string',
             'paymentMethod' => 'required|in:momo,cod,cash,bank_transfer',
+            'voucherCode' => 'nullable|string',
+            'discount' => 'nullable|numeric|min:0',
             'items' => 'required|array|min:1',
             'items.*.name' => 'required|string',
             'items.*.quantity' => 'required|integer|min:1',
@@ -53,7 +55,21 @@ class OrderApiController extends Controller
         $ghnWardCode = $validated['ghnWardCode'] ?? '1A0307';
         $feeInfo = $this->ghnService->calculateFee($ghnDistrictId, $ghnWardCode, 700, (int) $subtotal);
         $shippingFee = (int) ($feeInfo['shippingFee'] ?? 0);
-        $totalAmount = $subtotal + $shippingFee;
+
+        // Calculate voucher discount securely on server side
+        $voucherCode = !empty($validated['voucherCode']) ? strtoupper(trim($validated['voucherCode'])) : null;
+        $discount = 0;
+        if ($voucherCode) {
+            $voucher = \App\Modules\Shop\Models\Voucher::where('code', $voucherCode)->first();
+            if ($voucher && $voucher->isValidForAmount($subtotal)) {
+                $discount = $voucher->calculateDiscount($subtotal);
+                $voucher->increment('used_count');
+            }
+        } elseif (!empty($validated['discount'])) {
+            $discount = (float) $validated['discount'];
+        }
+
+        $totalAmount = max(0, $subtotal + $shippingFee - $discount);
 
         if ($validated['paymentMethod'] === 'momo' && $totalAmount < 1000) {
             return response()->json([
@@ -71,6 +87,9 @@ class OrderApiController extends Controller
             'shipping_address' => $shippingAddress,
             'shipping_carrier' => 'GHN Express',
             'shipping_fee' => $shippingFee,
+            'subtotal' => $subtotal,
+            'voucher_code' => $voucherCode,
+            'discount' => $discount,
             'total_amount' => $totalAmount,
             'payment_method' => $validated['paymentMethod'],
             'payment_status' => $paymentStatus,
@@ -98,7 +117,7 @@ class OrderApiController extends Controller
                 'user_id' => $userId,
                 'order_type' => 'shop',
                 'subtotal' => $subtotal,
-                'discount' => 0,
+                'discount' => $discount,
                 'total_amount' => $totalAmount,
                 'status' => 'pending',
                 'payment_status' => 'unpaid',
@@ -107,6 +126,8 @@ class OrderApiController extends Controller
                     'shippingPhone' => $shippingPhone,
                     'shippingAddress' => $shippingAddress,
                     'paymentMethod' => $validated['paymentMethod'],
+                    'voucherCode' => $voucherCode,
+                    'discount' => $discount,
                 ]),
                 'created_at' => now(),
                 'updated_at' => now(),

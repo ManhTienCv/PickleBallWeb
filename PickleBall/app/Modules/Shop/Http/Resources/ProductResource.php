@@ -40,6 +40,8 @@ class ProductResource extends JsonResource
             'status' => $this->status,
             'is_featured' => (bool) $this->is_featured,
             'in_stock' => $inStock,
+            'rating_avg' => round((float) ($this->reviews()->where('status', 'approved')->avg('rating') ?: 5.0), 1),
+            'reviews_count' => (int) $this->reviews()->where('status', 'approved')->count(),
             'specifications' => $this->specifications ?? (object) [],
             'category' => new CategoryResource($this->whenLoaded('category')),
             'brand' => new BrandResource($this->whenLoaded('brand')),

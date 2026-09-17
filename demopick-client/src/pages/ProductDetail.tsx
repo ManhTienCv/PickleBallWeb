@@ -35,8 +35,10 @@ import {
   Square,
   ArrowRight,
   Gift,
+  Heart,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { wishlistService } from '@/services/wishlist.service'
 import { authHelpers } from '@/stores/useAuthStore'
 import { useAuthModalStore } from '@/stores/useAuthModalStore'
 
@@ -236,11 +238,47 @@ export default function ProductDetail() {
       }
       setActiveImage(product.image_url || DEFAULT_COLOR_VARIANTS[0].image)
 
-      // Load reviews
-      const revList = shopService.getProductReviews(product.id || 1)
-      setReviews(revList)
+      // Load reviews from backend API
+      shopService.getProductReviews(product.id || 1).then((revList) => {
+        if (revList) {
+          setReviews(revList)
+        }
+      })
     }
   }, [product])
+
+  const [isWishlisted, setIsWishlisted] = useState<boolean>(() =>
+    product ? wishlistService.isInWishlist(product.id) : false
+  )
+
+  useEffect(() => {
+    if (product) {
+      setIsWishlisted(wishlistService.isInWishlist(product.id))
+    }
+    const handler = () => {
+      if (product) {
+        setIsWishlisted(wishlistService.isInWishlist(product.id))
+      }
+    }
+    window.addEventListener('wishlist-updated', handler)
+    return () => window.removeEventListener('wishlist-updated', handler)
+  }, [product])
+
+  const handleToggleWishlist = async () => {
+    if (!product) return
+    const res = await wishlistService.toggleWishlist(product)
+    setIsWishlisted(res.in_wishlist)
+    if (res.in_wishlist) {
+      toast.success(`Đã thêm "${product.name}" vào danh sách yêu thích!`, {
+        action: {
+          label: 'Xem yêu thích →',
+          onClick: () => navigate('/wishlist'),
+        },
+      })
+    } else {
+      toast.info(`Đã bỏ "${product.name}" khỏi danh sách yêu thích.`)
+    }
+  }
 
   // Change image when color changes
   const handleColorSelect = (colorItem: typeof DEFAULT_COLOR_VARIANTS[0]) => {
@@ -341,7 +379,7 @@ export default function ProductDetail() {
   }
 
   // Handle submit review
-  const handleSubmitReview = (e: React.FormEvent) => {
+  const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newAuthor.trim()) {
       toast.error('Vui lòng nhập họ và tên của bạn')
@@ -353,26 +391,31 @@ export default function ProductDetail() {
     }
 
     setIsSubmittingReview(true)
-    const newRev = shopService.addReview(product.id || 1, {
-      productId: product.id || 1,
-      userName: newAuthor.trim(),
-      rating: newRating,
-      comment: newComment.trim(),
-      variantPurchased: fullVariantLabel,
-      isVerifiedPurchase: true,
-      images: uploadedImages.length > 0 ? uploadedImages : undefined,
-    })
+    try {
+      const newRev = await shopService.addReview(product?.id || 1, {
+        productId: product?.id || 1,
+        userName: newAuthor.trim(),
+        rating: newRating,
+        comment: newComment.trim(),
+        variantPurchased: fullVariantLabel,
+        isVerifiedPurchase: true,
+        images: uploadedImages.length > 0 ? uploadedImages : undefined,
+      })
 
-    setReviews([newRev, ...reviews])
-    setNewComment('')
-    setUploadedImages([])
-    setShowReviewForm(false)
-    setIsSubmittingReview(false)
-    toast.success('Cảm ơn bạn đã gửi đánh giá kèm hình ảnh thực tế!')
+      setReviews((prev) => [newRev, ...prev.filter((r) => r.id !== newRev.id)])
+      setNewComment('')
+      setUploadedImages([])
+      setShowReviewForm(false)
+      toast.success('Cảm ơn bạn đã gửi đánh giá kèm hình ảnh thực tế!')
+    } catch {
+      toast.error('Gửi đánh giá không thành công, vui lòng thử lại.')
+    } finally {
+      setIsSubmittingReview(false)
+    }
   }
 
   const handleLikeReview = (reviewId: string) => {
-    shopService.likeReview(product.id || 1, reviewId)
+    shopService.likeReview(product?.id || 1, reviewId)
     setReviews(
       reviews.map((r) => (r.id === reviewId ? { ...r, likes: r.likes + 1 } : r))
     )
@@ -675,12 +718,28 @@ export default function ProductDetail() {
                 <Button
                   onClick={handleAddToCart}
                   disabled={isOutOfStock}
-                  className="flex-1 h-11 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm rounded-xl gap-2 shadow-md shadow-emerald-600/20"
+                  className="flex-1 h-11 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm rounded-xl gap-2 shadow-md shadow-emerald-600/20 cursor-pointer"
                 >
                   <ShoppingCart className="h-4 w-4" />
                   <span>
                     {isOutOfStock ? 'Hết Hàng Rất Tiếc' : 'Thêm Vào Giỏ Hàng Ngay'}
                   </span>
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleToggleWishlist}
+                  className="h-11 w-11 p-0 rounded-xl border-slate-300 dark:border-border hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0 transition-transform active:scale-95 cursor-pointer"
+                  title={isWishlisted ? 'Bỏ khỏi yêu thích' : 'Lưu vào yêu thích'}
+                >
+                  <Heart
+                    className={`h-5 w-5 transition-colors ${
+                      isWishlisted
+                        ? 'fill-rose-500 text-rose-500'
+                        : 'text-slate-600 dark:text-slate-300 hover:text-rose-500'
+                    }`}
+                  />
                 </Button>
               </div>
             </div>
