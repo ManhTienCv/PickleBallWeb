@@ -16,6 +16,7 @@ dist/
 dist-ssr/
 build/
 .vite/
+*.tsbuildinfo
 
 # ── Logs & Temporary ──
 *.log
@@ -43,3 +44,4 @@ Thumbs.db
 # ── Documentation & Local Notes ──
 /Note/
 /note/
+_demopick-server-backup
