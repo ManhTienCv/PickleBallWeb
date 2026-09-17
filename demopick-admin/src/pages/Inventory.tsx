@@ -1811,7 +1811,7 @@ export default function Inventory() {
       short_description: p.description,
       description: p.description,
       in_stock: p.stock > 0,
-      item_type: p.channel === "pos_only" ? "drink_food" : "product",
+      item_type: p.category === "Đồ uống & Đồ ăn" ? "drink_food" : (p.category === "Thiết bị & Dịch vụ cho thuê" ? "rental" : (p.channel === "pos_only" ? "drink_food" : "product")),
       category: { name: p.category },
       brand: { name: p.brand },
       variants: [
@@ -1824,6 +1824,7 @@ export default function Inventory() {
       ],
     }));
     localStorage.setItem("demopick_synced_products", JSON.stringify(syncedList));
+    localStorage.setItem("demopick_synced_products_v3", JSON.stringify(syncedList));
     window.dispatchEvent(new Event("storage"));
   }, [products, categories, brands]);
 
