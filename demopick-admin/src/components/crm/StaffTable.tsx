@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Lock, Unlock, Trash2, Copy } from "lucide-react";
+import { Lock, Unlock, Trash2, Copy, ChevronLeft, ChevronRight } from "lucide-react";
 
 export interface StaffUser {
   id: number;
@@ -16,6 +16,11 @@ export interface StaffUser {
 
 interface StaffTableProps {
   staffList: StaffUser[];
+  totalStaffCount: number;
+  currentPage: number;
+  totalPages: number;
+  itemsPerPage: number;
+  onPageChange: (page: number) => void;
   onCopyLogin: (staff: StaffUser) => void;
   onToggleLock: (id: number) => void;
   onDeleteStaff: (id: number, name: string) => void;
@@ -23,6 +28,11 @@ interface StaffTableProps {
 
 export default function StaffTable({
   staffList,
+  totalStaffCount,
+  currentPage,
+  totalPages,
+  itemsPerPage,
+  onPageChange,
   onCopyLogin,
   onToggleLock,
   onDeleteStaff,
@@ -43,7 +53,14 @@ export default function StaffTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
-            {staffList.map((staff) => (
+            {staffList.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="text-center py-10 text-slate-400">
+                  Không tìm thấy nhân viên nào phù hợp.
+                </td>
+              </tr>
+            ) : (
+              staffList.map((staff) => (
               <tr key={staff.id} className="hover:bg-slate-50/80 transition-colors">
                 <td className="py-3 px-4">
                   <div className="font-bold text-slate-900 text-xs sm:text-sm">{staff.name}</div>
@@ -110,10 +127,62 @@ export default function StaffTable({
                   </div>
                 </td>
               </tr>
-            ))}
+            )))}
           </tbody>
         </table>
       </div>
+
+      {/* THANH PHÂN TRANG NHÂN VIÊN */}
+      {totalStaffCount > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+          <div className="text-xs text-slate-500 font-medium">
+            Hiển thị <span className="font-bold text-slate-800">{(currentPage - 1) * itemsPerPage + 1}</span> -{" "}
+            <span className="font-bold text-slate-800">{Math.min(currentPage * itemsPerPage, totalStaffCount)}</span> trên tổng số{" "}
+            <span className="font-bold text-emerald-700">{totalStaffCount}</span> nhân viên
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={currentPage <= 1}
+              className="h-8 px-2.5 text-xs font-semibold text-slate-700 border-slate-200 hover:bg-white disabled:opacity-40 rounded-lg gap-1"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Trước</span>
+            </Button>
+
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                <button
+                  key={pageNum}
+                  type="button"
+                  onClick={() => onPageChange(pageNum)}
+                  className={`h-8 min-w-8 px-2.5 text-xs font-bold rounded-lg transition-all ${
+                    currentPage === pageNum
+                      ? "bg-emerald-600 text-white shadow-sm"
+                      : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              ))}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={currentPage >= totalPages}
+              className="h-8 px-2.5 text-xs font-semibold text-slate-700 border-slate-200 hover:bg-white disabled:opacity-40 rounded-lg gap-1"
+            >
+              <span className="hidden sm:inline">Sau</span>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }

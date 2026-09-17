@@ -1057,8 +1057,8 @@ export default function Inventory() {
       title={isAdmin ? "Quản Lý Kho & Bài Đăng Sản Phẩm" : "Kho Hàng Quầy Dịch Vụ — Lễ Tân"}
       headerRight={
         isAdmin ? (
-          <div className="flex items-center gap-2">
-            {activeMainTab === "products" ? (
+          activeMainTab === "products" ? (
+            <div className="flex items-center gap-2">
               <Button
                 onClick={handleOpenAddModal}
                 className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium gap-2 rounded-xl px-5 h-10 shadow-md shadow-emerald-500/20 text-xs"
@@ -1066,26 +1066,8 @@ export default function Inventory() {
                 <Plus className="w-4 h-4" />
                 <span>Thêm sản phẩm mới</span>
               </Button>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={handleOpenAddCategoryModal}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium gap-1.5 rounded-xl px-4 h-10 shadow-md shadow-emerald-500/20 text-xs"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Thêm danh mục</span>
-                </Button>
-                <Button
-                  onClick={handleOpenAddBrandModal}
-                  variant="outline"
-                  className="bg-white border-slate-300 text-slate-700 hover:bg-slate-50 font-medium gap-1.5 rounded-xl px-4 h-10 text-xs"
-                >
-                  <Plus className="w-4 h-4 text-emerald-600" />
-                  <span>Thêm thương hiệu</span>
-                </Button>
-              </div>
-            )}
-          </div>
+            </div>
+          ) : null
         ) : (
           <div className="flex items-center gap-2.5">
             <Badge variant="outline" className="bg-emerald-50 text-emerald-800 border-emerald-200 py-1.5 px-3 font-semibold text-xs">
@@ -1117,7 +1099,7 @@ export default function Inventory() {
               <button
                 onClick={() => setActiveMainTab("products")}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors duration-150 border ${activeMainTab === "products"
-                  ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                  ? "bg-emerald-600 text-white border-emerald-600 shadow-sm shadow-emerald-600/20"
                   : "bg-transparent text-slate-600 hover:bg-slate-100 border-transparent font-semibold"
                   }`}
               >
@@ -1220,7 +1202,7 @@ export default function Inventory() {
                       key={cat.id}
                       onClick={() => setSelectedCategory(cat.id)}
                       className={`px-3.5 py-1.5 rounded-xl text-xs transition-colors duration-150 shrink-0 font-semibold border ${selectedCategory === cat.id
-                        ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm shadow-emerald-600/20"
                         : "bg-slate-100 text-slate-600 hover:bg-slate-200 border-transparent"
                         }`}
                     >
@@ -1233,7 +1215,7 @@ export default function Inventory() {
                       key={cat.id}
                       onClick={() => setSelectedCategory(cat.id)}
                       className={`px-3 py-1.5 rounded-xl text-xs transition-colors duration-150 shrink-0 font-semibold border ${selectedCategory === cat.id
-                        ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm shadow-emerald-600/20"
                         : "bg-slate-100 text-slate-600 hover:bg-slate-200 border-transparent"
                         }`}
                     >

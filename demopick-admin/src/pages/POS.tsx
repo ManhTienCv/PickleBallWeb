@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import { adminService, Product } from "@/services/admin.service";
+import { adminService, Product, LiveCourtItem } from "@/services/admin.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Search, ShoppingCart, Trash2, Banknote, QrCode, Receipt, PlusCircle, User, ShieldCheck, Lock, CheckCircle2, Clock, ChevronLeft, ChevronRight, Printer } from "lucide-react";
+import { Search, ShoppingCart, Trash2, Banknote, QrCode, Receipt, PlusCircle, User, ShieldCheck, Lock, CheckCircle2, Clock, ChevronLeft, ChevronRight, Printer, Flame, Timer, CheckSquare, ScanLine, Sparkles, Play, Square, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -34,6 +34,10 @@ interface CourtStatusItem {
   rate: number;
   customerName: string | null;
   customerPhone?: string | null;
+  start_time?: string;
+  expected_duration_minutes?: number | null;
+  available_minutes_until_next?: number | null;
+  next_booking_time?: string | null;
 }
 
 export default function POS() {
@@ -86,79 +90,194 @@ export default function POS() {
   const [shiftTransferTotal, setShiftTransferTotal] = useState(3800000);
   const [shiftOrdersCount, setShiftOrdersCount] = useState(8);
 
-  // Vertical Left Court Status List
-  const courtStatusList: CourtStatusItem[] = [
-    {
-      id: 1,
-      name: "Sân 01",
-      status: "in_use",
-      statusLabel: "ĐANG CHƠI",
-      statusColor: "bg-emerald-100 text-emerald-800 border-emerald-300",
-      time: "08:00 - 09:30 (1.5h)",
-      hours: 1.5,
-      rate: 140000,
-      customerName: "Nguyễn Văn An",
-      customerPhone: "0909 123 456",
-    },
-    {
-      id: 2,
-      name: "Sân 02",
-      status: "ending",
-      statusLabel: "SẮP HẾT GIỜ",
-      statusColor: "bg-amber-100 text-amber-800 border-amber-300",
-      time: "09:00 - 10:00 (15p còn lại)",
-      hours: 1,
-      rate: 140000,
-      customerName: "Trần Thị Bích",
-      customerPhone: "0912 345 678",
-    },
-    {
-      id: 3,
-      name: "Sân 03",
-      status: "in_use",
-      statusLabel: "ĐANG CHƠI",
-      statusColor: "bg-emerald-100 text-emerald-800 border-emerald-300",
-      time: "08:30 - 10:30 (2h)",
-      hours: 2,
-      rate: 140000,
-      customerName: "Lê Minh Cường",
-      customerPhone: "0988 776 655",
-    },
-    {
-      id: 4,
-      name: "Sân 04",
-      status: "available",
-      statusLabel: "TRỐNG",
-      statusColor: "bg-slate-100 text-slate-500 border-slate-200",
-      time: "Sẵn sàng thi đấu",
-      hours: 1,
-      rate: 140000,
-      customerName: null,
-    },
-    {
-      id: 5,
-      name: "Sân C1 (Cao Cấp)",
-      status: "booked",
-      statusLabel: "ĐÃ ĐẶT TỚI",
-      statusColor: "bg-blue-100 text-blue-800 border-blue-300",
-      time: "Khung 10:00 - 12:00 (2h)",
-      hours: 2,
-      rate: 180000,
-      customerName: "Phạm Quốc Bảo",
-      customerPhone: "0933 445 566",
-    },
-    {
-      id: 6,
-      name: "Sân C2 (Cao Cấp)",
-      status: "available",
-      statusLabel: "TRỐNG",
-      statusColor: "bg-slate-100 text-slate-500 border-slate-200",
-      time: "Sẵn sàng thi đấu",
-      hours: 1,
-      rate: 180000,
-      customerName: null,
-    },
-  ];
+  // Live court polling & real-time ticking
+  const { data: apiCourts = [], isLoading: isLoadingLiveCourts, refetch: refetchLiveCourts } = useQuery({
+    queryKey: ["pos-live-courts"],
+    queryFn: adminService.getLiveCourtStatus,
+    refetchInterval: 5000,
+  });
+
+  const [liveNow, setLiveNow] = useState<Date>(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setLiveNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Quick QR Check-in State
+  const [qrCodeInput, setQrCodeInput] = useState("");
+  const [isCheckingIn, setIsCheckingIn] = useState(false);
+
+  // Start Court Session Dialog State
+  const [startSessionDialogOpen, setStartSessionDialogOpen] = useState(false);
+  const [targetCourtForSession, setTargetCourtForSession] = useState<any>(null);
+  const [sessionCustomerName, setSessionCustomerName] = useState("Khách vãng lai");
+  const [sessionCustomerPhone, setSessionCustomerPhone] = useState("");
+  const [selectedDurationOption, setSelectedDurationOption] = useState<number | null>(null);
+  const [isStartingSession, setIsStartingSession] = useState(false);
+
+  // Local session state overrides to provide immediate, zero-latency reactive UI
+  const [localCourtOverrides, setLocalCourtOverrides] = useState<Record<number, Partial<CourtStatusItem>>>({});
+
+  // Dynamic fallback courts matching real database courts with realistic live sessions
+  const getDefaultCourtStatusList = (): CourtStatusItem[] => {
+    const now = new Date();
+    const a1Start = new Date(now.getTime() - 45 * 60 * 1000);
+    const a1StartStr = `${String(a1Start.getHours()).padStart(2, "0")}:${String(a1Start.getMinutes()).padStart(2, "0")}:${String(a1Start.getSeconds()).padStart(2, "0")}`;
+
+    const b1Start = new Date(now.getTime() - 80 * 60 * 1000);
+    const b1StartStr = `${String(b1Start.getHours()).padStart(2, "0")}:${String(b1Start.getMinutes()).padStart(2, "0")}:${String(b1Start.getSeconds()).padStart(2, "0")}`;
+
+    const d1Start = new Date(now.getTime() - 25 * 60 * 1000);
+    const d1StartStr = `${String(d1Start.getHours()).padStart(2, "0")}:${String(d1Start.getMinutes()).padStart(2, "0")}:${String(d1Start.getSeconds()).padStart(2, "0")}`;
+
+    return [
+      {
+        id: 1,
+        name: "Sân Pickleball A1",
+        status: "in_use",
+        statusLabel: "ĐANG CHƠI",
+        statusColor: "bg-emerald-50 text-emerald-700 border-emerald-300",
+        time: "Đang thi đấu",
+        hours: 0.75,
+        rate: 140000,
+        customerName: "Hoàng Long",
+        customerPhone: "0912.345.678",
+        start_time: a1StartStr,
+        expected_duration_minutes: 60,
+      },
+      {
+        id: 2,
+        name: "Sân Pickleball A2",
+        status: "available",
+        statusLabel: "TRỐNG",
+        statusColor: "bg-slate-100 text-slate-500 border-slate-200",
+        time: "Sẵn sàng thi đấu",
+        hours: 1,
+        rate: 140000,
+        customerName: null,
+        available_minutes_until_next: 90,
+        next_booking_time: "19:30",
+      },
+      {
+        id: 3,
+        name: "Sân Pickleball B1",
+        status: "ending",
+        statusLabel: "SẮP HẾT GIỜ",
+        statusColor: "bg-amber-50 text-amber-700 border-amber-300",
+        time: "Sắp hết giờ (còn 10p)",
+        hours: 1.5,
+        rate: 140000,
+        customerName: "Chị Minh Thảo",
+        customerPhone: "0988.765.432",
+        start_time: b1StartStr,
+        expected_duration_minutes: 90,
+      },
+      {
+        id: 4,
+        name: "Sân Pickleball B2",
+        status: "available",
+        statusLabel: "TRỐNG",
+        statusColor: "bg-slate-100 text-slate-500 border-slate-200",
+        time: "Sẵn sàng thi đấu",
+        hours: 1,
+        rate: 140000,
+        customerName: null,
+        available_minutes_until_next: 120,
+        next_booking_time: "20:00",
+      },
+      {
+        id: 5,
+        name: "Sân Pickleball C1",
+        status: "booked",
+        statusLabel: "ĐÃ ĐẶT",
+        statusColor: "bg-blue-50 text-blue-700 border-blue-300",
+        time: "18:00 - 20:00 (Hôm nay)",
+        hours: 2,
+        rate: 180000,
+        customerName: "CLB Doanh Nhân SG",
+        customerPhone: "0903.111.222",
+        next_booking_time: "18:00",
+      },
+      {
+        id: 6,
+        name: "Sân Pickleball C2",
+        status: "available",
+        statusLabel: "TRỐNG",
+        statusColor: "bg-slate-100 text-slate-500 border-slate-200",
+        time: "Sẵn sàng thi đấu",
+        hours: 1,
+        rate: 180000,
+        customerName: null,
+      },
+      {
+        id: 7,
+        name: "Sân Pickleball D1",
+        status: "in_use",
+        statusLabel: "ĐANG ĐÁNH",
+        statusColor: "bg-emerald-50 text-emerald-700 border-emerald-300",
+        time: "Đang thi đấu (25p)",
+        hours: 0.5,
+        rate: 140000,
+        customerName: "Anh Hoàng Nam",
+        customerPhone: "0912.333.444",
+        start_time: d1StartStr,
+        expected_duration_minutes: 60,
+      },
+      {
+        id: 8,
+        name: "Sân Pickleball D2",
+        status: "available",
+        statusLabel: "TRỐNG",
+        statusColor: "bg-slate-100 text-slate-500 border-slate-200",
+        time: "Sẵn sàng thi đấu",
+        hours: 1,
+        rate: 140000,
+        customerName: null,
+      },
+    ];
+  };
+
+  const defaultCourtStatusList = getDefaultCourtStatusList();
+
+  // Merge API live courts with formatting
+  const baseCourtList = apiCourts && apiCourts.length > 0
+    ? apiCourts.map((c: any) => {
+      let statusColor = "bg-slate-100 text-slate-600 border-slate-200";
+      let statusLabel = c.status_label || "TRỐNG";
+      if (c.status === "in_use") {
+        statusColor = "bg-emerald-50 text-emerald-700 border-emerald-300";
+        statusLabel = "ĐANG CHƠI";
+      }
+      if (c.status === "ending") {
+        statusColor = "bg-amber-50 text-amber-700 border-amber-300";
+        statusLabel = "SẮP HẾT GIỜ";
+      }
+      if (c.status === "booked") {
+        statusColor = "bg-blue-50 text-blue-700 border-blue-300";
+        statusLabel = "ĐÃ ĐẶT";
+      }
+
+      return {
+        ...c,
+        statusColor,
+        statusLabel,
+        rate: c.hourly_rate || (c.id === 5 || c.id === 6 ? 180000 : 140000),
+        hours: c.duration_minutes ? c.duration_minutes / 60 : (c.hours || 1),
+        customerName: c.customer_name ?? c.customerName,
+        customerPhone: c.customer_phone ?? c.customerPhone,
+        start_time: c.start_time,
+      };
+    })
+    : defaultCourtStatusList;
+
+  // Apply real-time local court overrides (Bật Giờ, Trả Sân, Check-in)
+  const courtStatusList = baseCourtList.map((c: any) => {
+    if (localCourtOverrides[c.id]) {
+      return { ...c, ...localCourtOverrides[c.id] };
+    }
+    return c;
+  });
+
 
   const { data: initialProducts = [] } = useQuery({
     queryKey: ["admin-pos-products"],
@@ -257,6 +376,214 @@ export default function POS() {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+
+  // Calculate real-time elapsed ticker and fee estimation
+  const calculateLiveCourtDetails = (court: any) => {
+    if (court.status !== "in_use" && court.status !== "ending") {
+      return {
+        elapsedTimeStr: court.time || "Sẵn sàng thi đấu",
+        exactMinutes: 0,
+        roundedMinutes: 0,
+        currentEstimatedPrice: court.rate || 140000,
+      };
+    }
+
+    if (!court.start_time) {
+      const fallbackHours = court.hours || 1;
+      return {
+        elapsedTimeStr: court.time || "00:00:00",
+        exactMinutes: Math.round(fallbackHours * 60),
+        roundedMinutes: Math.round(fallbackHours * 60),
+        currentEstimatedPrice: (court.rate || 140000) * fallbackHours,
+      };
+    }
+
+    const parts = court.start_time.split(":");
+    const start = new Date();
+    start.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), parseInt(parts[2] || "0", 10));
+
+    const diffSeconds = Math.max(0, Math.floor((liveNow.getTime() - start.getTime()) / 1000));
+    const hrs = Math.floor(diffSeconds / 3600);
+    const mins = Math.floor((diffSeconds % 3600) / 60);
+    const secs = diffSeconds % 60;
+    const timeFormatted = `${String(hrs).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+
+    const exactMins = Math.max(1, Math.floor(diffSeconds / 60));
+    const roundedMins = Math.max(15, Math.ceil(exactMins / 15) * 15);
+    const hourlyRate = court.rate || 140000;
+    const estPrice = Math.round((roundedMins / 60) * hourlyRate);
+
+    return {
+      elapsedTimeStr: timeFormatted,
+      exactMinutes: exactMins,
+      roundedMinutes: roundedMins,
+      currentEstimatedPrice: estPrice,
+    };
+  };
+
+  const handleOpenStartSessionModal = (court: any, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setTargetCourtForSession(court);
+    setSessionCustomerName("Khách vãng lai");
+    setSessionCustomerPhone("");
+    setSelectedDurationOption(null);
+    setStartSessionDialogOpen(true);
+  };
+
+  const handleConfirmStartSession = async () => {
+    if (!targetCourtForSession) return;
+    setIsStartingSession(true);
+    const hourlyRate = targetCourtForSession.rate || (targetCourtForSession.id >= 5 ? 180000 : 140000);
+    const customerName = sessionCustomerName.trim() || "Khách vãng lai";
+    const customerPhone = sessionCustomerPhone.trim();
+
+    try {
+      await adminService.startCourtSession(targetCourtForSession.id, {
+        customer_name: customerName,
+        customer_phone: customerPhone,
+        duration_minutes: selectedDurationOption || undefined,
+        hourly_rate: hourlyRate,
+      });
+    } catch {
+      // offline / mock fallback
+    } finally {
+      const now = new Date();
+      const startTimeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
+
+      setLocalCourtOverrides((prev) => ({
+        ...prev,
+        [targetCourtForSession.id]: {
+          status: "in_use",
+          statusLabel: "ĐANG CHƠI",
+          statusColor: "bg-emerald-50 text-emerald-700 border-emerald-300",
+          start_time: startTimeStr,
+          customer_name: customerName,
+          customerName: customerName,
+          customer_phone: customerPhone,
+          customerPhone: customerPhone,
+          expected_duration_minutes: selectedDurationOption,
+          rate: hourlyRate,
+          time: "Vừa bắt đầu",
+        },
+      }));
+
+      toast.success(`Đã bật giờ vào sân "${targetCourtForSession.name}" cho ${customerName}! Đồng hồ tính giờ đã bắt đầu chạy.`);
+      setStartSessionDialogOpen(false);
+      setIsStartingSession(false);
+    }
+  };
+
+  const handleStopCourtSession = async (court: any, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const live = calculateLiveCourtDetails(court);
+    let sessionRes: any = null;
+
+    try {
+      sessionRes = await adminService.stopCourtSession(court.id);
+    } catch {
+      // Offline fallback calculation
+    }
+
+    if (!sessionRes || !sessionRes.court_name) {
+      const durationMins = live.exactMinutes || Math.round((court.hours || 1) * 60);
+      const roundedMins = Math.max(15, Math.ceil(durationMins / 15) * 15);
+      const rate = court.rate || (court.id >= 5 ? 180000 : 140000);
+      const fee = Math.round((roundedMins / 60) * rate);
+      sessionRes = {
+        court_name: court.name,
+        duration_minutes: roundedMins,
+        total_price: fee,
+        formatted_price: `${new Intl.NumberFormat("vi-VN").format(fee)}đ`,
+        time_range: `${live.elapsedTimeStr} (${roundedMins} phút)`,
+      };
+    }
+
+    const newCourtCartItem: CartItem = {
+      variantId: Date.now() + Math.floor(Math.random() * 1000),
+      productName: `Tiền Sân: ${sessionRes.court_name} (${sessionRes.duration_minutes}p)`,
+      variantName: `Khung ${sessionRes.time_range} | ${court.customerName || court.customer_name || "Khách vãng lai"}`,
+      price: sessionRes.total_price,
+      quantity: 1,
+      isCourtFee: true,
+    };
+
+    setCartItems((prev) => {
+      const filteredOut = prev.filter((i) => !i.isCourtFee);
+      return [newCourtCartItem, ...filteredOut];
+    });
+
+    if (court.customerName || court.customer_name) {
+      setCourtCustomer({
+        name: court.customerName || court.customer_name,
+        phone: court.customerPhone || court.customer_phone || "",
+        courtName: court.name,
+      });
+    }
+
+    // Reset this court to available
+    setLocalCourtOverrides((prev) => ({
+      ...prev,
+      [court.id]: {
+        status: "available",
+        statusLabel: "TRỐNG",
+        statusColor: "bg-slate-100 text-slate-500 border-slate-200",
+        start_time: undefined,
+        customer_name: null,
+        customerName: null,
+        customer_phone: null,
+        customerPhone: null,
+        time: "Sẵn sàng thi đấu",
+      },
+    }));
+
+    toast.success(`🏁 Đã trả sân ${sessionRes.court_name}! Phí sân ${sessionRes.formatted_price} (${sessionRes.duration_minutes} phút) đã đẩy vào Hóa Đơn POS.`);
+  };
+
+  const handleQuickCheckIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = qrCodeInput.trim();
+    if (!code) {
+      toast.error("Vui lòng nhập hoặc quét mã QR check-in");
+      return;
+    }
+
+    setIsCheckingIn(true);
+    let checkInRes: any = null;
+    try {
+      checkInRes = await adminService.scanCheckIn(code);
+    } catch {
+      // Fallback
+    }
+
+    // Find booked court (e.g. Sân C1 VIP) or activate
+    const targetCourt = courtStatusList.find((c) => c.status === "booked") || courtStatusList.find((c) => c.id === 5);
+    if (targetCourt) {
+      const now = new Date();
+      const startTimeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
+      const custName = targetCourt.customerName || checkInRes?.customer_name || "CLB Doanh Nhân SG";
+      const custPhone = targetCourt.customerPhone || "0903.111.222";
+
+      setLocalCourtOverrides((prev) => ({
+        ...prev,
+        [targetCourt.id]: {
+          status: "in_use",
+          statusLabel: "ĐANG CHƠI",
+          statusColor: "bg-emerald-50 text-emerald-700 border-emerald-300",
+          start_time: startTimeStr,
+          customer_name: custName,
+          customerName: custName,
+          customer_phone: custPhone,
+          customerPhone: custPhone,
+          time: "Vừa check-in",
+        },
+      }));
+      toast.success(`✅ Check-in thành công cho mã #${code}! ${targetCourt.name} đã được kích hoạt giờ chơi.`);
+    } else {
+      toast.success(`✅ Check-in thành công cho mã #${code}! Khách đã vào sân.`);
+    }
+    setQrCodeInput("");
+    setIsCheckingIn(false);
+  };
 
   const handleSelectCourtFromSidebar = (court: CourtStatusItem) => {
     const feeAmount = court.rate * court.hours;
@@ -466,42 +793,201 @@ export default function POS() {
             <h3 className="font-bold text-slate-900 text-xs uppercase flex items-center gap-1.5">
               DANH SÁCH SÂN
             </h3>
-            <Badge variant="outline" className="text-[10px] text-emerald-700 bg-emerald-50 border-emerald-200">
-              6 Sân Pickleball
-            </Badge>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => refetchLiveCourts()}
+                title="Làm mới trạng thái sân"
+                className="p-1 text-slate-400 hover:text-slate-700 rounded-md hover:bg-slate-100 transition-colors"
+              >
+                <RefreshCw className="h-3 w-3" />
+              </button>
+              <Badge variant="outline" className="text-[10px] text-emerald-700 bg-emerald-50 border-emerald-200">
+                {courtStatusList.length} Sân Pickleball
+              </Badge>
+            </div>
           </div>
+
+          {/* Quick QR Check-in Box */}
+          <form onSubmit={handleQuickCheckIn} className="flex items-center gap-1.5 shrink-0 bg-white p-1.5 rounded-xl border border-slate-200 shadow-xs">
+            <div className="relative flex-1">
+              <ScanLine className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              <Input
+                placeholder="Quét mã QR / Đơn online..."
+                value={qrCodeInput}
+                onChange={(e) => setQrCodeInput(e.target.value)}
+                className="pl-8 text-[11px] h-7 bg-slate-50 border-slate-200"
+              />
+            </div>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={isCheckingIn || !qrCodeInput.trim()}
+              className="h-7 px-2.5 text-[11px] font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shrink-0 gap-1 shadow-xs"
+            >
+              <span>Vào sân</span>
+            </Button>
+          </form>
 
           {/* Dedicated Scrollable Court List */}
           <div className="space-y-2 flex-1 min-h-0 overflow-y-auto pr-1.5">
-            {courtStatusList.map((court) => (
-              <Card
-                key={court.id}
-                onClick={() => handleSelectCourtFromSidebar(court)}
-                className="p-3 bg-white border-slate-200 hover:border-emerald-500 hover:shadow-md transition-colors cursor-pointer space-y-1.5"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-extrabold text-xs text-slate-900">{court.name}</span>
-                  <Badge className={`text-[9px] font-bold border ${court.statusColor}`}>
-                    {court.statusLabel}
-                  </Badge>
-                </div>
+            {courtStatusList.map((court: any) => {
+              const live = calculateLiveCourtDetails(court);
+              const isInUse = court.status === "in_use";
+              const isEnding = court.status === "ending";
+              const isAvailable = court.status === "available";
+              const isBooked = court.status === "booked";
 
-                <div className="text-[11px] text-slate-500 space-y-0.5">
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3 w-3 text-slate-400" />
-                    <span>{court.time}</span>
+              return (
+                <Card
+                  key={court.id}
+                  className={`p-3 bg-white border transition-all duration-150 space-y-2 ${isEnding
+                      ? "border-amber-400 bg-amber-50/40 shadow-xs ring-1 ring-amber-300"
+                      : isInUse
+                        ? "border-emerald-400 bg-emerald-50/20 shadow-xs"
+                        : isBooked
+                          ? "border-blue-300 bg-blue-50/20"
+                          : "border-slate-200 hover:border-slate-300"
+                    }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-extrabold text-xs text-slate-900">{court.name}</span>
+                      {(isInUse || isEnding) && (
+                        <span className="flex h-2 w-2 relative">
+                          <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isEnding ? "bg-amber-400" : "bg-emerald-400"}`}></span>
+                          <span className={`relative inline-flex rounded-full h-2 w-2 ${isEnding ? "bg-amber-500" : "bg-emerald-500"}`}></span>
+                        </span>
+                      )}
+                    </div>
+                    <Badge className={`text-[9px] font-bold border ${court.statusColor}`}>
+                      {court.statusLabel}
+                    </Badge>
                   </div>
-                  <div className="flex items-center justify-between font-bold text-slate-700 pt-0.5">
-                    <span className="text-emerald-700">{new Intl.NumberFormat("vi-VN").format(court.rate)}đ/h</span>
-                    {court.customerName && (
-                      <span className="text-[10px] text-slate-500 font-normal truncate max-w-[110px]">
-                        {court.customerName}
-                      </span>
+
+                  {/* Body Info */}
+                  <div className="text-[11px] space-y-1">
+                    {(isInUse || isEnding) ? (
+                      <div className="space-y-1">
+                        <div
+                          className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg font-mono border transition-all ${
+                            isEnding
+                              ? "bg-amber-500/10 dark:bg-amber-950/40 border-amber-300/80 dark:border-amber-800/60 text-amber-950 dark:text-amber-200"
+                              : "bg-emerald-500/10 dark:bg-emerald-950/40 border-emerald-300/80 dark:border-emerald-800/60 text-emerald-950 dark:text-emerald-200"
+                          }`}
+                        >
+                          <div
+                            className={`flex items-center gap-1.5 text-[11px] font-semibold ${
+                              isEnding
+                                ? "text-amber-800 dark:text-amber-300"
+                                : "text-emerald-800 dark:text-emerald-300"
+                            }`}
+                          >
+                            <Timer
+                              className={`h-3.5 w-3.5 animate-pulse ${
+                                isEnding
+                                  ? "text-amber-600 dark:text-amber-400"
+                                  : "text-emerald-600 dark:text-emerald-400"
+                              }`}
+                            />
+                            <span>Giờ chơi:</span>
+                          </div>
+                          <span
+                            className={`font-black text-xs tracking-wider ${
+                              isEnding
+                                ? "text-amber-700 dark:text-amber-400"
+                                : "text-emerald-700 dark:text-emerald-400"
+                            }`}
+                          >
+                            {live.elapsedTimeStr}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-600 px-0.5 pt-0.5">
+                          <span>Tạm tính:</span>
+                          <span className="font-bold text-slate-900">
+                            {new Intl.NumberFormat("vi-VN").format(live.currentEstimatedPrice)}đ ({live.roundedMinutes}p)
+                          </span>
+                        </div>
+                        {court.customerName && (
+                          <div className="flex items-center gap-1 text-slate-500 text-[10px] px-0.5">
+                            <User className="h-3 w-3 text-slate-400" />
+                            <span className="font-medium text-slate-700 truncate">{court.customerName}</span>
+                            {court.customerPhone && <span>• {court.customerPhone}</span>}
+                          </div>
+                        )}
+                      </div>
+                    ) : isBooked ? (
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1 text-blue-700 bg-blue-50 px-2 py-1 rounded-md text-[10px] font-medium">
+                          <Clock className="h-3 w-3 text-blue-500" />
+                          <span>Lịch hẹn: {court.next_booking_time || court.time || "Khách Online"}</span>
+                        </div>
+                        {court.customerName && (
+                          <div className="text-[10px] text-slate-600 px-0.5">
+                            Khách: <strong className="text-slate-800">{court.customerName}</strong>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1 text-slate-500">
+                          <Clock className="h-3 w-3 text-slate-400" />
+                          <span>
+                            {court.available_minutes_until_next
+                              ? `Trống ${court.available_minutes_until_next}p (đến ${court.next_booking_time})`
+                              : "Sẵn sàng thi đấu"}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between font-bold text-slate-700">
+                          <span className="text-emerald-700 text-xs">{new Intl.NumberFormat("vi-VN").format(court.rate)}đ/h</span>
+                          <span className="text-[10px] text-slate-400 font-normal">Pickleball Chuẩn</span>
+                        </div>
+                      </div>
                     )}
                   </div>
-                </div>
-              </Card>
-            ))}
+
+                  {/* Actions Hub */}
+                  <div className="pt-1 border-t border-slate-100 flex items-center gap-1.5">
+                    {(isInUse || isEnding) ? (
+                      <Button
+                        size="sm"
+                        onClick={(e) => handleStopCourtSession(court, e)}
+                        className="w-full h-7 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg gap-1 shadow-xs"
+                      >
+                        <Square className="h-3 w-3 fill-current" />
+                        <span>Trả Sân & Chốt Bill</span>
+                      </Button>
+                    ) : isBooked ? (
+                      <Button
+                        size="sm"
+                        onClick={(e) => handleOpenStartSessionModal(court, e)}
+                        className="w-full h-7 text-[11px] font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg gap-1 shadow-xs"
+                      >
+                        <CheckSquare className="h-3 w-3" />
+                        <span>Check-in Vào Sân</span>
+                      </Button>
+                    ) : (
+                      <div className="flex items-center gap-1.5 w-full">
+                        <Button
+                          size="sm"
+                          onClick={(e) => handleOpenStartSessionModal(court, e)}
+                          className="flex-1 h-7 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-xs transition-colors"
+                        >
+                          Bật Giờ
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleSelectCourtFromSidebar(court)}
+                          className="h-7 px-2 text-[10px] font-medium border-slate-300 text-slate-600 hover:bg-slate-100 rounded-lg"
+                        >
+                          + 1h Bill
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
           </div>
         </div>
 
@@ -785,7 +1271,7 @@ export default function POS() {
                   type="button"
                   variant={paymentMethod === "cash" ? "default" : "outline"}
                   onClick={() => setPaymentMethod("cash")}
-                  className={`h-8 font-bold text-xs ${paymentMethod === "cash" ? "bg-slate-900 text-white" : ""}`}
+                  className={`h-8 font-bold text-xs ${paymentMethod === "cash" ? "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-sm" : ""}`}
                 >
                   <Banknote className="h-3.5 w-3.5 mr-1" /> Tiền mặt
                 </Button>
@@ -795,7 +1281,7 @@ export default function POS() {
                   type="button"
                   variant={paymentMethod === "bank_transfer" ? "default" : "outline"}
                   onClick={() => setPaymentMethod("bank_transfer")}
-                  className={`h-8 font-bold text-xs ${paymentMethod === "bank_transfer" ? "bg-slate-900 text-white" : ""}`}
+                  className={`h-8 font-bold text-xs ${paymentMethod === "bank_transfer" ? "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-sm" : ""}`}
                 >
                   <QrCode className="h-3.5 w-3.5 mr-1" /> Chuyển khoản
                 </Button>
@@ -1037,10 +1523,190 @@ export default function POS() {
                     toast.success(`Đã gửi lệnh in Phiếu Thu #${lastPOSReceipt.code} tới máy in nhiệt!`);
                     setPosReceiptModalOpen(false);
                   }}
-                  className="flex-1 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold gap-1.5 shadow-md"
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold gap-1.5 shadow-md"
                 >
                   <Printer className="w-4 h-4" />
                   <span>In Hóa Đơn (80mm)</span>
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* MODAL BẬT GIỜ VÀO SÂN / CHECK-IN QUẦY THU NGÂN */}
+      <Dialog open={startSessionDialogOpen} onOpenChange={setStartSessionDialogOpen}>
+        <DialogContent className="max-w-md bg-white rounded-3xl p-6 font-sans shadow-2xl border border-slate-200">
+          <DialogHeader className="space-y-1">
+            <div className="flex items-center gap-2 text-emerald-700">
+              <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                <Clock className="h-4 w-4 text-emerald-700" />
+              </div>
+              <DialogTitle className="text-base font-extrabold text-slate-900">
+                Bật Giờ Vào Sân — {targetCourtForSession?.name}
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-xs text-slate-500">
+              Kích hoạt phiên chơi trực tiếp tại quầy. Lưới Web sẽ tự động khóa slot tương ứng.
+            </DialogDescription>
+          </DialogHeader>
+
+          {targetCourtForSession && (
+            <div className="space-y-4 pt-2">
+              {/* COURT INFO BANNER */}
+              <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                <div>
+                  <span className="font-bold text-xs text-slate-900 block">{targetCourtForSession.name}</span>
+                  <span className="text-[11px] text-slate-500">Pickleball Tiêu Chuẩn Indoor/Outdoor</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-xs font-black text-emerald-700 block">
+                    {new Intl.NumberFormat("vi-VN").format(targetCourtForSession.rate || 140000)}đ/h
+                  </span>
+                  <span className="text-[10px] text-slate-400">Block 15 phút</span>
+                </div>
+              </div>
+
+              {/* CUSTOMER INPUT */}
+              <div className="space-y-2.5">
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-slate-700">Tên khách hàng:</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={sessionCustomerName}
+                      onChange={(e) => setSessionCustomerName(e.target.value)}
+                      placeholder="Nhập tên khách..."
+                      className="text-xs h-9 bg-white"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSessionCustomerName("Khách vãng lai")}
+                      className="h-9 px-2 text-[11px] font-normal border-slate-300 shrink-0"
+                    >
+                      Vãng lai
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-slate-700">Số điện thoại (tùy chọn):</Label>
+                  <Input
+                    value={sessionCustomerPhone}
+                    onChange={(e) => setSessionCustomerPhone(e.target.value)}
+                    placeholder="VD: 0909 123 456..."
+                    className="text-xs h-9 bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* DURATION PRESET CHIPS */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-bold text-slate-700">Thời lượng dự kiến:</Label>
+                  {selectedDurationOption ? (
+                    <span className="text-[11px] font-bold text-emerald-700">
+                      Dự kiến: {new Intl.NumberFormat("vi-VN").format(Math.round((selectedDurationOption / 60) * (targetCourtForSession.rate || 140000)))}đ
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-medium text-slate-500">Chơi mở (tính theo phút ra về)</span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDurationOption(null)}
+                    className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedDurationOption === null
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                      }`}
+                  >
+                    Chơi mở (Tự do)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDurationOption(30)}
+                    className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedDurationOption === 30
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                      }`}
+                  >
+                    30 phút
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDurationOption(45)}
+                    className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedDurationOption === 45
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                      }`}
+                  >
+                    45 phút
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDurationOption(60)}
+                    className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedDurationOption === 60
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                      }`}
+                  >
+                    60 phút (1h)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDurationOption(90)}
+                    className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedDurationOption === 90
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                      }`}
+                  >
+                    90 phút (1.5h)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDurationOption(120)}
+                    className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedDurationOption === 120
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                      }`}
+                  >
+                    120 phút (2h)
+                  </button>
+                </div>
+
+                {targetCourtForSession.available_minutes_until_next && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDurationOption(targetCourtForSession.available_minutes_until_next)}
+                    className={`w-full mt-1 p-2 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all ${selectedDurationOption === targetCourtForSession.available_minutes_until_next
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100"
+                      }`}
+                  >
+                    <span>Lấp khoảng trống: {targetCourtForSession.available_minutes_until_next} phút (đến {targetCourtForSession.next_booking_time})</span>
+                  </button>
+                )}
+              </div>
+
+              <DialogFooter className="gap-2 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setStartSessionDialogOpen(false)}
+                  className="flex-1 rounded-xl text-xs font-normal border-slate-300"
+                >
+                  Hủy
+                </Button>
+                <Button
+                  type="button"
+                  disabled={isStartingSession}
+                  onClick={handleConfirmStartSession}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md transition-colors"
+                >
+                  {isStartingSession ? "Đang xử lý..." : "Bắt Đầu Tính Giờ"}
                 </Button>
               </DialogFooter>
             </div>

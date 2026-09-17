@@ -23,6 +23,8 @@ import {
   Wallet,
   ArrowUpRight,
   TrendingUp,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -96,6 +98,86 @@ const initialTransactions: PaymentTransaction[] = [
     status: "CONFIRMED_AUTO",
     createdAt: "2026-08-18 08:20:00",
   },
+  {
+    id: "TX-9905",
+    orderCode: "DP-1006",
+    customerName: "Đỗ Thu Trang",
+    amount: 720000,
+    bankName: "MB Bank / VietQR",
+    transferContent: "DP-1006",
+    status: "CONFIRMED_AUTO",
+    createdAt: "2026-08-18 08:05:12",
+  },
+  {
+    id: "TX-9906",
+    orderCode: "DP-1007",
+    customerName: "Vũ Minh Quân",
+    amount: 250000,
+    bankName: "BIDV / VietQR",
+    transferContent: "DP-1007",
+    status: "CONFIRMED_AUTO",
+    createdAt: "2026-08-18 07:50:30",
+  },
+  {
+    id: "TX-9907",
+    orderCode: "DP-1008",
+    customerName: "Phan Ánh Nguyệt",
+    amount: 890000,
+    bankName: "ACB / VietQR",
+    transferContent: "DP-1008",
+    status: "CONFIRMED_MANUAL",
+    createdAt: "2026-08-18 07:30:15",
+  },
+  {
+    id: "TX-9908",
+    orderCode: "DP-1009",
+    customerName: "Hoàng Gia Huy",
+    amount: 320000,
+    bankName: "VPBank / VietQR",
+    transferContent: "DP-1009",
+    status: "PENDING",
+    createdAt: "2026-08-18 07:15:00",
+  },
+  {
+    id: "TX-9909",
+    orderCode: "DP-1010",
+    customerName: "Bùi Kiều My",
+    amount: 1200000,
+    bankName: "Vietcombank / VietQR",
+    transferContent: "DP-1010",
+    status: "CONFIRMED_AUTO",
+    createdAt: "2026-08-18 06:55:40",
+  },
+  {
+    id: "TX-9910",
+    orderCode: "DP-1011",
+    customerName: "Trương Tiến Đạt",
+    amount: 180000,
+    bankName: "Techcombank / VietQR",
+    transferContent: "DP-1011",
+    status: "CONFIRMED_AUTO",
+    createdAt: "2026-08-18 06:40:10",
+  },
+  {
+    id: "TX-9911",
+    orderCode: "DP-1012",
+    customerName: "Ngô Mai Phương",
+    amount: 650000,
+    bankName: "VietinBank / VietQR",
+    transferContent: "DP-1012",
+    status: "CONFIRMED_AUTO",
+    createdAt: "2026-08-18 06:20:00",
+  },
+  {
+    id: "TX-9912",
+    orderCode: "DP-1013",
+    customerName: "Đinh Tuấn Kiệt",
+    amount: 450000,
+    bankName: "MB Bank / VietQR",
+    transferContent: "DP-1013",
+    status: "PENDING",
+    createdAt: "2026-08-18 06:05:00",
+  },
 ];
 
 const initialBankStatements: BankStatementLog[] = [
@@ -126,6 +208,51 @@ const initialBankStatements: BankStatementLog[] = [
     transferContent: "DP-1005",
     matchStatus: "MATCHED",
   },
+  {
+    id: "BS-1026",
+    time: "18/08/2026 08:05:12",
+    bankName: "MB Bank (MBB)",
+    orderCode: "DP-1006",
+    amount: 720000,
+    transferContent: "DP-1006",
+    matchStatus: "MATCHED",
+  },
+  {
+    id: "BS-1025",
+    time: "18/08/2026 07:50:30",
+    bankName: "BIDV",
+    orderCode: "DP-1007",
+    amount: 250000,
+    transferContent: "DP-1007",
+    matchStatus: "MATCHED",
+  },
+  {
+    id: "BS-1024",
+    time: "18/08/2026 07:30:15",
+    bankName: "ACB",
+    orderCode: "DP-1008",
+    amount: 890000,
+    transferContent: "DP-1008",
+    matchStatus: "MANUAL",
+  },
+  {
+    id: "BS-1023",
+    time: "18/08/2026 06:55:40",
+    bankName: "Vietcombank (VCB)",
+    orderCode: "DP-1010",
+    amount: 1200000,
+    transferContent: "DP-1010",
+    matchStatus: "MATCHED",
+  },
+  {
+    id: "BS-1022",
+    time: "18/08/2026 06:40:10",
+    bankName: "Techcombank (TCB)",
+    orderCode: "DP-1011",
+    amount: 180000,
+    transferContent: "DP-1011",
+    matchStatus: "MATCHED",
+  },
 ];
 
 export default function Payments() {
@@ -135,10 +262,12 @@ export default function Payments() {
     if (saved) {
       try {
         const parsed: PaymentTransaction[] = JSON.parse(saved);
-        return parsed.map((t) => ({
-          ...t,
-          transferContent: t.transferContent.startsWith("DP-") ? t.transferContent.split(" ")[0] : t.transferContent,
-        }));
+        if (parsed.length >= initialTransactions.length) {
+          return parsed.map((t) => ({
+            ...t,
+            transferContent: t.transferContent.startsWith("DP-") ? t.transferContent.split(" ")[0] : t.transferContent,
+          }));
+        }
       } catch { }
     }
     return initialTransactions;
@@ -146,10 +275,29 @@ export default function Payments() {
 
   const [bankStatements, setBankStatements] = useState<BankStatementLog[]>(() => {
     const saved = localStorage.getItem("demopick_bank_statements");
-    return saved ? JSON.parse(saved) : initialBankStatements;
+    if (saved) {
+      try {
+        const parsed: BankStatementLog[] = JSON.parse(saved);
+        if (parsed.length >= initialBankStatements.length) return parsed;
+      } catch { }
+    }
+    return initialBankStatements;
   });
 
   const [selectedTxDetail, setSelectedTxDetail] = useState<PaymentTransaction | null>(null);
+
+  // Phân trang danh sách giao dịch
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  // Phân trang nhật ký biến động số dư ngân hàng
+  const [statementPage, setStatementPage] = useState(1);
+  const statementsPerPage = 4;
+
+  // Reset trang về 1 khi tìm kiếm
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
 
   // Sync to localStorage
   useEffect(() => {
@@ -162,6 +310,16 @@ export default function Payments() {
       tx.orderCode.toLowerCase().includes(search.toLowerCase()) ||
       tx.customerName.toLowerCase().includes(search.toLowerCase()) ||
       tx.transferContent.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredTxs.length / itemsPerPage) || 1;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedTxs = filteredTxs.slice(startIndex, startIndex + itemsPerPage);
+
+  const totalStatementPages = Math.ceil(bankStatements.length / statementsPerPage) || 1;
+  const paginatedStatements = bankStatements.slice(
+    (statementPage - 1) * statementsPerPage,
+    statementPage * statementsPerPage
   );
 
   // Xác nhận đã nhận tiền (Duyệt thu tiền thủ công cho nhân viên quầy)
@@ -305,7 +463,7 @@ export default function Payments() {
                     </td>
                   </tr>
                 ) : (
-                  filteredTxs.map((tx) => (
+                  paginatedTxs.map((tx) => (
                     <tr key={tx.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="py-3.5 px-4 font-mono font-bold text-slate-400 whitespace-nowrap">{tx.id}</td>
 
@@ -377,6 +535,58 @@ export default function Payments() {
               </tbody>
             </table>
           </div>
+
+          {/* THANH PHÂN TRANG DANH SÁCH GIAO DỊCH */}
+          {filteredTxs.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+              <div className="text-xs text-slate-500 font-medium">
+                Hiển thị <span className="font-bold text-slate-800">{startIndex + 1}</span> -{" "}
+                <span className="font-bold text-slate-800">{Math.min(startIndex + itemsPerPage, filteredTxs.length)}</span> trên tổng số{" "}
+                <span className="font-bold text-emerald-700">{filteredTxs.length}</span> giao dịch
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage <= 1}
+                  className="h-8 px-2.5 text-xs font-semibold text-slate-700 border-slate-200 hover:bg-white disabled:opacity-40 rounded-lg gap-1"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">Trước</span>
+                </Button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                    <button
+                      key={pageNum}
+                      type="button"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`h-8 min-w-8 px-2.5 text-xs font-bold rounded-lg transition-all ${
+                        currentPage === pageNum
+                          ? "bg-emerald-600 text-white shadow-sm"
+                          : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  ))}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage >= totalPages}
+                  className="h-8 px-2.5 text-xs font-semibold text-slate-700 border-slate-200 hover:bg-white disabled:opacity-40 rounded-lg gap-1"
+                >
+                  <span className="hidden sm:inline">Sau</span>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
 
         {/* 🟢 KHUNG THÔNG TIN NGÂN HÀNG & NHẬT KÝ ĐỐI SOÁT */}
@@ -453,8 +663,8 @@ export default function Payments() {
               </Badge>
             </div>
 
-            <div className="space-y-2.5 max-h-[290px] overflow-y-auto pr-1">
-              {bankStatements.map((item) => (
+            <div className="space-y-2.5 min-h-[290px]">
+              {paginatedStatements.map((item) => (
                 <div
                   key={item.id}
                   className="p-3 bg-[#FAF8F5] hover:bg-slate-50 rounded-2xl border border-slate-200/90 text-xs space-y-1.5 transition-colors"
@@ -487,6 +697,35 @@ export default function Payments() {
                 </div>
               ))}
             </div>
+
+            {/* Mini pagination for Bank Statements */}
+            {totalStatementPages > 1 && (
+              <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
+                <span className="text-[11px] text-slate-400 font-medium">
+                  Trang {statementPage} / {totalStatementPages} (Tổng {bankStatements.length} bản ghi)
+                </span>
+                <div className="flex items-center gap-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setStatementPage((p) => Math.max(1, p - 1))}
+                    disabled={statementPage <= 1}
+                    className="h-7 w-7 p-0 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-30 border-slate-200"
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setStatementPage((p) => Math.min(totalStatementPages, p + 1))}
+                    disabled={statementPage >= totalStatementPages}
+                    className="h-7 w-7 p-0 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-30 border-slate-200"
+                  >
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </Card>
         </div>
       </div>

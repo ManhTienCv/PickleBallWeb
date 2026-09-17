@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import api from "@/lib/api";
 import {
   Search,
   Receipt,
@@ -287,6 +288,102 @@ export default function Orders() {
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Fetch and merge backend orders (including MoMo/COD orders from API)
+  const fetchBackendOrders = async (showToast = false) => {
+    setIsRefreshing(true);
+    try {
+      const res = await api.get<{ success: boolean; data: any[] }>("/orders");
+      const backendOrders = res.data?.data;
+      if (Array.isArray(backendOrders) && backendOrders.length > 0) {
+        setOrdersList((prevList) => {
+          const map = new Map<string, Order>();
+          // 1. Giữ các đơn hiện có trong state/local
+          prevList.forEach((o) => map.set(o.code, o));
+
+          // 2. Hợp nhất các đơn hàng mới nhất từ Backend Server
+          backendOrders.forEach((bOrder) => {
+            const code = bOrder.order_code || bOrder.code;
+            if (!code) return;
+
+            const isPaid = bOrder.payment_status === "paid" || bOrder.status === "confirmed";
+            const mappedStatus: Order["status"] = isPaid ? "PAID" : "PENDING";
+            const mappedMethod: Order["paymentMethod"] =
+              bOrder.payment_method === "momo"
+                ? "MoMo"
+                : bOrder.payment_method === "cod"
+                ? "COD"
+                : "VietQR";
+
+            const existing = map.get(code);
+            if (existing) {
+              map.set(code, {
+                ...existing,
+                status: isPaid ? "PAID" : existing.status,
+                paymentMethod: mappedMethod,
+                totalAmount: bOrder.total_amount || existing.totalAmount,
+                customerPhone: bOrder.customer_phone || existing.customerPhone,
+                shippingAddress: bOrder.shipping_address || existing.shippingAddress,
+              });
+            } else {
+              const dateObj = bOrder.created_at ? new Date(bOrder.created_at) : new Date();
+              const dateStr = dateObj.toISOString().split("T")[0];
+              const timeStr = dateObj.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+
+              map.set(code, {
+                code,
+                customerName: bOrder.customer_name || "Khách hàng Online",
+                customerPhone: bOrder.customer_phone || "",
+                staffName: "Hệ thống Tự Động Online",
+                type: "Đặt Sân Online",
+                totalAmount: bOrder.total_amount || 0,
+                paymentMethod: mappedMethod,
+                status: mappedStatus,
+                createdAt: `${dateStr} ${timeStr}`,
+                dateStr,
+                shippingAddress: bOrder.shipping_address || "",
+                shippingCarrier: "GHN",
+                shippingFee: bOrder.shipping_fee || 0,
+                items: Array.isArray(bOrder.items)
+                  ? bOrder.items.map((it: any, idx: number) => ({
+                      id: it.id || idx + 1,
+                      name: it.item_name || it.name || "Sản phẩm",
+                      qty: it.quantity || it.qty || 1,
+                      price: it.price || 0,
+                    }))
+                  : [],
+              });
+            }
+          });
+
+          return Array.from(map.values());
+        });
+
+        if (showToast) {
+          toast.success("Đã đồng bộ đơn hàng từ máy chủ thành công!");
+        }
+      } else if (showToast) {
+        toast.info("Dữ liệu đơn hàng đã ở trạng thái mới nhất.");
+      }
+    } catch (err) {
+      console.warn("Backend orders sync error:", err);
+      if (showToast) {
+        toast.error("Không thể kết nối máy chủ để đồng bộ.");
+      }
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBackendOrders();
+  }, []);
+
+  const handleManualRefresh = () => {
+    fetchBackendOrders(true);
+  };
+
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [printReceiptOrder, setPrintReceiptOrder] = useState<Order | null>(null);
@@ -351,6 +448,59 @@ export default function Orders() {
     toast.success(`Đã tạo vận đơn ${selectedCarrier} thành công! Mã: ${shippingInfo.trackingNumber}`);
     setCreateShippingModalOrder(null);
     setPrintShippingLabelInfo(shippingInfo);
+  };
+
+  // 1-CLICK DISPATCH: GHN EXPRESS
+  const handleOneClickGHNDispatch = (order: Order) => {
+    try {
+      toast.info(`Đang kích hoạt 1-Click GHN Express cho đơn #${order.code}...`);
+      const itemsText = order.items.map((i) => `${i.qty}x ${i.name}`).join(", ");
+      const { fee } = shippingService.calculateShippingFee(
+        order.shippingAddress || "Hà Nội",
+        650,
+        "GHN",
+        order.totalAmount
+      );
+
+      const shippingInfo = shippingService.createShippingOrder({
+        orderCode: order.code,
+        carrier: "GHN",
+        receiverName: order.customerName,
+        receiverAddress: order.shippingAddress || "Số 10 Đường Pickleball, Q. Cầu Giấy, Hà Nội",
+        receiverPhone: order.customerPhone || "0987654321",
+        itemsSummary: itemsText,
+        weightGram: 650,
+        shippingFee: fee,
+        codAmount: order.paymentMethod === "COD" ? order.totalAmount : 0,
+        paymentMethod: order.paymentMethod,
+        deliveryNote: "Đơn hàng Pickleball 1-Click GHN Express / Cho kiểm tra hàng",
+      });
+
+      const updatedOrders = ordersList.map((o) =>
+        o.code === order.code
+          ? {
+              ...o,
+              status: "SHIPPED" as const,
+              shippingCarrier: "GHN" as const,
+              trackingNumber: shippingInfo.trackingNumber,
+              shippingFee: fee,
+            }
+          : o
+      );
+      setOrdersList(updatedOrders);
+
+      notificationService.sendOrderShippedNotice({
+        orderCode: order.code,
+        customerName: order.customerName,
+        shippingAddress: order.shippingAddress || "Số 10 Đường Pickleball, Q. Cầu Giấy, Hà Nội",
+        totalAmount: order.totalAmount,
+      });
+
+      toast.success(`Đã bàn giao đơn #${order.code} cho GHN Express! Mã: ${shippingInfo.trackingNumber}`);
+      setPrintShippingLabelInfo(shippingInfo);
+    } catch {
+      toast.error("Không thể tạo vận đơn GHN Express. Vui lòng thử lại!");
+    }
   };
 
   // ADVANCE TRACKING STAGE SIMULATION
@@ -533,21 +683,35 @@ export default function Orders() {
               )}
             </div>
 
-            <div className="relative w-full sm:w-80">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder={
-                  viewMode === "online"
-                    ? "Tìm mã HD, mã vận đơn, người nhận, địa chỉ..."
-                    : "Tìm mã HD, khách hàng, tên thu ngân, tên sân..."
-                }
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="pl-10 text-xs h-9 rounded-xl border-slate-300"
-              />
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="relative w-full sm:w-80">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder={
+                    viewMode === "online"
+                      ? "Tìm mã HD, mã vận đơn, người nhận, địa chỉ..."
+                      : "Tìm mã HD, khách hàng, tên thu ngân, tên sân..."
+                  }
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="pl-10 text-xs h-9 rounded-xl border-slate-300"
+                />
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleManualRefresh}
+                disabled={isRefreshing}
+                className="h-9 px-3 rounded-xl border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs gap-1.5 shrink-0 cursor-pointer"
+                title="Đồng bộ lại đơn hàng mới nhất từ Server"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-emerald-600" : "text-slate-600"}`} />
+                <span className="hidden md:inline">Đồng bộ Server</span>
+              </Button>
             </div>
           </div>
 
@@ -567,7 +731,7 @@ export default function Orders() {
                   }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-150 border ${
                     posSubFilter === sub.id
-                      ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm shadow-emerald-600/20"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200 border-transparent"
                   }`}
                 >
@@ -749,17 +913,29 @@ export default function Orders() {
                           <td className="py-4 px-4 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-1.5">
                               {isPending && (
-                                <Button
-                                  size="sm"
-                                  onClick={() => {
-                                    setCreateShippingModalOrder(order);
-                                    setSelectedCarrier("GHN");
-                                  }}
-                                  className="h-8 px-3 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-sm gap-1.5 cursor-pointer"
-                                >
-                                  <Truck className="w-3.5 h-3.5" />
-                                  <span>Tạo Vận Đơn</span>
-                                </Button>
+                                <>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleOneClickGHNDispatch(order)}
+                                    className="h-8 px-2.5 text-xs bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl shadow-sm gap-1.5 cursor-pointer"
+                                    title="1-Click bàn giao xuất kho sang GHN Express"
+                                  >
+                                    <Zap className="w-3.5 h-3.5 text-amber-200 fill-amber-200" />
+                                    <span>1-Click GHN</span>
+                                  </Button>
+
+                                  <Button
+                                    size="sm"
+                                    onClick={() => {
+                                      setCreateShippingModalOrder(order);
+                                      setSelectedCarrier("GHN");
+                                    }}
+                                    className="h-8 px-2.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-sm gap-1.5 cursor-pointer"
+                                  >
+                                    <Truck className="w-3.5 h-3.5" />
+                                    <span>Tùy Chỉnh</span>
+                                  </Button>
+                                </>
                               )}
 
                               {(isShipped || isCompleted) && (

@@ -41,7 +41,7 @@ export default function CourtMap() {
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<"day" | "week" | "month">("day");
-  const [selectedCluster, setSelectedCluster] = useState<"all" | "indoor" | "outdoor" | "vip">("all");
+  const [selectedCluster, setSelectedCluster] = useState<"all" | "indoor" | "outdoor" | "vip" | "d">("all");
   const [policyOpen, setPolicyOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<number>(100);
   const dateStr = format(selectedDate, "yyyy-MM-dd");
@@ -55,8 +55,10 @@ export default function CourtMap() {
     { id: 2, name: "Sân Pickleball A2", cluster: "indoor", type: "Pickleball Standard Indoor", hourly_rate: 140000, peak_hourly_rate: 180000 },
     { id: 3, name: "Sân Pickleball B1", cluster: "outdoor", type: "Pickleball Standard Outdoor", hourly_rate: 140000, peak_hourly_rate: 180000 },
     { id: 4, name: "Sân Pickleball B2", cluster: "outdoor", type: "Pickleball Standard Outdoor", hourly_rate: 140000, peak_hourly_rate: 180000 },
-    { id: 5, name: "Sân Pickleball VIP C1", cluster: "vip", type: "Pickleball Premium VIP", hourly_rate: 180000, peak_hourly_rate: 220000 },
-    { id: 6, name: "Sân Pickleball VIP C2", cluster: "vip", type: "Pickleball Premium VIP", hourly_rate: 180000, peak_hourly_rate: 220000 },
+    { id: 5, name: "Sân Pickleball C1", cluster: "vip", type: "Tiêu Chuẩn Pro", hourly_rate: 180000, peak_hourly_rate: 220000 },
+    { id: 6, name: "Sân Pickleball C2", cluster: "vip", type: "Tiêu Chuẩn Pro", hourly_rate: 180000, peak_hourly_rate: 220000 },
+    { id: 7, name: "Sân Pickleball D1", cluster: "d", type: "Tiêu Chuẩn Pro", hourly_rate: 140000, peak_hourly_rate: 180000 },
+    { id: 8, name: "Sân Pickleball D2", cluster: "d", type: "Tiêu Chuẩn Pro", hourly_rate: 140000, peak_hourly_rate: 180000 },
   ];
 
   const pickleballCourts = allPickleballCourts.filter(
@@ -256,12 +258,12 @@ export default function CourtMap() {
                 type="button"
                 onClick={() => setSelectedCluster("all")}
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors duration-150 shrink-0 flex items-center gap-1 border ${selectedCluster === "all"
-                    ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                    ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200 border-transparent"
                   }`}
               >
                 <Layers className="w-3.5 h-3.5" />
-                <span>Tất cả (6 Sân)</span>
+                <span>Tất cả (8 Sân)</span>
               </button>
 
               <button
@@ -273,7 +275,7 @@ export default function CourtMap() {
                   }`}
               >
                 <Building className="w-3.5 h-3.5" />
-                <span>Trong Nhà (A1, A2)</span>
+                <span>Cụm A (A1, A2)</span>
               </button>
 
               <button
@@ -285,7 +287,7 @@ export default function CourtMap() {
                   }`}
               >
                 <Sun className="w-3.5 h-3.5" />
-                <span>Ngoài Trời (B1, B2)</span>
+                <span>Cụm B (B1, B2)</span>
               </button>
 
               <button
@@ -297,7 +299,19 @@ export default function CourtMap() {
                   }`}
               >
                 <Crown className="w-3.5 h-3.5" />
-                <span>Sân VIP (C1, C2)</span>
+                <span>Cụm C (C1, C2)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedCluster("d")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors duration-150 shrink-0 flex items-center gap-1 border ${selectedCluster === "d"
+                    ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                    : "bg-purple-50 text-purple-900 border-purple-200 hover:bg-purple-100"
+                  }`}
+              >
+                <Building className="w-3.5 h-3.5" />
+                <span>Cụm D (D1, D2)</span>
               </button>
             </div>
           </div>
@@ -341,7 +355,7 @@ export default function CourtMap() {
                 key={v.id}
                 onClick={() => setViewMode(v.id as any)}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors duration-150 border ${viewMode === v.id
-                    ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                    ? "bg-emerald-600 text-white border-emerald-600 shadow-sm shadow-emerald-600/20"
                     : "text-slate-600 hover:bg-slate-100 border-transparent font-medium"
                   }`}
               >
@@ -439,14 +453,22 @@ export default function CourtMap() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
-                {pickleballCourts.map((court) => (
+                {pickleballCourts.map((court) => {
+                  const dotColor = court.name.includes('A')
+                    ? 'bg-emerald-500'
+                    : court.name.includes('B')
+                    ? 'bg-blue-500'
+                    : court.name.includes('C')
+                    ? 'bg-amber-500'
+                    : 'bg-purple-500';
+
+                  return (
                   <tr key={court.id} className="hover:bg-slate-50/60">
                     <td className="py-4 px-4 font-bold text-slate-900 sticky left-0 bg-white border-r border-slate-200 z-20 shadow-md min-w-[210px] w-[210px]">
                       <div className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
+                        <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${dotColor}`} />
                         <span className="text-sm font-bold text-slate-900 truncate">{court.name}</span>
                       </div>
-                      <div className="text-xs text-slate-500 font-normal pl-4 truncate">{court.type}</div>
                     </td>
 
                     {timeHeaders.map((time) => {
@@ -512,7 +534,8 @@ export default function CourtMap() {
                       );
                     })}
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

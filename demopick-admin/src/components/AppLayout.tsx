@@ -118,8 +118,8 @@ const AppLayout = ({ children, title, subtitle, headerRight, noScroll = false }:
           {!isCollapsed ? (
             <>
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shadow-sm shrink-0">
-                  <PickleballLogo size={22} />
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shadow-sm shrink-0 p-1 overflow-hidden">
+                  <PickleballLogo size={24} />
                 </div>
                 <div className="truncate">
                   <h1 className="font-bold text-slate-900 text-base tracking-tight">PickleBall</h1>
