@@ -18,4 +18,18 @@ class ApiException extends Exception
     {
         return $this->errors;
     }
+
+    public function render($request): \Illuminate\Http\JsonResponse
+    {
+        $code = ($this->getCode() >= 400 && $this->getCode() < 600) ? $this->getCode() : 400;
+
+        return response()->json([
+            'data' => null,
+            'error' => [
+                'message' => $this->getMessage(),
+                'details' => $this->errors,
+            ],
+            'message' => $this->getMessage(),
+        ], $code);
+    }
 }

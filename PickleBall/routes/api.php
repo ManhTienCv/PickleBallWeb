@@ -16,6 +16,8 @@ use App\Modules\Shop\Http\Controllers\BrandController;
 use App\Modules\Shop\Http\Controllers\CartController;
 use App\Modules\Shop\Http\Controllers\CategoryController;
 use App\Modules\Shop\Http\Controllers\ProductController;
+use App\Modules\Order\Http\Controllers\ShippingController;
+use App\Modules\Order\Http\Controllers\OrderApiController;
 use App\Modules\User\Http\Controllers\AuthController;
 use App\Modules\User\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -28,13 +30,36 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
+// Root API alias: /api/auth/google
+Route::post('/auth/google', [AuthController::class, 'googleAuth'])->middleware('throttle:30,1');
+
 Route::prefix('v1')->group(function () {
 
     // ── 1. Auth & Public Catalog Routes ──────────────────────
     Route::prefix('auth')->group(function () {
         Route::post('/register', [AuthController::class, 'register']);
         Route::post('/login', [AuthController::class, 'login']);
+        Route::post('/check-email', [AuthController::class, 'checkEmail']);
+        Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+        Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+        Route::post('/google', [AuthController::class, 'googleAuth'])->middleware('throttle:30,1');
+        Route::get('/me', [AuthController::class, 'me'])->middleware('auth:sanctum');
     });
+
+    // ── GHN Express Shipping Routes ───────────────────────────
+    Route::prefix('shipping')->group(function () {
+        Route::get('/provinces', [ShippingController::class, 'provinces']);
+        Route::get('/districts', [ShippingController::class, 'districts']);
+        Route::get('/wards', [ShippingController::class, 'wards']);
+        Route::post('/calculate-fee', [ShippingController::class, 'calculateFee']);
+        Route::post('/create-order', [ShippingController::class, 'createOrder']);
+        Route::get('/tracking/{code}', [ShippingController::class, 'tracking']);
+    });
+
+    // ── Orders & Checkout API ─────────────────────────────────
+    Route::get('/orders', [OrderApiController::class, 'index']);
+    Route::post('/orders', [OrderApiController::class, 'create']);
+    Route::get('/orders/{code}', [OrderApiController::class, 'show']);
 
     // Public Shop Catalog
     Route::get('/products', [ProductController::class, 'index']);
@@ -61,8 +86,10 @@ Route::prefix('v1')->group(function () {
     Route::post('/booking/hold', [HoldController::class, 'store']);
     Route::delete('/booking/hold/{id}', [HoldController::class, 'destroy']);
 
-    // Webhooks (Cấp 2 - Realtime Bank Gateway)
-    Route::post('/webhooks/payment/momo', [PaymentWebhookController::class, 'momoWebhook']);
+    // Webhooks & Payment Gateways (Cấp 2 - Realtime Bank & Hosted Gateway)
+    Route::match(['get', 'post'], '/payments/momo/verify', [OrderApiController::class, 'momoVerify']);
+    Route::post('/payments/webhook/momo', [OrderApiController::class, 'momoWebhook']);
+    Route::post('/webhooks/payment/momo', [OrderApiController::class, 'momoWebhook']);
     Route::post('/webhooks/payment/vietqr', [PaymentWebhookController::class, 'vietqrWebhook']);
 
     // ── 2. Protected Routes (Customer Auth) ──────────────────
@@ -78,10 +105,6 @@ Route::prefix('v1')->group(function () {
 
         // Checkout Saga
         Route::post('/checkout', [CheckoutController::class, 'store']);
-
-        // Orders
-        Route::get('/orders', [OrderController::class, 'index']);
-        Route::get('/orders/{code}', [OrderController::class, 'show']);
     });
 
     // ── 3. Admin & Staff Shared Routes (Read-only Catalog, POS Orders & Scan) ────
@@ -92,6 +115,9 @@ Route::prefix('v1')->group(function () {
         // Staff & Admin View Catalog & Orders for POS
         Route::get('/products', [AdminProductController::class, 'index']);
         Route::get('/courts', [AdminCourtController::class, 'index']);
+        Route::get('/courts/live-status', [AdminCourtController::class, 'liveStatus']);
+        Route::post('/courts/{id}/start-session', [AdminCourtController::class, 'startSession']);
+        Route::post('/courts/{id}/stop-session', [AdminCourtController::class, 'stopSession']);
         Route::get('/orders', [AdminOrderController::class, 'index']);
         Route::put('/orders/{id}/status', [AdminOrderController::class, 'updateStatus']);
         Route::get('/posts', [PostController::class, 'adminIndex']);

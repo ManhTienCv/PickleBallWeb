@@ -32,7 +32,31 @@ class SlotController extends Controller
             $query->where('court_id', $courtId);
         }
 
-        $slots = $query->orderBy('court_id')->orderBy('start_time')->get();
+        $isToday = ($date === Carbon::today()->format('Y-m-d'));
+        $now = Carbon::now();
+        $cutoffThreshold = $now->copy()->addMinutes(30);
+
+        $activeSessions = $isToday
+            ? \App\Modules\Booking\Models\CourtSession::where('status', 'in_progress')->get()->keyBy('court_id')
+            : collect();
+
+        $slots = $query->orderBy('court_id')->orderBy('start_time')->get()->map(function ($slot) use ($isToday, $cutoffThreshold, $now, $activeSessions) {
+            if ($isToday) {
+                $slotStartTime = Carbon::createFromTimeString($slot->start_time);
+                if ($slotStartTime->lessThanOrEqualTo($cutoffThreshold)) {
+                    $slot->is_cut_off = true;
+                }
+
+                // If this court currently has an active in_progress session covering now
+                if ($activeSessions->has($slot->court_id)) {
+                    $slotEndTime = Carbon::createFromTimeString($slot->end_time);
+                    if ($now->greaterThanOrEqualTo($slotStartTime->copy()->subMinutes(15)) && $now->lessThanOrEqualTo($slotEndTime)) {
+                        $slot->status = 'in_use';
+                    }
+                }
+            }
+            return $slot;
+        });
 
         return $this->success(TimeSlotResource::collection($slots), 'Danh sách khung giờ.');
     }

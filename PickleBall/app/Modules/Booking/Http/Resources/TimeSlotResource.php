@@ -17,6 +17,7 @@ class TimeSlotResource extends JsonResource
             'end_time' => substr($this->end_time, 0, 5),
             'price' => (float) $this->price,
             'status' => $this->status,
+            'is_cut_off' => (bool) ($this->is_cut_off ?? false),
             'court' => new CourtResource($this->whenLoaded('court')),
         ];
     }
