@@ -18,6 +18,7 @@ import Reports from "./pages/Reports";
 import AdminChat from "./pages/AdminChat";
 import Reviews from "./pages/Reviews";
 import Vouchers from "./pages/Vouchers";
+import Users from "./pages/Users";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -77,6 +78,7 @@ const App = () => (
               <Route path="/chat" element={<AdminChat />} />
               <Route path="/reviews" element={<Reviews />} />
               <Route path="/vouchers" element={<Vouchers />} />
+              <Route path="/users" element={<Users />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
