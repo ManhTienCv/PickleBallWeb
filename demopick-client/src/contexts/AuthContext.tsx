@@ -11,6 +11,7 @@ interface AuthContextType {
   register: (data: RegisterData) => Promise<void>
   logout: () => Promise<void>
   updateUser: (updatedUser: User) => void
+  setSession: (token: string, user: User) => void
 }
 
 interface RegisterData {
@@ -30,6 +31,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isAuthenticated = !!token && !!user
 
+  const setSession = (newToken: string, newUser: User) => {
+    authHelpers.setAuth(newToken, newUser)
+    setToken(newToken)
+    setUser(newUser)
+  }
+
   const login = async (email: string, password: string) => {
     setIsLoading(true)
     try {
@@ -38,9 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
       })
       const { token: newToken, user: newUser } = response.data.data
-      authHelpers.setAuth(newToken, newUser)
-      setToken(newToken)
-      setUser(newUser)
+      setSession(newToken, newUser)
     } finally {
       setIsLoading(false)
     }
@@ -51,9 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await api.post<ApiResponse<{ token: string; user: User }>>('/auth/register', data)
       const { token: newToken, user: newUser } = response.data.data
-      authHelpers.setAuth(newToken, newUser)
-      setToken(newToken)
-      setUser(newUser)
+      setSession(newToken, newUser)
     } finally {
       setIsLoading(false)
     }
@@ -78,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated, isLoading, login, register, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, token, isAuthenticated, isLoading, login, register, logout, updateUser, setSession }}>
       {children}
     </AuthContext.Provider>
   )

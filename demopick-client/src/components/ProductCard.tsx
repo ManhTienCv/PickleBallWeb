@@ -21,6 +21,8 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cartService } from '@/services/cart.service'
+import { authHelpers } from '@/stores/useAuthStore'
+import { useAuthModalStore } from '@/stores/useAuthModalStore'
 
 interface ProductCardProps {
   product: Product
@@ -30,10 +32,47 @@ interface ProductCardProps {
 export default function ProductCard({ product, onAddToCart }: ProductCardProps) {
   const navigate = useNavigate()
   const [quickViewOpen, setQuickViewOpen] = useState(false)
+  const scrollPosRef = React.useRef<number>(0)
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
     product?.variants && product.variants.length > 0 ? product.variants[0] : null
   )
   const [modalQuantity, setModalQuantity] = useState(1)
+
+  const handleOpenQuickView = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    scrollPosRef.current = window.scrollY || document.documentElement.scrollTop || 0
+    setQuickViewOpen(true)
+  }
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      const savedPos = scrollPosRef.current
+      setQuickViewOpen(false)
+      requestAnimationFrame(() => {
+        if (savedPos > 0) {
+          window.scrollTo({ top: savedPos, behavior: 'instant' })
+        }
+        setTimeout(() => {
+          if (savedPos > 0) {
+            window.scrollTo({ top: savedPos, behavior: 'instant' })
+          }
+        }, 30)
+      })
+    } else {
+      setQuickViewOpen(true)
+    }
+  }
+
+  React.useEffect(() => {
+    if (quickViewOpen && scrollPosRef.current > 0) {
+      window.scrollTo({ top: scrollPosRef.current, behavior: 'instant' })
+      const timeoutId = setTimeout(() => {
+        window.scrollTo({ top: scrollPosRef.current, behavior: 'instant' })
+      }, 20)
+      return () => clearTimeout(timeoutId)
+    }
+  }, [quickViewOpen])
 
   if (!product) return null
 
@@ -59,6 +98,12 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
     : null
 
   const handleModalAddToCart = () => {
+    if (!authHelpers.isAuthenticated()) {
+      toast.info('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.')
+      useAuthModalStore.getState().openLogin()
+      return
+    }
+
     const variantId = selectedVariant ? selectedVariant.id : product.variants?.[0]?.id || product.id || Date.now()
     toast.success(`Đã thêm ${modalQuantity} x "${product.name}" vào giỏ hàng!`, {
       action: {
@@ -73,6 +118,11 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
   }
 
   const handleModalBuyNow = async () => {
+    if (!authHelpers.isAuthenticated()) {
+      toast.info('Vui lòng đăng nhập để mua hàng và thanh toán.')
+      useAuthModalStore.getState().openLogin()
+      return
+    }
     await handleModalAddToCart()
     navigate('/checkout')
   }
@@ -115,8 +165,9 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
 
           {/* Quick View Button on Image Hover */}
           <button
-            onClick={() => setQuickViewOpen(true)}
-            className="absolute bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover/img:opacity-100 transition-all duration-300 bg-slate-900/90 dark:bg-slate-800/90 hover:bg-slate-900 dark:hover:bg-slate-700 text-white text-xs font-medium px-4 py-2 rounded-full backdrop-blur-md shadow-lg flex items-center gap-1.5 z-20 scale-95 group-hover/img:scale-100"
+            type="button"
+            onClick={handleOpenQuickView}
+            className="absolute bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover/img:opacity-100 transition-all duration-300 bg-slate-900/90 dark:bg-slate-800/90 hover:bg-slate-900 dark:hover:bg-slate-700 text-white text-xs font-medium px-4 py-2 rounded-full backdrop-blur-md shadow-lg flex items-center gap-1.5 z-20 scale-95 group-hover/img:scale-100 cursor-pointer"
           >
             <Eye className="w-4 h-4 text-emerald-400" />
             <span>Xem nhanh</span>
@@ -164,13 +215,18 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
+                if (!authHelpers.isAuthenticated()) {
+                  toast.info('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.')
+                  useAuthModalStore.getState().openLogin()
+                  return
+                }
                 if (onAddToCart) {
                   onAddToCart(product)
                 } else {
                   handleModalAddToCart()
                 }
               }}
-              className="w-10 h-10 rounded-xl bg-slate-900 dark:bg-emerald-600 hover:bg-emerald-600 dark:hover:bg-emerald-500 text-white flex items-center justify-center transition-all duration-200 shadow-sm active:scale-95 shrink-0 cursor-pointer hover:shadow-md"
+              className="w-10 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-all duration-200 shadow-md shadow-emerald-600/20 active:scale-95 shrink-0 cursor-pointer"
               title="Thêm nhanh vào giỏ hàng"
             >
               <ShoppingBag className="w-5 h-5 text-white" />
@@ -180,8 +236,22 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
       </div>
 
       {/* QUICK VIEW PRODUCT MODAL DIALOG */}
-      <Dialog open={quickViewOpen} onOpenChange={setQuickViewOpen}>
-        <DialogContent className="max-w-3xl sm:rounded-3xl p-0 overflow-hidden border border-slate-200 dark:border-border bg-white dark:bg-card shadow-2xl font-sans text-card-foreground">
+      <Dialog open={quickViewOpen} onOpenChange={handleOpenChange}>
+        <DialogContent
+          onOpenAutoFocus={(e) => {
+            e.preventDefault()
+            if (scrollPosRef.current > 0) {
+              window.scrollTo({ top: scrollPosRef.current, behavior: 'instant' })
+            }
+          }}
+          onCloseAutoFocus={(e) => {
+            e.preventDefault()
+            if (scrollPosRef.current > 0) {
+              window.scrollTo({ top: scrollPosRef.current, behavior: 'instant' })
+            }
+          }}
+          className="max-w-3xl sm:rounded-3xl p-0 overflow-hidden border border-slate-200 dark:border-border bg-white dark:bg-card shadow-2xl font-sans text-card-foreground"
+        >
           <DialogHeader className="sr-only">
             <DialogTitle>Chi Tiết Sản Phẩm - {product.name}</DialogTitle>
           </DialogHeader>

@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { ShoppingCart, Trash2, ArrowRight, ArrowLeft, ShoppingBag } from 'lucide-react'
 import { toast } from 'sonner'
+import { authHelpers } from '@/stores/useAuthStore'
+import { useAuthModalStore } from '@/stores/useAuthModalStore'
 
 export default function CartPage() {
   const navigate = useNavigate()
@@ -19,6 +21,11 @@ export default function CartPage() {
   }, [resetTimer])
 
   const handleProceedToCheckout = () => {
+    if (!authHelpers.isAuthenticated()) {
+      toast.info('Vui lòng đăng nhập để tiếp tục thanh toán đơn hàng.')
+      useAuthModalStore.getState().openLogin()
+      return
+    }
     startTimer()
     navigate('/checkout')
   }

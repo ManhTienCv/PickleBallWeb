@@ -37,6 +37,8 @@ import {
   Gift,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { authHelpers } from '@/stores/useAuthStore'
+import { useAuthModalStore } from '@/stores/useAuthModalStore'
 
 // Default color palettes with realistic Pickleball high-res images
 const DEFAULT_COLOR_VARIANTS = [
@@ -166,6 +168,11 @@ export default function ProductDetail() {
 
   const handleAddBundleToCart = async () => {
     if (!product) return
+    if (!authHelpers.isAuthenticated()) {
+      toast.info('Vui lòng đăng nhập để mua combo sản phẩm.')
+      useAuthModalStore.getState().openLogin()
+      return
+    }
     setIsAddingBundle(true)
     try {
       const variantId = selectedVariant ? selectedVariant.id : product.variants?.[0]?.id || product.id || Date.now()
@@ -311,6 +318,12 @@ export default function ProductDetail() {
       : selectedColor.name
 
   const handleAddToCart = () => {
+    if (!authHelpers.isAuthenticated()) {
+      toast.info('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.')
+      useAuthModalStore.getState().openLogin()
+      return
+    }
+
     const variantId = selectedVariant?.id || product.id || 1
     // Instant 0ms toast notification
     toast.success(

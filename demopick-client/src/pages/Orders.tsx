@@ -36,12 +36,25 @@ import {
   X,
   Check,
   Navigation,
+  ExternalLink,
+  Receipt,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import { authHelpers } from '@/stores/useAuthStore'
+import { useAuthModalStore } from '@/stores/useAuthModalStore'
+import OrderReceiptModal from '@/components/OrderReceiptModal'
 
 export default function OrdersPage() {
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!authHelpers.isAuthenticated()) {
+      navigate('/', { replace: true })
+      useAuthModalStore.getState().openLogin()
+      toast.info('Vui lòng đăng nhập để xem và quản lý đơn hàng của bạn.')
+    }
+  }, [navigate])
 
   const { data: apiOrders = [], isLoading } = useQuery({
     queryKey: ['orders'],
@@ -75,6 +88,10 @@ export default function OrdersPage() {
   const [orderImages, setOrderImages] = useState<string[]>([])
   const orderFileInputRef = useRef<HTMLInputElement>(null)
 
+  // Order Receipt Modal
+  const [selectedReceiptOrder, setSelectedReceiptOrder] = useState<any | null>(null)
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false)
+
   // Initial orders list containing simulated completed order & separated booking tickets
   const loadOrdersData = () => {
     try {
@@ -87,7 +104,12 @@ export default function OrdersPage() {
           order_type: o.type === 'Đặt Sân Online' ? 'product' : 'retail',
           created_at: o.createdAt || new Date().toISOString(),
           status: o.status.toLowerCase(),
-          payment_method: o.paymentMethod === 'Tiền mặt' || o.paymentMethod === 'COD' ? 'cash' : 'bank_transfer',
+          payment_method:
+            o.paymentMethod === 'COD' || o.paymentMethod === 'Tiền mặt'
+              ? 'cod'
+              : o.paymentMethod === 'MoMo' || o.paymentMethod === 'Cổng Online' || o.paymentMethod === 'VietQR'
+              ? 'momo'
+              : 'bank_transfer',
           total_amount: o.totalAmount,
           shipping_address: o.shippingAddress || 'Số 10 Đường Pickleball, Q. Cầu Giấy, Hà Nội',
           shipping_carrier: o.shippingCarrier || 'GHN',
@@ -433,7 +455,7 @@ export default function OrdersPage() {
             onClick={() => setActiveTab(tabItem.id as any)}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors duration-150 cursor-pointer border ${
               activeTab === tabItem.id
-                ? 'bg-slate-900 dark:bg-emerald-600 border-slate-900 dark:border-emerald-600 text-white shadow-sm'
+                ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm shadow-emerald-600/20'
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-transparent'
             }`}
           >
@@ -626,9 +648,50 @@ export default function OrdersPage() {
 
                 {/* Footer Actions & Total */}
                 <div className="flex flex-wrap justify-between items-center pt-2 border-t border-slate-100 dark:border-border gap-3">
-                  <span className="text-xs text-slate-500 dark:text-slate-400">
-                    Thanh toán: <strong className="text-slate-800 dark:text-slate-200 uppercase font-bold">{order.payment_method === 'bank_transfer' ? 'VietQR Ngân Hàng' : 'Thu tiền khi nhận (COD)'}</strong>
-                  </span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      Thanh toán:{' '}
+                      <strong className="text-slate-800 dark:text-slate-200 font-bold">
+                        {order.payment_method === 'cod' || order.payment_method === 'cash'
+                          ? 'Thu tiền khi nhận (COD GHN)'
+                          : order.payment_method === 'momo'
+                          ? 'Cổng MoMo / VietQR Hosted'
+                          : 'Cổng Trực Tuyến'}
+                      </strong>
+                    </span>
+
+                    {isPending && (order.payment_method === 'momo' || order.payment_method === 'bank_transfer') && (
+                      <Button
+                        size="sm"
+                        onClick={async () => {
+                          try {
+                            toast.info('Đang kết nối sang Cổng thanh toán bảo mật...')
+                            const res = await orderService.createOrder({
+                              shippingName: order.customer_name || 'Khách hàng',
+                              shippingPhone: order.customer_phone || '0987654321',
+                              shippingAddress: order.shipping_address || 'Hà Nội',
+                              paymentMethod: 'momo',
+                              items: order.items?.map((it: any) => ({
+                                id: it.id,
+                                name: it.item_name,
+                                quantity: it.quantity,
+                                price: it.subtotal / (it.quantity || 1),
+                              })) || [{ id: 1, name: 'Đơn hàng Pickleball', quantity: 1, price: order.total_amount }],
+                            })
+                            if (res.payUrl) {
+                              window.location.href = res.payUrl
+                            }
+                          } catch {
+                            toast.error('Không thể mở cổng thanh toán. Vui lòng thử lại sau.')
+                          }
+                        }}
+                        className="h-7 px-2.5 text-xs bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-xl gap-1 shadow-sm cursor-pointer ml-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        <span>Thanh toán ngay</span>
+                      </Button>
+                    )}
+                  </div>
 
                   <div className="flex items-center gap-3 ml-auto">
                     {isCompleted && (
@@ -660,6 +723,19 @@ export default function OrdersPage() {
                         </Button>
                       </div>
                     )}
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedReceiptOrder(order)
+                        setIsReceiptModalOpen(true)
+                      }}
+                      className="h-8 text-xs font-bold text-slate-700 dark:text-slate-300 border-slate-300 dark:border-border hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 dark:hover:bg-emerald-950/40 dark:hover:border-emerald-800 gap-1.5 rounded-xl shadow-sm cursor-pointer"
+                    >
+                      <Receipt className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Xem Biên Nhận</span>
+                    </Button>
 
                     <div className="text-right">
                       <span className="text-xs text-slate-400 mr-1.5">Tổng tiền:</span>
@@ -965,6 +1041,13 @@ export default function OrdersPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* ORDER RECEIPT MODAL */}
+      <OrderReceiptModal
+        open={isReceiptModalOpen}
+        onOpenChange={setIsReceiptModalOpen}
+        order={selectedReceiptOrder}
+      />
     </div>
   )
 }

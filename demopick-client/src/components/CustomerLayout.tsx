@@ -234,7 +234,7 @@ export default function CustomerLayout() {
               <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
                 <button
                   onClick={openLogin}
-                  className="px-6 sm:px-7 py-2.5 sm:py-3 bg-[#27c372] hover:bg-[#22c55e] text-white rounded-full text-sm sm:text-[15px] font-black shadow-md shadow-[#27c372]/25 transition-all block cursor-pointer"
+                  className="px-6 sm:px-7 py-2.5 sm:py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full text-sm sm:text-[15px] font-bold shadow-md shadow-emerald-600/25 transition-all block cursor-pointer"
                 >
                   Đăng Nhập
                 </button>

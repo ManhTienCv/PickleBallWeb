@@ -22,6 +22,8 @@ import {
   Trophy,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { authHelpers } from '@/stores/useAuthStore'
+import { useAuthModalStore } from '@/stores/useAuthModalStore'
 
 export default function Home() {
   const navigate = useNavigate()
@@ -63,6 +65,12 @@ export default function Home() {
     .slice(0, 8)
 
   const handleAddToCart = async (product: any) => {
+    if (!authHelpers.isAuthenticated()) {
+      toast.info('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.')
+      useAuthModalStore.getState().openLogin()
+      return
+    }
+
     const variantId = product.variants?.[0]?.id || product.id || Date.now()
     try {
       await cartService.addToCart(variantId, 1, product)
@@ -114,7 +122,7 @@ export default function Home() {
     {
       id: 'Dịch vụ Đặt Sân',
       name: 'Sân Thi Đấu Pro',
-      count: '6 Sân chuẩn quốc tế',
+      count: '8 Sân chuẩn quốc tế',
       icon: Calendar,
       color: 'from-rose-500/10 to-rose-500/5',
       iconColor: 'text-rose-700',
@@ -240,7 +248,7 @@ export default function Home() {
               {/* Quick Stats Badges */}
               <div className="pt-6 grid grid-cols-3 gap-4 border-t border-slate-200/80 dark:border-border text-xs sm:text-sm">
                 <div>
-                  <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">6 Sân Đấu</div>
+                  <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">8 Sân Đấu</div>
                   <div className="text-slate-600 dark:text-slate-400 font-medium">Chuẩn USAPA Pro</div>
                 </div>
                 <div>
@@ -387,7 +395,7 @@ export default function Home() {
                         damping: 26,
                         mass: 0.8,
                       }}
-                      className="absolute inset-0 bg-slate-900 dark:bg-emerald-600 border border-slate-900 dark:border-emerald-600 rounded-full shadow-sm z-0"
+                      className="absolute inset-0 bg-emerald-600 border border-emerald-600 rounded-full shadow-sm shadow-emerald-600/20 z-0"
                     />
                   )}
                   {!isActive && (
@@ -439,7 +447,7 @@ export default function Home() {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200/80 dark:border-border pb-4">
           <div className="space-y-1">
             <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-              Hệ Thống 6 Sân Đấu Chuẩn USAPA
+              Hệ Thống 8 Sân Đấu Chuẩn USAPA
             </h2>
             <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">
               Mặt sân Decoturf thi đấu chống trơn trượt, đèn LED 500 Lux chuẩn giải đấu

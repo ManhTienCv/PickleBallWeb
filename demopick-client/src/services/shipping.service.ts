@@ -1,4 +1,25 @@
+import api from '@/lib/api'
+
 export type ShippingCarrier = "GHN" | "GHTK" | "Viettel Post" | "GrabExpress";
+
+export interface GHNProvince {
+  ProvinceID: number;
+  ProvinceName: string;
+  Code: string;
+}
+
+export interface GHNDistrict {
+  DistrictID: number;
+  ProvinceID: number;
+  DistrictName: string;
+  Code: string;
+}
+
+export interface GHNWard {
+  WardCode: string;
+  DistrictID: number;
+  WardName: string;
+}
 
 export interface CarrierInfo {
   id: ShippingCarrier;
@@ -316,6 +337,70 @@ class ShippingService {
     this.saveRegistry(registry);
 
     return info;
+  }
+
+  // --- GHN EXPRESS INTEGRATION (API V1) ---
+
+  public async getGHNProvinces(): Promise<GHNProvince[]> {
+    try {
+      const res = await api.get<{ success: boolean; data: GHNProvince[] }>('/shipping/provinces');
+      return res.data?.data || [];
+    } catch {
+      return [
+        { ProvinceID: 201, ProvinceName: 'Hà Nội', Code: 'HN' },
+        { ProvinceID: 202, ProvinceName: 'TP. Hồ Chí Minh', Code: 'HCM' },
+        { ProvinceID: 203, ProvinceName: 'Đà Nẵng', Code: 'DN' },
+        { ProvinceID: 204, ProvinceName: 'Hải Phòng', Code: 'HP' },
+        { ProvinceID: 205, ProvinceName: 'Cần Thơ', Code: 'CT' },
+        { ProvinceID: 206, ProvinceName: 'Bình Dương', Code: 'BD' },
+        { ProvinceID: 207, ProvinceName: 'Đồng Nai', Code: 'DN' },
+        { ProvinceID: 208, ProvinceName: 'Quảng Ninh', Code: 'QN' },
+      ];
+    }
+  }
+
+  public async getGHNDistricts(provinceId: number): Promise<GHNDistrict[]> {
+    try {
+      const res = await api.get<{ success: boolean; data: GHNDistrict[] }>(`/shipping/districts?province_id=${provinceId}`);
+      return res.data?.data || [];
+    } catch {
+      return [];
+    }
+  }
+
+  public async getGHNWards(districtId: number): Promise<GHNWard[]> {
+    try {
+      const res = await api.get<{ success: boolean; data: GHNWard[] }>(`/shipping/wards?district_id=${districtId}`);
+      return res.data?.data || [];
+    } catch {
+      return [];
+    }
+  }
+
+  public async calculateGHNFee(params: {
+    toDistrictId: number;
+    toWardCode: string;
+    weightGram?: number;
+    insuranceValue?: number;
+  }): Promise<{ shippingFee: number; expectedDeliveryTime: string }> {
+    try {
+      const res = await api.post<{
+        success: boolean;
+        data: { shippingFee: number; expectedDeliveryTime: string };
+      }>('/shipping/calculate-fee', params);
+      return res.data?.data || { shippingFee: 30000, expectedDeliveryTime: '1 - 2 ngày' };
+    } catch {
+      return { shippingFee: 30000, expectedDeliveryTime: '1 - 2 ngày' };
+    }
+  }
+
+  public async getRealtimeTracking(code: string): Promise<any> {
+    try {
+      const res = await api.get<{ success: boolean; data: any }>(`/shipping/tracking/${code}`);
+      return res.data?.data;
+    } catch {
+      return null;
+    }
   }
 }
 

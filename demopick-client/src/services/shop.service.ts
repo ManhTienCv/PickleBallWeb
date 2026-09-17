@@ -241,111 +241,71 @@ export const DEFAULT_CLIENT_PRODUCTS: Product[] = [
 
 export const shopService = {
   async getCategories(): Promise<Category[]> {
-    try {
-      const response = await api.get<ApiResponse<Category[]>>('/categories')
-      return response.data.data || []
-    } catch {
-      return [
-        { id: 1, name: 'Vợt Pickleball', slug: 'vot-pickleball' },
-        { id: 2, name: 'Bóng Pickleball', slug: 'bong-pickleball' },
-        { id: 3, name: 'Phụ kiện & Bao vợt', slug: 'phu-kien-bao-vot' },
-        { id: 4, name: 'Quần áo & Trang phục', slug: 'quan-ao-trang-phuc' },
-      ]
-    }
+    return [
+      { id: 1, name: 'Vợt Pickleball', slug: 'vot-pickleball' },
+      { id: 2, name: 'Bóng Pickleball', slug: 'bong-pickleball' },
+      { id: 3, name: 'Phụ kiện & Bao vợt', slug: 'phu-kien-bao-vot' },
+      { id: 4, name: 'Quần áo & Trang phục', slug: 'quan-ao-trang-phuc' },
+    ]
   },
 
   async getBrands(): Promise<Brand[]> {
-    try {
-      const response = await api.get<ApiResponse<Brand[]>>('/brands')
-      return response.data.data || []
-    } catch {
-      return [
-        { id: 1, name: 'JOOLA', slug: 'joola' },
-        { id: 2, name: 'Selkirk', slug: 'selkirk' },
-        { id: 3, name: 'CRBN', slug: 'crbn' },
-        { id: 4, name: 'Franklin', slug: 'franklin' },
-      ]
-    }
+    return [
+      { id: 1, name: 'JOOLA', slug: 'joola' },
+      { id: 2, name: 'Selkirk', slug: 'selkirk' },
+      { id: 3, name: 'CRBN', slug: 'crbn' },
+      { id: 4, name: 'Franklin', slug: 'franklin' },
+    ]
   },
 
   async getProducts(params?: ProductQueryParams): Promise<{ items: Product[]; meta?: ApiResponse['meta'] }> {
-    try {
-      const response = await api.get<ApiResponse<Product[]>>('/products', { params })
-      let items = response.data.data
+    let items = DEFAULT_CLIENT_PRODUCTS
 
-      // Check if local synced products exist (updated by Admin / POS)
-      const syncedRaw = localStorage.getItem(SYNCED_PRODUCTS_KEY)
-      if (syncedRaw) {
-        try {
-          const syncedList: Product[] = JSON.parse(syncedRaw)
-          const syncedIds = new Set((items || []).map((i) => i.id))
-          const newItems = syncedList.filter((s) => s && s.id && !syncedIds.has(s.id))
-          items = [...newItems, ...(items || [])].map((item) => {
-            if (!item) return item
-            const match = syncedList.find((s) => s && (s.id === item.id || s.slug === item.slug))
-            return match ? { ...item, ...match } : item
-          }).filter(Boolean)
-        } catch {
-          // fallback to items
+    // Check if local synced products exist (updated by Admin / POS)
+    const syncedRaw = localStorage.getItem(SYNCED_PRODUCTS_KEY)
+    if (syncedRaw) {
+      try {
+        const syncedList: Product[] = JSON.parse(syncedRaw)
+        if (Array.isArray(syncedList) && syncedList.length > 0) {
+          const syncedIds = new Set(syncedList.map((i) => i.id))
+          const nonSynced = items.filter((s) => !syncedIds.has(s.id))
+          items = [...syncedList, ...nonSynced]
         }
+      } catch {
+        // fallback to items
       }
+    }
 
-      if (!items || items.length === 0) {
-        items = DEFAULT_CLIENT_PRODUCTS
-      }
+    if (params?.category_id) {
+      items = items.filter((p) => p.category?.id === params.category_id)
+    }
+    if (params?.search) {
+      const q = params.search.toLowerCase()
+      items = items.filter((p) => p.name.toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q))
+    }
 
-      return {
-        items,
-        meta: response.data.meta,
-      }
-    } catch {
-      // Fallback local mock if offline
-      const syncedRaw = localStorage.getItem(SYNCED_PRODUCTS_KEY)
-      if (syncedRaw) {
-        try {
-          const parsed = JSON.parse(syncedRaw)
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            return { items: parsed }
-          }
-        } catch {
-          // ignore
-        }
-      }
-      return { items: DEFAULT_CLIENT_PRODUCTS }
+    return {
+      items,
+      meta: {
+        total: items.length,
+        current_page: 1,
+        last_page: 1,
+        per_page: 20,
+      },
     }
   },
 
   async getProductBySlug(slug: string): Promise<Product> {
     const syncedRaw = localStorage.getItem(SYNCED_PRODUCTS_KEY)
-    let syncedProduct: Product | undefined
     if (syncedRaw) {
       try {
         const syncedList: Product[] = JSON.parse(syncedRaw)
-        syncedProduct = syncedList.find((s) => s && (s.slug === slug || String(s.id) === slug))
-      } catch {
-        // fallback
-      }
-    }
-
-    try {
-      const response = await api.get<ApiResponse<Product>>(`/products/${slug}`)
-      let product = response.data.data
-      if (syncedProduct) {
-        product = { ...product, ...syncedProduct }
-      }
-      if (!product) {
-        const found = DEFAULT_CLIENT_PRODUCTS.find((p) => p.slug === slug || String(p.id) === slug)
+        const found = syncedList.find((s) => s && (s.slug === slug || String(s.id) === slug))
         if (found) return found
-      }
-      return product
-    } catch (err) {
-      if (syncedProduct) {
-        return syncedProduct
-      }
-      const found = DEFAULT_CLIENT_PRODUCTS.find((p) => p.slug === slug || String(p.id) === slug)
-      if (found) return found
-      return DEFAULT_CLIENT_PRODUCTS[0]
+      } catch {}
     }
+    const found = DEFAULT_CLIENT_PRODUCTS.find((p) => p.slug === slug || String(p.id) === slug)
+    return found || DEFAULT_CLIENT_PRODUCTS[0]
   },
 
   // ── Product Reviews System (5-Star Ratings & Real Photos) ───────────

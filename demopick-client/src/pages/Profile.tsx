@@ -5,6 +5,7 @@ import { authService } from '@/services/auth.service'
 import { addressService, UserAddress, AddressLabelType } from '@/services/address.service'
 import { orderService, Order } from '@/services/order.service'
 import MapLocationPicker, { SelectedLocationResult } from '@/components/MapLocationPicker'
+import OrderReceiptModal from '@/components/OrderReceiptModal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -46,6 +47,7 @@ import {
   Lock,
   Eye,
   EyeOff,
+  Receipt,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -102,6 +104,10 @@ export default function Profile() {
   // Logout Confirm Dialog
   const [showLogoutModal, setShowLogoutModal] = useState(false)
 
+  // Order Receipt Modal
+  const [selectedReceiptOrder, setSelectedReceiptOrder] = useState<Order | null>(null)
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false)
+
   const reloadAddresses = () => {
     setAddresses(addressService.getSavedAddresses())
   }
@@ -148,8 +154,8 @@ export default function Profile() {
               total_amount: 3450000,
               created_at: '16/09/2026 10:30',
               items: [
-                { id: 101, item_type: 'product', item_name: 'Vợt Pickleball Selkirk Vanguard Power Air Invikta', quantity: 1, unit_price: 3200000, subtotal: 3200000 },
-                { id: 102, item_type: 'product', item_name: 'Hộp bóng thi đấu Franklin X-40 (3 quả)', quantity: 1, unit_price: 250000, subtotal: 250000 },
+                { id: 101, item_type: 'product', item_name: 'Vợt Pickleball Selkirk Vanguard Power Air Invikta', quantity: 1, price: 3200000, subtotal: 3200000 },
+                { id: 102, item_type: 'product', item_name: 'Hộp bóng thi đấu Franklin X-40 (3 quả)', quantity: 1, price: 250000, subtotal: 250000 },
               ],
             },
             {
@@ -161,8 +167,8 @@ export default function Profile() {
               total_amount: 550000,
               created_at: '12/09/2026 16:15',
               items: [
-                { id: 201, item_type: 'product', item_name: 'Băng quấn cán vợt Tourna Grip Pickleball (Bộ 3 cái)', quantity: 2, unit_price: 150000, subtotal: 300000 },
-                { id: 202, item_type: 'booking', item_name: 'Thuê sân Pickleball Sân 02 (18:00 - 19:30)', quantity: 1, unit_price: 250000, subtotal: 250000 },
+                { id: 201, item_type: 'product', item_name: 'Băng quấn cán vợt Tourna Grip Pickleball (Bộ 3 cái)', quantity: 2, price: 150000, subtotal: 300000 },
+                { id: 202, item_type: 'booking', item_name: 'Thuê sân Pickleball Sân 02 (18:00 - 19:30)', quantity: 1, price: 250000, subtotal: 250000 },
               ],
             },
           ])
@@ -240,7 +246,7 @@ export default function Profile() {
         setDemoOtpHint(res.otp)
         toast.success(`Mã OTP xác thực đã được gửi tới ${newEmail}!`, {
           description: `Mã OTP mẫu của bạn là: ${res.otp}`,
-          duration: 6000,
+          duration: 2500,
         })
       } else {
         toast.success(`Mã OTP xác thực đã được gửi tới ${newEmail}! Vui lòng kiểm tra hòm thư.`)
@@ -566,7 +572,7 @@ export default function Profile() {
           <button
             onClick={() => setActiveTab('profile')}
             className={`flex-1 py-3 px-4 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${activeTab === 'profile'
-              ? 'bg-slate-900 dark:bg-[#27c372] text-white shadow-md'
+              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/60'
               }`}
           >
@@ -577,7 +583,7 @@ export default function Profile() {
           <button
             onClick={() => setActiveTab('addresses')}
             className={`flex-1 py-3 px-4 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${activeTab === 'addresses'
-              ? 'bg-slate-900 dark:bg-[#27c372] text-white shadow-md'
+              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/60'
               }`}
           >
@@ -591,7 +597,7 @@ export default function Profile() {
           <button
             onClick={() => setActiveTab('orders')}
             className={`flex-1 py-3 px-4 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${activeTab === 'orders'
-              ? 'bg-slate-900 dark:bg-[#27c372] text-white shadow-md'
+              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/60'
               }`}
           >
@@ -1036,10 +1042,14 @@ export default function Profile() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => toast.info(`Chi tiết đơn hàng #${ord.order_code} đã được lưu trên hệ thống.`)}
-                          className="h-8 rounded-xl text-xs font-bold border-slate-200 dark:border-slate-800"
+                          onClick={() => {
+                            setSelectedReceiptOrder(ord)
+                            setIsReceiptModalOpen(true)
+                          }}
+                          className="h-8 rounded-xl text-xs font-bold border-slate-200 dark:border-slate-800 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 dark:hover:bg-emerald-950/40 dark:hover:border-emerald-800 transition-all flex items-center gap-1.5"
                         >
-                          Xem Biên Nhận
+                          <Receipt className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Xem Biên Nhận</span>
                         </Button>
                       </div>
                     </Card>
@@ -1494,6 +1504,13 @@ export default function Profile() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* ==================== ORDER RECEIPT MODAL ==================== */}
+        <OrderReceiptModal
+          open={isReceiptModalOpen}
+          onOpenChange={setIsReceiptModalOpen}
+          order={selectedReceiptOrder}
+        />
 
       </div>
     </div>

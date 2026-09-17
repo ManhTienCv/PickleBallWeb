@@ -1,5 +1,7 @@
 import api, { ApiResponse } from '@/lib/api'
 import { Product, ProductVariant } from './shop.service'
+import { authHelpers } from '@/stores/useAuthStore'
+import { useAuthModalStore } from '@/stores/useAuthModalStore'
 
 export interface CartItem {
   id: number
@@ -167,6 +169,11 @@ export const cartService = {
   },
 
   async addToCart(variantId: number, quantity: number = 1, productData?: any): Promise<Cart> {
+    if (!authHelpers.isAuthenticated()) {
+      useAuthModalStore.getState().openLogin()
+      throw new Error('AUTH_REQUIRED')
+    }
+
     const currentCart = getLocalCart()
     const targetVariantId = Number(variantId)
     pendingDeletions.delete(targetVariantId)
@@ -323,5 +330,11 @@ export const cartService = {
       })
 
     return newCart
+  },
+
+  clearCart(): Cart {
+    const emptyCart: Cart = { id: 1, total_amount: 0, items: [] }
+    saveLocalCart(emptyCart, true)
+    return emptyCart
   },
 }

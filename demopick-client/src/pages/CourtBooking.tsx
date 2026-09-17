@@ -1,8 +1,6 @@
 import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { bookingService, Hold } from '@/services/booking.service'
-import BookingGrid from '@/components/BookingGrid'
-import HoldTimerToast from '@/components/HoldTimerToast'
+import { bookingService, Hold, BookingGrid, HoldTimerToast } from '@/features/booking'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -13,10 +11,13 @@ import { vi } from 'date-fns/locale'
 import { CalendarIcon, CalendarDays, RefreshCw, Tag, MapPin, Phone, Clock, Navigation, CheckCircle2, Info, ArrowRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
+import { authHelpers } from '@/stores/useAuthStore'
+import { useAuthModalStore } from '@/stores/useAuthModalStore'
 
 export default function CourtBooking() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [selectedSlotIds, setSelectedSlotIds] = useState<number[]>([])
+  const [selectedCluster, setSelectedCluster] = useState<'all' | 'a' | 'b' | 'c' | 'd' | 'indoor' | 'outdoor' | 'vip'>('all')
   const [currentHold, setCurrentHold] = useState<Hold | null>(null)
   const [isHolding, setIsHolding] = useState(false)
   const [policyOpen, setPolicyOpen] = useState(false)
@@ -33,6 +34,37 @@ export default function CourtBooking() {
     queryFn: () => bookingService.getSlots(dateStr),
   })
 
+  // Filter courts by cluster safely
+  const filteredCourts = courts.filter((c) => {
+    const num = (c?.court_number || c?.name || '').toUpperCase()
+    if (selectedCluster === 'a' || selectedCluster === 'indoor') return num.includes('A')
+    if (selectedCluster === 'b' || selectedCluster === 'outdoor') return num.includes('B')
+    if (selectedCluster === 'c' || selectedCluster === 'vip') return num.includes('C')
+    if (selectedCluster === 'd') return num.includes('D')
+    return true
+  })
+
+  // Selected slots data with details & price calculation
+  const selectedSlotsData = selectedSlotIds.map((id) => {
+    const slot = slots.find((s) => s.id === id)
+    const courtId = slot ? slot.court_id : Math.floor(id / 1000)
+    const court = courts.find((c) => c.id === courtId)
+    const timeStr = slot?.start_time ? `${slot.start_time.substring(0, 5)} - ${slot.end_time ? slot.end_time.substring(0, 5) : ''}` : `${Math.floor(id % 100)}:00`
+    const isPeak = slot ? Boolean(slot.is_peak) : parseInt(timeStr.split(':')[0], 10) >= 17
+    const defaultPrice = isPeak ? (court?.peak_hourly_rate || 180000) : (court?.hourly_rate || 140000)
+    const price = slot?.price || defaultPrice
+
+    return {
+      id,
+      courtName: court ? court.name : `Sân #${courtId}`,
+      time: timeStr,
+      price,
+      isPeak,
+    }
+  })
+
+  const estimatedTotal = selectedSlotsData.reduce((sum, item) => sum + item.price, 0)
+
   const handleToggleSlot = (slotId: number) => {
     setSelectedSlotIds((prev) =>
       prev.includes(slotId) ? prev.filter((id) => id !== slotId) : [...prev, slotId]
@@ -40,6 +72,12 @@ export default function CourtBooking() {
   }
 
   const handleHoldSlots = async () => {
+    if (!authHelpers.isAuthenticated()) {
+      toast.info('Vui lòng đăng nhập để tạm giữ khung giờ và đặt sân.')
+      useAuthModalStore.getState().openLogin()
+      return
+    }
+
     if (selectedSlotIds.length === 0) {
       toast.error('Vui lòng chọn ít nhất 1 khung giờ sân.')
       return
@@ -47,9 +85,9 @@ export default function CourtBooking() {
 
     setIsHolding(true)
     try {
-      const hold = await bookingService.createHold(selectedSlotIds)
+      const hold = await bookingService.createHold(selectedSlotIds, slots)
       setCurrentHold(hold)
-      toast.success(`Đã tạm giữ ${selectedSlotIds.length} khung giờ trong 10 phút!`)
+      toast.success(`Đã tạm giữ ${selectedSlotIds.length} khung giờ thành công trong 10 phút!`)
       refetch()
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Không thể tạm giữ sân. Khung giờ có thể vừa bị giữ.')
@@ -231,7 +269,7 @@ export default function CourtBooking() {
         <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm font-semibold">
           <div className="flex items-center gap-1.5">
             <span className="h-3.5 w-3.5 rounded-full bg-emerald-500 shrink-0" />
-            <span className="text-foreground">Khung giờ trống (Sẵn sàng)</span>
+            <span className="text-foreground">Khung giờ trống</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="h-3.5 w-3.5 rounded-full bg-emerald-600 ring-2 ring-emerald-400/60 shrink-0" />
@@ -240,6 +278,14 @@ export default function CourtBooking() {
           <div className="flex items-center gap-1.5">
             <span className="h-3.5 w-3.5 rounded-full bg-amber-500 shrink-0" />
             <span className="text-foreground">Tạm giữ (10p)</span>
+          </div>
+          <div className="flex items-center gap-1.5" title="Khung giờ cận kề (dưới 30 phút) chỉ đặt trực tiếp tại quầy tiếp tân">
+            <span className="h-3.5 w-3.5 rounded-full bg-amber-400/80 border border-amber-600 shrink-0" />
+            <span className="text-foreground">Tại quầy (≤30p)</span>
+          </div>
+          <div className="flex items-center gap-1.5" title="Sân hiện đang có khách đang đánh thực tế">
+            <span className="h-3.5 w-3.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <span className="text-foreground">Đang chơi</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="h-3.5 w-3.5 rounded-full bg-slate-500 dark:bg-slate-600 shrink-0" />
@@ -257,12 +303,36 @@ export default function CourtBooking() {
         </div>
       </div>
 
+      {/* Cluster Filter Buttons */}
+      <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
+        <span className="text-xs font-bold text-slate-500 uppercase shrink-0 mr-1">Cụm sân:</span>
+        {[
+          { id: 'all', label: `Tất Cả (${courts.length || 8} Sân)` },
+          { id: 'a', label: 'Cụm A (A1, A2)' },
+          { id: 'b', label: 'Cụm B (B1, B2)' },
+          { id: 'c', label: 'Cụm C (C1, C2)' },
+          { id: 'd', label: 'Cụm D (D1, D2)' },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setSelectedCluster(tab.id as any)}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border shrink-0 ${
+              selectedCluster === tab.id
+                ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm shadow-emerald-600/25'
+                : 'bg-white dark:bg-card border-slate-200 dark:border-border text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {/* Main Grid */}
       {isLoading ? (
         <div className="h-96 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />
       ) : (
         <BookingGrid
-          courts={courts}
+          courts={filteredCourts}
           slots={slots}
           selectedSlotIds={selectedSlotIds}
           onToggleSlot={handleToggleSlot}
@@ -272,20 +342,33 @@ export default function CourtBooking() {
 
       {/* Selected Action Footer */}
       {selectedSlotIds.length > 0 && !currentHold && (
-        <div className="sticky bottom-6 z-40 mt-8 bg-slate-900/95 dark:bg-slate-950/95 backdrop-blur-md text-white p-4 sm:p-5 rounded-2xl shadow-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border border-emerald-500/40 ring-1 ring-white/10 animate-in slide-in-from-bottom-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-              <Clock className="w-5 h-5 animate-pulse" />
+        <div className="sticky bottom-6 z-40 mt-8 bg-white/95 dark:bg-card/95 backdrop-blur-md text-slate-900 dark:text-slate-100 p-4 sm:p-5 rounded-2xl shadow-2xl flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 border-2 border-emerald-500/30 ring-1 ring-emerald-500/10 animate-in slide-in-from-bottom-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-center shrink-0 shadow-xs">
+              <Clock className="w-6 h-6 animate-pulse" />
             </div>
-            <div>
-              <div className="font-bold text-base text-slate-100 flex items-center gap-2">
+            <div className="space-y-1">
+              <div className="font-bold text-base text-slate-900 dark:text-slate-100 flex items-center gap-2 flex-wrap">
                 <span>Đã chọn</span>
-                <span className="bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-lg font-mono font-black text-sm">
+                <span className="bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 px-2.5 py-0.5 rounded-lg font-mono font-black text-sm border border-emerald-200/60 dark:border-emerald-800">
                   {selectedSlotIds.length} ca sân
                 </span>
+                <span className="text-slate-300 dark:text-slate-700">•</span>
+                <span className="text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-400">Tạm tính:</span>
+                <span className="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(estimatedTotal)}
+                </span>
               </div>
-              <div className="text-xs text-slate-300 font-medium">
-                Khóa giữ chỗ tự động trong 10 phút sau khi xác nhận
+              <div className="flex items-center gap-1.5 flex-wrap text-xs text-slate-500 dark:text-slate-400 font-medium">
+                {selectedSlotsData.slice(0, 3).map((item) => (
+                  <span key={item.id} className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md text-slate-700 dark:text-slate-300 font-semibold text-[11px]">
+                    {item.courtName} ({item.time})
+                  </span>
+                ))}
+                {selectedSlotsData.length > 3 && (
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold text-[11px]">+{selectedSlotsData.length - 3} ca khác</span>
+                )}
+                <span className="hidden sm:inline text-slate-400">| Khóa giữ chỗ tự động trong 10 phút sau khi xác nhận</span>
               </div>
             </div>
           </div>
@@ -294,7 +377,7 @@ export default function CourtBooking() {
             size="lg"
             onClick={handleHoldSlots}
             disabled={isHolding}
-            className="gap-2 bg-[#27c372] hover:bg-[#22c55e] text-white font-black rounded-xl shadow-lg shadow-[#27c372]/25 shrink-0 h-12 px-6 cursor-pointer"
+            className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/25 shrink-0 h-12 px-7 cursor-pointer text-sm sm:text-base"
           >
             <span>{isHolding ? 'Đang giữ sân...' : 'Tạm Giữ Sân Ngay'}</span>
             <ArrowRight className="h-5 w-5" />

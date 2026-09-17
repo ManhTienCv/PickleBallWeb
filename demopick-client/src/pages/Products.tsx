@@ -20,6 +20,8 @@ import {
   Check,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { authHelpers } from '@/stores/useAuthStore'
+import { useAuthModalStore } from '@/stores/useAuthModalStore'
 
 export default function Products() {
   const navigate = useNavigate()
@@ -194,6 +196,12 @@ export default function Products() {
   }
 
   const handleAddToCart = (product: Product) => {
+    if (!authHelpers.isAuthenticated()) {
+      toast.info('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.')
+      useAuthModalStore.getState().openLogin()
+      return
+    }
+
     const variantId = product.variants?.[0]?.id || product.id || Date.now()
     // Instant 0ms feedback to user
     toast.success(`Đã thêm "${product.name}" vào giỏ hàng!`, {
@@ -295,7 +303,7 @@ export default function Products() {
                       damping: 26,
                       mass: 0.8,
                     }}
-                    className="absolute inset-0 bg-slate-900 dark:bg-emerald-600 border border-slate-900 dark:border-emerald-600 rounded-full shadow-md z-0"
+                    className="absolute inset-0 bg-emerald-600 border border-emerald-600 rounded-full shadow-md shadow-emerald-600/20 z-0"
                   />
                 )}
                 {!isActive && (
@@ -363,7 +371,7 @@ export default function Products() {
                       <div
                         className={`w-5 h-5 min-w-[20px] min-h-[20px] rounded-md border-2 transition-all flex items-center justify-center ${
                           isChecked
-                            ? 'bg-slate-900 dark:bg-emerald-600 border-slate-900 dark:border-emerald-600 text-white shadow-xs'
+                            ? 'bg-emerald-600 border-emerald-600 text-white shadow-xs'
                             : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-card group-hover:border-slate-500'
                         }`}
                       >
@@ -607,7 +615,7 @@ export default function Products() {
                     }}
                     className={`w-10 h-10 rounded-xl text-sm transition-all flex items-center justify-center ${
                       currentPage === page
-                        ? 'bg-slate-900 dark:bg-emerald-600 text-white font-semibold shadow-sm'
+                        ? 'bg-emerald-600 text-white font-semibold shadow-sm shadow-emerald-600/20'
                         : 'bg-white dark:bg-card border border-slate-200 dark:border-border text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-normal'
                     }`}
                   >

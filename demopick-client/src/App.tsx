@@ -14,6 +14,7 @@ import CartPage from '@/pages/Cart'
 import CheckoutPage from '@/pages/Checkout'
 import OrderSuccess from '@/pages/OrderSuccess'
 import OrdersPage from '@/pages/Orders'
+import MomoCallbackPage from '@/pages/MomoCallback'
 import NotFound from '@/pages/NotFound'
 import { AuthModal } from '@/components/AuthModal'
 import { Toaster } from 'sonner'
@@ -23,33 +24,10 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
       refetchOnWindowFocus: false,
-      retry: 1,
+      retry: 0,
     },
   },
 })
-
-// Tự động chuyển hướng về Trang Chủ mỗi khi bấm F5 hoặc Reload lại trang
-function ResetToHomeOnReload() {
-  const navigate = useNavigate()
-  const location = useLocation()
-
-  useEffect(() => {
-    try {
-      const navEntries = performance.getEntriesByType?.('navigation') as PerformanceNavigationTiming[]
-      const isReload =
-        (navEntries && navEntries.length > 0 && navEntries[0]?.type === 'reload') ||
-        (performance as any)?.navigation?.type === 1
-
-      if (isReload && location.pathname !== '/') {
-        navigate('/', { replace: true })
-      }
-    } catch {
-      // Fallback ignore
-    }
-  }, [])
-
-  return null
-}
 
 function App() {
   return (
@@ -58,7 +36,6 @@ function App() {
         <AuthProvider>
           <CheckoutTimerProvider>
             <BrowserRouter>
-              <ResetToHomeOnReload />
               <AuthModal />
               <Routes>
                 <Route element={<CustomerLayout />}>
@@ -70,12 +47,13 @@ function App() {
                   <Route path="/cart" element={<CartPage />} />
                   <Route path="/checkout" element={<CheckoutPage />} />
                   <Route path="/order-success/:code" element={<OrderSuccess />} />
+                  <Route path="/payment/momo/callback" element={<MomoCallbackPage />} />
                   <Route path="/orders" element={<OrdersPage />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
-            <Toaster position="top-right" richColors />
+            <Toaster position="top-right" richColors duration={1400} closeButton />
           </CheckoutTimerProvider>
         </AuthProvider>
       </ThemeProvider>

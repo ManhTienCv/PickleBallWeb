@@ -17,7 +17,7 @@ export const notificationService = {
     console.log('[SSMS/Mail Gateway] Sending Order Placed Notice:', payload)
     toast.info(
       `📧 [Thông báo Đơn hàng #${payload.orderCode}]: Vui lòng kiểm tra lại thông tin đơn hàng trước khi đơn hàng được chấp nhận & giao cho đơn vị vận chuyển.`,
-      { duration: 6000 }
+      { duration: 1500 }
     )
   },
 
@@ -28,7 +28,7 @@ export const notificationService = {
     console.log('[SSMS/Mail Gateway] Sending Order Shipped Notice:', payload)
     toast.success(
       `🚚 [Thông báo Vận chuyển #${payload.orderCode}]: Đơn hàng đã được bàn giao cho đơn vị vận chuyển & đang trên đường giao đến ${payload.shippingAddress}`,
-      { duration: 7000 }
+      { duration: 1500 }
     )
   },
 
@@ -39,7 +39,7 @@ export const notificationService = {
     console.log('[SSMS/Mail Gateway] Sending Address Update Notice:', payload)
     toast.success(
       `✏️ [Đã cập nhật đơn hàng #${payload.orderCode}]: Địa chỉ nhận hàng mới là "${payload.shippingAddress}".`,
-      { duration: 5000 }
+      { duration: 1500 }
     )
   },
 }
