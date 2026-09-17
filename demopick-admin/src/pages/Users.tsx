@@ -30,6 +30,7 @@ import {
   ExternalLink,
   KeyRound,
   RefreshCw,
+  User as UserIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
@@ -51,7 +53,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { motion, AnimatePresence } from "framer-motion";
 
 export type UserRole = "admin" | "staff" | "customer";
 export type UserStatus = "active" | "locked";
@@ -431,7 +432,7 @@ export default function UsersPage() {
   const handleSaveUser = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName.trim() || !formEmail.trim()) {
-      toast.error("Vui lòng điền đầy đủ Họ tên và Email.");
+      toast.error("Vui lòng điền đầy đủ Họ tên và Email đăng nhập.");
       return;
     }
 
@@ -480,7 +481,7 @@ export default function UsersPage() {
             : "from-emerald-500 to-teal-600",
       };
       setUsers([newUser, ...users]);
-      toast.success(`Đã thêm mới tài khoản "${formName}" thành công!`);
+      toast.success(`Đã tạo mới tài khoản "${formName}" thành công!`);
     }
 
     setModalOpen(false);
@@ -547,30 +548,31 @@ export default function UsersPage() {
   const getTierBadge = (spent: number) => {
     if (spent >= 15000000) {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-gradient-to-r from-purple-500/15 to-indigo-500/15 text-purple-700 border border-purple-300">
-          <Crown className="w-3 h-3 text-purple-600" />
-          Kim Cương
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-gradient-to-r from-purple-500/15 to-indigo-500/15 text-purple-700 border border-purple-300">
+          <Crown className="w-3 h-3 text-purple-600 shrink-0" />
+          <span>Kim Cương</span>
         </span>
       );
     }
     if (spent >= 8000000) {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-800 border border-amber-300">
-          <Award className="w-3 h-3 text-amber-600" />
-          Vàng
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-300">
+          <Award className="w-3 h-3 text-amber-600 shrink-0" />
+          <span>Vàng</span>
         </span>
       );
     }
     if (spent >= 3000000) {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-300">
-          Bạc
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-300">
+          <Sparkles className="w-3 h-3 text-slate-500 shrink-0" />
+          <span>Bạc</span>
         </span>
       );
     }
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-50 text-slate-500 border border-slate-200">
-        Thành viên
+        <span>Thành viên</span>
       </span>
     );
   };
@@ -580,11 +582,11 @@ export default function UsersPage() {
       title="Quản Lý Người Dùng & Phân Quyền"
       subtitle="Quản lý danh sách tài khoản khách hàng, quản trị viên và phân quyền truy cập hệ thống (Lab 08)"
       headerRight={
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <Button
             variant="outline"
             onClick={handleExportCSV}
-            className="gap-2 border-slate-200 hover:bg-slate-100 text-xs font-semibold rounded-xl text-slate-700 h-9"
+            className="gap-2 border-slate-200 hover:bg-slate-100 text-xs font-semibold rounded-xl text-slate-700 h-9.5 px-3.5"
           >
             <Download className="w-4 h-4 text-slate-500" />
             <span>Xuất Excel</span>
@@ -592,7 +594,7 @@ export default function UsersPage() {
 
           <Button
             onClick={handleOpenAddUser}
-            className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md shadow-emerald-600/20 h-9 cursor-pointer"
+            className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md shadow-emerald-600/20 h-9.5 px-4 cursor-pointer"
           >
             <UserPlus className="w-4 h-4" />
             <span>Thêm Người Dùng</span>
@@ -600,7 +602,7 @@ export default function UsersPage() {
         </div>
       }
     >
-      <div className="space-y-6 font-sans">
+      <div className="space-y-5 font-sans">
         {/* 4 THẺ KPI STATS INTERACTIVE (CLICK ĐỂ LỌC NHANH) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Card 1: Tổng người dùng */}
@@ -609,29 +611,31 @@ export default function UsersPage() {
               setRoleFilter("all");
               setCurrentPage(1);
             }}
-            className={`p-4.5 rounded-2xl border transition-all duration-200 cursor-pointer relative overflow-hidden group ${
+            className={`p-4 rounded-2xl border transition-all duration-200 cursor-pointer relative overflow-hidden group ${
               roleFilter === "all"
                 ? "bg-gradient-to-br from-emerald-50/90 to-emerald-100/50 border-emerald-500 shadow-md shadow-emerald-500/10 ring-2 ring-emerald-500/20"
                 : "bg-white border-slate-200 hover:border-emerald-300 hover:shadow-sm"
             }`}
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">TỔNG NGƯỜI DÙNG</p>
-                <h4 className="text-3xl font-black text-slate-900 mt-1 tracking-tight">{totalUsers}</h4>
-                <p className="text-[11px] text-emerald-700 font-semibold mt-0.5">
+                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">TỔNG NGƯỜI DÙNG</p>
+                <h4 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1 tracking-tight">{totalUsers}</h4>
+                <p className="text-[11px] text-emerald-700 font-semibold mt-1">
                   {totalActive} tài khoản đang kích hoạt
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-600 border border-emerald-500/30 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
-                <Users className="w-6 h-6" />
+              <div className="flex flex-col items-end gap-1.5">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-600 border border-emerald-500/30 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
+                  <Users className="w-5 h-5" />
+                </div>
+                {roleFilter === "all" && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-600 text-white shadow-xs">
+                    Đang lọc
+                  </span>
+                )}
               </div>
             </div>
-            {roleFilter === "all" && (
-              <span className="absolute bottom-1 right-3 text-[10px] font-bold text-emerald-700 flex items-center gap-0.5">
-                ● Đang lọc
-              </span>
-            )}
           </div>
 
           {/* Card 2: Khách hàng */}
@@ -640,29 +644,31 @@ export default function UsersPage() {
               setRoleFilter("customer");
               setCurrentPage(1);
             }}
-            className={`p-4.5 rounded-2xl border transition-all duration-200 cursor-pointer relative overflow-hidden group ${
+            className={`p-4 rounded-2xl border transition-all duration-200 cursor-pointer relative overflow-hidden group ${
               roleFilter === "customer"
                 ? "bg-gradient-to-br from-blue-50/90 to-blue-100/50 border-blue-500 shadow-md shadow-blue-500/10 ring-2 ring-blue-500/20"
                 : "bg-white border-slate-200 hover:border-blue-300 hover:shadow-sm"
             }`}
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">KHÁCH HÀNG (USER)</p>
-                <h4 className="text-3xl font-black text-blue-900 mt-1 tracking-tight">{totalCustomers}</h4>
-                <p className="text-[11px] text-blue-700 font-semibold mt-0.5">
+                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">KHÁCH HÀNG (USER)</p>
+                <h4 className="text-2xl sm:text-3xl font-black text-blue-900 mt-1 tracking-tight">{totalCustomers}</h4>
+                <p className="text-[11px] text-blue-700 font-semibold mt-1">
                   Thành viên mua sắm & đặt sân
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-2xl bg-blue-500/15 text-blue-600 border border-blue-500/30 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
-                <UserCheck className="w-6 h-6" />
+              <div className="flex flex-col items-end gap-1.5">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/15 text-blue-600 border border-blue-500/30 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
+                  <UserCheck className="w-5 h-5" />
+                </div>
+                {roleFilter === "customer" && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-600 text-white shadow-xs">
+                    Đang lọc
+                  </span>
+                )}
               </div>
             </div>
-            {roleFilter === "customer" && (
-              <span className="absolute bottom-1 right-3 text-[10px] font-bold text-blue-700 flex items-center gap-0.5">
-                ● Đang lọc
-              </span>
-            )}
           </div>
 
           {/* Card 3: Quản trị viên */}
@@ -671,29 +677,31 @@ export default function UsersPage() {
               setRoleFilter("admin");
               setCurrentPage(1);
             }}
-            className={`p-4.5 rounded-2xl border transition-all duration-200 cursor-pointer relative overflow-hidden group ${
+            className={`p-4 rounded-2xl border transition-all duration-200 cursor-pointer relative overflow-hidden group ${
               roleFilter === "admin"
                 ? "bg-gradient-to-br from-rose-50/90 to-rose-100/50 border-rose-500 shadow-md shadow-rose-500/10 ring-2 ring-rose-500/20"
                 : "bg-white border-slate-200 hover:border-rose-300 hover:shadow-sm"
             }`}
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">QUẢN TRỊ VIÊN (ADMIN)</p>
-                <h4 className="text-3xl font-black text-rose-900 mt-1 tracking-tight">{totalAdmins}</h4>
-                <p className="text-[11px] text-rose-700 font-semibold mt-0.5">
+                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">QUẢN TRỊ VIÊN (ADMIN)</p>
+                <h4 className="text-2xl sm:text-3xl font-black text-rose-900 mt-1 tracking-tight">{totalAdmins}</h4>
+                <p className="text-[11px] text-rose-700 font-semibold mt-1">
                   Toàn quyền hệ thống & cấu hình
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-2xl bg-rose-500/15 text-rose-600 border border-rose-500/30 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
-                <ShieldCheck className="w-6 h-6" />
+              <div className="flex flex-col items-end gap-1.5">
+                <div className="w-10 h-10 rounded-xl bg-rose-500/15 text-rose-600 border border-rose-500/30 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                {roleFilter === "admin" && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-600 text-white shadow-xs">
+                    Đang lọc
+                  </span>
+                )}
               </div>
             </div>
-            {roleFilter === "admin" && (
-              <span className="absolute bottom-1 right-3 text-[10px] font-bold text-rose-700 flex items-center gap-0.5">
-                ● Đang lọc
-              </span>
-            )}
           </div>
 
           {/* Card 4: Nhân viên lễ tân */}
@@ -702,37 +710,39 @@ export default function UsersPage() {
               setRoleFilter("staff");
               setCurrentPage(1);
             }}
-            className={`p-4.5 rounded-2xl border transition-all duration-200 cursor-pointer relative overflow-hidden group ${
+            className={`p-4 rounded-2xl border transition-all duration-200 cursor-pointer relative overflow-hidden group ${
               roleFilter === "staff"
                 ? "bg-gradient-to-br from-amber-50/90 to-amber-100/50 border-amber-500 shadow-md shadow-amber-500/10 ring-2 ring-amber-500/20"
                 : "bg-white border-slate-200 hover:border-amber-300 hover:shadow-sm"
             }`}
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">NHÂN VIÊN (STAFF)</p>
-                <h4 className="text-3xl font-black text-amber-900 mt-1 tracking-tight">{totalStaff}</h4>
-                <p className="text-[11px] text-amber-700 font-semibold mt-0.5">
+                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">NHÂN VIÊN (STAFF)</p>
+                <h4 className="text-2xl sm:text-3xl font-black text-amber-900 mt-1 tracking-tight">{totalStaff}</h4>
+                <p className="text-[11px] text-amber-700 font-semibold mt-1">
                   Trực quầy POS & Live chat
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/15 text-amber-600 border border-amber-500/30 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
-                <KeyRound className="w-6 h-6" />
+              <div className="flex flex-col items-end gap-1.5">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-600 border border-amber-500/30 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                {roleFilter === "staff" && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-600 text-white shadow-xs">
+                    Đang lọc
+                  </span>
+                )}
               </div>
             </div>
-            {roleFilter === "staff" && (
-              <span className="absolute bottom-1 right-3 text-[10px] font-bold text-amber-700 flex items-center gap-0.5">
-                ● Đang lọc
-              </span>
-            )}
           </div>
         </div>
 
         {/* BỘ LỌC TÌM KIẾM & PHÂN QUYỀN CHUẨN MỰC */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
             {/* Ô tìm kiếm */}
-            <div className="relative flex-1">
+            <div className="relative flex-1 min-w-[260px]">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
                 placeholder="Tìm theo tên, email, số điện thoại người dùng..."
@@ -741,7 +751,7 @@ export default function UsersPage() {
                   setSearch(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="pl-10 pr-9 h-10 text-xs bg-slate-50/80 border-slate-200 rounded-xl focus-visible:bg-white"
+                className="pl-10 pr-9 h-10 text-xs bg-slate-50/80 border-slate-200 rounded-xl focus-visible:bg-white text-slate-800"
               />
               {search && (
                 <button
@@ -754,8 +764,8 @@ export default function UsersPage() {
               )}
             </div>
 
-            {/* Bộ chọn vai trò & Trạng thái */}
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Các dropdown bộ lọc */}
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5">
               <Select
                 value={roleFilter}
                 onValueChange={(v: any) => {
@@ -763,7 +773,7 @@ export default function UsersPage() {
                   setCurrentPage(1);
                 }}
               >
-                <SelectTrigger className="w-44 h-10 text-xs font-semibold bg-slate-50/80 border-slate-200 rounded-xl">
+                <SelectTrigger className="w-full sm:w-44 h-10 text-xs font-semibold bg-slate-50/80 border-slate-200 rounded-xl text-slate-700">
                   <SelectValue placeholder="Tất cả vai trò" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl shadow-lg border-slate-200">
@@ -781,7 +791,7 @@ export default function UsersPage() {
                   setCurrentPage(1);
                 }}
               >
-                <SelectTrigger className="w-36 h-10 text-xs font-semibold bg-slate-50/80 border-slate-200 rounded-xl">
+                <SelectTrigger className="w-full sm:w-36 h-10 text-xs font-semibold bg-slate-50/80 border-slate-200 rounded-xl text-slate-700">
                   <SelectValue placeholder="Trạng thái" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl shadow-lg border-slate-200">
@@ -795,13 +805,13 @@ export default function UsersPage() {
                 value={sortBy}
                 onValueChange={(v: any) => setSortBy(v)}
               >
-                <SelectTrigger className="w-44 h-10 text-xs font-semibold bg-slate-50/80 border-slate-200 rounded-xl">
+                <SelectTrigger className="w-full sm:w-40 h-10 text-xs font-semibold bg-slate-50/80 border-slate-200 rounded-xl text-slate-700">
                   <SelectValue placeholder="Sắp xếp theo" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl shadow-lg border-slate-200">
                   <SelectItem value="newest">Mới nhất trước</SelectItem>
                   <SelectItem value="spent_desc">Chi tiêu cao nhất</SelectItem>
-                  <SelectItem value="orders_desc">Nhiều đơn hàng nhất</SelectItem>
+                  <SelectItem value="orders_desc">Nhiều đơn nhất</SelectItem>
                   <SelectItem value="name_asc">Tên (A → Z)</SelectItem>
                 </SelectContent>
               </Select>
@@ -816,7 +826,7 @@ export default function UsersPage() {
                     setSortBy("newest");
                     setCurrentPage(1);
                   }}
-                  className="h-10 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl font-semibold"
+                  className="h-10 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl font-semibold shrink-0"
                 >
                   Xóa lọc
                 </Button>
@@ -831,15 +841,15 @@ export default function UsersPage() {
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="bg-slate-50/90 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
-                  <th className="py-4 px-4 w-12 text-center">ID</th>
-                  <th className="py-4 px-4 min-w-[220px]">HỌ VÀ TÊN</th>
-                  <th className="py-4 px-4 min-w-[200px]">EMAIL</th>
-                  <th className="py-4 px-4 min-w-[130px]">ĐIỆN THOẠI</th>
-                  <th className="py-4 px-4 min-w-[150px]">VAI TRÒ</th>
-                  <th className="py-4 px-4 min-w-[140px]">HẠNG / CHI TIÊU</th>
-                  <th className="py-4 px-4 text-center min-w-[120px]">TRẠNG THÁI</th>
-                  <th className="py-4 px-4 min-w-[140px]">NGÀY TẠO</th>
-                  <th className="py-4 px-4 text-right min-w-[140px]">THAO TÁC</th>
+                  <th className="py-3.5 px-4 w-12 text-center">ID</th>
+                  <th className="py-3.5 px-4 min-w-[210px]">HỌ VÀ TÊN</th>
+                  <th className="py-3.5 px-4 min-w-[190px]">EMAIL</th>
+                  <th className="py-3.5 px-4 min-w-[120px]">ĐIỆN THOẠI</th>
+                  <th className="py-3.5 px-4 min-w-[150px]">VAI TRÒ</th>
+                  <th className="py-3.5 px-4 min-w-[130px]">HẠNG / CHI TIÊU</th>
+                  <th className="py-3.5 px-4 text-center min-w-[110px]">TRẠNG THÁI</th>
+                  <th className="py-3.5 px-4 min-w-[130px]">NGÀY TẠO</th>
+                  <th className="py-3.5 pr-6 pl-4 text-right min-w-[150px]">THAO TÁC</th>
                 </tr>
               </thead>
 
@@ -861,7 +871,7 @@ export default function UsersPage() {
                         className="hover:bg-slate-50/80 transition-colors group"
                       >
                         {/* ID */}
-                        <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-400">
+                        <td className="py-3.5 px-4 text-center font-bold text-slate-400 text-xs">
                           #{user.id}
                         </td>
 
@@ -870,15 +880,15 @@ export default function UsersPage() {
                           <div className="flex items-center gap-3">
                             <div className="relative">
                               <div
-                                className={`w-10 h-10 rounded-full bg-gradient-to-br ${
+                                className={`w-9 h-9 rounded-full bg-gradient-to-br ${
                                   user.avatarColor || "from-slate-600 to-slate-800"
-                                } text-white flex items-center justify-center font-black text-sm shadow-sm shrink-0`}
+                                } text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0`}
                               >
                                 {user.name.charAt(0).toUpperCase()}
                               </div>
                               {/* Online / Active status dot */}
                               <span
-                                className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full ring-2 ring-white ${
+                                className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ring-2 ring-white ${
                                   user.status === "active" ? "bg-emerald-500" : "bg-rose-500"
                                 }`}
                                 title={user.status === "active" ? "Tài khoản kích hoạt" : "Tài khoản bị khóa"}
@@ -886,7 +896,7 @@ export default function UsersPage() {
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5">
-                                <span className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors truncate">
+                                <span className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors text-xs sm:text-sm truncate">
                                   {user.name}
                                 </span>
                                 {isSuperAdmin && (
@@ -901,29 +911,29 @@ export default function UsersPage() {
                         </td>
 
                         {/* EMAIL */}
-                        <td className="py-3.5 px-4 text-slate-600 font-mono text-xs">
+                        <td className="py-3.5 px-4 text-slate-600 font-normal text-xs">
                           {user.email}
                         </td>
 
                         {/* ĐIỆN THOẠI */}
-                        <td className="py-3.5 px-4 text-slate-700 font-medium">
+                        <td className="py-3.5 px-4 text-slate-700 font-medium text-xs">
                           {user.phone}
                         </td>
 
                         {/* VAI TRÒ */}
                         <td className="py-3.5 px-4">
                           {user.role === "admin" ? (
-                            <Badge className="bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200 font-bold text-[11px] gap-1 px-2.5 py-1 rounded-lg">
+                            <Badge className="bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200 font-bold text-[11px] gap-1.5 px-2.5 py-1 rounded-lg">
                               <ShieldCheck className="w-3.5 h-3.5 text-rose-600" />
                               <span>Quản trị viên (Admin)</span>
                             </Badge>
                           ) : user.role === "staff" ? (
-                            <Badge className="bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200 font-bold text-[11px] gap-1 px-2.5 py-1 rounded-lg">
+                            <Badge className="bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200 font-bold text-[11px] gap-1.5 px-2.5 py-1 rounded-lg">
                               <UserCheck className="w-3.5 h-3.5 text-amber-600" />
                               <span>Lễ tân (Staff)</span>
                             </Badge>
                           ) : (
-                            <Badge className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 font-bold text-[11px] gap-1 px-2.5 py-1 rounded-lg">
+                            <Badge className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 font-bold text-[11px] gap-1.5 px-2.5 py-1 rounded-lg">
                               <Users className="w-3.5 h-3.5 text-blue-600" />
                               <span>Khách hàng (User)</span>
                             </Badge>
@@ -936,7 +946,7 @@ export default function UsersPage() {
                             {user.role === "customer" ? (
                               <>
                                 <div>{getTierBadge(user.totalSpent)}</div>
-                                <p className="text-[11px] font-bold text-slate-900 mt-0.5">
+                                <p className="text-xs font-bold text-slate-900 mt-1">
                                   {user.totalSpent.toLocaleString("vi-VN")} đ
                                 </p>
                               </>
@@ -962,13 +972,13 @@ export default function UsersPage() {
                         </td>
 
                         {/* NGÀY TẠO */}
-                        <td className="py-3.5 px-4 text-slate-500 text-[11px]">
+                        <td className="py-3.5 px-4 text-slate-500 text-xs font-normal">
                           {user.createdAt}
                         </td>
 
                         {/* THAO TÁC */}
-                        <td className="py-3.5 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1">
+                        <td className="py-3.5 pr-6 pl-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
                             {/* Xem hồ sơ */}
                             <button
                               type="button"
@@ -1090,116 +1100,166 @@ export default function UsersPage() {
           </div>
         </div>
 
-        {/* MODAL THÊM / SỬA TÀI KHOẢN & PHÂN QUYỀN */}
+        {/* MODAL THÊM / SỬA TÀI KHOẢN & PHÂN QUYỀN (FORM CHUẨN ĐẸP) */}
         <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-          <DialogContent className="max-w-md rounded-2xl p-6 bg-white shadow-2xl">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                  {editingUserId ? <Edit className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+          <DialogContent className="max-w-lg rounded-3xl p-6 sm:p-7 bg-white shadow-2xl border-0">
+            <DialogHeader className="space-y-1 pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                  {editingUserId ? <Edit className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />}
                 </div>
-                <span>{editingUserId ? "Cập Nhật Hồ Sơ & Phân Quyền" : "Tạo Mới Tài Khoản Hệ Thống"}</span>
-              </DialogTitle>
+                <div>
+                  <DialogTitle className="text-base sm:text-lg font-black text-slate-900 leading-tight">
+                    {editingUserId ? "Cập Nhật Hồ Sơ & Phân Quyền" : "Tạo Mới Tài Khoản Người Dùng"}
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-slate-500 mt-0.5">
+                    Quản lý thông tin tài khoản và thiết lập quyền hạn truy cập hệ thống (Lab 08).
+                  </DialogDescription>
+                </div>
+              </div>
             </DialogHeader>
 
-            <form onSubmit={handleSaveUser} className="space-y-4 pt-2">
+            <form onSubmit={handleSaveUser} className="space-y-4 pt-3">
+              {/* Họ và tên */}
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-slate-700">Họ và tên người dùng *</Label>
-                <Input
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  placeholder="Ví dụ: Nguyễn Văn An"
-                  className="rounded-xl text-xs"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-slate-700">Email đăng nhập *</Label>
+                <Label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                  <span>Họ và tên người dùng</span>
+                  <span className="text-rose-500">*</span>
+                </Label>
+                <div className="relative">
+                  <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <Input
-                    type="email"
-                    value={formEmail}
-                    onChange={(e) => setFormEmail(e.target.value)}
-                    placeholder="nguyenan@example.com"
-                    className="rounded-xl text-xs"
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    placeholder="Ví dụ: Nguyễn Lê Hoàng Nam"
+                    className="pl-9.5 h-10 rounded-xl text-xs bg-slate-50/70 border-slate-200 focus-visible:bg-white"
                     required
                   />
+                </div>
+              </div>
+
+              {/* Email & SĐT */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                    <span>Email đăng nhập</span>
+                    <span className="text-rose-500">*</span>
+                  </Label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Input
+                      type="email"
+                      value={formEmail}
+                      onChange={(e) => setFormEmail(e.target.value)}
+                      placeholder="hoangnam@example.com"
+                      className="pl-9.5 h-10 rounded-xl text-xs bg-slate-50/70 border-slate-200 focus-visible:bg-white"
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">
                   <Label className="text-xs font-bold text-slate-700">Số điện thoại</Label>
-                  <Input
-                    value={formPhone}
-                    onChange={(e) => setFormPhone(e.target.value)}
-                    placeholder="0988 123 456"
-                    className="rounded-xl text-xs"
-                  />
+                  <div className="relative">
+                    <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Input
+                      value={formPhone}
+                      onChange={(e) => setFormPhone(e.target.value)}
+                      placeholder="0988 123 456"
+                      className="pl-9.5 h-10 rounded-xl text-xs bg-slate-50/70 border-slate-200 focus-visible:bg-white"
+                    />
+                  </div>
                 </div>
               </div>
 
+              {/* Vai trò */}
               <div className="space-y-1.5">
                 <Label className="text-xs font-bold text-slate-700">Phân quyền vai trò</Label>
                 <Select value={formRole} onValueChange={(v: any) => setFormRole(v)}>
-                  <SelectTrigger className="rounded-xl text-xs font-medium">
+                  <SelectTrigger className="h-10 rounded-xl text-xs font-semibold bg-slate-50/70 border-slate-200">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl">
-                    <SelectItem value="customer">
-                      <div className="py-0.5">
-                        <p className="font-bold text-slate-900">Khách Hàng (User)</p>
-                        <p className="text-[11px] text-slate-500">Đặt sân trực tuyến, mua vợt bóng, xem đơn hàng cá nhân</p>
+                  <SelectContent className="rounded-2xl p-1.5 shadow-xl border-slate-200">
+                    <SelectItem value="customer" className="rounded-xl py-2 cursor-pointer">
+                      <div>
+                        <p className="font-bold text-blue-950 text-xs flex items-center gap-1.5">
+                          <Users className="w-3.5 h-3.5 text-blue-600" />
+                          <span>Khách Hàng (User)</span>
+                        </p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">Đặt sân online, mua thiết bị pickleball, theo dõi đơn hàng</p>
                       </div>
                     </SelectItem>
-                    <SelectItem value="staff">
-                      <div className="py-0.5">
-                        <p className="font-bold text-amber-900">Nhân Viên Lễ Tân (Staff)</p>
-                        <p className="text-[11px] text-slate-500">Trực quầy POS, check-in sân bóng, chat tư vấn khách</p>
+                    <SelectItem value="staff" className="rounded-xl py-2 cursor-pointer">
+                      <div>
+                        <p className="font-bold text-amber-950 text-xs flex items-center gap-1.5">
+                          <UserCheck className="w-3.5 h-3.5 text-amber-600" />
+                          <span>Nhân Viên Lễ Tân (Staff)</span>
+                        </p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">Trực quầy POS, check-in sân bóng, hỗ trợ Live chat</p>
                       </div>
                     </SelectItem>
-                    <SelectItem value="admin">
-                      <div className="py-0.5">
-                        <p className="font-bold text-rose-900">Quản Trị Viên (Admin)</p>
-                        <p className="text-[11px] text-slate-500">Toàn quyền báo cáo, kho hàng, voucher và phân quyền tài khoản</p>
+                    <SelectItem value="admin" className="rounded-xl py-2 cursor-pointer">
+                      <div>
+                        <p className="font-bold text-rose-950 text-xs flex items-center gap-1.5">
+                          <ShieldCheck className="w-3.5 h-3.5 text-rose-600" />
+                          <span>Quản Trị Viên (Admin)</span>
+                        </p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">Toàn quyền hệ thống, xem báo cáo, kho hàng và phân quyền</p>
                       </div>
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
+              {/* Trạng thái */}
               <div className="space-y-1.5">
                 <Label className="text-xs font-bold text-slate-700">Trạng thái tài khoản</Label>
                 <Select value={formStatus} onValueChange={(v: any) => setFormStatus(v)}>
-                  <SelectTrigger className="rounded-xl text-xs font-medium">
+                  <SelectTrigger className="h-10 rounded-xl text-xs font-semibold bg-slate-50/70 border-slate-200">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl">
-                    <SelectItem value="active">Đang kích hoạt (Cho phép đăng nhập)</SelectItem>
-                    <SelectItem value="locked">Tạm khóa (Chặn đăng nhập)</SelectItem>
+                    <SelectItem value="active" className="cursor-pointer text-xs font-medium">
+                      <span className="flex items-center gap-2 text-emerald-700 font-bold">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        Đang kích hoạt (Được phép đăng nhập)
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="locked" className="cursor-pointer text-xs font-medium">
+                      <span className="flex items-center gap-2 text-rose-700 font-bold">
+                        <span className="w-2 h-2 rounded-full bg-rose-500" />
+                        Tạm khóa tài khoản (Chặn đăng nhập)
+                      </span>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {!editingUserId && (
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600">
-                  💡 <strong>Mật khẩu mặc định:</strong> <code>123456</code> (Người dùng có thể tự đổi mật khẩu sau khi đăng nhập lần đầu).
+                <div className="p-3 bg-emerald-50/60 rounded-2xl border border-emerald-200 text-[11px] text-emerald-900 flex items-start gap-2">
+                  <KeyRound className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold">Mật khẩu mặc định hệ thống: </span>
+                    <code className="bg-white px-1.5 py-0.5 rounded-md border border-emerald-300 font-bold text-emerald-700">123456</code>
+                    <p className="text-emerald-700 mt-0.5">Người dùng có thể đăng nhập ngay và tự đổi mật khẩu trong hồ sơ cá nhân.</p>
+                  </div>
                 </div>
               )}
 
-              <DialogFooter className="pt-3 gap-2">
+              <DialogFooter className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setModalOpen(false)}
-                  className="rounded-xl text-xs font-semibold"
+                  className="rounded-xl text-xs font-semibold h-9.5 px-4"
                 >
                   Hủy bỏ
                 </Button>
                 <Button
                   type="submit"
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold h-9.5 px-5 shadow-sm"
                 >
-                  {editingUserId ? "Lưu Thay Đổi" : "Tạo Tài Khoản"}
+                  {editingUserId ? "Lưu Thay Đổi" : "Tạo Người Dùng"}
                 </Button>
               </DialogFooter>
             </form>
@@ -1235,7 +1295,7 @@ export default function UsersPage() {
                         <Crown className="w-4 h-4 text-amber-400" title="Super Admin" />
                       )}
                     </div>
-                    <p className="text-xs text-white/70 font-mono mt-0.5">{selectedUser.email}</p>
+                    <p className="text-xs text-white/70 font-normal mt-0.5">{selectedUser.email}</p>
 
                     <div className="flex items-center gap-2 mt-2">
                       {selectedUser.role === "admin" ? (
@@ -1349,7 +1409,7 @@ export default function UsersPage() {
                           className="p-3.5 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200 transition-colors space-y-1.5"
                         >
                           <div className="flex items-center justify-between">
-                            <span className="font-mono font-bold text-xs text-emerald-700">{ord.code}</span>
+                            <span className="font-bold text-xs text-emerald-700">{ord.code}</span>
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
                               {ord.status}
                             </span>
