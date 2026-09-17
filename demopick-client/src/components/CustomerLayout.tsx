@@ -237,22 +237,6 @@ export default function CustomerLayout() {
                     <span className="relative z-10">Lịch sử đơn hàng</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={() => navigate('/wishlist')}
-                    onMouseEnter={() => setHoveredDropdownItem('wishlist')}
-                    onMouseLeave={() => setHoveredDropdownItem(null)}
-                    className="gap-2 rounded-xl cursor-pointer font-medium text-foreground hover:bg-transparent focus:bg-transparent relative z-0"
-                  >
-                    {hoveredDropdownItem === 'wishlist' && (
-                      <motion.div
-                        layoutId="customer-dropdown-capsule"
-                        className="absolute inset-0 bg-muted rounded-xl -z-10"
-                        transition={{ type: 'spring', stiffness: 250, damping: 25 }}
-                      />
-                    )}
-                    <Heart className="h-4 w-4 text-muted-foreground relative z-10" />
-                    <span className="relative z-10">Sản phẩm yêu thích</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
                     onClick={() => navigate('/profile')}
                     onMouseEnter={() => setHoveredDropdownItem('profile')}
                     onMouseLeave={() => setHoveredDropdownItem(null)}
