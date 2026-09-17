@@ -123,5 +123,15 @@ export const orderService = {
       }
     }
   },
+
+  async cancelOrder(code: string, reason?: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await api.post(`/orders/${code}/cancel`, { reason })
+      return response.data
+    } catch (err: any) {
+      const errMsg = err.response?.data?.message || 'Không thể hủy đơn hàng.'
+      throw new Error(errMsg)
+    }
+  },
 }
 

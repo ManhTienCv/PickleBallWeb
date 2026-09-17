@@ -62,7 +62,7 @@
   }
 
   html {
-    font-size: 16px; /* Standard 100% rem font scale for clear legibility */
+    font-size: 14.4px; /* Giảm -10% kích cỡ trang admin (tương đương 90% rem scale toàn bộ giao diện) */
     height: 100%;
   }
 

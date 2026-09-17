@@ -8,6 +8,7 @@ import { cartService, Cart } from '@/services/cart.service'
 import { motion } from 'framer-motion'
 import ThemeToggle from '@/components/ThemeToggle'
 import PickleballLogo from '@/components/PickleballLogo'
+import CustomerChatWidget from '@/components/CustomerChatWidget'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -260,6 +261,9 @@ export default function CustomerLayout() {
           </p>
         </div>
       </footer>
+
+      {/* Floating 2-way Live Chat Widget */}
+      <CustomerChatWidget />
     </div>
   )
 }

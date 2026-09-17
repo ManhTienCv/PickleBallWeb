@@ -16,6 +16,7 @@ import {
   PanelLeftClose,
   PanelLeft,
   ChevronRight,
+  MessageSquare,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import CheckInDialog from "@/components/CheckInDialog";
@@ -36,16 +37,44 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
-const menuItems = [
-  { icon: LayoutDashboard, label: "Tổng quan", path: "/", roles: ["admin", "super_admin"] },
-  { icon: MapPin, label: "Sơ đồ & Đặt lịch", path: "/court-map", roles: ["admin", "super_admin", "staff"] },
-  { icon: ShoppingCart, label: "Bán hàng Quầy", path: "/pos", roles: ["admin", "super_admin", "staff"] },
-  { icon: Globe, label: "Hóa Đơn Online", path: "/orders?tab=online", roles: ["admin", "super_admin", "staff"] },
-  { icon: Receipt, label: "Hóa Đơn Quầy", path: "/orders?tab=pos", roles: ["admin", "super_admin", "staff"] },
-  { icon: CreditCard, label: "Quản lý Thanh toán", path: "/payments", roles: ["admin", "super_admin"] },
-  { icon: UserCheck, label: "Quản Lý Nhân Viên", path: "/crm", roles: ["admin", "super_admin"] },
-  { icon: Package, label: "Kho sản phẩm", path: "/inventory", roles: ["admin", "super_admin", "staff"] },
-  { icon: BarChart3, label: "Báo cáo & Nhật ký", path: "/reports", roles: ["admin", "super_admin"] },
+interface MenuItem {
+  icon: any;
+  label: string;
+  path: string;
+  roles: string[];
+}
+
+interface MenuSection {
+  title: string;
+  items: MenuItem[];
+}
+
+const menuSections: MenuSection[] = [
+  {
+    title: "QUẢN LÝ CHUNG",
+    items: [
+      { icon: LayoutDashboard, label: "Tổng quan", path: "/", roles: ["admin", "super_admin"] },
+      { icon: MapPin, label: "Sơ đồ & Đặt lịch", path: "/court-map", roles: ["admin", "super_admin", "staff"] },
+      { icon: ShoppingCart, label: "Bán hàng Quầy", path: "/pos", roles: ["admin", "super_admin", "staff"] },
+      { icon: MessageSquare, label: "Tư Vấn & Live Chat", path: "/chat", roles: ["admin", "super_admin", "staff"] },
+    ],
+  },
+  {
+    title: "THƯƠNG MẠI & ĐƠN HÀNG",
+    items: [
+      { icon: Package, label: "Kho sản phẩm", path: "/inventory", roles: ["admin", "super_admin", "staff"] },
+      { icon: Globe, label: "Đơn hàng Online", path: "/orders?tab=online", roles: ["admin", "super_admin"] },
+      { icon: Receipt, label: "Đơn hàng tại sân", path: "/orders?tab=pos", roles: ["admin", "super_admin", "staff"] },
+      { icon: CreditCard, label: "Quản lý Thanh toán", path: "/payments", roles: ["admin", "super_admin"] },
+    ],
+  },
+  {
+    title: "BÁO CÁO & HỆ THỐNG",
+    items: [
+      { icon: BarChart3, label: "Báo cáo & Nhật ký", path: "/reports", roles: ["admin", "super_admin"] },
+      { icon: UserCheck, label: "Quản Lý Nhân Viên", path: "/crm", roles: ["admin", "super_admin"] },
+    ],
+  },
 ];
 
 interface AppLayoutProps {
@@ -76,7 +105,7 @@ const AppLayout = ({ children, title, subtitle, headerRight, noScroll = false }:
       const nextState = !prev;
       try {
         localStorage.setItem("demopick_sidebar_collapsed", String(nextState));
-      } catch {}
+      } catch { }
       return nextState;
     });
   };
@@ -84,9 +113,14 @@ const AppLayout = ({ children, title, subtitle, headerRight, noScroll = false }:
   const userRoles = user?.roles || [];
   const isStaffOnly = userRoles.includes("staff") && !userRoles.includes("super_admin") && !userRoles.includes("admin");
 
-  const visibleMenuItems = menuItems.filter((item) =>
-    item.roles.some((role) => userRoles.includes(role) || userRoles.includes("super_admin"))
-  );
+  const visibleSections = menuSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) =>
+        item.roles.some((role) => userRoles.includes(role) || userRoles.includes("super_admin"))
+      ),
+    }))
+    .filter((section) => section.items.length > 0);
 
   const handleSwitchRole = async () => {
     const targetEmail = isStaffOnly ? "admin@demopick.vn" : "staff@demopick.vn";
@@ -105,15 +139,13 @@ const AppLayout = ({ children, title, subtitle, headerRight, noScroll = false }:
     <div className="flex h-screen bg-slate-100 overflow-hidden font-sans">
       {/* Sidebar - Collapsible Executive Style (Gemini Inspired) */}
       <aside
-        className={`bg-[#FAF8F5] text-slate-800 flex flex-col shrink-0 border-r border-slate-200/90 shadow-sm relative transition-all duration-300 ease-in-out ${
-          isCollapsed ? "w-20" : "w-64"
-        }`}
+        className={`bg-[#FAF8F5] text-slate-800 flex flex-col shrink-0 border-r border-slate-200/90 shadow-sm relative transition-all duration-300 ease-in-out ${isCollapsed ? "w-20" : "w-64"
+          }`}
       >
         {/* Header / Brand + Collapse Toggle (Exact 64px h-16 height matching Top Bar) */}
         <div
-          className={`h-16 border-b border-slate-200/80 flex items-center shrink-0 transition-all ${
-            isCollapsed ? "justify-center px-2" : "justify-between px-4"
-          }`}
+          className={`h-16 border-b border-slate-200/80 flex items-center shrink-0 transition-all ${isCollapsed ? "justify-center px-2" : "justify-between px-4"
+            }`}
         >
           {!isCollapsed ? (
             <>
@@ -160,48 +192,60 @@ const AppLayout = ({ children, title, subtitle, headerRight, noScroll = false }:
         </div>
 
         {/* Navigation Menu List */}
-        <nav className={`flex-1 space-y-1.5 overflow-y-auto ${isCollapsed ? "p-2" : "p-3"}`}>
-          {visibleMenuItems.map((item) => {
-            const fullPath = location.pathname + location.search;
-            const isActive = fullPath === item.path || (location.pathname === item.path && !item.path.includes("?"));
+        <nav className={`flex-1 overflow-y-auto ${isCollapsed ? "p-2 space-y-2" : "p-3 space-y-3"}`}>
+          {visibleSections.map((section, sectionIdx) => (
+            <div key={section.title} className="space-y-1">
+              {!isCollapsed ? (
+                <div className="px-3.5 pt-2 pb-1 text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400 select-none">
+                  {section.title}
+                </div>
+              ) : (
+                sectionIdx > 0 && <div className="my-2 border-t border-slate-200/80 mx-2" />
+              )}
 
-            if (isCollapsed) {
-              return (
-                <Tooltip key={item.path}>
-                  <TooltipTrigger asChild>
+              <div className="space-y-1">
+                {section.items.map((item) => {
+                  const fullPath = location.pathname + location.search;
+                  const isActive = fullPath === item.path || (location.pathname === item.path && !item.path.includes("?"));
+
+                  if (isCollapsed) {
+                    return (
+                      <Tooltip key={item.path}>
+                        <TooltipTrigger asChild>
+                          <Link
+                            to={item.path}
+                            className={`w-10 h-10 mx-auto rounded-xl flex items-center justify-center transition-all ${isActive
+                              ? "bg-emerald-600 text-white font-semibold shadow-md shadow-emerald-600/20"
+                              : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+                              }`}
+                          >
+                            <item.icon className={`w-5 h-5 ${isActive ? "text-white" : "text-emerald-600"}`} />
+                          </Link>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="font-semibold text-xs">
+                          {item.label}
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  }
+
+                  return (
                     <Link
+                      key={item.path}
                       to={item.path}
-                      className={`w-10 h-10 mx-auto rounded-xl flex items-center justify-center transition-all ${
-                        isActive
-                          ? "bg-emerald-600 text-white font-semibold shadow-md shadow-emerald-600/20"
-                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
-                      }`}
+                      className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm transition-all ${isActive
+                        ? "bg-emerald-600 text-white font-semibold shadow-sm shadow-emerald-600/20"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 font-medium"
+                        }`}
                     >
-                      <item.icon className={`w-5 h-5 ${isActive ? "text-white" : "text-emerald-600"}`} />
+                      <item.icon className={`w-4 h-4 shrink-0 ${isActive ? "text-white" : "text-emerald-600"}`} />
+                      <span className="truncate">{item.label}</span>
                     </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="font-semibold text-xs">
-                    {item.label}
-                  </TooltipContent>
-                </Tooltip>
-              );
-            }
-
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm transition-all ${
-                  isActive
-                    ? "bg-emerald-600 text-white font-semibold shadow-sm shadow-emerald-600/20"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 font-medium"
-                }`}
-              >
-                <item.icon className={`w-4 h-4 shrink-0 ${isActive ? "text-white" : "text-emerald-600"}`} />
-                <span className="truncate">{item.label}</span>
-              </Link>
-            );
-          })}
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* Bottom Actions: QR Scan & Avatar Dropdown */}

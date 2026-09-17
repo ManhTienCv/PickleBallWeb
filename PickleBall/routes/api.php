@@ -20,6 +20,7 @@ use App\Modules\Order\Http\Controllers\ShippingController;
 use App\Modules\Order\Http\Controllers\OrderApiController;
 use App\Modules\User\Http\Controllers\AuthController;
 use App\Modules\User\Http\Controllers\ProfileController;
+use App\Http\Controllers\ChatController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -56,10 +57,15 @@ Route::prefix('v1')->group(function () {
         Route::get('/tracking/{code}', [ShippingController::class, 'tracking']);
     });
 
+    // ── Live Chat (Khách hàng & Khách vãng lai) ───────────────
+    Route::get('/user/chat/messages', [ChatController::class, 'getCustomerMessages']);
+    Route::post('/user/chat/send', [ChatController::class, 'sendCustomerMessage']);
+
     // ── Orders & Checkout API ─────────────────────────────────
     Route::get('/orders', [OrderApiController::class, 'index']);
     Route::post('/orders', [OrderApiController::class, 'create']);
     Route::get('/orders/{code}', [OrderApiController::class, 'show']);
+    Route::post('/orders/{code}/cancel', [OrderApiController::class, 'cancelOrder']);
 
     // Public Shop Catalog
     Route::get('/products', [ProductController::class, 'index']);
@@ -120,7 +126,13 @@ Route::prefix('v1')->group(function () {
         Route::post('/courts/{id}/stop-session', [AdminCourtController::class, 'stopSession']);
         Route::get('/orders', [AdminOrderController::class, 'index']);
         Route::put('/orders/{id}/status', [AdminOrderController::class, 'updateStatus']);
+        Route::post('/orders/{code}/cancel', [AdminOrderController::class, 'cancelOrder']);
         Route::get('/posts', [PostController::class, 'adminIndex']);
+
+        // Live Chat Hỗ Trợ 2 Chiều
+        Route::get('/chat/conversations', [ChatController::class, 'getAdminConversations']);
+        Route::get('/chat/messages/{sessionId}', [ChatController::class, 'getAdminConversationMessages']);
+        Route::post('/chat/send', [ChatController::class, 'sendAdminReply']);
     });
 
     // ── 4. Admin Only Operations (Stock Adjustments, Deletions, Reports & Locks) ──

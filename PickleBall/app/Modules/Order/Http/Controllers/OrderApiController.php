@@ -358,4 +358,80 @@ class OrderApiController extends Controller
             'resultCode' => 0,
         ]);
     }
+
+    /**
+     * Khách hàng / Quản trị viên hủy đơn hàng (Tuân thủ Quy tắc Khóa Hủy Đơn)
+     */
+    public function cancelOrder(Request $request, string $code): JsonResponse
+    {
+        $reason = $request->input('reason', 'Khách hàng yêu cầu hủy đơn');
+
+        $orders = Cache::get('demopick_orders_store', []);
+        $targetOrder = $orders[$code] ?? null;
+
+        $dbOrder = null;
+        if (!$targetOrder) {
+            try {
+                $dbOrder = DB::connection('main')->table('orders')->where('order_code', $code)->first();
+                if ($dbOrder) {
+                    $targetOrder = (array) $dbOrder;
+                }
+            } catch (\Throwable $e) {
+                Log::warning('DB find order in cancel error: ' . $e->getMessage());
+            }
+        }
+
+        if (!$targetOrder) {
+            return response()->json([
+                'success' => false,
+                'message' => "Không tìm thấy mã đơn hàng #{$code}.",
+            ], 404);
+        }
+
+        $currentStatus = strtolower($targetOrder['status'] ?? 'pending');
+
+        // QUY TẮC BẢO MẬT & VẬN HÀNH: Khóa cứng nếu đơn đã chuyển sang giao hàng
+        $lockedStatuses = ['shipping', 'delivering', 'delivered', 'shipped'];
+        if (in_array($currentStatus, $lockedStatuses)) {
+            return response()->json([
+                'success' => false,
+                'error_code' => 'ORDER_LOCKED_CANNOT_CANCEL',
+                'message' => "Không thể hủy đơn hàng #{$code} vì kiện hàng đã được xuất kho và đang trong quá trình vận chuyển (GHN Express).",
+            ], 422);
+        }
+
+        // Cập nhật Cache
+        if (isset($orders[$code])) {
+            $orders[$code]['status'] = 'cancelled';
+            $orders[$code]['cancel_reason'] = $reason;
+            Cache::put('demopick_orders_store', $orders, 86400 * 30);
+        }
+
+        // Cập nhật Database
+        try {
+            if ($dbOrder) {
+                DB::connection('main')->table('orders')->where('id', $dbOrder->id)->update([
+                    'status' => 'cancelled',
+                    'updated_at' => now(),
+                ]);
+            } else {
+                DB::connection('main')->table('orders')->where('order_code', $code)->update([
+                    'status' => 'cancelled',
+                    'updated_at' => now(),
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::info('Order cancel DB update: ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Đã hủy đơn hàng #{$code} thành công.",
+            'data' => [
+                'order_code' => $code,
+                'status' => 'cancelled',
+                'cancel_reason' => $reason,
+            ],
+        ]);
+    }
 }

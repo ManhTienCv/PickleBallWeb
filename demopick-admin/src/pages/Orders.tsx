@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +35,15 @@ import {
   Check,
   FastForward,
   Zap,
+  Lock,
+  Ban,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { notificationService } from "@/services/notification.service";
 import {
   shippingService,
@@ -74,7 +83,8 @@ interface Order {
   };
   totalAmount: number;
   paymentMethod: "Tiền mặt" | "VietQR" | "MoMo" | "COD";
-  status: "PAID" | "PENDING" | "SHIPPED" | "COMPLETED" | "REFUNDED";
+  paymentStatus?: "PAID" | "PENDING" | "REFUNDED";
+  status: "PAID" | "PENDING" | "READY_TO_PICK" | "PICKING" | "SHIPPED" | "SHIPPING" | "COMPLETED" | "RETURNED" | "REFUNDED" | "CANCELLED";
   createdAt: string;
   dateStr: string;
   items: OrderItem[];
@@ -88,6 +98,66 @@ interface Order {
 }
 
 const mockOrders: Order[] = [
+  {
+    code: "CAM-VQMBGXWI",
+    customerName: "Nguyễn Mạnh Tiến (Demo)",
+    customerPhone: "0988888888",
+    staffName: "Hệ thống Tự Động Online",
+    type: "Đặt Sân Online",
+    totalAmount: 54990000,
+    paymentMethod: "MoMo",
+    paymentStatus: "PAID",
+    status: "CANCELLED",
+    createdAt: "10/9/2026",
+    dateStr: "2026-09-10",
+    shippingAddress: "Số 10 Đường Cầu Giấy, Hà Nội",
+    items: [{ id: 101, name: "Vợt Pickleball JOOLA Perseus 3S 16mm Carbon", qty: 10, price: 5499000 }],
+  },
+  {
+    code: "CAM-LWTNF83L",
+    customerName: "Nguyễn Mạnh Tiến",
+    customerPhone: "0988888888",
+    staffName: "Hệ thống Tự Động Online",
+    type: "Đặt Sân Online",
+    totalAmount: 54990000,
+    paymentMethod: "MoMo",
+    paymentStatus: "PENDING",
+    status: "CANCELLED",
+    createdAt: "10/9/2026",
+    dateStr: "2026-09-10",
+    shippingAddress: "Số 10 Đường Cầu Giấy, Hà Nội",
+    items: [{ id: 102, name: "Vợt Pickleball JOOLA Perseus 3S 16mm Carbon", qty: 10, price: 5499000 }],
+  },
+  {
+    code: "CAM-AWRRMN01",
+    customerName: "Nguyễn Mạnh Tiến (Demo)",
+    customerPhone: "0988888888",
+    staffName: "Hệ thống Tự Động Online",
+    type: "Đặt Sân Online",
+    totalAmount: 54990000,
+    paymentMethod: "MoMo",
+    paymentStatus: "PENDING",
+    status: "CANCELLED",
+    createdAt: "10/9/2026",
+    dateStr: "2026-09-10",
+    shippingAddress: "Số 10 Đường Cầu Giấy, Hà Nội",
+    items: [{ id: 103, name: "Vợt Pickleball JOOLA Perseus 3S 16mm Carbon", qty: 10, price: 5499000 }],
+  },
+  {
+    code: "CAM-VNQ08912",
+    customerName: "Nguyễn Mạnh Tiến",
+    customerPhone: "0988888888",
+    staffName: "Hệ thống Tự Động Online",
+    type: "Đặt Sân Online",
+    totalAmount: 54990000,
+    paymentMethod: "MoMo",
+    paymentStatus: "PAID",
+    status: "CANCELLED",
+    createdAt: "10/9/2026",
+    dateStr: "2026-09-10",
+    shippingAddress: "Số 10 Đường Cầu Giấy, Hà Nội",
+    items: [{ id: 104, name: "Vợt Pickleball JOOLA Perseus 3S 16mm Carbon", qty: 10, price: 5499000 }],
+  },
   {
     code: "HD-88291",
     customerName: "Nguyễn Văn An",
@@ -238,9 +308,19 @@ const masterCatalog = [
 
 export default function Orders() {
   const [searchParams] = useSearchParams();
-  const [viewMode, setViewMode] = useState<"online" | "pos">("online");
+  const { user } = useAuth();
+  const userRoles = user?.roles || [];
+  const isStaffOnly = userRoles.includes("staff") && !userRoles.includes("super_admin") && !userRoles.includes("admin");
+
+  const [viewMode, setViewMode] = useState<"online" | "pos">(() => {
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    if (tab === "pos") return "pos";
+    return "online";
+  });
   const [posSubFilter, setPosSubFilter] = useState<"court_service" | "retail">("court_service");
   const [statusFilter, setStatusFilter] = useState<string>("PENDING");
+  const [onlineStatusFilter, setOnlineStatusFilter] = useState<string>("ALL");
+  const [paymentFilter, setPaymentFilter] = useState<string>("ALL");
 
   useEffect(() => {
     const tab = searchParams.get("tab");
@@ -248,10 +328,23 @@ export default function Orders() {
       setViewMode("pos");
       setStatusFilter("PAID");
     } else if (tab === "online") {
-      setViewMode("online");
-      setStatusFilter("PENDING");
+      if (isStaffOnly) {
+        setViewMode("pos");
+        setStatusFilter("PAID");
+      } else {
+        setViewMode("online");
+        setStatusFilter("PENDING");
+      }
     }
-  }, [searchParams]);
+  }, [searchParams, isStaffOnly]);
+
+  // Enforce staff restrictions
+  useEffect(() => {
+    if (isStaffOnly && viewMode === "online") {
+      setViewMode("pos");
+      setStatusFilter("PAID");
+    }
+  }, [isStaffOnly, viewMode]);
 
   const [search, setSearch] = useState("");
   const [datePeriod, setDatePeriod] = useState("today");
@@ -262,7 +355,17 @@ export default function Orders() {
   const [ordersList, setOrdersList] = useState<Order[]>(() => {
     try {
       const saved = localStorage.getItem("demopick_orders_admin");
-      return saved ? JSON.parse(saved) : mockOrders;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const hasCam = parsed.some((o: Order) => o.code.startsWith("CAM-"));
+          if (!hasCam) {
+            return [...mockOrders.filter((m) => m.code.startsWith("CAM-")), ...parsed];
+          }
+          return parsed;
+        }
+      }
+      return mockOrders;
     } catch {
       return mockOrders;
     }
@@ -382,6 +485,22 @@ export default function Orders() {
 
   const handleManualRefresh = () => {
     fetchBackendOrders(true);
+  };
+
+  const handleAdminCancelOrder = async (orderCode: string) => {
+    const reason = window.prompt("Nhập lý do hủy đơn hàng (Admin):", "Khách hàng yêu cầu hủy / Hết hàng");
+    if (reason === null) return;
+
+    try {
+      toast.info(`Đang xử lý hủy đơn hàng #${orderCode}...`);
+      await api.post(`/admin/orders/${orderCode}/cancel`, { reason });
+      toast.success(`Đã hủy thành công đơn hàng #${orderCode}!`);
+      setOrdersList((prev) =>
+        prev.map((o) => (o.code === orderCode ? { ...o, status: "REFUNDED" } : o))
+      );
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Không thể hủy đơn hàng.");
+    }
   };
 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -574,27 +693,163 @@ export default function Orders() {
     );
   }, [searchProductQuery]);
 
+  const ONLINE_STATUS_TABS = [
+    { id: "ALL", label: "Tất cả" },
+    { id: "PENDING", label: "Chờ xử lý" },
+    { id: "READY_TO_PICK", label: "Chờ lấy hàng" },
+    { id: "PICKING", label: "Đang lấy hàng" },
+    { id: "SHIPPING", label: "Đang giao" },
+    { id: "COMPLETED", label: "Thành công" },
+    { id: "RETURNED", label: "Hoàn hàng" },
+    { id: "CANCELLED", label: "Đã hủy" },
+  ];
+
+  const onlineOrders = useMemo(() => {
+    return ordersList.filter((o) => o.type === "Đặt Sân Online");
+  }, [ordersList]);
+
+  const onlineCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      ALL: 0,
+      PENDING: 0,
+      READY_TO_PICK: 0,
+      PICKING: 0,
+      SHIPPING: 0,
+      COMPLETED: 0,
+      RETURNED: 0,
+      CANCELLED: 0,
+    };
+
+    onlineOrders.forEach((o) => {
+      counts.ALL++;
+      const st = o.status;
+      if (st === "PENDING") counts.PENDING++;
+      else if (st === "READY_TO_PICK") counts.READY_TO_PICK++;
+      else if (st === "PICKING") counts.PICKING++;
+      else if (st === "SHIPPED" || st === "SHIPPING") counts.SHIPPING++;
+      else if (st === "COMPLETED") counts.COMPLETED++;
+      else if (st === "RETURNED") counts.RETURNED++;
+      else if (st === "CANCELLED" || st === "REFUNDED") counts.CANCELLED++;
+    });
+
+    return counts;
+  }, [onlineOrders]);
+
+  const isOrderPaid = (order: Order) => {
+    if (order.paymentStatus === "PAID") return true;
+    if (order.paymentStatus === "PENDING") return false;
+    if (order.paymentStatus === "REFUNDED") return false;
+    if (order.status === "PAID" || order.status === "COMPLETED") return true;
+    if (order.paymentMethod === "VietQR" && order.status !== "REFUNDED" && order.status !== "CANCELLED") return true;
+    if (order.paymentMethod === "MoMo" && (order.status === "SHIPPED" || order.status === "SHIPPING" || order.status === "COMPLETED")) return true;
+    return false;
+  };
+
+  const getStatusLabel = (st: string) => {
+    switch (st) {
+      case "PENDING":
+        return "Chờ xử lý";
+      case "READY_TO_PICK":
+        return "Chờ lấy hàng";
+      case "PICKING":
+        return "Đang lấy hàng";
+      case "SHIPPED":
+      case "SHIPPING":
+        return "Đang giao";
+      case "COMPLETED":
+        return "Thành công";
+      case "RETURNED":
+        return "Hoàn hàng";
+      case "CANCELLED":
+      case "REFUNDED":
+        return "Đã hủy";
+      default:
+        return st;
+    }
+  };
+
+  const handleUpdateOrderStatus = (orderCode: string, newStatus: Order["status"]) => {
+    const target = ordersList.find((o) => o.code === orderCode);
+    if (!target) return;
+
+    if (newStatus === "CANCELLED" || newStatus === "REFUNDED") {
+      if (target.status === "SHIPPED" || target.status === "SHIPPING" || target.status === "COMPLETED") {
+        toast.error("🔒 Đơn hàng đang giao hoặc đã hoàn thành, hệ thống khóa hủy đơn!");
+        return;
+      }
+      handleAdminCancelOrder(orderCode);
+      return;
+    }
+
+    setOrdersList((prev) =>
+      prev.map((o) => {
+        if (o.code === orderCode) {
+          return {
+            ...o,
+            status: newStatus,
+            paymentStatus: newStatus === "COMPLETED" && o.paymentMethod === "COD" ? "PAID" : o.paymentStatus,
+          };
+        }
+        return o;
+      })
+    );
+    toast.success(`Đã cập nhật trạng thái đơn #${orderCode} sang "${getStatusLabel(newStatus)}"!`);
+  };
+
   const filteredOrders = ordersList.filter((order) => {
     const isModeMatch = viewMode === "online" ? order.type === "Đặt Sân Online" : order.type === "POS Quầy";
-    let matchesPosSub = true;
+    if (!isModeMatch) return false;
+
     if (viewMode === "pos") {
-      matchesPosSub = order.posCategory === posSubFilter;
+      const matchesPosSub = order.posCategory === posSubFilter;
+      const matchesStatus = order.status === statusFilter;
+      const matchesSearch =
+        order.code.toLowerCase().includes(search.toLowerCase()) ||
+        order.customerName.toLowerCase().includes(search.toLowerCase()) ||
+        order.staffName.toLowerCase().includes(search.toLowerCase()) ||
+        (order.courtInfo?.courtName && order.courtInfo.courtName.toLowerCase().includes(search.toLowerCase()));
+
+      let matchesDate = true;
+      if (datePeriod === "today") matchesDate = order.dateStr === "2026-08-09";
+      else if (datePeriod === "yesterday") matchesDate = order.dateStr === "2026-08-08";
+      else if (datePeriod === "custom") matchesDate = order.dateStr === customDate;
+
+      return matchesPosSub && matchesStatus && matchesSearch && matchesDate;
     }
-    const matchesStatus = order.status === statusFilter;
+
+    // viewMode === "online"
+    let matchesStatus = true;
+    if (onlineStatusFilter === "ALL") {
+      matchesStatus = true;
+    } else if (onlineStatusFilter === "PENDING") {
+      matchesStatus = order.status === "PENDING";
+    } else if (onlineStatusFilter === "READY_TO_PICK") {
+      matchesStatus = order.status === "READY_TO_PICK";
+    } else if (onlineStatusFilter === "PICKING") {
+      matchesStatus = order.status === "PICKING";
+    } else if (onlineStatusFilter === "SHIPPING") {
+      matchesStatus = order.status === "SHIPPED" || order.status === "SHIPPING";
+    } else if (onlineStatusFilter === "COMPLETED") {
+      matchesStatus = order.status === "COMPLETED";
+    } else if (onlineStatusFilter === "RETURNED") {
+      matchesStatus = order.status === "RETURNED";
+    } else if (onlineStatusFilter === "CANCELLED") {
+      matchesStatus = order.status === "CANCELLED" || order.status === "REFUNDED";
+    }
+
+    let matchesPayment = true;
+    if (paymentFilter !== "ALL") {
+      matchesPayment = order.paymentMethod === paymentFilter;
+    }
+
     const matchesSearch =
       order.code.toLowerCase().includes(search.toLowerCase()) ||
       order.customerName.toLowerCase().includes(search.toLowerCase()) ||
-      order.staffName.toLowerCase().includes(search.toLowerCase()) ||
-      (order.courtInfo?.courtName && order.courtInfo.courtName.toLowerCase().includes(search.toLowerCase())) ||
+      (order.customerPhone && order.customerPhone.includes(search)) ||
       (order.shippingAddress && order.shippingAddress.toLowerCase().includes(search.toLowerCase())) ||
       (order.trackingNumber && order.trackingNumber.toLowerCase().includes(search.toLowerCase()));
 
-    let matchesDate = true;
-    if (datePeriod === "today") matchesDate = order.dateStr === "2026-08-09";
-    else if (datePeriod === "yesterday") matchesDate = order.dateStr === "2026-08-08";
-    else if (datePeriod === "custom") matchesDate = order.dateStr === customDate;
-
-    return isModeMatch && matchesPosSub && matchesStatus && matchesSearch && matchesDate;
+    return matchesStatus && matchesPayment && matchesSearch;
   });
 
   const totalPages = Math.ceil(filteredOrders.length / pageSize) || 1;
@@ -642,81 +897,371 @@ export default function Orders() {
       title={viewMode === "online" ? "Quản Lý Đơn Hàng Online & Vận Chuyển 3PL" : "Quản Lý Hóa Đơn Bán Hàng POS Quầy"}
     >
       <div className="space-y-6 font-sans">
-        {/* TOP FILTER & CONTROLS */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 mr-1">
-                <span>Xem theo lịch:</span>
+        {/* ONLINE ORDERS VIEW */}
+        {viewMode === "online" && (
+          <div className="space-y-4">
+            {/* Top Header & Refresh */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Quản lý Đơn hàng & Vận chuyển</h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  Xử lý vòng đời đơn hàng, đồng bộ vận chuyển GHN Express và đối soát thanh toán ({onlineOrders.length} đơn).
+                </p>
               </div>
-              {[
-                { id: "today", label: "Hôm nay (Ca trực)" },
-                { id: "yesterday", label: "Hôm qua" },
-                { id: "7days", label: "Tất cả các ngày" },
-                { id: "custom", label: "Chọn ngày cụ thể" },
-              ].map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => {
-                    setDatePeriod(p.id);
-                    setCurrentPage(1);
-                  }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-150 border ${
-                    datePeriod === p.id
-                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200 border-transparent"
-                  }`}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleManualRefresh}
+                  disabled={isRefreshing}
+                  className="h-10 px-4 rounded-xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50 font-bold text-xs gap-2 shadow-sm cursor-pointer"
+                  title="Làm mới danh sách từ máy chủ"
                 >
-                  {p.label}
-                </button>
-              ))}
-              {datePeriod === "custom" && (
-                <Input
-                  type="date"
-                  value={customDate}
-                  onChange={(e) => {
-                    setCustomDate(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="w-36 text-xs h-8 font-bold border-slate-300 rounded-lg"
-                />
-              )}
+                  <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-emerald-600" : "text-slate-600"}`} />
+                  <span>Làm mới danh sách</span>
+                </Button>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <div className="relative w-full sm:w-80">
+            {/* 8 Capsule Filter Tabs */}
+            <div className="flex items-center gap-2.5 overflow-x-auto pb-1 scrollbar-none">
+              {ONLINE_STATUS_TABS.map((tab) => {
+                const isActive = onlineStatusFilter === tab.id;
+                const count = onlineCounts[tab.id] || 0;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setOnlineStatusFilter(tab.id);
+                      setCurrentPage(1);
+                    }}
+                    className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-150 flex items-center gap-2 cursor-pointer ${
+                      isActive
+                        ? "bg-slate-900 text-white shadow-sm border border-slate-900"
+                        : "bg-white text-slate-700 hover:bg-slate-50 border border-slate-200/90 shadow-sm"
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                        isActive ? "bg-slate-700 text-slate-100" : "bg-slate-100 text-slate-600"
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Search Bar & Payment Method Filter Dropdown */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/90 shadow-sm">
+              <div className="relative w-full sm:flex-1">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
-                  placeholder={
-                    viewMode === "online"
-                      ? "Tìm mã HD, mã vận đơn, người nhận, địa chỉ..."
-                      : "Tìm mã HD, khách hàng, tên thu ngân, tên sân..."
-                  }
+                  placeholder="Tìm theo mã đơn, tên khách, số điện thoại, mã GHN..."
                   value={search}
                   onChange={(e) => {
                     setSearch(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="pl-10 text-xs h-9 rounded-xl border-slate-300"
+                  className="pl-10 text-xs h-10 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white transition-colors"
                 />
               </div>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleManualRefresh}
-                disabled={isRefreshing}
-                className="h-9 px-3 rounded-xl border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs gap-1.5 shrink-0 cursor-pointer"
-                title="Đồng bộ lại đơn hàng mới nhất từ Server"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-emerald-600" : "text-slate-600"}`} />
-                <span className="hidden md:inline">Đồng bộ Server</span>
-              </Button>
+              <div className="relative w-full sm:w-52 shrink-0">
+                <select
+                  value={paymentFilter}
+                  onChange={(e) => {
+                    setPaymentFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full h-10 px-3 pr-8 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer"
+                >
+                  <option value="ALL">Tất cả thanh toán</option>
+                  <option value="MoMo">Ví MoMo</option>
+                  <option value="VietQR">VietQR</option>
+                  <option value="COD">Tiền mặt (COD)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Online Orders Table Card */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs min-w-[880px]">
+                  <thead>
+                    <tr className="border-b border-slate-200 font-bold text-slate-500 uppercase bg-[#FAF8F5] tracking-wider text-[11px]">
+                      <th className="py-4 px-4 w-36">MÃ ĐƠN</th>
+                      <th className="py-4 px-4 min-w-[180px]">KHÁCH HÀNG</th>
+                      <th className="py-4 px-4 min-w-[140px]">THANH TOÁN</th>
+                      <th className="py-4 px-4 min-w-[160px]">VẬN CHUYỂN GHN</th>
+                      <th className="py-4 px-4 w-32">TỔNG TIỀN</th>
+                      <th className="py-4 px-4 min-w-[150px]">TRẠNG THÁI</th>
+                      <th className="py-4 px-4 text-right min-w-[180px]">TÁC VỤ</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-normal text-slate-700">
+                    {paginatedOrders.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="py-14 text-center text-slate-400 text-sm">
+                          Không tìm thấy đơn hàng nào phù hợp với bộ lọc.
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedOrders.map((order) => {
+                        const isPending = order.status === "PENDING";
+                        const isShipped = order.status === "SHIPPED" || order.status === "SHIPPING";
+                        const isCompleted = order.status === "COMPLETED";
+                        const isCancelled = order.status === "CANCELLED" || order.status === "REFUNDED";
+
+                        return (
+                          <tr key={order.code} className="hover:bg-slate-50/80 transition-colors">
+                            {/* 1. MÃ ĐƠN */}
+                            <td className="py-4 px-4 align-top">
+                              <div className="font-mono font-bold text-amber-700 text-xs tracking-tight">#{order.code}</div>
+                              <div className="text-[11px] text-slate-400 mt-0.5">{order.createdAt || order.dateStr}</div>
+                            </td>
+
+                            {/* 2. KHÁCH HÀNG */}
+                            <td className="py-4 px-4 align-top">
+                              <div className="font-bold text-slate-900 text-xs">{order.customerName}</div>
+                              <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                                {order.customerPhone || "0988888888"}
+                              </div>
+                            </td>
+
+                            {/* 3. THANH TOÁN */}
+                            <td className="py-4 px-4 align-top">
+                              <div>
+                                {order.paymentMethod === "MoMo" && (
+                                  <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-pink-50 text-pink-700 border border-pink-200">
+                                    Ví MoMo
+                                  </span>
+                                )}
+                                {order.paymentMethod === "VietQR" && (
+                                  <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
+                                    VietQR
+                                  </span>
+                                )}
+                                {order.paymentMethod === "COD" && (
+                                  <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                    Tiền mặt (COD)
+                                  </span>
+                                )}
+                                {order.paymentMethod === "Tiền mặt" && (
+                                  <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                                    Tiền mặt
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Payment Status Dot */}
+                              {isOrderPaid(order) ? (
+                                <div className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1.5 mt-1.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                  <span>Đã thanh toán</span>
+                                </div>
+                              ) : isCancelled ? (
+                                <div className="text-[11px] font-semibold text-rose-500 flex items-center gap-1.5 mt-1.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                  <span>Đã hoàn tiền</span>
+                                </div>
+                              ) : (
+                                <div className="text-[11px] font-semibold text-amber-600 flex items-center gap-1.5 mt-1.5">
+                                  <span className="w-1.5 h-1.5 rounded-full border border-amber-500"></span>
+                                  <span>Chờ thanh toán</span>
+                                </div>
+                              )}
+                            </td>
+
+                            {/* 4. VẬN CHUYỂN GHN */}
+                            <td className="py-4 px-4 align-top">
+                              {order.trackingNumber ? (
+                                <div className="space-y-1">
+                                  <Badge className="bg-blue-600 text-white font-bold inline-flex items-center gap-1 text-[11px] py-0.5 px-2 shadow-xs">
+                                    <Truck className="w-3 h-3" />
+                                    <span>{order.shippingCarrier || "GHN"} Express</span>
+                                  </Badge>
+                                  <div className="text-[11px] text-slate-800 font-mono font-bold">
+                                    {order.trackingNumber}
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="text-slate-500 text-xs font-medium">Tự vận chuyển</span>
+                              )}
+                            </td>
+
+                            {/* 5. TỔNG TIỀN */}
+                            <td className="py-4 px-4 align-top font-bold text-slate-900 text-sm">
+                              {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(order.totalAmount)}
+                            </td>
+
+                            {/* 6. TRẠNG THÁI */}
+                            <td className="py-4 px-4 align-top">
+                              <div className="relative inline-block w-36">
+                                <select
+                                  value={
+                                    order.status === "REFUNDED" || order.status === "CANCELLED"
+                                      ? "CANCELLED"
+                                      : order.status === "SHIPPED"
+                                      ? "SHIPPING"
+                                      : order.status
+                                  }
+                                  onChange={(e) => handleUpdateOrderStatus(order.code, e.target.value as any)}
+                                  className={`w-full py-1.5 px-3 rounded-full text-xs font-bold border transition-colors cursor-pointer appearance-none text-center ${
+                                    isCancelled
+                                      ? "bg-rose-50 text-rose-600 border-rose-200"
+                                      : isCompleted
+                                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                      : isShipped
+                                      ? "bg-blue-50 text-blue-700 border-blue-200"
+                                      : "bg-amber-50 text-amber-700 border-amber-200"
+                                  }`}
+                                >
+                                  <option value="PENDING">Chờ xử lý</option>
+                                  <option value="READY_TO_PICK">Chờ lấy hàng</option>
+                                  <option value="PICKING">Đang lấy hàng</option>
+                                  <option value="SHIPPING">Đang giao</option>
+                                  <option value="COMPLETED">Thành công</option>
+                                  <option value="RETURNED">Hoàn hàng</option>
+                                  <option value="CANCELLED">Hủy đơn hàng</option>
+                                </select>
+                              </div>
+                            </td>
+
+                            {/* 7. TÁC VỤ */}
+                            <td className="py-4 px-4 text-right align-top whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {isPending && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleOneClickGHNDispatch(order)}
+                                    className="h-8 px-2.5 text-xs bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl shadow-sm gap-1.5 cursor-pointer"
+                                    title="1-Click bàn giao xuất kho sang GHN Express"
+                                  >
+                                    <Zap className="w-3.5 h-3.5 text-amber-200 fill-amber-200" />
+                                    <span>1-Click GHN</span>
+                                  </Button>
+                                )}
+
+                                {(isShipped || isCompleted || order.trackingNumber) && (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      onClick={() => handleOpenTrackingModal(order)}
+                                      className="h-8 px-2 text-xs bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-sm gap-1 cursor-pointer"
+                                      title="Xem tiến trình giao hàng thời gian thực"
+                                    >
+                                      <Navigation className="w-3.5 h-3.5" />
+                                      <span className="hidden xl:inline">Hành trình</span>
+                                    </Button>
+
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleOpenPrintShippingLabel(order)}
+                                      className="h-8 px-2 text-xs font-bold rounded-xl border-slate-300 text-slate-700 hover:bg-slate-100 gap-1 cursor-pointer"
+                                      title="In tem dán thùng hàng A6"
+                                    >
+                                      <Printer className="w-3.5 h-3.5" />
+                                      <span className="hidden xl:inline">In Tem</span>
+                                    </Button>
+                                  </>
+                                )}
+
+                                <Button
+                                  size="sm"
+                                  onClick={() => setSelectedOrder(order)}
+                                  className="h-8 px-3 text-xs bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-sm gap-1.5 cursor-pointer"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                  <span>Chi tiết</span>
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
+        )}
 
-          {/* POS SUB TABS */}
-          {viewMode === "pos" && (
+        {/* POS ORDERS TOP FILTER & CONTROLS */}
+        {viewMode === "pos" && (
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 mr-1">
+                  <span>Xem theo lịch:</span>
+                </div>
+                {[
+                  { id: "today", label: "Hôm nay (Ca trực)" },
+                  { id: "yesterday", label: "Hôm qua" },
+                  { id: "7days", label: "Tất cả các ngày" },
+                  { id: "custom", label: "Chọn ngày cụ thể" },
+                ].map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => {
+                      setDatePeriod(p.id);
+                      setCurrentPage(1);
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-150 border ${
+                      datePeriod === p.id
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200 border-transparent"
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+                {datePeriod === "custom" && (
+                  <Input
+                    type="date"
+                    value={customDate}
+                    onChange={(e) => {
+                      setCustomDate(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-36 text-xs h-8 font-bold border-slate-300 rounded-lg"
+                  />
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="relative w-full sm:w-80">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input
+                    placeholder="Tìm mã HD, khách hàng, tên thu ngân, tên sân..."
+                    value={search}
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="pl-10 text-xs h-9 rounded-xl border-slate-300"
+                  />
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleManualRefresh}
+                  disabled={isRefreshing}
+                  className="h-9 px-3 rounded-xl border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs gap-1.5 shrink-0 cursor-pointer"
+                  title="Đồng bộ lại đơn hàng mới nhất từ Server"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-emerald-600" : "text-slate-600"}`} />
+                  <span className="hidden md:inline">Đồng bộ Server</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* POS SUB TABS */}
             <div className="flex items-center gap-2 border-t pt-3 flex-wrap">
               <span className="text-xs font-bold text-slate-500 mr-1">Phân loại hóa đơn:</span>
               {[
@@ -739,35 +1284,11 @@ export default function Orders() {
                 </button>
               ))}
             </div>
-          )}
 
-          {/* STATUS TABS */}
-          <div className="flex items-center gap-2 border-t pt-3 flex-wrap">
-            <span className="text-xs font-bold text-slate-500 mr-1">Trạng thái:</span>
-            {viewMode === "online" ? (
-              [
-                { id: "PENDING", label: "Chờ duyệt & Đóng gói" },
-                { id: "SHIPPED", label: "Đang giao hàng (3PL)" },
-                { id: "COMPLETED", label: "Giao thành công" },
-                { id: "REFUNDED", label: "Đã hoàn tiền / Hủy" },
-              ].map((st) => (
-                <button
-                  key={st.id}
-                  onClick={() => {
-                    setStatusFilter(st.id);
-                    setCurrentPage(1);
-                  }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-150 border ${
-                    statusFilter === st.id
-                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                      : "bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200"
-                  }`}
-                >
-                  {st.label}
-                </button>
-              ))
-            ) : (
-              [
+            {/* STATUS TABS */}
+            <div className="flex items-center gap-2 border-t pt-3 flex-wrap">
+              <span className="text-xs font-bold text-slate-500 mr-1">Trạng thái:</span>
+              {[
                 { id: "PAID", label: "Đã thanh toán" },
                 { id: "REFUNDED", label: "Đã hoàn tiền" },
               ].map((st) => (
@@ -785,202 +1306,9 @@ export default function Orders() {
                 >
                   {st.label}
                 </button>
-              ))
-            )}
+              ))}
+            </div>
           </div>
-        </div>
-
-        {/* ONLINE ORDERS TABLE */}
-        {viewMode === "online" && (
-          <Card className="p-6 border-slate-200/90 bg-white shadow-sm space-y-4 rounded-2xl">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h3 className="font-bold text-slate-900 text-base">Danh Sách Đơn Hàng Online & Vận Chuyển TMĐT</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Tích hợp mô phỏng Giao Hàng Nhanh, GHTK, Viettel Post, GrabExpress</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 font-bold text-xs">
-                  {filteredOrders.length} Đơn {statusFilter}
-                </Badge>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto rounded-2xl border border-slate-200/90">
-              <table className="w-full text-left border-collapse text-xs min-w-[840px]">
-                <thead>
-                  <tr className="border-b border-slate-200 font-semibold text-slate-500 uppercase bg-[#FAF8F5] tracking-wider text-[11px]">
-                    <th className="py-3.5 px-4 w-36">MÃ ĐƠN & NGÀY</th>
-                    <th className="py-3.5 px-4 min-w-[180px]">NGƯỜI NHẬN & SĐT</th>
-                    <th className="py-3.5 px-4 min-w-[220px]">ĐỊA CHỈ NHẬN HÀNG</th>
-                    <th className="py-3.5 px-4 w-36">TỔNG TIỀN & PTTT</th>
-                    <th className="py-3.5 px-4 min-w-[160px]">VẬN CHUYỂN & MÃ VẬN ĐƠN</th>
-                    <th className="py-3.5 px-4 text-right min-w-[200px]">TÁC VỤ VẬN ĐƠN</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 font-normal text-slate-700">
-                  {paginatedOrders.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="py-12 text-center text-slate-400 text-sm">
-                        Không tìm thấy đơn hàng nào phù hợp với bộ lọc.
-                      </td>
-                    </tr>
-                  ) : (
-                    paginatedOrders.map((order) => {
-                      const isPending = order.status === "PENDING";
-                      const isShipped = order.status === "SHIPPED";
-                      const isCompleted = order.status === "COMPLETED";
-
-                      return (
-                        <tr key={order.code} className="hover:bg-slate-50/80 transition-colors">
-                          {/* CODE & DATE */}
-                          <td className="py-4 px-4">
-                            <div className="font-mono font-bold text-slate-900 text-sm">#{order.code}</div>
-                            <div className="text-[11px] text-slate-400 mt-0.5">{order.createdAt}</div>
-                          </td>
-
-                          {/* CUSTOMER */}
-                          <td className="py-4 px-4">
-                            <div className="font-bold text-slate-900">{order.customerName}</div>
-                            <div className="text-xs text-slate-500 font-mono mt-0.5">
-                              SĐT: <span className="font-semibold text-slate-700">{order.customerPhone || "0987654321"}</span>
-                            </div>
-                          </td>
-
-                          {/* ADDRESS */}
-                          <td className="py-4 px-4">
-                            <div className="text-xs text-slate-700 leading-snug line-clamp-2">
-                              {order.shippingAddress || "Số 10 Đường Pickleball, Q. Cầu Giấy, Hà Nội"}
-                            </div>
-                            <div className="text-[11px] text-slate-400 mt-1">
-                              {order.items.length} món: <span className="font-medium text-slate-600">{order.items[0]?.name}</span>
-                              {order.items.length > 1 && ` (+${order.items.length - 1} món khác)`}
-                            </div>
-                          </td>
-
-                          {/* AMOUNT */}
-                          <td className="py-4 px-4">
-                            <div className="font-bold text-emerald-600 text-sm">
-                              {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(order.totalAmount)}
-                            </div>
-                            <div className="text-[11px] text-slate-500 font-semibold uppercase mt-0.5">
-                              {order.paymentMethod === "COD" ? (
-                                <span className="text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                                  Thu COD
-                                </span>
-                              ) : (
-                                order.paymentMethod
-                              )}
-                            </div>
-                          </td>
-
-                          {/* SHIPPING STATUS & TRACKING CODE */}
-                          <td className="py-4 px-4">
-                            {isPending && (
-                              <Badge variant="outline" className="text-amber-700 bg-amber-50 border-amber-300 font-bold">
-                                Chờ đóng gói
-                              </Badge>
-                            )}
-                            {isShipped && (
-                              <div className="space-y-1">
-                                <Badge className="bg-blue-600 text-white font-bold inline-flex items-center gap-1">
-                                  <Truck className="w-3 h-3" />
-                                  <span>{order.shippingCarrier || "GHN"} Express</span>
-                                </Badge>
-                                <div className="text-[11px] text-slate-800 font-mono font-bold">
-                                  {order.trackingNumber || "GHN-VN-882910"}
-                                </div>
-                              </div>
-                            )}
-                            {isCompleted && (
-                              <div className="space-y-1">
-                                <Badge className="bg-emerald-600 text-white font-bold inline-flex items-center gap-1">
-                                  <CheckCircle2 className="w-3 h-3" />
-                                  <span>Giao thành công</span>
-                                </Badge>
-                                <div className="text-[11px] text-slate-500 font-mono font-medium">
-                                  {order.trackingNumber || "GHTK-SGN-44912"}
-                                </div>
-                              </div>
-                            )}
-                            {order.status === "REFUNDED" && (
-                              <Badge variant="destructive" className="font-bold">
-                                Đã hoàn tiền
-                              </Badge>
-                            )}
-                          </td>
-
-                          {/* ACTIONS */}
-                          <td className="py-4 px-4 text-right whitespace-nowrap">
-                            <div className="flex items-center justify-end gap-1.5">
-                              {isPending && (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    onClick={() => handleOneClickGHNDispatch(order)}
-                                    className="h-8 px-2.5 text-xs bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl shadow-sm gap-1.5 cursor-pointer"
-                                    title="1-Click bàn giao xuất kho sang GHN Express"
-                                  >
-                                    <Zap className="w-3.5 h-3.5 text-amber-200 fill-amber-200" />
-                                    <span>1-Click GHN</span>
-                                  </Button>
-
-                                  <Button
-                                    size="sm"
-                                    onClick={() => {
-                                      setCreateShippingModalOrder(order);
-                                      setSelectedCarrier("GHN");
-                                    }}
-                                    className="h-8 px-2.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-sm gap-1.5 cursor-pointer"
-                                  >
-                                    <Truck className="w-3.5 h-3.5" />
-                                    <span>Tùy Chỉnh</span>
-                                  </Button>
-                                </>
-                              )}
-
-                              {(isShipped || isCompleted) && (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    onClick={() => handleOpenTrackingModal(order)}
-                                    className="h-8 px-2.5 text-xs bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-sm gap-1 cursor-pointer"
-                                    title="Xem tiến trình giao hàng thời gian thực"
-                                  >
-                                    <Navigation className="w-3.5 h-3.5" />
-                                    <span>Hành trình</span>
-                                  </Button>
-
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleOpenPrintShippingLabel(order)}
-                                    className="h-8 px-2.5 text-xs font-bold rounded-xl border-slate-300 text-slate-700 hover:bg-slate-100 gap-1 cursor-pointer"
-                                    title="In tem dán thùng hàng A6"
-                                  >
-                                    <Printer className="w-3.5 h-3.5" />
-                                    <span>In Tem A6</span>
-                                  </Button>
-                                </>
-                              )}
-
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setSelectedOrder(order)}
-                                className="h-8 px-2.5 text-xs font-bold rounded-xl border-slate-300 hover:bg-slate-50 cursor-pointer"
-                              >
-                                Chi tiết
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </Card>
         )}
 
         {/* POS ORDERS TABLE */}

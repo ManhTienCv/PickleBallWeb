@@ -38,7 +38,15 @@ import {
   Navigation,
   ExternalLink,
   Receipt,
+  Lock,
+  Ban,
 } from 'lucide-react'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { authHelpers } from '@/stores/useAuthStore'
@@ -56,10 +64,40 @@ export default function OrdersPage() {
     }
   }, [navigate])
 
-  const { data: apiOrders = [], isLoading } = useQuery({
+  const { data: apiOrders = [], isLoading, refetch } = useQuery({
     queryKey: ['orders'],
     queryFn: orderService.getOrders,
   })
+
+  const isOrderLockedForCancel = (status: string) => {
+    const s = (status || '').toLowerCase()
+    return s === 'shipping' || s === 'delivering' || s === 'delivered' || s === 'shipped'
+  }
+
+  const handleCancelOrder = async (orderCode: string) => {
+    const reason = window.prompt('Vui lòng nhập lý do hủy đơn hàng (tùy chọn):', 'Thay đổi kế hoạch mua sắm')
+    if (reason === null) return
+
+    try {
+      toast.info(`Đang gửi yêu cầu hủy đơn hàng #${orderCode}...`)
+      await orderService.cancelOrder(orderCode, reason)
+      toast.success(`Đã hủy thành công đơn hàng #${orderCode}!`)
+      setOrders((prev) =>
+        prev.map((o) => (o.order_code === orderCode ? { ...o, status: 'cancelled' } : o))
+      )
+      try {
+        const savedAdmin = localStorage.getItem('demopick_orders_admin')
+        if (savedAdmin) {
+          const list = JSON.parse(savedAdmin)
+          const updated = list.map((o: any) => (o.code === orderCode ? { ...o, status: 'CANCELLED' } : o))
+          localStorage.setItem('demopick_orders_admin', JSON.stringify(updated))
+        }
+      } catch {}
+      refetch()
+    } catch (err: any) {
+      toast.error(err.message || 'Lỗi khi hủy đơn hàng.')
+    }
+  }
 
   const [orders, setOrders] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState<'pending' | 'shipped' | 'completed' | 'booking'>('pending')
@@ -722,6 +760,42 @@ export default function OrdersPage() {
                           <span>Mua lại</span>
                         </Button>
                       </div>
+                    )}
+
+                    {/* Cancellation Lock & Cancel Button */}
+                    {order.status !== 'completed' && order.status !== 'cancelled' && (
+                      isOrderLockedForCancel(order.status) ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-block">
+                                <Button
+                                  disabled
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8 text-xs font-bold opacity-60 cursor-not-allowed border-rose-200 dark:border-rose-900 bg-rose-50/50 dark:bg-rose-950/20 text-rose-400 gap-1.5 rounded-xl"
+                                >
+                                  <Lock className="w-3.5 h-3.5 text-rose-400" />
+                                  <span>Hủy Đơn</span>
+                                </Button>
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="bg-slate-900 text-white text-xs font-semibold max-w-xs p-2">
+                              🔒 Đơn hàng đã bàn giao cho GHN Express vận chuyển, không thể hủy để bảo vệ quy trình đóng gói.
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleCancelOrder(order.order_code)}
+                          className="h-8 text-xs font-bold text-rose-600 dark:text-rose-400 border-rose-300 dark:border-rose-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 gap-1.5 rounded-xl shadow-sm cursor-pointer"
+                        >
+                          <Ban className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                          <span>Hủy Đơn</span>
+                        </Button>
+                      )
                     )}
 
                     <Button

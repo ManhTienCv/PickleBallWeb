@@ -15,6 +15,7 @@ import Payments from "./pages/Payments";
 import CRM from "./pages/CRM";
 import Inventory from "./pages/Inventory";
 import Reports from "./pages/Reports";
+import AdminChat from "./pages/AdminChat";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -71,6 +72,7 @@ const App = () => (
               <Route path="/crm" element={<CRM />} />
               <Route path="/inventory" element={<Inventory />} />
               <Route path="/reports" element={<Reports />} />
+              <Route path="/chat" element={<AdminChat />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
