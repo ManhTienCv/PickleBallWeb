@@ -327,7 +327,7 @@ export default function CustomerUserManagement() {
             <ShieldCheck className="w-6 h-6 text-amber-700" />
           </div>
           <div>
-            <p className="text-xs text-slate-500 font-medium">Quản Trị Viên (Admin)</p>
+            <p className="text-xs text-slate-500 font-medium">Admin</p>
             <h4 className="text-2xl font-black text-amber-900">{totalAdmin}</h4>
             <p className="text-[11px] text-amber-600 font-semibold">Quyền kiểm soát toàn sàn</p>
           </div>
@@ -414,7 +414,7 @@ export default function CustomerUserManagement() {
                       {user.role === "admin" ? (
                         <Badge className="bg-amber-100 text-amber-800 border-amber-300 font-bold text-[10px] gap-1">
                           <ShieldCheck className="w-3 h-3 text-amber-600" />
-                          Quản Trị Viên (Admin)
+                          Admin
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 font-bold text-[10px]">
@@ -609,8 +609,8 @@ export default function CustomerUserManagement() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="customer">Khách Hàng (Customer)</SelectItem>
-                  <SelectItem value="admin">Quản Trị Viên (Admin)</SelectItem>
+                  <SelectItem value="customer">Khách Hàng</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
                 </SelectContent>
               </Select>
             </div>

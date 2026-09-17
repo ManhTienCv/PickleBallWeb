@@ -526,7 +526,7 @@ export default function UsersPage() {
         `"${u.name}"`,
         u.email,
         u.phone,
-        u.role === "admin" ? "Quản trị viên" : u.role === "staff" ? "Nhân viên lễ tân" : "Khách hàng",
+        u.role === "admin" ? "Admin" : u.role === "staff" ? "Lễ tân" : "Khách hàng",
         u.status === "active" ? "Hoạt động" : "Tạm khóa",
         u.ordersCount,
         u.totalSpent,
@@ -580,7 +580,7 @@ export default function UsersPage() {
   return (
     <AppLayout
       title="Quản Lý Người Dùng & Phân Quyền"
-      subtitle="Quản lý danh sách tài khoản khách hàng, quản trị viên và phân quyền truy cập hệ thống (Lab 08)"
+      subtitle="Quản lý danh sách tài khoản khách hàng, admin, lễ tân và phân quyền truy cập hệ thống (Lab 08)"
       headerRight={
         <div className="flex items-center gap-2.5">
           <Button
@@ -652,7 +652,7 @@ export default function UsersPage() {
           >
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">KHÁCH HÀNG (USER)</p>
+                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">KHÁCH HÀNG</p>
                 <h4 className="text-2xl sm:text-3xl font-black text-blue-900 mt-1 tracking-tight">{totalCustomers}</h4>
                 <p className="text-[11px] text-blue-700 font-semibold mt-1">
                   Thành viên mua sắm & đặt sân
@@ -671,7 +671,7 @@ export default function UsersPage() {
             </div>
           </div>
 
-          {/* Card 3: Quản trị viên */}
+          {/* Card 3: Admin */}
           <div
             onClick={() => {
               setRoleFilter("admin");
@@ -685,7 +685,7 @@ export default function UsersPage() {
           >
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">QUẢN TRỊ VIÊN (ADMIN)</p>
+                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">ADMIN</p>
                 <h4 className="text-2xl sm:text-3xl font-black text-rose-900 mt-1 tracking-tight">{totalAdmins}</h4>
                 <p className="text-[11px] text-rose-700 font-semibold mt-1">
                   Toàn quyền hệ thống & cấu hình
@@ -704,7 +704,7 @@ export default function UsersPage() {
             </div>
           </div>
 
-          {/* Card 4: Nhân viên lễ tân */}
+          {/* Card 4: Lễ tân */}
           <div
             onClick={() => {
               setRoleFilter("staff");
@@ -718,7 +718,7 @@ export default function UsersPage() {
           >
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">NHÂN VIÊN (STAFF)</p>
+                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">LỄ TÂN</p>
                 <h4 className="text-2xl sm:text-3xl font-black text-amber-900 mt-1 tracking-tight">{totalStaff}</h4>
                 <p className="text-[11px] text-amber-700 font-semibold mt-1">
                   Trực quầy POS & Live chat
@@ -778,9 +778,9 @@ export default function UsersPage() {
                 </SelectTrigger>
                 <SelectContent className="rounded-xl shadow-lg border-slate-200">
                   <SelectItem value="all">Tất cả vai trò</SelectItem>
-                  <SelectItem value="admin">Quản trị viên (Admin)</SelectItem>
-                  <SelectItem value="staff">Nhân viên (Staff)</SelectItem>
-                  <SelectItem value="customer">Khách hàng (User)</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="staff">Lễ tân</SelectItem>
+                  <SelectItem value="customer">Khách hàng</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -921,21 +921,21 @@ export default function UsersPage() {
                         </td>
 
                         {/* VAI TRÒ */}
-                        <td className="py-3.5 px-4">
+                        <td className="py-3.5 px-4 whitespace-nowrap">
                           {user.role === "admin" ? (
                             <Badge className="bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200 font-bold text-[11px] gap-1.5 px-2.5 py-1 rounded-lg">
-                              <ShieldCheck className="w-3.5 h-3.5 text-rose-600" />
-                              <span>Quản trị viên (Admin)</span>
+                              <ShieldCheck className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                              <span>Admin</span>
                             </Badge>
                           ) : user.role === "staff" ? (
                             <Badge className="bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200 font-bold text-[11px] gap-1.5 px-2.5 py-1 rounded-lg">
-                              <UserCheck className="w-3.5 h-3.5 text-amber-600" />
-                              <span>Lễ tân (Staff)</span>
+                              <UserCheck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                              <span>Lễ tân</span>
                             </Badge>
                           ) : (
                             <Badge className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 font-bold text-[11px] gap-1.5 px-2.5 py-1 rounded-lg">
-                              <Users className="w-3.5 h-3.5 text-blue-600" />
-                              <span>Khách hàng (User)</span>
+                              <Users className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                              <span>Khách hàng</span>
                             </Badge>
                           )}
                         </td>
@@ -1184,7 +1184,7 @@ export default function UsersPage() {
                       <div>
                         <p className="font-bold text-blue-950 text-xs flex items-center gap-1.5">
                           <Users className="w-3.5 h-3.5 text-blue-600" />
-                          <span>Khách Hàng (User)</span>
+                          <span>Khách hàng</span>
                         </p>
                         <p className="text-[11px] text-slate-500 mt-0.5">Đặt sân online, mua thiết bị pickleball, theo dõi đơn hàng</p>
                       </div>
@@ -1193,7 +1193,7 @@ export default function UsersPage() {
                       <div>
                         <p className="font-bold text-amber-950 text-xs flex items-center gap-1.5">
                           <UserCheck className="w-3.5 h-3.5 text-amber-600" />
-                          <span>Nhân Viên Lễ Tân (Staff)</span>
+                          <span>Lễ tân</span>
                         </p>
                         <p className="text-[11px] text-slate-500 mt-0.5">Trực quầy POS, check-in sân bóng, hỗ trợ Live chat</p>
                       </div>
@@ -1202,7 +1202,7 @@ export default function UsersPage() {
                       <div>
                         <p className="font-bold text-rose-950 text-xs flex items-center gap-1.5">
                           <ShieldCheck className="w-3.5 h-3.5 text-rose-600" />
-                          <span>Quản Trị Viên (Admin)</span>
+                          <span>Admin</span>
                         </p>
                         <p className="text-[11px] text-slate-500 mt-0.5">Toàn quyền hệ thống, xem báo cáo, kho hàng và phân quyền</p>
                       </div>
@@ -1300,15 +1300,15 @@ export default function UsersPage() {
                     <div className="flex items-center gap-2 mt-2">
                       {selectedUser.role === "admin" ? (
                         <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">
-                          Quản Trị Viên (Admin)
+                          Admin
                         </span>
                       ) : selectedUser.role === "staff" ? (
                         <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                          Nhân Viên Lễ Tân
+                          Lễ tân
                         </span>
                       ) : (
                         <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/40">
-                          Khách Hàng Thành Viên
+                          Khách hàng
                         </span>
                       )}
 
