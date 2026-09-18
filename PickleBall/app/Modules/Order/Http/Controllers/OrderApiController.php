@@ -3,6 +3,7 @@
 namespace App\Modules\Order\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Mail\OrderConfirmationMail;
 use App\Modules\Order\Services\MomoPaymentService;
 use App\Modules\Order\Services\GhnShippingService;
 use Illuminate\Http\JsonResponse;
@@ -10,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class OrderApiController extends Controller
 {
@@ -25,6 +27,7 @@ class OrderApiController extends Controller
     public function create(Request $request): JsonResponse
     {
         $validated = $request->validate([
+            'customerEmail' => 'nullable|email',
             'shippingName' => 'required|string',
             'shippingPhone' => 'required|string',
             'shippingAddress' => 'required|string',
@@ -40,6 +43,9 @@ class OrderApiController extends Controller
             'items.*.price' => 'required|numeric|min:0',
         ]);
 
+        $customerEmail = !empty($validated['customerEmail'])
+            ? trim($validated['customerEmail'])
+            : (auth('sanctum')->user()->email ?? null);
         $shippingName = strip_tags(trim($validated['shippingName']));
         $shippingPhone = strip_tags(trim($validated['shippingPhone']));
         $shippingAddress = strip_tags(trim($validated['shippingAddress']));
@@ -84,6 +90,7 @@ class OrderApiController extends Controller
             'order_code' => $orderCode,
             'customer_name' => $shippingName,
             'customer_phone' => $shippingPhone,
+            'customer_email' => $customerEmail,
             'shipping_address' => $shippingAddress,
             'shipping_carrier' => 'GHN Express',
             'shipping_fee' => $shippingFee,
@@ -125,6 +132,7 @@ class OrderApiController extends Controller
                     'shippingName' => $shippingName,
                     'shippingPhone' => $shippingPhone,
                     'shippingAddress' => $shippingAddress,
+                    'customerEmail' => $customerEmail,
                     'paymentMethod' => $validated['paymentMethod'],
                     'voucherCode' => $voucherCode,
                     'discount' => $discount,
@@ -160,6 +168,16 @@ class OrderApiController extends Controller
                 }
             } catch (\Throwable $e) {
                 Log::info('MoMo payment transaction record note: ' . $e->getMessage());
+            }
+        }
+
+        // Gửi email xác nhận đơn hàng tự động (Bất đồng bộ & fail-safe cho đơn COD)
+        if (!empty($customerEmail) && $validated['paymentMethod'] !== 'momo') {
+            try {
+                Mail::to($customerEmail)->send(new OrderConfirmationMail($orderRecord));
+                Log::info("Đã gửi email xác nhận hóa đơn đơn hàng #{$orderCode} tới {$customerEmail}");
+            } catch (\Throwable $mailEx) {
+                Log::warning("Gửi email xác nhận đơn hàng #{$orderCode} thất bại (fail-safe): " . $mailEx->getMessage());
             }
         }
 
