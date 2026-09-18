@@ -484,7 +484,7 @@ export default function Orders() {
     if (order.paymentMethod === "VietQR" && order.status !== "REFUNDED" && order.status !== "CANCELLED") return true;
     if (
       order.paymentMethod === "MoMo" &&
-      (order.status === "SHIPPED" || order.status === "SHIPPING" || order.status === "COMPLETED")
+      (order.status === "SHIPPED" || order.status === "SHIPPING")
     )
       return true;
     return false;
