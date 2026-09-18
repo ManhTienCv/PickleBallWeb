@@ -126,21 +126,78 @@ export default function AdminChat() {
     }
   };
 
-  // Auto-polling mỗi 3 giây
+  // 1. Nạp danh sách hội thoại và tin nhắn ban đầu (1 lần duy nhất)
   useEffect(() => {
     fetchConversations();
+  }, []);
+
+  useEffect(() => {
     if (selectedSessionId) {
       fetchMessages(selectedSessionId);
     }
+  }, [selectedSessionId]);
 
-    const interval = setInterval(() => {
-      fetchConversations();
-      if (selectedSessionId) {
-        fetchMessages(selectedSessionId);
+  // 2. Mở Server-Sent Events (SSE) stream nhận cập nhật realtime từ Server (Zero Polling)
+  useEffect(() => {
+    let eventSource: EventSource | null = null;
+
+    try {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || "/api/v1";
+      const adminToken = localStorage.getItem("demopick_admin_token") || "";
+      const queryParams = new URLSearchParams();
+      if (adminToken) queryParams.set("token", adminToken);
+      if (selectedSessionId) queryParams.set("session_id", selectedSessionId);
+
+      const streamUrl = `${apiBase}/chat/stream?${queryParams.toString()}`;
+      eventSource = new EventSource(streamUrl);
+
+      // Nhận tin nhắn mới cho phiên chat đang chọn
+      eventSource.addEventListener("message", (e) => {
+        try {
+          const newMsg: ChatMessage = JSON.parse(e.data);
+          if (newMsg && newMsg.id && newMsg.session_id === selectedSessionId) {
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === newMsg.id)) return prev;
+              if (
+                newMsg.sender_type === "admin" &&
+                prev.some((m) => m.sender_type === "admin" && m.message === newMsg.message)
+              ) {
+                return prev.map((m) =>
+                  m.sender_type === "admin" && m.message === newMsg.message ? newMsg : m
+                );
+              }
+              return [...prev, newMsg];
+            });
+          }
+        } catch (err) {
+          console.warn("Lỗi parse SSE message:", err);
+        }
+      });
+
+      // Nhận cập nhật danh sách cuộc hội thoại khi có khách nhắn
+      eventSource.addEventListener("conversations_updated", (e) => {
+        try {
+          const convList: ChatConversation[] = JSON.parse(e.data);
+          if (Array.isArray(convList) && convList.length > 0) {
+            setConversations(convList);
+          }
+        } catch (err) {
+          console.warn("Lỗi parse SSE conversations:", err);
+        }
+      });
+
+      eventSource.onerror = () => {
+        // Trình duyệt tự động reconnect
+      };
+    } catch (err) {
+      console.warn("Khởi tạo Admin EventSource thất bại:", err);
+    }
+
+    return () => {
+      if (eventSource) {
+        eventSource.close();
       }
-    }, 3000);
-
-    return () => clearInterval(interval);
+    };
   }, [selectedSessionId]);
 
   useEffect(() => {

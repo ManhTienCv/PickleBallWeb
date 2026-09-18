@@ -62,6 +62,7 @@ Route::prefix('v1')->group(function () {
 
     // ── Live Chat (Khách hàng & Khách vãng lai) ───────────────
     Route::get('/user/chat/messages', [ChatController::class, 'getCustomerMessages']);
+    Route::get('/user/chat/stream', [ChatController::class, 'streamCustomerMessages']);
     Route::post('/user/chat/send', [ChatController::class, 'sendCustomerMessage']);
 
     // ── Orders & Checkout API ─────────────────────────────────
@@ -149,6 +150,7 @@ Route::prefix('v1')->group(function () {
         // Live Chat Hỗ Trợ 2 Chiều
         Route::get('/chat/conversations', [ChatController::class, 'getAdminConversations']);
         Route::get('/chat/messages/{sessionId}', [ChatController::class, 'getAdminConversationMessages']);
+        Route::get('/chat/stream', [ChatController::class, 'streamAdminUpdates']);
         Route::post('/chat/send', [ChatController::class, 'sendAdminReply']);
 
         // Product Reviews Moderation

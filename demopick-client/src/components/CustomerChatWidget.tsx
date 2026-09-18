@@ -32,11 +32,14 @@ export default function CustomerChatWidget() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Nạp lịch sử tin nhắn và Auto-polling 3 giây/lần khi khung chat đang mở
+  // Nạp lịch sử tin nhắn ban đầu (1 lần duy nhất) và duy trì stream SSE thời gian thực
   useEffect(() => {
-    let interval: any = null;
+    if (!isOpen || !sessionId) return;
 
-    const fetchMessages = async () => {
+    let eventSource: EventSource | null = null;
+
+    // 1. Nạp tin nhắn ban đầu 1 lần duy nhất
+    const fetchInitialMessages = async () => {
       try {
         const res = await api.get(`/user/chat/messages?session_id=${sessionId}`);
         if (res.data?.success && Array.isArray(res.data.data)) {
@@ -44,28 +47,65 @@ export default function CustomerChatWidget() {
         }
       } catch {
         // Fallback tin nhắn chào mặc định nếu chưa có kết nối
-        if (messages.length === 0) {
-          setMessages([
-            {
-              id: 1,
-              session_id: sessionId,
-              sender_type: "admin",
-              sender_name: "DemoPick Assistant",
-              message: "Xin chào! DemoPick Club có thể hỗ trợ gì cho bạn về đặt sân hoặc mua phụ kiện Pickleball?",
-              created_at: new Date().toISOString(),
-            },
-          ]);
-        }
+        setMessages((prev) => {
+          if (prev.length === 0) {
+            return [
+              {
+                id: 1,
+                session_id: sessionId,
+                sender_type: "admin",
+                sender_name: "DemoPick Assistant",
+                message: "Xin chào! DemoPick Club có thể hỗ trợ gì cho bạn về đặt sân hoặc mua phụ kiện Pickleball?",
+                created_at: new Date().toISOString(),
+              },
+            ];
+          }
+          return prev;
+        });
       }
     };
 
-    if (isOpen) {
-      fetchMessages();
-      interval = setInterval(fetchMessages, 3000); // Polling mỗi 3 giây
+    fetchInitialMessages();
+
+    // 2. Mở kết nối Server-Sent Events (SSE) thời gian thực chuẩn Senior (Zero Polling)
+    try {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || "/api/v1";
+      const streamUrl = `${apiBase}/user/chat/stream?session_id=${encodeURIComponent(sessionId)}`;
+      eventSource = new EventSource(streamUrl);
+
+      eventSource.addEventListener("message", (e) => {
+        try {
+          const newMsg: ChatMessage = JSON.parse(e.data);
+          if (newMsg && newMsg.id) {
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === newMsg.id)) return prev;
+              if (
+                newMsg.sender_type === "user" &&
+                prev.some((m) => m.sender_type === "user" && m.message === newMsg.message)
+              ) {
+                return prev.map((m) =>
+                  m.sender_type === "user" && m.message === newMsg.message ? newMsg : m
+                );
+              }
+              return [...prev, newMsg];
+            });
+          }
+        } catch (err) {
+          console.warn("Lỗi parse SSE message:", err);
+        }
+      });
+
+      eventSource.onerror = () => {
+        // Trình duyệt tự động reconnect theo chuẩn SSE khi rớt mạng
+      };
+    } catch (err) {
+      console.warn("Khởi tạo EventSource SSE thất bại:", err);
     }
 
     return () => {
-      if (interval) clearInterval(interval);
+      if (eventSource) {
+        eventSource.close();
+      }
     };
   }, [isOpen, sessionId]);
 

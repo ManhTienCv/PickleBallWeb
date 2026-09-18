@@ -353,4 +353,156 @@ class ChatController extends Controller
             'message' => 'Đã gửi phản hồi hỗ trợ.',
         ], 201);
     }
+
+    /**
+     * Khách hàng: Stream tin nhắn mới thời gian thực bằng Server-Sent Events (SSE)
+     * Thay thế hoàn toàn cơ chế Polling 3 giây
+     */
+    public function streamCustomerMessages(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $sessionId = $request->query('session_id');
+        $afterId = (int) $request->query('after_id', 0);
+
+        if (!$sessionId) {
+            return response()->stream(function () {
+                echo "event: error\ndata: " . json_encode(['message' => 'Missing session_id']) . "\n\n";
+            }, 400, ['Content-Type' => 'text/event-stream']);
+        }
+
+        return response()->stream(function () use ($sessionId, $afterId) {
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+
+            $currentAfterId = $afterId;
+            $startTime = time();
+            $maxExecutionTime = 40; // Kết nối 40s rồi để EventSource auto-reconnect
+
+            echo "event: connected\n";
+            echo "data: " . json_encode(['status' => 'online', 'session_id' => $sessionId]) . "\n\n";
+            flush();
+
+            while ((time() - $startTime) < $maxExecutionTime) {
+                if (connection_aborted()) {
+                    break;
+                }
+
+                $newMessages = [];
+
+                try {
+                    $newMessages = Message::where('session_id', $sessionId)
+                        ->where('id', '>', $currentAfterId)
+                        ->orderBy('id', 'asc')
+                        ->get()
+                        ->toArray();
+                } catch (\Throwable $e) {
+                    $cached = Cache::get("demopick_chat_session_{$sessionId}", []);
+                    $newMessages = array_values(array_filter($cached, fn($m) => ($m['id'] ?? 0) > $currentAfterId));
+                }
+
+                if (!empty($newMessages)) {
+                    foreach ($newMessages as $msg) {
+                        $currentAfterId = max($currentAfterId, (int) ($msg['id'] ?? 0));
+                        echo "event: message\n";
+                        echo "data: " . json_encode($msg) . "\n\n";
+                    }
+                    flush();
+                }
+
+                echo ": ping\n\n";
+                flush();
+
+                usleep(800000); // 0.8s idle nội bộ, 0 request HTTP mới
+            }
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache, no-transform',
+            'Connection' => 'keep-alive',
+            'X-Accel-Buffering' => 'no',
+        ]);
+    }
+
+    /**
+     * Admin: Stream cập nhật danh sách hội thoại và tin nhắn mới (SSE)
+     * Thay thế hoàn toàn cơ chế Polling 3 giây của AdminChat
+     */
+    public function streamAdminUpdates(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $token = $request->bearerToken() ?: $request->query('token');
+        if ($token) {
+            $pat = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+            if ($pat) {
+                auth()->setUser($pat->tokenable);
+            }
+        }
+
+        $selectedSessionId = $request->query('session_id');
+        $afterId = (int) $request->query('after_id', 0);
+
+        return response()->stream(function () use ($selectedSessionId, $afterId) {
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+
+            $currentAfterId = $afterId;
+            $startTime = time();
+            $maxExecutionTime = 40;
+            $lastConversationHash = '';
+
+            echo "event: connected\n";
+            echo "data: " . json_encode(['status' => 'admin_connected']) . "\n\n";
+            flush();
+
+            while ((time() - $startTime) < $maxExecutionTime) {
+                if (connection_aborted()) {
+                    break;
+                }
+
+                // 1. Kiểm tra tin nhắn mới cho phiên chat đang chọn
+                if ($selectedSessionId) {
+                    $newMessages = [];
+                    try {
+                        $newMessages = Message::where('session_id', $selectedSessionId)
+                            ->where('id', '>', $currentAfterId)
+                            ->orderBy('id', 'asc')
+                            ->get()
+                            ->toArray();
+                    } catch (\Throwable $e) {
+                        $cached = Cache::get("demopick_chat_session_{$selectedSessionId}", []);
+                        $newMessages = array_values(array_filter($cached, fn($m) => ($m['id'] ?? 0) > $currentAfterId));
+                    }
+
+                    if (!empty($newMessages)) {
+                        foreach ($newMessages as $msg) {
+                            $currentAfterId = max($currentAfterId, (int) ($msg['id'] ?? 0));
+                            echo "event: message\n";
+                            echo "data: " . json_encode($msg) . "\n\n";
+                        }
+                        flush();
+                    }
+                }
+
+                // 2. Kiểm tra thay đổi trong danh sách hội thoại
+                $cachedConv = Cache::get('demopick_chat_conversations', []);
+                $convHash = md5(json_encode($cachedConv));
+                if ($convHash !== $lastConversationHash) {
+                    $lastConversationHash = $convHash;
+                    echo "event: conversations_updated\n";
+                    echo "data: " . json_encode(array_values($cachedConv)) . "\n\n";
+                    flush();
+                }
+
+                echo ": ping\n\n";
+                flush();
+
+                usleep(800000);
+            }
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache, no-transform',
+            'Connection' => 'keep-alive',
+            'X-Accel-Buffering' => 'no',
+        ]);
+    }
 }
+
