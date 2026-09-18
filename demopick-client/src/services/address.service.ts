@@ -17,56 +17,28 @@ export interface UserAddress {
 
 const STORAGE_KEY = 'demopick_user_addresses';
 
-const INITIAL_ADDRESSES: UserAddress[] = [
-  {
-    id: 'addr-01',
-    label: 'home',
-    recipientName: 'Nguyễn Văn An',
-    phone: '0987654321',
-    streetAddress: 'Số 10 Đường Pickleball, Phường Dịch Vọng',
-    district: 'Quận Cầu Giấy',
-    city: 'Hà Nội',
-    isDefault: true,
-    lat: 21.0333,
-    lng: 105.7917,
-  },
-  {
-    id: 'addr-02',
-    label: 'office',
-    recipientName: 'Nguyễn Văn An (Công ty)',
-    phone: '0987654321',
-    streetAddress: 'Tầng 18, Toà nhà Keangnam Landmark 72, Phạm Hùng',
-    district: 'Quận Nam Từ Liêm',
-    city: 'Hà Nội',
-    isDefault: false,
-    lat: 21.0167,
-    lng: 105.7833,
-  },
-  {
-    id: 'addr-03',
-    label: 'court',
-    recipientName: 'Nguyễn Văn An (Sân Quận 7)',
-    phone: '0987654321',
-    streetAddress: 'Cụm Sân DemoPick Pickleball, 123 Đường Pickleball, Tân Phong',
-    district: 'Quận 7',
-    city: 'TP. Hồ Chí Minh',
-    isDefault: false,
-    lat: 10.7324,
-    lng: 106.7029,
-  },
-];
+const INITIAL_ADDRESSES: UserAddress[] = [];
 
 class AddressService {
   public getSavedAddresses(): UserAddress[] {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_ADDRESSES));
-        return INITIAL_ADDRESSES;
+        return [];
       }
-      return JSON.parse(raw);
+      const list = JSON.parse(raw);
+      if (Array.isArray(list)) {
+        return list.filter(
+          (a: any) =>
+            a &&
+            a.recipientName &&
+            a.recipientName !== 'Nguyễn Văn An' &&
+            !a.id?.startsWith('addr-0')
+        );
+      }
+      return [];
     } catch {
-      return INITIAL_ADDRESSES;
+      return [];
     }
   }
 

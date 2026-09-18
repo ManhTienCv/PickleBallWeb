@@ -192,6 +192,28 @@ export default function OrdersPage() {
     order.items?.some((i: any) => i.item_type === 'booking') ||
     Boolean(order.court_name && order.court_name.length > 0)
 
+  const isPaidStatus = (order: any) => {
+    const s = (order?.status || '').toLowerCase().trim()
+    const ps = (order?.payment_status || order?.paymentStatus || '').toLowerCase().trim()
+    return (
+      ps === 'paid' ||
+      ps === 'completed' ||
+      ps === 'đã thanh toán' ||
+      ps === 'đã_thanh_toán' ||
+      s === 'paid' ||
+      s === 'confirmed' ||
+      s === 'đã_thanh_toán' ||
+      s === 'đã thanh toán' ||
+      s === 'completed' ||
+      s === 'hoàn tất' ||
+      s === 'hoàn_tất' ||
+      s === 'shipped' ||
+      s === 'đang giao' ||
+      s === 'delivered' ||
+      s === 'đã giao'
+    )
+  }
+
   // Initial orders list containing simulated completed order & separated booking tickets
   const loadOrdersData = () => {
     const list: any[] = []
@@ -229,8 +251,8 @@ export default function OrdersPage() {
               shipping_address: o.shippingAddress || o.shipping_address || 'Số 10 Đường Pickleball, Q. Cầu Giấy, Hà Nội',
               shipping_carrier: o.shippingCarrier || o.shipping_carrier || 'GHN Express',
               tracking_number: o.trackingNumber || o.tracking_number,
-              customer_name: o.customerName || o.customer_name || 'Khách Hàng',
-              customer_phone: o.customerPhone || o.customer_phone || '',
+              customer_name: o.customerName || o.customer_name || 'Nguyễn Mạnh Tiến',
+              customer_phone: o.customerPhone || o.customer_phone || '0867015044',
               items: (o.items || []).map((it: any, idx: number) => ({
                 id: it.id || idx + 1,
                 item_type: isBooking ? 'booking' : 'product',
@@ -300,8 +322,8 @@ export default function OrdersPage() {
           total_amount: 5580000,
           shipping_address: 'Số 10 Đường Pickleball, Q. Cầu Giấy, Hà Nội',
           shipping_carrier: 'GHN Express',
-          customer_name: 'Nguyễn Văn An',
-          customer_phone: '0987654321',
+          customer_name: 'Nguyễn Mạnh Tiến',
+          customer_phone: '0867015044',
           items: [
             { id: 1, item_type: 'product', item_name: 'Vợt Pickleball JOOLA Perseus 3S 16mm Carbon', quantity: 1, subtotal: 5490000 },
             { id: 2, item_type: 'product', item_name: 'Bóng Pickleball Franklin X-40 (Hộp 4 quả)', quantity: 1, subtotal: 90000 },
@@ -373,8 +395,8 @@ export default function OrdersPage() {
   const openEditModal = (order: any) => {
     setEditingOrder(order)
     setEditAddress(order.shipping_address || 'Số 10 Đường Pickleball, Q. Cầu Giấy, Hà Nội')
-    setEditName(order.customer_name || 'Nguyễn Văn An')
-    setEditPhone(order.customer_phone || '0987654321')
+    setEditName(order.customer_name || 'Nguyễn Mạnh Tiến')
+    setEditPhone(order.customer_phone || '0867015044')
     setEditNote(order.note || '')
   }
 
@@ -386,9 +408,9 @@ export default function OrdersPage() {
       info = shippingService.createShippingOrder({
         orderCode: order.order_code,
         carrier: order.shipping_carrier || 'GHN',
-        receiverName: order.customer_name || 'Nguyễn Văn An',
+        receiverName: order.customer_name || 'Nguyễn Mạnh Tiến',
         receiverAddress: order.shipping_address || 'Số 25 Phố Lý Thường Kiệt, Q. Hoàn Kiếm, Hà Nội',
-        receiverPhone: order.customer_phone || '0987654321',
+        receiverPhone: order.customer_phone || '0867015044',
         itemsSummary: itemsText,
       })
       if (order.status === 'completed') {
@@ -628,6 +650,7 @@ export default function OrdersPage() {
             const isPending = isPendingStatus(order.status)
             const isShipped = isShippedStatus(order.status)
             const isCompleted = isCompletedStatus(order.status) && !isBooking
+            const isOrderPaid = isPaidStatus(order)
 
             return (
               <Card key={order.id} className="p-6 border-slate-200 dark:border-border space-y-4 shadow-sm hover:shadow-md transition-all rounded-3xl bg-white dark:bg-card">
@@ -640,7 +663,13 @@ export default function OrdersPage() {
                   <div className="flex items-center gap-3">
                     {getStatusBadge(order.status, isBooking, order.shipping_carrier)}
                     <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                      {new Date(order.created_at).toLocaleDateString('vi-VN')}
+                      {new Date(order.created_at).toLocaleString('vi-VN', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
                     </span>
                   </div>
                 </div>
@@ -736,7 +765,7 @@ export default function OrdersPage() {
                       <div>
                         <span className="text-slate-500 dark:text-slate-400">Người nhận: </span>
                         <span className="font-bold text-slate-900 dark:text-slate-100">
-                          {order.customer_name || 'Nguyễn Văn An'} ({order.customer_phone || '0987654321'})
+                          {order.customer_name || 'Nguyễn Mạnh Tiến'} ({order.customer_phone || '0867015044'})
                         </span>
                       </div>
                       <div>
@@ -796,36 +825,42 @@ export default function OrdersPage() {
                       </strong>
                     </span>
 
-                    {isPending && (order.payment_method === 'momo' || order.payment_method === 'bank_transfer') && (
-                      <Button
-                        size="sm"
-                        onClick={async () => {
-                          try {
-                            toast.info('Đang kết nối sang Cổng thanh toán bảo mật...')
-                            const res = await orderService.createOrder({
-                              shippingName: order.customer_name || 'Khách hàng',
-                              shippingPhone: order.customer_phone || '0987654321',
-                              shippingAddress: order.shipping_address || 'Hà Nội',
-                              paymentMethod: 'momo',
-                              items: order.items?.map((it: any) => ({
-                                id: it.id,
-                                name: it.item_name,
-                                quantity: it.quantity,
-                                price: it.subtotal / (it.quantity || 1),
-                              })) || [{ id: 1, name: 'Đơn hàng Pickleball', quantity: 1, price: order.total_amount }],
-                            })
-                            if (res.payUrl) {
-                              window.location.href = res.payUrl
+                    {isOrderPaid ? (
+                      <Badge className="bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 text-[11px] font-bold py-0.5 px-2 rounded-lg ml-1">
+                        ✓ Đã thanh toán trực tuyến
+                      </Badge>
+                    ) : (
+                      isPending && (order.payment_method === 'momo' || order.payment_method === 'bank_transfer') && (
+                        <Button
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              toast.info('Đang kết nối sang Cổng thanh toán bảo mật...')
+                              const res = await orderService.createOrder({
+                                shippingName: order.customer_name || 'Nguyễn Mạnh Tiến',
+                                shippingPhone: order.customer_phone || '0867015044',
+                                shippingAddress: order.shipping_address || 'Hà Nội',
+                                paymentMethod: 'momo',
+                                items: order.items?.map((it: any) => ({
+                                  id: it.id,
+                                  name: it.item_name,
+                                  quantity: it.quantity,
+                                  price: it.subtotal / (it.quantity || 1),
+                                })) || [{ id: 1, name: 'Đơn hàng Pickleball', quantity: 1, price: order.total_amount }],
+                              })
+                              if (res.payUrl) {
+                                window.location.href = res.payUrl
+                              }
+                            } catch {
+                              toast.error('Không thể mở cổng thanh toán. Vui lòng thử lại sau.')
                             }
-                          } catch {
-                            toast.error('Không thể mở cổng thanh toán. Vui lòng thử lại sau.')
-                          }
-                        }}
-                        className="h-7 px-2.5 text-xs bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-xl gap-1 shadow-sm cursor-pointer ml-1"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                        <span>Thanh toán ngay</span>
-                      </Button>
+                          }}
+                          className="h-7 px-2.5 text-xs bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-xl gap-1 shadow-sm cursor-pointer ml-1"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          <span>Thanh toán ngay</span>
+                        </Button>
+                      )
                     )}
                   </div>
 

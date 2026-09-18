@@ -361,8 +361,8 @@ export default function Profile() {
   const handleOpenAddAddress = () => {
     setEditingAddressId(null)
     setAddrLabel('home')
-    setAddrRecipient(name || 'Nguyễn Văn An')
-    setAddrPhone(phone || '0987654321')
+    setAddrRecipient(name || '')
+    setAddrPhone(phone || '')
     setAddrStreet('')
     setAddrDistrict('')
     setAddrCity('Hà Nội')
@@ -507,7 +507,7 @@ export default function Profile() {
                     </span>
                     <span className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-200/50 dark:border-border/50">
                       <Phone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span>{user?.phone || '0987654321'}</span>
+                      <span>{user?.phone || '0867015044'}</span>
                     </span>
                     <span className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-200/50 dark:border-border/50 text-slate-500 hidden md:flex">
                       <Calendar className="w-3.5 h-3.5" />

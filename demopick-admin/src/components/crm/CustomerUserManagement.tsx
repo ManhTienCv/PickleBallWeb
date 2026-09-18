@@ -195,7 +195,7 @@ export default function CustomerUserManagement() {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length >= initialSystemUsers.length) return parsed;
       }
-    } catch {}
+    } catch { }
     return initialSystemUsers;
   });
 
@@ -572,7 +572,7 @@ export default function CustomerUserManagement() {
             <div>
               <Label className="text-xs font-semibold">Họ và tên</Label>
               <Input
-                placeholder="Ví dụ: Nguyễn Văn An"
+                placeholder="Ví dụ: Nguyễn Văn A"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
                 className="mt-1 text-xs rounded-xl"

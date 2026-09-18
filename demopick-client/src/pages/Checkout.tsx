@@ -51,7 +51,7 @@ export default function CheckoutPage() {
   const navigate = useNavigate()
   const holdId = location.state?.holdId
 
-  const { formattedTime, startTimer, resetTimer } = useCheckoutTimer()
+  const { formattedTime, startTimer, resetTimer, extendTimer, isExpired, secondsLeft } = useCheckoutTimer()
 
   useEffect(() => {
     if (!authHelpers.isAuthenticated()) {
@@ -76,8 +76,8 @@ export default function CheckoutPage() {
     setTimeout(() => setCopiedField(null), 2000)
   }
 
-  const [customerName, setCustomerName] = useState(currentUser?.name || 'Nguyễn Văn An')
-  const [customerPhone, setCustomerPhone] = useState(currentUser?.phone || '0987654321')
+  const [customerName, setCustomerName] = useState(currentUser?.name || '')
+  const [customerPhone, setCustomerPhone] = useState(currentUser?.phone || '')
 
   // GHN 3-tier Administrative Data
   const [provinces, setProvinces] = useState<GHNProvince[]>([])
@@ -90,7 +90,7 @@ export default function CheckoutPage() {
   const [selectedWardCode, setSelectedWardCode] = useState('1A0307')
   const [selectedWardName, setSelectedWardName] = useState('Phường Dịch Vọng')
 
-  const [streetAddress, setStreetAddress] = useState('Số 10 Đường Pickleball')
+  const [streetAddress, setStreetAddress] = useState('')
   const [note, setNote] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -120,15 +120,14 @@ export default function CheckoutPage() {
   // 1. Initial load: Start countdown timer & fetch provinces
   useEffect(() => {
     startTimer()
+    try {
+      const raw = localStorage.getItem('demopick_user_addresses')
+      if (raw && (raw.includes('Nguyễn Văn An') || raw.includes('addr-01') || raw.includes('0987654321'))) {
+        localStorage.removeItem('demopick_user_addresses')
+      }
+    } catch {}
     const addrs = addressService.getSavedAddresses()
     setSavedAddresses(addrs)
-    const defaultAddr = addrs.find((a) => a.isDefault) || addrs[0]
-    if (defaultAddr) {
-      setSelectedAddressId(defaultAddr.id)
-      setCustomerName(defaultAddr.recipientName)
-      setCustomerPhone(defaultAddr.phone)
-      setStreetAddress(defaultAddr.streetAddress)
-    }
     shippingService.getGHNProvinces().then((provs) => {
       setProvinces(provs)
       if (provs && provs.length > 0) {
@@ -347,6 +346,7 @@ export default function CheckoutPage() {
 
       // 4. ĐIỀU HƯỚNG BẢO MẬT: Hosted Payment Gateway
       if (paymentMethod === 'momo' && result.payUrl) {
+        resetTimer()
         toast.success('Đang chuyển hướng sang Cổng thanh toán chính thức...')
         setTimeout(() => {
           window.location.href = result.payUrl!
@@ -355,6 +355,7 @@ export default function CheckoutPage() {
       }
 
       // Đơn hàng COD hoàn tất
+      resetTimer()
       toast.success('Đặt hàng thành công!')
       navigate(`/order-success/${orderCode}`, {
         state: { result, orderCode, shippingAddress: fullShippingAddress, customerName, customerPhone, paymentMethod },
@@ -370,25 +371,81 @@ export default function CheckoutPage() {
   return (
     <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 max-w-6xl xl:max-w-7xl font-sans">
       {/* Sticky Countdown Header */}
-      <div className="bg-amber-500/10 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/60 p-4 rounded-2xl mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+      <div
+        className={`border p-4 rounded-2xl mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs transition-colors ${
+          isExpired
+            ? 'bg-rose-500/10 dark:bg-rose-950/40 border-rose-300 dark:border-rose-700/60'
+            : secondsLeft < 300
+            ? 'bg-orange-500/10 dark:bg-orange-950/40 border-orange-300 dark:border-orange-700/60'
+            : 'bg-amber-500/10 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700/60'
+        }`}
+      >
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-amber-500/20 dark:bg-amber-900/50 flex items-center justify-center shrink-0">
-            <Clock className="w-5 h-5 animate-pulse text-amber-600 dark:text-amber-400" />
+          <div
+            className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+              isExpired
+                ? 'bg-rose-500/20 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400'
+                : 'bg-amber-500/20 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400'
+            }`}
+          >
+            <Clock className={`w-5 h-5 ${isExpired ? '' : 'animate-pulse'}`} />
           </div>
           <div>
             <div className="font-extrabold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <span>Thời gian giữ đơn & hoàn tất thanh toán</span>
-              <Badge className="bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700 text-[11px] font-bold">20 phút</Badge>
+              <span>{isExpired ? 'Phiên giữ đơn thanh toán đã hết hạn' : 'Thời gian giữ đơn & hoàn tất thanh toán'}</span>
+              <Badge
+                className={`text-[11px] font-bold ${
+                  isExpired
+                    ? 'bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200 border-rose-300 dark:border-rose-700'
+                    : 'bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700'
+                }`}
+              >
+                {isExpired ? 'Hết giờ' : '20 phút'}
+              </Badge>
             </div>
             <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
-              Vui lòng hoàn tất thanh toán trước khi thời gian đếm ngược kết thúc.
+              {isExpired
+                ? 'Đã quá 20 phút giữ chỗ. Vui lòng bấm gia hạn hoặc quay về giỏ hàng để cập nhật.'
+                : 'Vui lòng hoàn tất thanh toán trước khi thời gian đếm ngược kết thúc (tự động duy trì khi tải lại trang).'}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-white dark:bg-card px-4 py-2 rounded-xl border border-amber-300 dark:border-amber-700 shadow-inner shrink-0 self-start sm:self-auto">
-          <span className="text-xs font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Thời gian còn lại:</span>
-          <span className="font-mono text-xl font-black text-emerald-600 dark:text-emerald-400 tracking-wider">{formattedTime}</span>
+        <div className="flex items-center gap-2.5 shrink-0 self-start sm:self-auto">
+          {isExpired && (
+            <Button
+              size="sm"
+              onClick={() => {
+                extendTimer()
+                toast.success('Đã gia hạn thêm 20 phút giữ chỗ thanh toán!')
+              }}
+              className="h-9 px-3 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm cursor-pointer"
+            >
+              Gia Hạn 20 Phút
+            </Button>
+          )}
+          <div
+            className={`flex items-center gap-2 bg-white dark:bg-card px-4 py-2 rounded-xl border shadow-inner ${
+              isExpired
+                ? 'border-rose-300 dark:border-rose-700'
+                : 'border-amber-300 dark:border-amber-700'
+            }`}
+          >
+            <span className="text-xs font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+              {isExpired ? 'Trạng thái:' : 'Thời gian còn lại:'}
+            </span>
+            <span
+              className={`font-mono text-xl font-black tracking-wider ${
+                isExpired
+                  ? 'text-rose-600 dark:text-rose-400'
+                  : secondsLeft < 300
+                  ? 'text-orange-600 dark:text-orange-400 animate-pulse'
+                  : 'text-emerald-600 dark:text-emerald-400'
+              }`}
+            >
+              {isExpired ? '00:00' : formattedTime}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -435,10 +492,14 @@ export default function CheckoutPage() {
                   size="sm"
                   variant="outline"
                   onClick={() => setShowMapPickerModal(true)}
-                  className="h-8.5 px-3 rounded-xl border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 font-bold text-xs gap-1.5 shrink-0 cursor-pointer"
+                  className="h-10 px-3.5 rounded-2xl border-emerald-400 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 bg-emerald-50/90 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/80 font-bold text-xs gap-2 shrink-0 cursor-pointer shadow-sm hover:shadow transition-all group"
+                  title="Nhấn vào đây để mở bản đồ định vị GPS và tự động điền địa chỉ giao hàng"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Ghim Vị Trí Bản Đồ</span>
+                  <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:scale-125 transition-transform" />
+                  <div className="text-left leading-tight">
+                    <span className="block font-extrabold text-xs">Ghim vị trí bản đồ</span>
+                    <span className="block text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Bấm để tự động điền địa chỉ GPS</span>
+                  </div>
                 </Button>
               </div>
 
@@ -484,6 +545,7 @@ export default function CheckoutPage() {
                   <Input
                     id="cName"
                     value={customerName}
+                    placeholder="Ví dụ: Nguyễn Văn A"
                     onChange={(e) => setCustomerName(e.target.value)}
                     className="rounded-xl font-medium h-11"
                     required
@@ -497,6 +559,7 @@ export default function CheckoutPage() {
                   <Input
                     id="cPhone"
                     value={customerPhone}
+                    placeholder="Ví dụ: 0912345678"
                     onChange={(e) => setCustomerPhone(e.target.value)}
                     className="rounded-xl font-medium h-11"
                     required
@@ -939,16 +1002,20 @@ export default function CheckoutPage() {
               <Button
                 type="submit"
                 size="lg"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isExpired}
                 className={`w-full text-white font-bold rounded-2xl h-12 text-sm sm:text-base gap-2 shadow-lg cursor-pointer transition-all ${
-                  paymentMethod === 'momo'
+                  isExpired
+                    ? 'bg-slate-400 dark:bg-slate-700 cursor-not-allowed shadow-none'
+                    : paymentMethod === 'momo'
                     ? 'bg-[#a50064] hover:bg-[#8e0056] shadow-pink-600/20'
                     : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
                 }`}
               >
                 <span>
                   {isSubmitting
-                    ? 'Đang tạo phiên Cổng MoMo...'
+                    ? 'Đang xử lý...'
+                    : isExpired
+                    ? 'Phiên Đã Hết Hạn - Bấm Gia Hạn'
                     : paymentMethod === 'momo'
                     ? 'Thanh Toán MoMo AIO Gateway'
                     : 'Xác Nhận Đặt Hàng COD'}
@@ -1058,6 +1125,42 @@ export default function CheckoutPage() {
             </Button>
             <Button onClick={() => { resetTimer(); navigate('/cart') }} variant="destructive" className="rounded-xl font-bold">
               Rời Khỏi
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Session Expired Modal */}
+      <Dialog open={isExpired} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-md bg-white dark:bg-card rounded-3xl p-6 font-sans border-border text-card-foreground">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="text-lg font-black text-rose-600 dark:text-rose-400 flex items-center gap-2">
+              <Clock className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+              <span>Thời Gian Giữ Đơn Đã Hết Hạn</span>
+            </DialogTitle>
+            <DialogDescription className="text-slate-600 dark:text-slate-400 text-xs font-medium">
+              Phiên giữ sản phẩm &amp; lịch sân 20 phút của bạn đã kết thúc. Bạn có muốn gia hạn thêm 20 phút để tiếp tục thanh toán không?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-row gap-3 justify-end pt-4 border-t border-slate-100 dark:border-border">
+            <Button
+              variant="outline"
+              onClick={() => {
+                resetTimer()
+                navigate('/cart')
+              }}
+              className="rounded-xl font-bold border-slate-300 dark:border-border cursor-pointer"
+            >
+              Về Giỏ Hàng
+            </Button>
+            <Button
+              onClick={() => {
+                extendTimer()
+                toast.success('Đã gia hạn thêm 20 phút giữ chỗ thanh toán!')
+              }}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md cursor-pointer"
+            >
+              Gia Hạn Thêm 20 Phút
             </Button>
           </DialogFooter>
         </DialogContent>
