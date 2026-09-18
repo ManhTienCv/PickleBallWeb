@@ -178,10 +178,13 @@ export default function OrderReceiptModal({
       `}</style>
 
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-2xl max-w-[95vw] w-full sm:rounded-3xl p-0 border border-slate-200 dark:border-border bg-slate-50 dark:bg-card shadow-2xl font-sans max-h-[92vh] flex flex-col overflow-hidden text-card-foreground">
+        <DialogContent
+          hideCloseButton
+          className="sm:max-w-2xl max-w-[95vw] w-full sm:rounded-3xl p-0 border border-slate-200 dark:border-border bg-slate-50 dark:bg-card shadow-2xl font-sans max-h-[92vh] flex flex-col overflow-hidden text-card-foreground [&>button:last-child]:hidden"
+        >
           <DialogHeader className="sr-only">
             <DialogTitle>Biên Nhận Đơn Hàng #{order.order_code}</DialogTitle>
-            <DialogDescription>Hóa đơn điện tử & biên nhận thanh toán chính thức DemoPick</DialogDescription>
+            <DialogDescription>Hóa đơn điện tử & biên nhận thanh toán chính thức PickleBall</DialogDescription>
           </DialogHeader>
 
           {/* Modal Header Actions (No print) */}
@@ -194,7 +197,7 @@ export default function OrderReceiptModal({
                 <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">
                   Biên Nhận Thanh Toán & Đơn Hàng
                 </h3>
-                <p className="text-[11px] text-slate-400">Hóa đơn điện tử chính thức hệ thống DemoPick</p>
+                <p className="text-[11px] text-slate-400">Hóa đơn điện tử chính thức hệ thống PickleBall</p>
               </div>
             </div>
 
