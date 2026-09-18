@@ -130,68 +130,166 @@ export default function OrdersPage() {
   const [selectedReceiptOrder, setSelectedReceiptOrder] = useState<any | null>(null)
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false)
 
+  // Status Category Helpers
+  const isPendingStatus = (status?: string) => {
+    const s = (status || '').toLowerCase().trim()
+    return [
+      'pending',
+      'confirmed',
+      'paid',
+      'processing',
+      'chờ_thanh_toán',
+      'đã_thanh_toán',
+      'chờ thanh toán',
+      'đã thanh toán',
+      'cho_dong_goi',
+      'chờ đóng gói',
+      'chờ duyệt',
+      'đang xử lý',
+    ].includes(s)
+  }
+
+  const isShippedStatus = (status?: string) => {
+    const s = (status || '').toLowerCase().trim()
+    return [
+      'shipped',
+      'shipping',
+      'delivering',
+      'đang_giao',
+      'đang giao',
+      'đang giao hàng',
+    ].includes(s)
+  }
+
+  const isCompletedStatus = (status?: string) => {
+    const s = (status || '').toLowerCase().trim()
+    return [
+      'completed',
+      'delivered',
+      'hoàn_tất',
+      'hoàn tất',
+      'đã_giao',
+      'đã giao',
+      'đã nhận',
+      'đã nhận hàng',
+      'thành công',
+    ].includes(s)
+  }
+
+  const isCancelledStatus = (status?: string) => {
+    const s = (status || '').toLowerCase().trim()
+    return [
+      'cancelled',
+      'canceled',
+      'đã_hủy',
+      'đã hủy',
+      'hủy',
+    ].includes(s)
+  }
+
+  const isBookingOrder = (order: any) =>
+    order.order_type === 'booking' ||
+    order.items?.some((i: any) => i.item_type === 'booking') ||
+    Boolean(order.court_name && order.court_name.length > 0)
+
   // Initial orders list containing simulated completed order & separated booking tickets
   const loadOrdersData = () => {
+    const list: any[] = []
+    const seenCodes = new Set<string>()
+
+    // 1. Nạp từ localStorage (demopick_orders_admin)
     try {
       const savedAdmin = localStorage.getItem('demopick_orders_admin')
       if (savedAdmin) {
         const adminOrders = JSON.parse(savedAdmin)
-        const mappedOrders = adminOrders.map((o: any) => ({
-          id: o.code,
-          order_code: o.code,
-          order_type: o.type === 'Đặt Sân Online' ? 'product' : 'retail',
-          created_at: o.createdAt || new Date().toISOString(),
-          status: o.status.toLowerCase(),
-          payment_method:
-            o.paymentMethod === 'COD' || o.paymentMethod === 'Tiền mặt'
-              ? 'cod'
-              : o.paymentMethod === 'MoMo' || o.paymentMethod === 'Cổng Online' || o.paymentMethod === 'VietQR'
-              ? 'momo'
-              : 'bank_transfer',
-          total_amount: o.totalAmount,
-          shipping_address: o.shippingAddress || 'Số 10 Đường Pickleball, Q. Cầu Giấy, Hà Nội',
-          shipping_carrier: o.shippingCarrier || 'GHN',
-          tracking_number: o.trackingNumber,
-          customer_name: o.customerName,
-          customer_phone: o.customerPhone,
-          items: o.items.map((it: any) => ({
-            id: it.id,
-            item_type: 'product',
-            item_name: it.name,
-            quantity: it.qty,
-            subtotal: it.price * it.qty,
-          })),
-        }))
+        if (Array.isArray(adminOrders)) {
+          adminOrders.forEach((o: any) => {
+            const code = o.code || o.orderCode || o.order_code
+            if (!code || seenCodes.has(code)) return
+            seenCodes.add(code)
 
-        // Append mock booking ticket
-        mappedOrders.push({
-          id: 'BK-90218',
-          order_code: 'BK-90218',
-          order_type: 'booking',
-          created_at: '2026-08-11T10:15:00Z',
-          status: 'completed',
-          payment_method: 'bank_transfer',
-          total_amount: 360000,
-          court_name: 'Sân VIP 1 (Thảm USAPA)',
-          court_address: 'Số 188 Nguyễn Văn Cừ, Q. Long Biên, Hà Nội',
-          play_time: '08:00 - 10:00 (Ngày 15/08/2026)',
-          qr_checkin_code: 'PK-90218-VIP',
-          items: [
-            { id: 6, item_type: 'booking', item_name: 'Thuê Sân VIP 1 (08:00 - 10:00, 15/08)', quantity: 1, subtotal: 360000 },
-          ],
-        })
+            const isBooking =
+              o.type === 'Đặt Sân Online' ||
+              o.type === 'booking' ||
+              o.items?.some((it: any) => it.item_type === 'booking')
 
-        setOrders(mappedOrders)
-        return
+            list.push({
+              id: code,
+              order_code: code,
+              order_type: isBooking ? 'booking' : 'product',
+              created_at: o.createdAt || new Date().toISOString(),
+              status: (o.status || 'pending').toLowerCase(),
+              payment_method:
+                o.paymentMethod === 'COD' || o.paymentMethod === 'Tiền mặt' || o.payment_method === 'cod'
+                  ? 'cod'
+                  : o.paymentMethod === 'MoMo' || o.paymentMethod === 'Cổng Online' || o.paymentMethod === 'VietQR' || o.payment_method === 'momo'
+                  ? 'momo'
+                  : 'bank_transfer',
+              total_amount: o.totalAmount || o.grandTotal || o.total_amount || 0,
+              shipping_address: o.shippingAddress || o.shipping_address || 'Số 10 Đường Pickleball, Q. Cầu Giấy, Hà Nội',
+              shipping_carrier: o.shippingCarrier || o.shipping_carrier || 'GHN Express',
+              tracking_number: o.trackingNumber || o.tracking_number,
+              customer_name: o.customerName || o.customer_name || 'Khách Hàng',
+              customer_phone: o.customerPhone || o.customer_phone || '',
+              items: (o.items || []).map((it: any, idx: number) => ({
+                id: it.id || idx + 1,
+                item_type: isBooking ? 'booking' : 'product',
+                item_name: it.name || it.item_name || 'Thiết bị Pickleball',
+                quantity: it.qty || it.quantity || 1,
+                price: it.price || it.unit_price || 0,
+                subtotal: (it.price || it.unit_price || 0) * (it.qty || it.quantity || 1),
+              })),
+            })
+          })
+        }
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error('Failed to parse admin orders in client:', err)
     }
 
-    if (apiOrders && apiOrders.length > 0) {
-      setOrders(apiOrders)
-    } else {
-      setOrders([
+    // 2. Hợp nhất từ API backend (apiOrders)
+    if (Array.isArray(apiOrders)) {
+      apiOrders.forEach((ao: any) => {
+        const code = ao.order_code || ao.code
+        if (!code) return
+        if (seenCodes.has(code)) {
+          const existing = list.find((item) => item.order_code === code)
+          if (existing) {
+            existing.status = (ao.status || existing.status).toLowerCase()
+            existing.payment_status = ao.payment_status || existing.payment_status
+          }
+        } else {
+          seenCodes.add(code)
+          list.push(ao)
+        }
+      })
+    }
+
+    // 3. Đảm bảo có ít nhất 1 vé đặt sân mẫu nếu danh sách chưa có vé đặt sân nào
+    const hasBooking = list.some((o) => isBookingOrder(o))
+    if (!hasBooking) {
+      list.push({
+        id: 'BK-90218',
+        order_code: 'BK-90218',
+        order_type: 'booking',
+        created_at: '2026-08-11T10:15:00Z',
+        status: 'completed',
+        payment_method: 'bank_transfer',
+        total_amount: 360000,
+        court_name: 'Sân VIP 1 (Thảm USAPA)',
+        court_address: 'Số 188 Nguyễn Văn Cừ, Q. Long Biên, Hà Nội',
+        play_time: '08:00 - 10:00 (Ngày 15/08/2026)',
+        qr_checkin_code: 'PK-90218-VIP',
+        items: [
+          { id: 6, item_type: 'booking', item_name: 'Thuê Sân VIP 1 (08:00 - 10:00, 15/08)', quantity: 1, subtotal: 360000 },
+        ],
+      })
+    }
+
+    // 4. Nếu vẫn trống (chưa từng đặt hàng gì ngoài vé đặt sân mẫu), nạp các đơn hàng mẫu
+    const hasProductOrders = list.some((o) => !isBookingOrder(o))
+    if (!hasProductOrders) {
+      list.push(
         {
           id: 991,
           order_code: 'HD-88291',
@@ -201,7 +299,7 @@ export default function OrdersPage() {
           payment_method: 'bank_transfer',
           total_amount: 5580000,
           shipping_address: 'Số 10 Đường Pickleball, Q. Cầu Giấy, Hà Nội',
-          shipping_carrier: 'GHN',
+          shipping_carrier: 'GHN Express',
           customer_name: 'Nguyễn Văn An',
           customer_phone: '0987654321',
           items: [
@@ -218,12 +316,13 @@ export default function OrdersPage() {
           payment_method: 'bank_transfer',
           total_amount: 5580000,
           shipping_address: 'Số 25 Phố Lý Thường Kiệt, Q. Hoàn Kiếm, Hà Nội',
-          shipping_carrier: 'GHN',
-          customer_name: 'Trần Văn Cường',
+          shipping_carrier: 'GHN Express',
+          customer_name: 'Trần Thị Mai',
           customer_phone: '0912345678',
-          tracking_number: 'GHN-VN-882910',
+          tracking_number: 'GHN-HN-88295',
           items: [
-            { id: 10, item_type: 'product', item_name: 'Vợt JOOLA Perseus 16mm + Hộp 4 Bóng Franklin X-40', quantity: 1, subtotal: 5580000 },
+            { id: 3, item_type: 'product', item_name: 'Túi Đựng Vợt Pickleball Tour Backpack', quantity: 1, subtotal: 1200000 },
+            { id: 4, item_type: 'product', item_name: 'Vợt JOOLA Perseus 3S 16mm Carbon', quantity: 1, subtotal: 4380000 },
           ],
         },
         {
@@ -243,25 +342,11 @@ export default function OrdersPage() {
           items: [
             { id: 11, item_type: 'product', item_name: 'Vợt Pickleball Franklin Carbon Pro 14mm', quantity: 1, subtotal: 2850000 },
           ],
-        },
-        {
-          id: 994,
-          order_code: 'BK-90218',
-          order_type: 'booking',
-          created_at: '2026-08-11T10:15:00Z',
-          status: 'completed',
-          payment_method: 'bank_transfer',
-          total_amount: 360000,
-          court_name: 'Sân VIP 1 (Thảm USAPA)',
-          court_address: 'Số 188 Nguyễn Văn Cừ, Q. Long Biên, Hà Nội',
-          play_time: '08:00 - 10:00 (Ngày 15/08/2026)',
-          qr_checkin_code: 'PK-90218-VIP',
-          items: [
-            { id: 6, item_type: 'booking', item_name: 'Thuê Sân VIP 1 (08:00 - 10:00, 15/08)', quantity: 1, subtotal: 360000 },
-          ],
-        },
-      ])
+        }
+      )
     }
+
+    setOrders(list)
   }
 
   useEffect(() => {
@@ -275,10 +360,13 @@ export default function OrdersPage() {
   }, [apiOrders])
 
   const filteredOrders = orders.filter((order) => {
-    if (activeTab === 'pending') return order.status === 'pending'
-    if (activeTab === 'shipped') return order.status === 'shipped'
-    if (activeTab === 'completed') return order.status === 'completed' && order.order_type !== 'booking'
-    if (activeTab === 'booking') return order.order_type === 'booking' || order.items?.some((i: any) => i.item_type === 'booking')
+    const isBooking = isBookingOrder(order)
+    if (activeTab === 'booking') return isBooking
+    if (isBooking) return false
+
+    if (activeTab === 'pending') return isPendingStatus(order.status)
+    if (activeTab === 'shipped') return isShippedStatus(order.status)
+    if (activeTab === 'completed') return isCompletedStatus(order.status)
     return true
   })
 
@@ -434,30 +522,40 @@ export default function OrdersPage() {
       )
     }
 
-    switch (status) {
-      case 'completed':
-        return (
-          <Badge className="bg-emerald-600 font-bold text-white gap-1 px-3 py-1">
-            <CheckCircle2 className="w-3.5 h-3.5" /> Đã Giao Thành Công
-          </Badge>
-        )
-      case 'shipped':
-        return (
-          <Badge className="bg-blue-600 text-white font-bold gap-1.5 px-3 py-1">
-            <Truck className="w-3.5 h-3.5" /> Đang Giao ({carrier || 'GHN'} Express)
-          </Badge>
-        )
-      case 'pending':
-        return (
-          <Badge variant="outline" className="text-amber-700 bg-amber-50 border-amber-300 font-bold gap-1 px-3 py-1">
-            <Clock className="w-3.5 h-3.5" /> Chờ Duyệt & Đóng Gói
-          </Badge>
-        )
-      case 'cancelled':
-        return <Badge variant="destructive" className="font-bold">Đã Hủy</Badge>
-      default:
-        return <Badge variant="secondary" className="font-medium">{status}</Badge>
+    if (isCompletedStatus(status)) {
+      return (
+        <Badge className="bg-emerald-600 font-bold text-white gap-1 px-3 py-1">
+          <CheckCircle2 className="w-3.5 h-3.5" /> Đã Giao Thành Công
+        </Badge>
+      )
     }
+
+    if (isShippedStatus(status)) {
+      return (
+        <Badge className="bg-blue-600 text-white font-bold gap-1.5 px-3 py-1">
+          <Truck className="w-3.5 h-3.5" /> Đang Giao ({carrier || 'GHN'} Express)
+        </Badge>
+      )
+    }
+
+    if (isCancelledStatus(status)) {
+      return <Badge variant="destructive" className="font-bold">Đã Hủy</Badge>
+    }
+
+    const s = (status || '').toLowerCase()
+    if (s === 'confirmed' || s === 'paid' || s.includes('đã_thanh_toán') || s.includes('đã thanh toán')) {
+      return (
+        <Badge className="bg-emerald-500 font-bold text-white gap-1 px-3 py-1">
+          <CheckCircle2 className="w-3.5 h-3.5" /> Đã Thanh Toán & Đang Đóng Gói
+        </Badge>
+      )
+    }
+
+    return (
+      <Badge variant="outline" className="text-amber-700 bg-amber-50 border-amber-300 font-bold gap-1 px-3 py-1">
+        <Clock className="w-3.5 h-3.5" /> Chờ Duyệt & Đóng Gói
+      </Badge>
+    )
   }
 
   if (isLoading) {
@@ -468,10 +566,10 @@ export default function OrdersPage() {
     )
   }
 
-  const pendingCount = orders.filter((o) => o.status === 'pending').length
-  const shippedCount = orders.filter((o) => o.status === 'shipped').length
-  const completedCount = orders.filter((o) => o.status === 'completed' && o.order_type !== 'booking').length
-  const bookingCount = orders.filter((o) => o.order_type === 'booking' || o.items?.some((i: any) => i.item_type === 'booking')).length
+  const pendingCount = orders.filter((o) => !isBookingOrder(o) && isPendingStatus(o.status)).length
+  const shippedCount = orders.filter((o) => !isBookingOrder(o) && isShippedStatus(o.status)).length
+  const completedCount = orders.filter((o) => !isBookingOrder(o) && isCompletedStatus(o.status)).length
+  const bookingCount = orders.filter((o) => isBookingOrder(o)).length
 
   return (
     <div className="container mx-auto py-8 px-4 sm:px-6 max-w-4xl font-sans">
@@ -526,10 +624,10 @@ export default function OrdersPage() {
       ) : (
         <div className="space-y-6">
           {filteredOrders.map((order: any) => {
-            const isBooking = order.order_type === 'booking' || order.items?.some((i: any) => i.item_type === 'booking')
-            const isPending = order.status === 'pending'
-            const isShipped = order.status === 'shipped'
-            const isCompleted = order.status === 'completed' && !isBooking
+            const isBooking = isBookingOrder(order)
+            const isPending = isPendingStatus(order.status)
+            const isShipped = isShippedStatus(order.status)
+            const isCompleted = isCompletedStatus(order.status) && !isBooking
 
             return (
               <Card key={order.id} className="p-6 border-slate-200 dark:border-border space-y-4 shadow-sm hover:shadow-md transition-all rounded-3xl bg-white dark:bg-card">

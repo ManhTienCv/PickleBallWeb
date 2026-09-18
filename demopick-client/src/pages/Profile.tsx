@@ -124,23 +124,37 @@ export default function Profile() {
         const adminOrdersRaw = localStorage.getItem('demopick_orders_admin')
         if (adminOrdersRaw) {
           const parsed = JSON.parse(adminOrdersRaw)
-          const converted: Order[] = parsed.map((o: any, idx: number) => ({
-            id: idx + 1,
-            order_code: o.orderCode || `HD-${10000 + idx}`,
-            status: o.status === 'completed' ? 'completed' : o.status === 'confirmed' ? 'confirmed' : 'pending',
-            payment_status: o.paymentMethod === 'VietQR' ? 'paid' : 'unpaid',
-            payment_method: o.paymentMethod || 'VietQR',
-            total_amount: o.grandTotal || 2500000,
-            created_at: o.createdAt || 'Hôm nay',
-            items: o.items?.map((it: any, iIdx: number) => ({
-              id: iIdx + 1,
-              item_type: 'product',
-              item_name: it.name,
-              quantity: it.qty || 1,
-              unit_price: it.price || 0,
-              subtotal: (it.qty || 1) * (it.price || 0),
-            })) || [],
-          }))
+          const converted: Order[] = parsed.map((o: any, idx: number) => {
+            const isPaid =
+              o.paymentStatus === 'paid' ||
+              o.status === 'ĐÃ_THANH_TOÁN' ||
+              o.status === 'confirmed' ||
+              o.paymentMethod === 'VietQR'
+
+            return {
+              id: idx + 1,
+              order_code: o.code || o.orderCode || o.order_code || `HD-${10000 + idx}`,
+              status:
+                o.status === 'completed' || o.status === 'ĐÃ_GIAO'
+                  ? 'completed'
+                  : isPaid
+                  ? 'confirmed'
+                  : 'pending',
+              payment_status: isPaid ? 'paid' : 'unpaid',
+              payment_method: o.paymentMethod || 'VietQR',
+              total_amount: o.totalAmount || o.grandTotal || 0,
+              created_at: o.createdAt || 'Hôm nay',
+              items:
+                o.items?.map((it: any, iIdx: number) => ({
+                  id: iIdx + 1,
+                  item_type: 'product',
+                  item_name: it.name || it.item_name || 'Thiết bị Pickleball',
+                  quantity: it.qty || it.quantity || 1,
+                  unit_price: it.price || 0,
+                  subtotal: (it.qty || it.quantity || 1) * (it.price || 0),
+                })) || [],
+            }
+          })
           setOrders(converted)
         } else {
           // Default mock orders for preview
