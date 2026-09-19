@@ -1,7 +1,7 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Truck, Zap, Navigation, Printer, Eye } from "lucide-react";
+import { Truck, Zap, Navigation, Printer, Eye, RotateCcw } from "lucide-react";
 import { Order, OrderStatus } from "@/types/order.types";
 
 interface OnlineOrdersTableProps {
@@ -11,6 +11,7 @@ interface OnlineOrdersTableProps {
   onOpenTrackingModal: (order: Order) => void;
   onOpenPrintShippingLabel: (order: Order) => void;
   onSelectOrder: (order: Order) => void;
+  onConfirmRefund?: (orderCode: string) => void;
   isOrderPaid: (order: Order) => boolean;
 }
 
@@ -21,6 +22,7 @@ export const OnlineOrdersTable: React.FC<OnlineOrdersTableProps> = ({
   onOpenTrackingModal,
   onOpenPrintShippingLabel,
   onSelectOrder,
+  onConfirmRefund,
   isOrderPaid,
 }) => {
   return (
@@ -53,10 +55,12 @@ export const OnlineOrdersTable: React.FC<OnlineOrdersTableProps> = ({
                   order.status === "PAID" ||
                   order.status === "ĐÃ_THANH_TOÁN" ||
                   order.status === "CONFIRMED";
+                const isRefundPending = order.status === "REFUND_PENDING" || order.status === "CHỜ_HOÀN_TIỀN";
+                const isRefunded = order.status === "REFUNDED" || order.status === "ĐÃ_HOÀN_TIỀN";
                 const isShipped = order.status === "SHIPPED" || order.status === "SHIPPING";
                 const isCompleted = order.status === "COMPLETED";
-                const isCancelled = order.status === "CANCELLED" || order.status === "REFUNDED";
-                const canDispatchGHN = !order.trackingNumber && !isCancelled && !isCompleted && !isShipped;
+                const isCancelled = order.status === "CANCELLED" || isRefunded;
+                const canDispatchGHN = !order.trackingNumber && !isCancelled && !isCompleted && !isShipped && !isRefundPending;
 
                 return (
                   <tr key={order.code} className="hover:bg-slate-50/80 transition-colors">
@@ -163,42 +167,64 @@ export const OnlineOrdersTable: React.FC<OnlineOrdersTableProps> = ({
 
                     {/* 6. TRẠNG THÁI */}
                     <td className="py-4 px-4 align-top">
-                      <div className="relative inline-block w-36">
-                        <select
-                          value={
-                            order.status === "REFUNDED" || order.status === "CANCELLED"
-                              ? "CANCELLED"
-                              : order.status === "SHIPPED"
-                              ? "SHIPPING"
-                              : isPending
-                              ? "PENDING"
-                              : order.status
-                          }
-                          onChange={(e) => onUpdateStatus(order.code, e.target.value as OrderStatus)}
-                          className={`w-full py-1.5 px-3 rounded-full text-xs font-bold border transition-colors cursor-pointer appearance-none text-center ${
-                            isCancelled
-                              ? "bg-rose-50 text-rose-600 border-rose-200"
-                              : isCompleted
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              : isShipped
-                              ? "bg-blue-50 text-blue-700 border-blue-200"
-                              : "bg-amber-50 text-amber-700 border-amber-200"
-                          }`}
-                        >
-                          <option value="PENDING">Chờ xử lý</option>
-                          <option value="READY_TO_PICK">Chờ lấy hàng</option>
-                          <option value="PICKING">Đang lấy hàng</option>
-                          <option value="SHIPPING">Đang giao</option>
-                          <option value="COMPLETED">Thành công</option>
-                          <option value="RETURNED">Hoàn hàng</option>
-                          <option value="CANCELLED">Hủy đơn hàng</option>
-                        </select>
-                      </div>
+                      {isRefundPending ? (
+                        <Badge className="bg-amber-500 text-white font-bold inline-flex items-center gap-1 text-[11px] py-1.5 px-3 rounded-full shadow-xs animate-pulse">
+                          <span>Chờ hoàn tiền</span>
+                        </Badge>
+                      ) : isRefunded ? (
+                        <Badge className="bg-blue-600 text-white font-bold inline-flex items-center gap-1 text-[11px] py-1.5 px-3 rounded-full shadow-xs">
+                          <span>Đã hoàn tiền</span>
+                        </Badge>
+                      ) : (
+                        <div className="relative inline-block w-36">
+                          <select
+                            value={
+                              order.status === "REFUNDED" || order.status === "CANCELLED"
+                                ? "CANCELLED"
+                                : order.status === "SHIPPED"
+                                ? "SHIPPING"
+                                : isPending
+                                ? "PENDING"
+                                : order.status
+                            }
+                            onChange={(e) => onUpdateStatus(order.code, e.target.value as OrderStatus)}
+                            className={`w-full py-1.5 px-3 rounded-full text-xs font-bold border transition-colors cursor-pointer appearance-none text-center ${
+                              isCancelled
+                                ? "bg-rose-50 text-rose-600 border-rose-200"
+                                : isCompleted
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                : isShipped
+                                ? "bg-blue-50 text-blue-700 border-blue-200"
+                                : "bg-amber-50 text-amber-700 border-amber-200"
+                            }`}
+                          >
+                            <option value="PENDING">Chờ xử lý</option>
+                            <option value="READY_TO_PICK">Chờ lấy hàng</option>
+                            <option value="PICKING">Đang lấy hàng</option>
+                            <option value="SHIPPING">Đang giao</option>
+                            <option value="COMPLETED">Thành công</option>
+                            <option value="RETURNED">Hoàn hàng</option>
+                            <option value="CANCELLED">Hủy đơn hàng</option>
+                          </select>
+                        </div>
+                      )}
                     </td>
 
                     {/* 7. TÁC VỤ */}
                     <td className="py-4 px-4 text-right align-top whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1.5">
+                        {isRefundPending && onConfirmRefund && (
+                          <Button
+                            size="sm"
+                            onClick={() => onConfirmRefund(order.code)}
+                            className="h-8 px-2.5 text-xs bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl shadow-sm gap-1.5 cursor-pointer animate-pulse"
+                            title="Xác nhận đối soát hoàn tiền cho khách"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            <span>Hoàn Tiền</span>
+                          </Button>
+                        )}
+
                         {canDispatchGHN && (
                           <Button
                             size="sm"

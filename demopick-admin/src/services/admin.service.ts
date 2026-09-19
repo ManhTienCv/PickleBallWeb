@@ -2100,6 +2100,16 @@ export const adminService = {
     }
   },
 
+  confirmRefund: async (orderCode: string, params?: { refund_trans_id?: string; refund_note?: string }): Promise<any> => {
+    try {
+      const res = await api.post<ApiResponse<any>>(`/admin/orders/${orderCode}/refund`, params || {})
+      return res.data.data
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Lỗi khi xác nhận hoàn tiền.'
+      throw new Error(msg)
+    }
+  },
+
   getRevenueReport: async (): Promise<any> => {
     try {
       const res = await api.get<ApiResponse<any>>('/admin/reports/revenue')

@@ -12,7 +12,10 @@ export type OrderStatus =
   | "SHIPPING"
   | "COMPLETED"
   | "RETURNED"
+  | "REFUND_PENDING"
+  | "CHỜ_HOÀN_TIỀN"
   | "REFUNDED"
+  | "ĐÃ_HOÀN_TIỀN"
   | "CANCELLED";
 
 export type PaymentMethod = "Tiền mặt" | "VietQR" | "MoMo" | "COD" | "Cổng Online";
@@ -58,6 +61,11 @@ export interface Order {
   deliveryNote?: string;
   ghn_district_id?: number;
   ghn_ward_code?: string;
+  refundReason?: string;
+  refundAmount?: number;
+  refundTransId?: string;
+  refundNote?: string;
+  refundedAt?: string;
 }
 
 export interface BackendOrderItem {

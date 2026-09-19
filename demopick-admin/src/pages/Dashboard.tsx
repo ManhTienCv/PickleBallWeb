@@ -20,6 +20,7 @@ import {
   Clock,
   RefreshCw,
   ExternalLink,
+  RotateCcw,
 } from "lucide-react";
 import CheckInDialog from "@/components/CheckInDialog";
 import { Order, OrderStatus, BackendOrder, BackendOrderItem } from "@/types/order.types";
@@ -94,8 +95,21 @@ export default function Dashboard() {
             const code = bOrder.order_code || bOrder.code;
             if (!code) return;
 
-            const isPaid = bOrder.payment_status === "paid" || bOrder.status === "confirmed";
-            const mappedStatus: OrderStatus = isPaid ? "PAID" : "PENDING";
+            const rawStatus = (bOrder.status || "").toLowerCase();
+            const isPaid = bOrder.payment_status === "paid" || rawStatus === "confirmed" || rawStatus === "paid";
+            let mappedStatus: OrderStatus = isPaid ? "PAID" : "PENDING";
+            if (rawStatus === "refund_pending" || rawStatus === "refunding") {
+              mappedStatus = "REFUND_PENDING";
+            } else if (rawStatus === "refunded") {
+              mappedStatus = "REFUNDED";
+            } else if (rawStatus === "cancelled" || rawStatus === "canceled") {
+              mappedStatus = "CANCELLED";
+            } else if (rawStatus === "shipping" || rawStatus === "delivering") {
+              mappedStatus = "SHIPPING";
+            } else if (rawStatus === "completed") {
+              mappedStatus = "COMPLETED";
+            }
+
             const mappedMethod =
               bOrder.payment_method === "momo"
                 ? "MoMo"
@@ -107,7 +121,7 @@ export default function Dashboard() {
             if (existing) {
               map.set(code, {
                 ...existing,
-                status: isPaid ? "PAID" : existing.status,
+                status: mappedStatus,
                 paymentMethod: mappedMethod,
                 totalAmount: bOrder.total_amount || existing.totalAmount,
                 customerPhone: bOrder.customer_phone || existing.customerPhone,
@@ -209,7 +223,9 @@ export default function Dashboard() {
         o.status !== "CANCELLED" &&
         o.status !== "COMPLETED" &&
         o.status !== "RETURNED" &&
-        o.status !== "REFUNDED";
+        o.status !== "REFUNDED" &&
+        o.status !== "REFUND_PENDING" &&
+        o.status !== "CHỜ_HOÀN_TIỀN";
       const needsDispatch =
         !o.trackingNumber ||
         o.status === "CONFIRMED" ||
@@ -217,6 +233,10 @@ export default function Dashboard() {
         o.status === "PENDING";
       return isOnline && notFinished && needsDispatch;
     });
+
+    const pendingRefundOrders = ordersList.filter(
+      (o) => o.status === "REFUND_PENDING" || o.status === "CHỜ_HOÀN_TIỀN"
+    );
 
     const inUseCourts = liveCourts.filter(
       (c) => c.status === "in_use" || c.status === "ending"
@@ -229,6 +249,8 @@ export default function Dashboard() {
       dayOrdersCount: dayOrders.length,
       pendingGhnCount: pendingGhnOrders.length,
       pendingGhnOrders,
+      pendingRefundCount: pendingRefundOrders.length,
+      pendingRefundOrders,
       inUseCourts,
       totalCourtsCount,
       utilizationRate,
@@ -324,6 +346,12 @@ export default function Dashboard() {
       case "PENDING":
       case "CHỜ_THANH_TOÁN":
         return <Badge variant="outline" className="text-amber-600 border-amber-300">Chờ xử lý</Badge>;
+      case "REFUND_PENDING":
+      case "CHỜ_HOÀN_TIỀN":
+        return <Badge className="bg-amber-500 text-white hover:bg-amber-600 animate-pulse">Chờ hoàn tiền</Badge>;
+      case "REFUNDED":
+      case "ĐÃ_HOÀN_TIỀN":
+        return <Badge className="bg-blue-600 text-white hover:bg-blue-700">Đã hoàn tiền</Badge>;
       case "CANCELLED":
         return <Badge variant="destructive">Đã hủy</Badge>;
       default:
@@ -445,6 +473,36 @@ export default function Dashboard() {
             </div>
           </Card>
         </div>
+
+        {/* Action Alert Widget: Pending Refund Online Orders */}
+        {metrics.pendingRefundCount > 0 && (
+          <div className="bg-gradient-to-r from-rose-500/10 via-amber-500/10 to-rose-500/5 border border-rose-300 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-rose-500 text-white flex items-center justify-center font-bold shrink-0 shadow-sm animate-pulse">
+                <RotateCcw className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-slate-900 text-sm">Yêu Cầu Hoàn Tiền Đơn Hủy Online</span>
+                  <Badge className="text-[11px] px-2 py-0.5 bg-rose-600 hover:bg-rose-600 text-white font-bold">
+                    {metrics.pendingRefundCount} đơn cần đối soát & hoàn tiền
+                  </Badge>
+                </div>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  Khách hàng đã thanh toán qua MoMo/VietQR nhưng đã gửi yêu cầu hủy đơn. Vui lòng kiểm tra và xác nhận chuyển khoản hoàn tiền.
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={() => navigate("/orders?tab=online")}
+              size="sm"
+              className="bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs shrink-0 gap-1.5 shadow-sm"
+            >
+              <span>Xử Lý Hoàn Tiền Ngay</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
 
         {/* Action Alert Widget: Pending GHN Orders */}
         {metrics.pendingGhnCount > 0 ? (

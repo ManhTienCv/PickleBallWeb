@@ -19,6 +19,7 @@ import {
 import { mockOrders, masterCatalog, ONLINE_STATUS_TABS, POS_SUB_TABS } from "@/data/ordersData";
 import { shippingService, ShippingCarrier, ShippingOrderInfo } from "@/services/shipping.service";
 import { notificationService } from "@/services/notification.service";
+import { adminService } from "@/services/admin.service";
 
 import { OnlineOrdersTable } from "@/components/orders/OnlineOrdersTable";
 import { PosOrdersTable } from "@/components/orders/PosOrdersTable";
@@ -137,8 +138,22 @@ export default function Orders() {
             const code = bOrder.order_code || bOrder.code;
             if (!code) return;
 
-            const isPaid = bOrder.payment_status === "paid" || bOrder.status === "confirmed";
-            const mappedStatus: OrderStatus = isPaid ? "PAID" : "PENDING";
+            const rawStatus = (bOrder.status || "").toUpperCase();
+            let mappedStatus: OrderStatus = "PENDING";
+            if (rawStatus === "REFUND_PENDING" || rawStatus === "CHỜ_HOÀN_TIỀN") {
+              mappedStatus = "REFUND_PENDING";
+            } else if (rawStatus === "REFUNDED" || rawStatus === "ĐÃ_HOÀN_TIỀN") {
+              mappedStatus = "REFUNDED";
+            } else if (rawStatus === "CANCELLED" || rawStatus === "ĐÃ_HỦY") {
+              mappedStatus = "CANCELLED";
+            } else if (bOrder.payment_status === "paid" || rawStatus === "CONFIRMED" || rawStatus === "PAID") {
+              mappedStatus = "PAID";
+            } else if (rawStatus === "SHIPPING" || rawStatus === "DELIVERING") {
+              mappedStatus = "SHIPPING";
+            } else if (rawStatus === "COMPLETED") {
+              mappedStatus = "COMPLETED";
+            }
+
             const mappedMethod =
               bOrder.payment_method === "momo"
                 ? "MoMo"
@@ -150,7 +165,7 @@ export default function Orders() {
             if (existing) {
               map.set(code, {
                 ...existing,
-                status: isPaid ? "PAID" : existing.status,
+                status: mappedStatus !== "PENDING" ? mappedStatus : existing.status,
                 paymentMethod: mappedMethod,
                 totalAmount: bOrder.total_amount || existing.totalAmount,
                 customerPhone: bOrder.customer_phone || existing.customerPhone,
@@ -223,13 +238,62 @@ export default function Orders() {
       await api.post(`/admin/orders/${orderCode}/cancel`, { reason });
       toast.success(`Đã hủy thành công đơn hàng #${orderCode}!`);
       setOrdersList((prev) =>
-        prev.map((o) => (o.code === orderCode ? { ...o, status: "REFUNDED" } : o))
+        prev.map((o) => (o.code === orderCode ? { ...o, status: "CANCELLED" } : o))
       );
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         toast.error(err.response?.data?.message || "Không thể hủy đơn hàng.");
       } else {
         toast.error("Không thể hủy đơn hàng.");
+      }
+    }
+  };
+
+  const handleConfirmRefund = async (orderCode: string) => {
+    const target = ordersList.find((o) => o.code === orderCode);
+    const amountStr = target
+      ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(target.totalAmount)
+      : "";
+    const defaultTransId = `REF_${Date.now().toString().slice(-6)}`;
+    const transIdInput = window.prompt(
+      `XÁC NHẬN HOÀN TIỀN ĐƠN HÀNG #${orderCode}\nSố tiền hoàn: ${amountStr}\nPhương thức: ${target?.paymentMethod || "Online"}\n\nNhập mã giao dịch chuyển khoản đối soát (Bank/MoMo):`,
+      defaultTransId
+    );
+    if (transIdInput === null) return;
+
+    const noteInput = window.prompt(
+      "Ghi chú hoàn tiền (tùy chọn):",
+      "Quản trị viên đã chuyển tiền hoàn cho khách qua Internet Banking/MoMo"
+    );
+
+    try {
+      toast.info(`Đang cập nhật xác nhận hoàn tiền cho đơn #${orderCode}...`);
+      await adminService.confirmRefund(orderCode, {
+        refund_trans_id: transIdInput,
+        refund_note: noteInput || undefined,
+      });
+
+      setOrdersList((prev) =>
+        prev.map((o) =>
+          o.code === orderCode
+            ? {
+                ...o,
+                status: "REFUNDED",
+                paymentStatus: "REFUNDED",
+                refundTransId: transIdInput,
+                refundNote: noteInput || "",
+                refundedAt: new Date().toISOString(),
+              }
+            : o
+        )
+      );
+      toast.success(`Đã xác nhận hoàn tiền thành công cho đơn #${orderCode}!`);
+      fetchBackendOrders();
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(err.message || "Lỗi khi xác nhận hoàn tiền.");
+      } else {
+        toast.error("Lỗi khi xác nhận hoàn tiền.");
       }
     }
   };
@@ -453,10 +517,12 @@ export default function Orders() {
     const counts: Record<string, number> = {
       ALL: 0,
       PENDING: 0,
+      REFUND_PENDING: 0,
       READY_TO_PICK: 0,
       PICKING: 0,
       SHIPPING: 0,
       COMPLETED: 0,
+      REFUNDED: 0,
       RETURNED: 0,
       CANCELLED: 0,
     };
@@ -464,13 +530,15 @@ export default function Orders() {
     onlineOrders.forEach((o) => {
       counts.ALL++;
       const st = o.status;
-      if (st === "PENDING" || st === "CHỜ_THANH_TOÁN" || st === "PAID" || st === "CONFIRMED") counts.PENDING++;
+      if (st === "REFUND_PENDING" || st === "CHỜ_HOÀN_TIỀN") counts.REFUND_PENDING++;
+      else if (st === "REFUNDED" || st === "ĐÃ_HOÀN_TIỀN") counts.REFUNDED++;
+      else if (st === "PENDING" || st === "CHỜ_THANH_TOÁN" || st === "PAID" || st === "CONFIRMED") counts.PENDING++;
       else if (st === "READY_TO_PICK") counts.READY_TO_PICK++;
       else if (st === "PICKING") counts.PICKING++;
       else if (st === "SHIPPED" || st === "SHIPPING") counts.SHIPPING++;
       else if (st === "COMPLETED") counts.COMPLETED++;
       else if (st === "RETURNED") counts.RETURNED++;
-      else if (st === "CANCELLED" || st === "REFUNDED") counts.CANCELLED++;
+      else if (st === "CANCELLED") counts.CANCELLED++;
     });
 
     return counts;
@@ -494,6 +562,9 @@ export default function Orders() {
     switch (st) {
       case "PENDING":
         return "Chờ xử lý";
+      case "REFUND_PENDING":
+      case "CHỜ_HOÀN_TIỀN":
+        return "Chờ hoàn tiền";
       case "READY_TO_PICK":
         return "Chờ lấy hàng";
       case "PICKING":
@@ -503,10 +574,12 @@ export default function Orders() {
         return "Đang giao";
       case "COMPLETED":
         return "Thành công";
+      case "REFUNDED":
+      case "ĐÃ_HOÀN_TIỀN":
+        return "Đã hoàn tiền";
       case "RETURNED":
         return "Hoàn hàng";
       case "CANCELLED":
-      case "REFUNDED":
         return "Đã hủy";
       default:
         return st;
@@ -578,6 +651,8 @@ export default function Orders() {
           order.status === "CHỜ_THANH_TOÁN" ||
           order.status === "PAID" ||
           order.status === "CONFIRMED";
+      } else if (onlineStatusFilter === "REFUND_PENDING") {
+        matchesStatus = order.status === "REFUND_PENDING" || order.status === "CHỜ_HOÀN_TIỀN";
       } else if (onlineStatusFilter === "READY_TO_PICK") {
         matchesStatus = order.status === "READY_TO_PICK";
       } else if (onlineStatusFilter === "PICKING") {
@@ -586,10 +661,12 @@ export default function Orders() {
         matchesStatus = order.status === "SHIPPED" || order.status === "SHIPPING";
       } else if (onlineStatusFilter === "COMPLETED") {
         matchesStatus = order.status === "COMPLETED";
+      } else if (onlineStatusFilter === "REFUNDED") {
+        matchesStatus = order.status === "REFUNDED" || order.status === "ĐÃ_HOÀN_TIỀN";
       } else if (onlineStatusFilter === "RETURNED") {
         matchesStatus = order.status === "RETURNED";
       } else if (onlineStatusFilter === "CANCELLED") {
-        matchesStatus = order.status === "CANCELLED" || order.status === "REFUNDED";
+        matchesStatus = order.status === "CANCELLED";
       }
 
       const matchesPayment = paymentFilter === "ALL" || order.paymentMethod === paymentFilter;
@@ -732,6 +809,7 @@ export default function Orders() {
               onOpenTrackingModal={handleOpenTrackingModal}
               onOpenPrintShippingLabel={handleOpenPrintShippingLabel}
               onSelectOrder={setSelectedOrder}
+              onConfirmRefund={handleConfirmRefund}
               isOrderPaid={isOrderPaid}
             />
           </div>

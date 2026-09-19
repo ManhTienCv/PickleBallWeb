@@ -4,6 +4,7 @@ export interface CreateOrderParams {
   shippingName: string
   shippingPhone: string
   shippingAddress: string
+  customerEmail?: string
   ghnProvinceId?: number
   ghnDistrictId?: number
   ghnWardCode?: string
@@ -53,11 +54,12 @@ export interface OrderItem {
 export interface Order {
   id: number
   order_code: string
-  status: 'pending' | 'confirmed' | 'shipping' | 'delivered' | 'completed' | 'cancelled'
+  status: 'pending' | 'confirmed' | 'shipping' | 'delivered' | 'completed' | 'cancelled' | 'refund_pending' | 'refunded'
   payment_status: 'unpaid' | 'paid' | 'refunded'
   payment_method: string
   customer_name?: string
   customer_phone?: string
+  customer_email?: string
   shipping_name?: string
   shipping_phone?: string
   shipping_address?: string
@@ -67,6 +69,13 @@ export interface Order {
   created_at: string
   ghn_order_code?: string
   trans_id?: string
+  refund_status?: string
+  refund_reason?: string
+  refund_amount?: number
+  refund_requested_at?: string
+  refund_trans_id?: string
+  refund_note?: string
+  refunded_at?: string
   court_name?: string
   court_address?: string
   play_time?: string
@@ -126,7 +135,12 @@ export const orderService = {
     }
   },
 
-  async cancelOrder(code: string, reason?: string): Promise<{ success: boolean; message: string }> {
+  async cancelOrder(code: string, reason?: string): Promise<{
+    success: boolean
+    action?: 'cancelled' | 'refund_pending'
+    message: string
+    data?: any
+  }> {
     try {
       const response = await api.post(`/orders/${code}/cancel`, { reason })
       return response.data

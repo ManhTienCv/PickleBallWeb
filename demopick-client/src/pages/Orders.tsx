@@ -80,17 +80,29 @@ export default function OrdersPage() {
 
     try {
       toast.info(`Đang gửi yêu cầu hủy đơn hàng #${orderCode}...`)
-      await orderService.cancelOrder(orderCode, reason)
-      toast.success(`Đã hủy thành công đơn hàng #${orderCode}!`)
+      const res = await orderService.cancelOrder(orderCode, reason)
+      const isRefundPending = res.action === 'refund_pending' || res.data?.status === 'refund_pending'
+      const newStatus = isRefundPending ? 'refund_pending' : 'cancelled'
+
+      if (isRefundPending) {
+        toast.success(`Đơn hàng #${orderCode} đã chuyển sang trạng thái CHỜ HOÀN TIỀN. Quản trị viên sẽ kiểm tra và hoàn tiền về tài khoản sớm nhất cho bạn.`, {
+          duration: 6000,
+        })
+      } else {
+        toast.success(`Đã hủy thành công đơn hàng COD #${orderCode}! Số lượng tồn kho đã được hoàn lại.`)
+      }
+
       setOrders((prev) =>
-        prev.map((o) => (o.order_code === orderCode ? { ...o, status: 'cancelled' } : o))
+        prev.map((o) => (o.order_code === orderCode ? { ...o, status: newStatus } : o))
       )
       try {
         const savedAdmin = localStorage.getItem('demopick_orders_admin')
         if (savedAdmin) {
           const list = JSON.parse(savedAdmin)
-          const updated = list.map((o: any) => (o.code === orderCode ? { ...o, status: 'CANCELLED' } : o))
+          const adminStatus = isRefundPending ? 'REFUND_PENDING' : 'CANCELLED'
+          const updated = list.map((o: any) => (o.code === orderCode ? { ...o, status: adminStatus } : o))
           localStorage.setItem('demopick_orders_admin', JSON.stringify(updated))
+          window.dispatchEvent(new Event('storage'))
         }
       } catch {}
       refetch()
@@ -565,6 +577,22 @@ export default function OrdersPage() {
     }
 
     const s = (status || '').toLowerCase()
+    if (s === 'refund_pending' || s.includes('chờ_hoàn_tiền') || s.includes('chờ hoàn tiền')) {
+      return (
+        <Badge className="bg-amber-500 font-bold text-white gap-1 px-3 py-1 shadow-xs animate-pulse">
+          <Clock className="w-3.5 h-3.5" /> Chờ Hoàn Tiền (Admin Đang Xử Lý)
+        </Badge>
+      )
+    }
+
+    if (s === 'refunded' || s.includes('đã_hoàn_tiền') || s.includes('đã hoàn tiền')) {
+      return (
+        <Badge className="bg-blue-600 font-bold text-white gap-1 px-3 py-1">
+          <CheckCircle2 className="w-3.5 h-3.5" /> Đã Hoàn Tiền
+        </Badge>
+      )
+    }
+
     if (s === 'confirmed' || s === 'paid' || s.includes('đã_thanh_toán') || s.includes('đã thanh toán')) {
       return (
         <Badge className="bg-emerald-500 font-bold text-white gap-1 px-3 py-1">
@@ -896,7 +924,21 @@ export default function OrdersPage() {
                     )}
 
                     {/* Cancellation Lock & Cancel Button */}
-                    {order.status !== 'completed' && order.status !== 'cancelled' && (
+                    {order.status === 'refund_pending' && (
+                      <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/60 text-amber-800 dark:text-amber-300 px-3 py-1.5 rounded-xl text-xs font-semibold">
+                        <Clock className="w-3.5 h-3.5 text-amber-600 animate-spin" />
+                        <span>Đang chờ Admin đối soát & hoàn tiền về tài khoản</span>
+                      </div>
+                    )}
+
+                    {order.status === 'refunded' && (
+                      <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-300 px-3 py-1.5 rounded-xl text-xs font-semibold">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Đã hoàn tiền thành công</span>
+                      </div>
+                    )}
+
+                    {order.status !== 'completed' && order.status !== 'cancelled' && order.status !== 'refund_pending' && order.status !== 'refunded' && (
                       isOrderLockedForCancel(order.status) ? (
                         <TooltipProvider>
                           <Tooltip>

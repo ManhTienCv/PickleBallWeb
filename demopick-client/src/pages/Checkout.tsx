@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { cartService } from '@/services/cart.service'
@@ -78,6 +78,7 @@ export default function CheckoutPage() {
 
   const [customerName, setCustomerName] = useState(currentUser?.name || '')
   const [customerPhone, setCustomerPhone] = useState(currentUser?.phone || '')
+  const [customerEmail, setCustomerEmail] = useState(currentUser?.email || '')
 
   // GHN 3-tier Administrative Data
   const [provinces, setProvinces] = useState<GHNProvince[]>([])
@@ -171,21 +172,29 @@ export default function CheckoutPage() {
     })
   }, [selectedDistrictId])
 
-  // 4. Calculate GHN Shipping Fee when District & Ward change
+  // 4. Calculate GHN Shipping Fee when District & Ward change based on actual cart weight
+  const totalCartWeightGrams = useMemo(() => {
+    if (!cart?.items || cart.items.length === 0) return 250;
+    return cart.items.reduce((sum, it) => {
+      const itemWeight = (it.product as any)?.weight_grams || 250;
+      return sum + itemWeight * it.quantity;
+    }, 0);
+  }, [cart?.items]);
+
   useEffect(() => {
-    if (!selectedDistrictId || !selectedWardCode) return
+    if (!selectedDistrictId || !selectedWardCode) return;
     shippingService
       .calculateGHNFee({
         toDistrictId: selectedDistrictId,
         toWardCode: selectedWardCode,
-        weightGram: 700,
+        weightGram: Math.max(200, totalCartWeightGrams),
         insuranceValue: cart?.total_amount || 0,
       })
       .then((res) => {
-        setGhnShippingFee(res.shippingFee)
-        setExpectedDeliveryTime(res.expectedDeliveryTime)
-      })
-  }, [selectedDistrictId, selectedWardCode, cart?.total_amount])
+        setGhnShippingFee(res.shippingFee);
+        setExpectedDeliveryTime(res.expectedDeliveryTime);
+      });
+  }, [selectedDistrictId, selectedWardCode, cart?.total_amount, totalCartWeightGrams]);
 
   useEffect(() => {
     voucherService.getAvailableVouchers().then((vouchers) => {
@@ -273,6 +282,7 @@ export default function CheckoutPage() {
         shippingName: customerName,
         shippingPhone: customerPhone,
         shippingAddress: fullShippingAddress,
+        customerEmail: customerEmail.trim() || undefined,
         ghnProvinceId: selectedProvinceId,
         ghnDistrictId: selectedDistrictId,
         ghnWardCode: selectedWardCode,
@@ -565,6 +575,24 @@ export default function CheckoutPage() {
                     required
                   />
                 </div>
+              </div>
+
+              {/* Row: Email nhận hóa đơn điện tử */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="cEmail" className="font-bold text-xs text-slate-700 dark:text-slate-300">
+                    Email nhận hóa đơn điện tử & xác nhận đơn hàng
+                  </Label>
+                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Tự động gửi hóa đơn DemoPick Club</span>
+                </div>
+                <Input
+                  id="cEmail"
+                  type="email"
+                  value={customerEmail}
+                  placeholder="Ví dụ: yourname@gmail.com (để nhận hóa đơn và mã vận đơn GHN)"
+                  onChange={(e) => setCustomerEmail(e.target.value)}
+                  className="rounded-xl font-medium h-11"
+                />
               </div>
 
               {/* Row 2: GHN 3-Tier Selectors */}

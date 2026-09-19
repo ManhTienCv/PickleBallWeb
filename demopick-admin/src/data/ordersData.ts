@@ -212,10 +212,12 @@ export const masterCatalog: CatalogProduct[] = [
 export const ONLINE_STATUS_TABS: OnlineStatusTab[] = [
   { id: "ALL", label: "Tất cả đơn" },
   { id: "PENDING", label: "Chờ xử lý" },
+  { id: "REFUND_PENDING", label: "Chờ hoàn tiền" },
   { id: "READY_TO_PICK", label: "Chờ lấy hàng" },
   { id: "PICKING", label: "Đang lấy hàng" },
   { id: "SHIPPING", label: "Đang giao" },
   { id: "COMPLETED", label: "Thành công" },
+  { id: "REFUNDED", label: "Đã hoàn tiền" },
   { id: "RETURNED", label: "Hoàn hàng" },
   { id: "CANCELLED", label: "Đã hủy" },
 ];

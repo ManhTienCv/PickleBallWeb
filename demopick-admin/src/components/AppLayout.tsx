@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect, useRef, useLayoutEffect, UIEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -39,6 +39,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+
+// Persistent sidebar scroll position across route navigations (AppLayout unmount/remount)
+let sharedSidebarScrollTop = 0;
+try {
+  const saved = sessionStorage.getItem("demopick_admin_sidebar_scroll");
+  if (saved) {
+    sharedSidebarScrollTop = parseInt(saved, 10) || 0;
+  }
+} catch {
+  // Ignore sessionStorage errors
+}
 
 interface MenuItem {
   icon: any;
@@ -96,6 +107,71 @@ const AppLayout = ({ children, title, subtitle, headerRight, noScroll = false }:
   const navigate = useNavigate();
   const { user, logout, login } = useAuth();
   const [checkInOpen, setCheckInOpen] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
+
+  // Restore sidebar scroll position synchronously before paint on route change
+  useLayoutEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+
+    if (sharedSidebarScrollTop > 0) {
+      nav.scrollTop = sharedSidebarScrollTop;
+    } else {
+      // Fallback: If no saved scroll, ensure active menu item is visible
+      const activeEl = nav.querySelector<HTMLElement>("[data-active='true']");
+      if (activeEl) {
+        activeEl.scrollIntoView({ block: "nearest" });
+      }
+    }
+
+    // Secondary sync in rAF to guarantee DOM layout has fully calculated
+    const rafId = requestAnimationFrame(() => {
+      if (navRef.current && sharedSidebarScrollTop > 0) {
+        navRef.current.scrollTop = sharedSidebarScrollTop;
+      }
+    });
+
+    return () => {
+      cancelAnimationFrame(rafId);
+    };
+  }, [location.pathname, location.search]);
+
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleNavScroll = (e: UIEvent<HTMLElement>) => {
+    const st = e.currentTarget.scrollTop;
+    sharedSidebarScrollTop = st;
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+    scrollTimeoutRef.current = setTimeout(() => {
+      try {
+        sessionStorage.setItem("demopick_admin_sidebar_scroll", String(st));
+      } catch {
+        // Ignore storage errors
+      }
+    }, 150);
+  };
+
+  const handleNavClick = () => {
+    if (navRef.current) {
+      const st = navRef.current.scrollTop;
+      sharedSidebarScrollTop = st;
+      try {
+        sessionStorage.setItem("demopick_admin_sidebar_scroll", String(st));
+      } catch {
+        // Ignore storage errors
+      }
+    }
+  };
 
   // Sidebar Collapse state with LocalStorage persistence
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
@@ -198,7 +274,11 @@ const AppLayout = ({ children, title, subtitle, headerRight, noScroll = false }:
         </div>
 
         {/* Navigation Menu List */}
-        <nav className={`flex-1 overflow-y-auto ${isCollapsed ? "p-2 space-y-2" : "p-3 space-y-3"}`}>
+        <nav
+          ref={navRef}
+          onScroll={handleNavScroll}
+          className={`flex-1 overflow-y-auto ${isCollapsed ? "p-2 space-y-2" : "p-3 space-y-3"}`}
+        >
           {visibleSections.map((section, sectionIdx) => (
             <div key={section.title} className="space-y-1">
               {!isCollapsed ? (
@@ -220,6 +300,8 @@ const AppLayout = ({ children, title, subtitle, headerRight, noScroll = false }:
                         <TooltipTrigger asChild>
                           <Link
                             to={item.path}
+                            onClick={handleNavClick}
+                            data-active={isActive ? "true" : undefined}
                             className={`w-10 h-10 mx-auto rounded-xl flex items-center justify-center transition-all ${isActive
                               ? "bg-emerald-600 text-white font-semibold shadow-md shadow-emerald-600/20"
                               : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
@@ -239,6 +321,8 @@ const AppLayout = ({ children, title, subtitle, headerRight, noScroll = false }:
                     <Link
                       key={item.path}
                       to={item.path}
+                      onClick={handleNavClick}
+                      data-active={isActive ? "true" : undefined}
                       className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm transition-all ${isActive
                         ? "bg-emerald-600 text-white font-semibold shadow-sm shadow-emerald-600/20"
                         : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 font-medium"

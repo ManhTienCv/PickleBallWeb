@@ -18,7 +18,7 @@ export default function CustomerChatWidget() {
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Sinh và lưu trữ session_id của khách trong LocalStorage
+  // Sinh và lưu trữ session_id và chatToken của khách trong LocalStorage (Chống IDOR)
   const [sessionId] = useState<string>(() => {
     let saved = localStorage.getItem("demopick_chat_session");
     if (!saved) {
@@ -26,6 +26,10 @@ export default function CustomerChatWidget() {
       localStorage.setItem("demopick_chat_session", saved);
     }
     return saved;
+  });
+
+  const [chatToken, setChatToken] = useState<string>(() => {
+    return localStorage.getItem("demopick_chat_token") || "";
   });
 
   const scrollToBottom = () => {
@@ -41,7 +45,14 @@ export default function CustomerChatWidget() {
     // 1. Nạp tin nhắn ban đầu 1 lần duy nhất
     const fetchInitialMessages = async () => {
       try {
-        const res = await api.get(`/user/chat/messages?session_id=${sessionId}`);
+        const tokenParam = chatToken ? `&token=${encodeURIComponent(chatToken)}` : "";
+        const res = await api.get(`/user/chat/messages?session_id=${sessionId}${tokenParam}`, {
+          headers: chatToken ? { "X-Chat-Token": chatToken } : {},
+        });
+        if (res.data?.session_token) {
+          setChatToken(res.data.session_token);
+          localStorage.setItem("demopick_chat_token", res.data.session_token);
+        }
         if (res.data?.success && Array.isArray(res.data.data)) {
           setMessages(res.data.data);
         }
@@ -133,10 +144,21 @@ export default function CustomerChatWidget() {
 
     try {
       setIsSending(true);
-      await api.post("/user/chat/send", {
-        session_id: sessionId,
-        message: textToSend,
-      });
+      const res = await api.post(
+        "/user/chat/send",
+        {
+          session_id: sessionId,
+          message: textToSend,
+          token: chatToken,
+        },
+        {
+          headers: chatToken ? { "X-Chat-Token": chatToken } : {},
+        }
+      );
+      if (res.data?.session_token && !chatToken) {
+        setChatToken(res.data.session_token);
+        localStorage.setItem("demopick_chat_token", res.data.session_token);
+      }
     } catch {
       // Giữ tin nhắn optimistic nếu lỗi kết nối
     } finally {

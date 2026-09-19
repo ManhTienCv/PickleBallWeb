@@ -70,6 +70,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/orders', [OrderApiController::class, 'create']);
     Route::get('/orders/{code}', [OrderApiController::class, 'show']);
     Route::post('/orders/{code}/cancel', [OrderApiController::class, 'cancelOrder']);
+    Route::post('/orders/{code}/refund', [AdminOrderController::class, 'confirmRefund']);
 
     // Public Shop Catalog
     Route::get('/products', [ProductController::class, 'index']);
@@ -145,6 +146,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/orders', [AdminOrderController::class, 'index']);
         Route::put('/orders/{id}/status', [AdminOrderController::class, 'updateStatus']);
         Route::post('/orders/{code}/cancel', [AdminOrderController::class, 'cancelOrder']);
+        Route::post('/orders/{code}/refund', [AdminOrderController::class, 'confirmRefund']);
         Route::get('/posts', [PostController::class, 'adminIndex']);
 
         // Live Chat Hỗ Trợ 2 Chiều

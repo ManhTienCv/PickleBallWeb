@@ -38,9 +38,11 @@ class OrderApiController extends Controller
             'voucherCode' => 'nullable|string',
             'discount' => 'nullable|numeric|min:0',
             'items' => 'required|array|min:1',
+            'items.*.product_id' => 'nullable|integer',
+            'items.*.id' => 'nullable|integer',
             'items.*.name' => 'required|string',
             'items.*.quantity' => 'required|integer|min:1',
-            'items.*.price' => 'required|numeric|min:0',
+            'items.*.price' => 'nullable|numeric|min:0',
         ]);
 
         $customerEmail = !empty($validated['customerEmail'])
@@ -53,14 +55,70 @@ class OrderApiController extends Controller
         $orderCode = 'HD' . date('ymd') . rand(1000, 9999);
         
         $subtotal = 0;
-        foreach ($validated['items'] as $item) {
-            $subtotal += ($item['price'] * $item['quantity']);
+        $totalWeightGrams = 0;
+        $verifiedItems = [];
+
+        foreach ($validated['items'] as $idx => $item) {
+            $qty = (int) $item['quantity'];
+            $productId = $item['product_id'] ?? $item['id'] ?? null;
+            $itemName = strip_tags(trim($item['name']));
+            
+            // Bảo vệ giá (Price Protection): Tra cứu giá niêm yết chính thức từ Database
+            $authenticPrice = null;
+            $itemWeight = 250; // Trọng lượng mặc định 250g cho mỗi mặt hàng Pickleball
+
+            if ($productId) {
+                try {
+                    $dbProduct = DB::connection('shop')->table('products')->where('id', $productId)->first();
+                    if ($dbProduct) {
+                        $authenticPrice = (int) round($dbProduct->base_price);
+                        if (!empty($dbProduct->specifications)) {
+                            $specs = is_array($dbProduct->specifications)
+                                ? $dbProduct->specifications
+                                : json_decode($dbProduct->specifications, true);
+                            if (!empty($specs['weight_grams'])) {
+                                $itemWeight = (int) $specs['weight_grams'];
+                            }
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    try {
+                        $dbProduct = DB::connection('main')->table('products')->where('id', $productId)->first();
+                        if ($dbProduct) {
+                            $authenticPrice = (int) round($dbProduct->base_price ?? $dbProduct->price ?? 0);
+                        }
+                    } catch (\Throwable $mEx) {
+                        // ignore
+                    }
+                }
+            }
+
+            // Nếu không tìm thấy trong DB (sản phẩm custom/dịch vụ), dùng giá client gửi lên
+            $unitPrice = ($authenticPrice !== null && $authenticPrice > 0)
+                ? $authenticPrice
+                : (int) round($item['price'] ?? 0);
+
+            $itemSubtotal = $unitPrice * $qty;
+            $subtotal += $itemSubtotal;
+            $totalWeightGrams += ($itemWeight * $qty);
+
+            $verifiedItems[] = [
+                'id' => $idx + 1,
+                'product_id' => $productId,
+                'item_name' => $itemName,
+                'quantity' => $qty,
+                'price' => $unitPrice,
+                'subtotal' => $itemSubtotal,
+            ];
         }
+
+        // Đảm bảo trọng lượng tối thiểu 200g cho kiện hàng GHN
+        $totalWeightGrams = max(200, $totalWeightGrams);
 
         $ghnDistrictId = (int) ($validated['ghnDistrictId'] ?? 1485);
         $ghnWardCode = $validated['ghnWardCode'] ?? '1A0307';
-        $feeInfo = $this->ghnService->calculateFee($ghnDistrictId, $ghnWardCode, 700, (int) $subtotal);
-        $shippingFee = (int) ($feeInfo['shippingFee'] ?? 0);
+        $feeInfo = $this->ghnService->calculateFee($ghnDistrictId, $ghnWardCode, $totalWeightGrams, (int) $subtotal);
+        $shippingFee = (int) round($feeInfo['shippingFee'] ?? 0);
 
         // Calculate voucher discount securely on server side
         $voucherCode = !empty($validated['voucherCode']) ? strtoupper(trim($validated['voucherCode'])) : null;
@@ -68,14 +126,14 @@ class OrderApiController extends Controller
         if ($voucherCode) {
             $voucher = \App\Modules\Shop\Models\Voucher::where('code', $voucherCode)->first();
             if ($voucher && $voucher->isValidForAmount($subtotal)) {
-                $discount = $voucher->calculateDiscount($subtotal);
+                $discount = (int) round($voucher->calculateDiscount($subtotal));
                 $voucher->increment('used_count');
             }
         } elseif (!empty($validated['discount'])) {
-            $discount = (float) $validated['discount'];
+            $discount = (int) round($validated['discount']);
         }
 
-        $totalAmount = max(0, $subtotal + $shippingFee - $discount);
+        $totalAmount = (int) max(0, $subtotal + $shippingFee - $discount);
 
         if ($validated['paymentMethod'] === 'momo' && $totalAmount < 1000) {
             return response()->json([
@@ -94,6 +152,7 @@ class OrderApiController extends Controller
             'shipping_address' => $shippingAddress,
             'shipping_carrier' => 'GHN Express',
             'shipping_fee' => $shippingFee,
+            'shipping_weight_grams' => $totalWeightGrams,
             'subtotal' => $subtotal,
             'voucher_code' => $voucherCode,
             'discount' => $discount,
@@ -102,15 +161,7 @@ class OrderApiController extends Controller
             'payment_status' => $paymentStatus,
             'status' => 'pending',
             'created_at' => now()->toIso8601String(),
-            'items' => array_map(function ($it, $idx) {
-                return [
-                    'id' => $idx + 1,
-                    'item_name' => $it['name'],
-                    'quantity' => $it['quantity'],
-                    'price' => (int) $it['price'],
-                    'subtotal' => (int) ($it['price'] * $it['quantity']),
-                ];
-            }, $validated['items'], array_keys($validated['items'])),
+            'items' => $verifiedItems,
         ];
 
         $existingOrders = Cache::get('demopick_orders_store', []);
@@ -277,9 +328,21 @@ class OrderApiController extends Controller
 
         $isValidSignature = $this->momoService->verifyCallbackSignature($payload);
 
+        if (!$isValidSignature) {
+            Log::warning("MoMo callback invalid signature for order {$orderCode}");
+            return response()->json([
+                'success' => false,
+                'orderCode' => $orderCode,
+                'resultCode' => 99,
+                'message' => 'Chữ ký giao dịch MoMo không hợp lệ (Signature mismatch).',
+            ], 400);
+        }
+
         if ($resultCode === '0' || $resultCode === 0) {
             // Cập nhật Cache
             $orders = Cache::get('demopick_orders_store', []);
+            $wasAlreadyPaid = (isset($orders[$orderCode]) && ($orders[$orderCode]['payment_status'] ?? '') === 'paid');
+
             if (!empty($orderCode) && isset($orders[$orderCode])) {
                 $orders[$orderCode]['payment_status'] = 'paid';
                 $orders[$orderCode]['status'] = 'confirmed';
@@ -292,6 +355,9 @@ class OrderApiController extends Controller
                 if (!empty($orderCode)) {
                     $order = DB::connection('main')->table('orders')->where('order_code', $orderCode)->first();
                     if ($order) {
+                        if ($order->payment_status === 'paid') {
+                            $wasAlreadyPaid = true;
+                        }
                         DB::connection('main')->table('orders')->where('id', $order->id)->update([
                             'payment_status' => 'paid',
                             'status' => 'confirmed',
@@ -309,6 +375,19 @@ class OrderApiController extends Controller
                 }
             } catch (\Throwable $e) {
                 Log::warning('MoMo verify DB update note: ' . $e->getMessage());
+            }
+
+            // Gửi email xác nhận hóa đơn chỉ khi chưa từng thanh toán (tránh gửi lặp khi refresh trang)
+            if (!$wasAlreadyPaid && !empty($orderCode) && isset($orders[$orderCode])) {
+                $targetEmail = $orders[$orderCode]['customer_email'] ?? null;
+                if (!empty($targetEmail)) {
+                    try {
+                        Mail::to($targetEmail)->send(new OrderConfirmationMail($orders[$orderCode]));
+                        Log::info("Đã gửi email hóa đơn MoMo thành công cho #{$orderCode} tới {$targetEmail}");
+                    } catch (\Throwable $mEx) {
+                        Log::warning("Gửi email xác nhận MoMo thất bại (fail-safe): " . $mEx->getMessage());
+                    }
+                }
             }
 
             return response()->json([
@@ -363,6 +442,15 @@ class OrderApiController extends Controller
 
         if ($resultCode === 0 && !empty($orderCode)) {
             $orders = Cache::get('demopick_orders_store', []);
+
+            // Idempotency: Kiểm tra nếu đơn hàng đã được ghi nhận thanh toán trước đó thì bỏ qua xử lý lặp
+            if (isset($orders[$orderCode]) && ($orders[$orderCode]['payment_status'] ?? '') === 'paid') {
+                return response()->json([
+                    'message' => 'Giao dịch đã được xác nhận trước đó (Idempotent)',
+                    'resultCode' => 0,
+                ], 200);
+            }
+
             if (isset($orders[$orderCode])) {
                 $orders[$orderCode]['payment_status'] = 'paid';
                 $orders[$orderCode]['status'] = 'confirmed';
@@ -399,7 +487,34 @@ class OrderApiController extends Controller
     }
 
     /**
-     * Khách hàng / Quản trị viên hủy đơn hàng (Tuân thủ Quy tắc Khóa Hủy Đơn)
+     * Tự động hoàn lại số lượng tồn kho (Restock) khi đơn hàng bị hủy hoặc chuyển sang hoàn tiền
+     */
+    protected function restockOrderItems(array $items, string $orderCode): void
+    {
+        try {
+            foreach ($items as $item) {
+                $qty = (int) ($item['quantity'] ?? $item['qty'] ?? 0);
+                if ($qty <= 0) {
+                    continue;
+                }
+
+                $productId = $item['product_id'] ?? null;
+                $itemName = $item['item_name'] ?? $item['name'] ?? null;
+
+                if ($productId) {
+                    DB::connection('main')->table('products')->where('id', $productId)->increment('stock_quantity', $qty);
+                } elseif ($itemName) {
+                    DB::connection('main')->table('products')->where('name', $itemName)->increment('stock_quantity', $qty);
+                }
+            }
+            Log::info("Hoàn kho (Restock) tự động thành công cho đơn hàng #{$orderCode}");
+        } catch (\Throwable $e) {
+            Log::warning("Restock kho cho đơn hàng #{$orderCode} gặp lỗi (bỏ qua an toàn): " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Khách hàng / Quản trị viên hủy đơn hàng (Tuân thủ Quy tắc Khóa Vận Chuyển & Phân Luồng Tài Chính)
      */
     public function cancelOrder(Request $request, string $code): JsonResponse
     {
@@ -439,14 +554,84 @@ class OrderApiController extends Controller
             ], 422);
         }
 
-        // Cập nhật Cache
+        $paymentStatus = strtolower($targetOrder['payment_status'] ?? 'unpaid');
+        $paymentMethod = strtolower($targetOrder['payment_method'] ?? 'cod');
+        $isPaid = ($paymentStatus === 'paid');
+
+        $items = $targetOrder['items'] ?? [];
+
+        // 1. Tự động hoàn trả số lượng vào tồn kho (Restock)
+        $this->restockOrderItems($items, $code);
+
+        // 2. Phân luồng tài chính:
+        if ($isPaid) {
+            // Đơn Online đã thanh toán: Chuyển sang REFUND_PENDING chờ Admin xác nhận hoàn tiền
+            $refundAmount = (float) ($targetOrder['total_amount'] ?? 0);
+            $message = "Đơn hàng #{$code} đã được thanh toán Online trước đó. Hệ thống đã ghi nhận yêu cầu hủy và chuyển sang trạng thái CHỜ HOÀN TIỀN. Quản trị viên sẽ kiểm tra và thực hiện hoàn tiền cho bạn.";
+
+            // Bắn thông báo Admin vào Cache
+            $adminNotifications = Cache::get('demopick_admin_notifications', []);
+            $adminNotifications[] = [
+                'id' => 'notif_' . time() . '_' . rand(100, 999),
+                'type' => 'refund_request',
+                'title' => "Yêu cầu hoàn tiền đơn hàng #{$code}",
+                'content' => "Khách hàng yêu cầu hủy đơn hàng đã thanh toán Online số tiền " . number_format($refundAmount) . " VNĐ. Lý do: {$reason}",
+                'order_code' => $code,
+                'amount' => $refundAmount,
+                'created_at' => now()->toIso8601String(),
+                'is_read' => false,
+            ];
+            Cache::put('demopick_admin_notifications', array_slice($adminNotifications, -50), 86400 * 30);
+
+            // Cập nhật Cache Order
+            if (isset($orders[$code])) {
+                $orders[$code]['status'] = 'refund_pending';
+                $orders[$code]['refund_status'] = 'pending';
+                $orders[$code]['refund_reason'] = $reason;
+                $orders[$code]['refund_amount'] = $refundAmount;
+                $orders[$code]['refund_requested_at'] = now()->toIso8601String();
+                Cache::put('demopick_orders_store', $orders, 86400 * 30);
+            }
+
+            // Cập nhật Database Order
+            try {
+                $updateData = [
+                    'status' => 'refund_pending',
+                    'updated_at' => now(),
+                ];
+                if ($dbOrder) {
+                    DB::connection('main')->table('orders')->where('id', $dbOrder->id)->update($updateData);
+                } else {
+                    DB::connection('main')->table('orders')->where('order_code', $code)->update($updateData);
+                }
+            } catch (\Throwable $e) {
+                Log::info('Order refund_pending DB update: ' . $e->getMessage());
+            }
+
+            return response()->json([
+                'success' => true,
+                'action' => 'refund_pending',
+                'message' => $message,
+                'data' => [
+                    'order_code' => $code,
+                    'status' => 'refund_pending',
+                    'refund_amount' => $refundAmount,
+                    'cancel_reason' => $reason,
+                ],
+            ]);
+        }
+
+        // Đơn COD / Chưa thanh toán: Hủy ngay lập tức
+        $message = "Đã hủy đơn hàng COD #{$code} thành công và hoàn trả số lượng vào tồn kho.";
+
+        // Cập nhật Cache Order
         if (isset($orders[$code])) {
             $orders[$code]['status'] = 'cancelled';
             $orders[$code]['cancel_reason'] = $reason;
             Cache::put('demopick_orders_store', $orders, 86400 * 30);
         }
 
-        // Cập nhật Database
+        // Cập nhật Database Order
         try {
             if ($dbOrder) {
                 DB::connection('main')->table('orders')->where('id', $dbOrder->id)->update([
@@ -465,7 +650,8 @@ class OrderApiController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "Đã hủy đơn hàng #{$code} thành công.",
+            'action' => 'cancelled',
+            'message' => $message,
             'data' => [
                 'order_code' => $code,
                 'status' => 'cancelled',

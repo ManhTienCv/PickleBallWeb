@@ -12,6 +12,15 @@ use Illuminate\Support\Facades\Log;
 class ChatController extends Controller
 {
     /**
+     * Tạo và xác minh chữ ký bảo mật cho phiên chat của khách (Chống IDOR đọc trộm chat)
+     */
+    protected function generateSessionToken(string $sessionId): string
+    {
+        $salt = config('app.key') ?: 'demopick_chat_security_key';
+        return substr(hash_hmac('sha256', "chat_session_{$sessionId}", $salt), 0, 32);
+    }
+
+    /**
      * Khách hàng lấy danh sách tin nhắn (Tối ưu hóa với after_id để Auto-polling không gây tải)
      */
     public function getCustomerMessages(Request $request): JsonResponse
@@ -24,6 +33,17 @@ class ChatController extends Controller
                 'success' => false,
                 'message' => 'Thiếu session_id định danh phiên chat.',
             ], 400);
+        }
+
+        $expectedToken = $this->generateSessionToken($sessionId);
+        $providedToken = $request->header('X-Chat-Token') ?: $request->query('token');
+
+        // Chống IDOR: Nếu có token gửi lên nhưng không khớp với phiên -> từ chối truy cập
+        if ($providedToken && !hash_equals($expectedToken, $providedToken)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mã xác thực phiên chat không hợp lệ (Unauthorized chat session).',
+            ], 403);
         }
 
         $messages = [];
@@ -68,8 +88,9 @@ class ChatController extends Controller
 
         return response()->json([
             'success' => true,
+            'session_token' => $expectedToken,
             'data' => $messages,
-        ]);
+        ])->header('X-Chat-Token', $expectedToken);
     }
 
     /**
@@ -81,9 +102,20 @@ class ChatController extends Controller
             'session_id' => 'required|string|max:64',
             'message' => 'required|string|max:2000',
             'sender_name' => 'nullable|string|max:100',
+            'token' => 'nullable|string|max:64',
         ]);
 
         $sessionId = $validated['session_id'];
+        $expectedToken = $this->generateSessionToken($sessionId);
+        $providedToken = $request->header('X-Chat-Token') ?: ($validated['token'] ?? null);
+
+        if ($providedToken && !hash_equals($expectedToken, $providedToken)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mã xác thực phiên chat không hợp lệ (Unauthorized chat session).',
+            ], 403);
+        }
+
         $cleanMessage = strip_tags(trim($validated['message']));
         $userId = auth('sanctum')->id();
         $senderName = $validated['sender_name'] ?? ($userId ? auth('sanctum')->user()->name : 'Khách hàng');
@@ -117,6 +149,33 @@ class ChatController extends Controller
         // Cập nhật Cache cho session
         $cached = Cache::get("demopick_chat_session_{$sessionId}", []);
         $cached[] = $msgData;
+
+        // Tự động phát hiện thông tin nhạy cảm (PII: OTP, Password, CVV)
+        $hasPii = preg_match('/\b(otp|mã xác thực|ma xac thuc|mật khẩu|mat khau|password|cvv)\b/i', $cleanMessage);
+        if ($hasPii) {
+            $warningMsg = [
+                'id' => (int) (microtime(true) * 1000) + 1,
+                'session_id' => $sessionId,
+                'user_id' => null,
+                'sender_name' => 'DemoPick Security Bot',
+                'sender_type' => 'admin',
+                'message' => '🛡️ Lưu ý an toàn: Nhân viên DemoPick Club không bao giờ yêu cầu bạn cung cấp mật khẩu tài khoản, mã xác thực OTP hay mã CVV qua khung chat. Vui lòng bảo mật thông tin tài khoản!',
+                'is_read' => true,
+                'created_at' => now()->toIso8601String(),
+            ];
+            try {
+                Message::create([
+                    'session_id' => $sessionId,
+                    'user_id' => null,
+                    'sender_name' => 'DemoPick Security Bot',
+                    'sender_type' => 'admin',
+                    'message' => $warningMsg['message'],
+                    'is_read' => true,
+                ]);
+            } catch (\Throwable $e) {}
+            $cached[] = $warningMsg;
+        }
+
         Cache::put("demopick_chat_session_{$sessionId}", $cached, 86400 * 7);
 
         // Lưu vào danh sách hội thoại admin
@@ -133,9 +192,10 @@ class ChatController extends Controller
 
         return response()->json([
             'success' => true,
+            'session_token' => $expectedToken,
             'data' => $msgData,
             'message' => 'Gửi tin nhắn thành công.',
-        ], 201);
+        ], 201)->header('X-Chat-Token', $expectedToken);
     }
 
     /**

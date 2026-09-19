@@ -42,8 +42,13 @@ function ResetToHomeOnReload() {
         (navEntries && navEntries.length > 0 && navEntries[0]?.type === "reload") ||
         (performance as any)?.navigation?.type === 1;
 
-      if (isReload && location.pathname !== "/" && location.pathname !== "/login") {
-        navigate("/", { replace: true });
+      if (isReload) {
+        try {
+          sessionStorage.removeItem("demopick_admin_sidebar_scroll");
+        } catch {}
+        if (location.pathname !== "/" && location.pathname !== "/login") {
+          navigate("/", { replace: true });
+        }
       }
     } catch {
       // Fallback ignore
