@@ -16,7 +16,7 @@ import {
   BackendOrder,
   BackendOrderItem,
 } from "@/types/order.types";
-import { mockOrders, masterCatalog, ONLINE_STATUS_TABS, POS_SUB_TABS } from "@/data/ordersData";
+import { masterCatalog, ONLINE_STATUS_TABS, POS_SUB_TABS } from "@/data/ordersData";
 import { shippingService, ShippingCarrier, ShippingOrderInfo } from "@/services/shipping.service";
 import { notificationService } from "@/services/notification.service";
 import { adminService } from "@/services/admin.service";
@@ -49,12 +49,13 @@ export default function Orders() {
   const [onlineStatusFilter, setOnlineStatusFilter] = useState<string>("ALL");
   const [paymentFilter, setPaymentFilter] = useState<string>("ALL");
 
+  // Sync state with URL params
   useEffect(() => {
-    const tab = searchParams.get("tab");
-    if (tab === "pos") {
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "pos") {
       setViewMode("pos");
       setStatusFilter("PAID");
-    } else if (tab === "online") {
+    } else if (tabParam === "online") {
       if (isStaffOnly) {
         setViewMode("pos");
         setStatusFilter("PAID");
@@ -85,17 +86,13 @@ export default function Orders() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const hasCam = parsed.some((o: Order) => o.code.startsWith("CAM-"));
-          if (!hasCam) {
-            return [...mockOrders.filter((m) => m.code.startsWith("CAM-")), ...parsed];
-          }
-          return parsed;
+          return parsed.filter((o: Order) => !o.code?.startsWith("CAM-") && !o.code?.startsWith("HD260917") && !o.code?.startsWith("HD260918"));
         }
       }
-      return mockOrders;
+      return [];
     } catch (err) {
       console.warn("Failed to load saved admin orders from localStorage:", err);
-      return mockOrders;
+      return [];
     }
   });
 
@@ -129,80 +126,66 @@ export default function Orders() {
     try {
       const res = await api.get<{ success: boolean; data: BackendOrder[] }>("/orders");
       const backendOrders = res.data?.data;
-      if (Array.isArray(backendOrders) && backendOrders.length > 0) {
+      if (Array.isArray(backendOrders)) {
+        const mappedList: Order[] = backendOrders.map((bOrder) => {
+          const code = bOrder.order_code || bOrder.code || "";
+          const rawStatus = (bOrder.status || "").toUpperCase();
+          let mappedStatus: OrderStatus = "PENDING";
+          if (rawStatus === "REFUND_PENDING" || rawStatus === "CHỜ_HOÀN_TIỀN") {
+            mappedStatus = "REFUND_PENDING";
+          } else if (rawStatus === "REFUNDED" || rawStatus === "ĐÃ_HOÀN_TIỀN") {
+            mappedStatus = "REFUNDED";
+          } else if (rawStatus === "CANCELLED" || rawStatus === "ĐÃ_HỦY") {
+            mappedStatus = "CANCELLED";
+          } else if (bOrder.payment_status === "paid" || rawStatus === "CONFIRMED" || rawStatus === "PAID") {
+            mappedStatus = "PAID";
+          } else if (rawStatus === "SHIPPING" || rawStatus === "DELIVERING") {
+            mappedStatus = "SHIPPING";
+          } else if (rawStatus === "COMPLETED") {
+            mappedStatus = "COMPLETED";
+          }
+
+          const mappedMethod =
+            bOrder.payment_method === "momo"
+              ? "MoMo"
+              : bOrder.payment_method === "cod"
+              ? "COD"
+              : "VietQR";
+
+          const dateObj = bOrder.created_at ? new Date(bOrder.created_at) : new Date();
+          const dateStr = dateObj.toISOString().split("T")[0];
+          const timeStr = dateObj.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+
+          return {
+            code,
+            customerName: bOrder.customer_name || "Khách hàng Online",
+            customerPhone: bOrder.customer_phone || "",
+            staffName: "Hệ thống Tự Động Online",
+            type: "Đặt Sân Online",
+            totalAmount: bOrder.total_amount || 0,
+            paymentMethod: mappedMethod,
+            status: mappedStatus,
+            createdAt: `${dateStr} ${timeStr}`,
+            dateStr,
+            shippingAddress: bOrder.shipping_address || "",
+            shippingCarrier: "GHN",
+            shippingFee: bOrder.shipping_fee || 0,
+            items: Array.isArray(bOrder.items)
+              ? bOrder.items.map((it: BackendOrderItem, idx: number) => ({
+                  id: it.id || idx + 1,
+                  name: it.item_name || it.name || "Sản phẩm",
+                  qty: it.quantity || it.qty || 1,
+                  price: it.price || 0,
+                }))
+              : [],
+          };
+        });
+
         setOrdersList((prevList) => {
-          const map = new Map<string, Order>();
-          prevList.forEach((o) => map.set(o.code, o));
-
-          backendOrders.forEach((bOrder) => {
-            const code = bOrder.order_code || bOrder.code;
-            if (!code) return;
-
-            const rawStatus = (bOrder.status || "").toUpperCase();
-            let mappedStatus: OrderStatus = "PENDING";
-            if (rawStatus === "REFUND_PENDING" || rawStatus === "CHỜ_HOÀN_TIỀN") {
-              mappedStatus = "REFUND_PENDING";
-            } else if (rawStatus === "REFUNDED" || rawStatus === "ĐÃ_HOÀN_TIỀN") {
-              mappedStatus = "REFUNDED";
-            } else if (rawStatus === "CANCELLED" || rawStatus === "ĐÃ_HỦY") {
-              mappedStatus = "CANCELLED";
-            } else if (bOrder.payment_status === "paid" || rawStatus === "CONFIRMED" || rawStatus === "PAID") {
-              mappedStatus = "PAID";
-            } else if (rawStatus === "SHIPPING" || rawStatus === "DELIVERING") {
-              mappedStatus = "SHIPPING";
-            } else if (rawStatus === "COMPLETED") {
-              mappedStatus = "COMPLETED";
-            }
-
-            const mappedMethod =
-              bOrder.payment_method === "momo"
-                ? "MoMo"
-                : bOrder.payment_method === "cod"
-                ? "COD"
-                : "VietQR";
-
-            const existing = map.get(code);
-            if (existing) {
-              map.set(code, {
-                ...existing,
-                status: mappedStatus !== "PENDING" ? mappedStatus : existing.status,
-                paymentMethod: mappedMethod,
-                totalAmount: bOrder.total_amount || existing.totalAmount,
-                customerPhone: bOrder.customer_phone || existing.customerPhone,
-                shippingAddress: bOrder.shipping_address || existing.shippingAddress,
-              });
-            } else {
-              const dateObj = bOrder.created_at ? new Date(bOrder.created_at) : new Date();
-              const dateStr = dateObj.toISOString().split("T")[0];
-              const timeStr = dateObj.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
-
-              map.set(code, {
-                code,
-                customerName: bOrder.customer_name || "Khách hàng Online",
-                customerPhone: bOrder.customer_phone || "",
-                staffName: "Hệ thống Tự Động Online",
-                type: "Đặt Sân Online",
-                totalAmount: bOrder.total_amount || 0,
-                paymentMethod: mappedMethod,
-                status: mappedStatus,
-                createdAt: `${dateStr} ${timeStr}`,
-                dateStr,
-                shippingAddress: bOrder.shipping_address || "",
-                shippingCarrier: "GHN",
-                shippingFee: bOrder.shipping_fee || 0,
-                items: Array.isArray(bOrder.items)
-                  ? bOrder.items.map((it: BackendOrderItem, idx: number) => ({
-                      id: it.id || idx + 1,
-                      name: it.item_name || it.name || "Sản phẩm",
-                      qty: it.quantity || it.qty || 1,
-                      price: it.price || 0,
-                    }))
-                  : [],
-              });
-            }
-          });
-
-          return Array.from(map.values());
+          const localPosOrders = (prevList || []).filter((o) => o.type === "POS Quầy");
+          const merged = [...mappedList, ...localPosOrders];
+          localStorage.setItem("demopick_orders_admin", JSON.stringify(merged));
+          return merged;
         });
 
         if (showToast) {

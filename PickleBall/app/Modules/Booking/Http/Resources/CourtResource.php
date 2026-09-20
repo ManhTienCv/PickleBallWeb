@@ -19,6 +19,8 @@ class CourtResource extends JsonResource
             'status' => $this->status,
             'amenities' => $this->amenities ?? [],
             'image_url' => $this->image_url,
+            'hourly_rate' => (float) ($this->pricingRules->first()?->price ?? 140000),
+            'peak_hourly_rate' => (float) ($this->pricingRules->skip(1)->first()?->price ?? 180000),
         ];
     }
 }

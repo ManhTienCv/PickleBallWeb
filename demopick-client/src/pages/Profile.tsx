@@ -120,76 +120,60 @@ export default function Profile() {
       if (data && data.length > 0) {
         setOrders(data)
       } else {
-        // Fallback: check admin orders or demo orders in localStorage
+        // Check orders in localStorage belonging to this user
         const adminOrdersRaw = localStorage.getItem('demopick_orders_admin')
         if (adminOrdersRaw) {
-          const parsed = JSON.parse(adminOrdersRaw)
-          const converted: Order[] = parsed.map((o: any, idx: number) => {
-            const isPaid =
-              o.paymentStatus === 'paid' ||
-              o.status === 'ĐÃ_THANH_TOÁN' ||
-              o.status === 'confirmed' ||
-              o.paymentMethod === 'VietQR'
+          try {
+            const parsed = JSON.parse(adminOrdersRaw)
+            if (Array.isArray(parsed)) {
+              const userOrders = parsed.filter((o: any) => {
+                const phoneMatch = user?.phone && (o.customerPhone === user.phone || o.customer_phone === user.phone || o.shippingPhone === user.phone)
+                const emailMatch = user?.email && (o.customerEmail === user.email || o.customer_email === user.email || o.email === user.email)
+                return phoneMatch || emailMatch
+              })
 
-            return {
-              id: idx + 1,
-              order_code: o.code || o.orderCode || o.order_code || `HD-${10000 + idx}`,
-              status:
-                o.status === 'completed' || o.status === 'ĐÃ_GIAO'
-                  ? 'completed'
-                  : isPaid
-                  ? 'confirmed'
-                  : 'pending',
-              payment_status: isPaid ? 'paid' : 'unpaid',
-              payment_method: o.paymentMethod || 'VietQR',
-              total_amount: o.totalAmount || o.grandTotal || 0,
-              created_at: o.createdAt || 'Hôm nay',
-              items:
-                o.items?.map((it: any, iIdx: number) => ({
-                  id: iIdx + 1,
-                  item_type: 'product',
-                  item_name: it.name || it.item_name || 'Thiết bị Pickleball',
-                  quantity: it.qty || it.quantity || 1,
-                  unit_price: it.price || 0,
-                  subtotal: (it.qty || it.quantity || 1) * (it.price || 0),
-                })) || [],
+              if (userOrders.length > 0) {
+                const converted: Order[] = userOrders.map((o: any, idx: number) => {
+                  const isPaid =
+                    o.paymentStatus === 'paid' ||
+                    o.status === 'ĐÃ_THANH_TOÁN' ||
+                    o.status === 'confirmed' ||
+                    o.paymentMethod === 'VietQR'
+
+                  return {
+                    id: idx + 1,
+                    order_code: o.code || o.orderCode || o.order_code || `HD-${10000 + idx}`,
+                    status:
+                      o.status === 'completed' || o.status === 'ĐÃ_GIAO'
+                        ? 'completed'
+                        : isPaid
+                        ? 'confirmed'
+                        : 'pending',
+                    payment_status: isPaid ? 'paid' : 'unpaid',
+                    payment_method: o.paymentMethod || 'VietQR',
+                    total_amount: o.totalAmount || o.grandTotal || 0,
+                    created_at: o.createdAt || 'Hôm nay',
+                    items:
+                      o.items?.map((it: any, iIdx: number) => ({
+                        id: iIdx + 1,
+                        item_type: 'product',
+                        item_name: it.name || it.item_name || 'Thiết bị Pickleball',
+                        quantity: it.qty || it.quantity || 1,
+                        unit_price: it.price || 0,
+                        subtotal: (it.qty || it.quantity || 1) * (it.price || 0),
+                      })) || [],
+                  }
+                })
+                setOrders(converted)
+                return
+              }
             }
-          })
-          setOrders(converted)
-        } else {
-          // Default mock orders for preview
-          setOrders([
-            {
-              id: 1,
-              order_code: 'HD-78241',
-              status: 'confirmed',
-              payment_status: 'paid',
-              payment_method: 'VietQR (VietinBank)',
-              total_amount: 3450000,
-              created_at: '16/09/2026 10:30',
-              items: [
-                { id: 101, item_type: 'product', item_name: 'Vợt Pickleball Selkirk Vanguard Power Air Invikta', quantity: 1, price: 3200000, subtotal: 3200000 },
-                { id: 102, item_type: 'product', item_name: 'Hộp bóng thi đấu Franklin X-40 (3 quả)', quantity: 1, price: 250000, subtotal: 250000 },
-              ],
-            },
-            {
-              id: 2,
-              order_code: 'HD-65910',
-              status: 'completed',
-              payment_status: 'paid',
-              payment_method: 'Tiền mặt (COD)',
-              total_amount: 550000,
-              created_at: '12/09/2026 16:15',
-              items: [
-                { id: 201, item_type: 'product', item_name: 'Băng quấn cán vợt Tourna Grip Pickleball (Bộ 3 cái)', quantity: 2, price: 150000, subtotal: 300000 },
-                { id: 202, item_type: 'booking', item_name: 'Thuê sân Pickleball Sân 02 (18:00 - 19:30)', quantity: 1, price: 250000, subtotal: 250000 },
-              ],
-            },
-          ])
+          } catch {}
         }
+        setOrders([])
       }
     } catch {
-      // Fallback
+      setOrders([])
     } finally {
       setIsLoadingOrders(false)
     }

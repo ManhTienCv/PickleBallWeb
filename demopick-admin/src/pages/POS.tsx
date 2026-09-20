@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
@@ -86,15 +86,20 @@ export default function POS() {
   const [quickRestockQty, setQuickRestockQty] = useState(20);
 
   // Current shift sales summary state
-  const [shiftCashTotal, setShiftCashTotal] = useState(1450000);
-  const [shiftTransferTotal, setShiftTransferTotal] = useState(3800000);
-  const [shiftOrdersCount, setShiftOrdersCount] = useState(8);
+  const [shiftCashTotal, setShiftCashTotal] = useState(0);
+  const [shiftTransferTotal, setShiftTransferTotal] = useState(0);
+  const [shiftOrdersCount, setShiftOrdersCount] = useState(0);
 
   // Live court polling & real-time ticking
   const { data: apiCourts = [], isLoading: isLoadingLiveCourts, refetch: refetchLiveCourts } = useQuery({
     queryKey: ["pos-live-courts"],
     queryFn: adminService.getLiveCourtStatus,
     refetchInterval: 5000,
+  });
+
+  const { data: rawCourts = [] } = useQuery({
+    queryKey: ["pos-base-courts"],
+    queryFn: adminService.getCourts,
   });
 
   const [liveNow, setLiveNow] = useState<Date>(new Date());
@@ -118,126 +123,23 @@ export default function POS() {
   // Local session state overrides to provide immediate, zero-latency reactive UI
   const [localCourtOverrides, setLocalCourtOverrides] = useState<Record<number, Partial<CourtStatusItem>>>({});
 
-  // Dynamic fallback courts matching real database courts with realistic live sessions
-  const getDefaultCourtStatusList = (): CourtStatusItem[] => {
-    const now = new Date();
-    const a1Start = new Date(now.getTime() - 45 * 60 * 1000);
-    const a1StartStr = `${String(a1Start.getHours()).padStart(2, "0")}:${String(a1Start.getMinutes()).padStart(2, "0")}:${String(a1Start.getSeconds()).padStart(2, "0")}`;
-
-    const b1Start = new Date(now.getTime() - 80 * 60 * 1000);
-    const b1StartStr = `${String(b1Start.getHours()).padStart(2, "0")}:${String(b1Start.getMinutes()).padStart(2, "0")}:${String(b1Start.getSeconds()).padStart(2, "0")}`;
-
-    const d1Start = new Date(now.getTime() - 25 * 60 * 1000);
-    const d1StartStr = `${String(d1Start.getHours()).padStart(2, "0")}:${String(d1Start.getMinutes()).padStart(2, "0")}:${String(d1Start.getSeconds()).padStart(2, "0")}`;
-
-    return [
-      {
-        id: 1,
-        name: "Sân Pickleball A1",
-        status: "in_use",
-        statusLabel: "ĐANG CHƠI",
-        statusColor: "bg-emerald-50 text-emerald-700 border-emerald-300",
-        time: "Đang thi đấu",
-        hours: 0.75,
-        rate: 140000,
-        customerName: "Hoàng Long",
-        customerPhone: "0912.345.678",
-        start_time: a1StartStr,
-        expected_duration_minutes: 60,
-      },
-      {
-        id: 2,
-        name: "Sân Pickleball A2",
+  // Dynamic fallback courts matching real database courts
+  const defaultCourtStatusList = useMemo((): CourtStatusItem[] => {
+    if (rawCourts && rawCourts.length > 0) {
+      return rawCourts.map((c) => ({
+        id: c.id,
+        name: c.name,
         status: "available",
         statusLabel: "TRỐNG",
         statusColor: "bg-slate-100 text-slate-500 border-slate-200",
         time: "Sẵn sàng thi đấu",
         hours: 1,
-        rate: 140000,
+        rate: Number(c.hourly_rate) || 140000,
         customerName: null,
-        available_minutes_until_next: 90,
-        next_booking_time: "19:30",
-      },
-      {
-        id: 3,
-        name: "Sân Pickleball B1",
-        status: "ending",
-        statusLabel: "SẮP HẾT GIỜ",
-        statusColor: "bg-amber-50 text-amber-700 border-amber-300",
-        time: "Sắp hết giờ (còn 10p)",
-        hours: 1.5,
-        rate: 140000,
-        customerName: "Chị Minh Thảo",
-        customerPhone: "0988.765.432",
-        start_time: b1StartStr,
-        expected_duration_minutes: 90,
-      },
-      {
-        id: 4,
-        name: "Sân Pickleball B2",
-        status: "available",
-        statusLabel: "TRỐNG",
-        statusColor: "bg-slate-100 text-slate-500 border-slate-200",
-        time: "Sẵn sàng thi đấu",
-        hours: 1,
-        rate: 140000,
-        customerName: null,
-        available_minutes_until_next: 120,
-        next_booking_time: "20:00",
-      },
-      {
-        id: 5,
-        name: "Sân Pickleball C1",
-        status: "booked",
-        statusLabel: "ĐÃ ĐẶT",
-        statusColor: "bg-blue-50 text-blue-700 border-blue-300",
-        time: "18:00 - 20:00 (Hôm nay)",
-        hours: 2,
-        rate: 180000,
-        customerName: "CLB Doanh Nhân SG",
-        customerPhone: "0903.111.222",
-        next_booking_time: "18:00",
-      },
-      {
-        id: 6,
-        name: "Sân Pickleball C2",
-        status: "available",
-        statusLabel: "TRỐNG",
-        statusColor: "bg-slate-100 text-slate-500 border-slate-200",
-        time: "Sẵn sàng thi đấu",
-        hours: 1,
-        rate: 180000,
-        customerName: null,
-      },
-      {
-        id: 7,
-        name: "Sân Pickleball D1",
-        status: "in_use",
-        statusLabel: "ĐANG ĐÁNH",
-        statusColor: "bg-emerald-50 text-emerald-700 border-emerald-300",
-        time: "Đang thi đấu (25p)",
-        hours: 0.5,
-        rate: 140000,
-        customerName: "Anh Hoàng Nam",
-        customerPhone: "0912.333.444",
-        start_time: d1StartStr,
-        expected_duration_minutes: 60,
-      },
-      {
-        id: 8,
-        name: "Sân Pickleball D2",
-        status: "available",
-        statusLabel: "TRỐNG",
-        statusColor: "bg-slate-100 text-slate-500 border-slate-200",
-        time: "Sẵn sàng thi đấu",
-        hours: 1,
-        rate: 140000,
-        customerName: null,
-      },
-    ];
-  };
-
-  const defaultCourtStatusList = getDefaultCourtStatusList();
+      }));
+    }
+    return [];
+  }, [rawCourts]);
 
   // Merge API live courts with formatting
   const baseCourtList = apiCourts && apiCourts.length > 0
@@ -649,7 +551,7 @@ export default function POS() {
     const variant = product.variants[variantIndex];
     if (variant.stock_quantity <= 0) {
       if (product.item_type === "drink_food" || product.category?.name?.includes("Nước")) {
-        toast.info(`Mặt hàng "${product.name}" đã hết! Bấm "+ Nhập Quầy" để bổ sung lốc mới.`);
+        toast.info(`Mặt hàng "${product.name}" đã hết! Bấm " Nhập Quầy" để bổ sung lốc mới.`);
       } else {
         toast.error(`Sản phẩm cao cấp "${product.name}" đã hết kho. Vui lòng liên hệ Admin cộng kho tổng.`);
       }
@@ -752,7 +654,7 @@ export default function POS() {
         code: newOrderCode,
         customerName: finalCustomerName,
         customerPhone: finalCustomerPhone,
-        staffName: user?.name || "Phạm Văn Đức (Lễ Tân)",
+        staffName: user?.name || "Lễ tân quầy",
         items: [...cartItems],
         subtotal: subtotalAmount,
         discount: 0,
@@ -762,6 +664,36 @@ export default function POS() {
       };
       setLastPOSReceipt(receiptData);
       setPosReceiptModalOpen(true);
+
+      // Persist POS order to system orders list
+      try {
+        const todayStr = new Date().toISOString().split("T")[0];
+        const timeStr = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+        const newPosOrder = {
+          code: newOrderCode,
+          customerName: finalCustomerName,
+          customerPhone: finalCustomerPhone,
+          staffName: user?.name || "Lễ tân quầy",
+          type: "POS Quầy",
+          posCategory: hasCourt ? "court_service" : "retail",
+          totalAmount: finalTotalAmount,
+          paymentMethod: paymentMethod === "cash" ? "Tiền mặt" : "VietQR",
+          status: "PAID",
+          createdAt: `${todayStr} ${timeStr}`,
+          dateStr: todayStr,
+          shippingAddress: hasCourt ? "Sân thi đấu tại chỗ" : "Mua hàng trực tiếp tại quầy",
+          items: cartItems.map((c, idx) => ({
+            id: c.variantId || idx + 1,
+            name: c.productName + (c.variantName ? ` (${c.variantName})` : ""),
+            qty: c.quantity,
+            price: c.price,
+          })),
+        };
+        const savedOrdersRaw = localStorage.getItem("demopick_orders_admin");
+        const existingOrders = savedOrdersRaw ? JSON.parse(savedOrdersRaw) : [];
+        const updatedOrders = [newPosOrder, ...(Array.isArray(existingOrders) ? existingOrders : [])];
+        localStorage.setItem("demopick_orders_admin", JSON.stringify(updatedOrders));
+      } catch {}
 
       toast.success(`Thanh toán hóa đơn #${newOrderCode} (${new Intl.NumberFormat("vi-VN").format(finalTotalAmount)}đ) thành công! Tồn kho POS & Web đã đồng bộ tự động.`, {
         duration: 5000,
@@ -862,12 +794,12 @@ export default function POS() {
                 <Card
                   key={court.id}
                   className={`p-3 bg-white border transition-all duration-150 space-y-2 ${isEnding
-                      ? "border-amber-400 bg-amber-50/40 shadow-xs ring-1 ring-amber-300"
-                      : isInUse
-                        ? "border-emerald-400 bg-emerald-50/20 shadow-xs"
-                        : isBooked
-                          ? "border-blue-300 bg-blue-50/20"
-                          : "border-slate-200 hover:border-slate-300"
+                    ? "border-amber-400 bg-amber-50/40 shadow-xs ring-1 ring-amber-300"
+                    : isInUse
+                      ? "border-emerald-400 bg-emerald-50/20 shadow-xs"
+                      : isBooked
+                        ? "border-blue-300 bg-blue-50/20"
+                        : "border-slate-200 hover:border-slate-300"
                     }`}
                 >
                   <div className="flex items-center justify-between">
@@ -890,34 +822,30 @@ export default function POS() {
                     {(isInUse || isEnding) ? (
                       <div className="space-y-1">
                         <div
-                          className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg font-mono border transition-all ${
-                            isEnding
-                              ? "bg-amber-500/10 dark:bg-amber-950/40 border-amber-300/80 dark:border-amber-800/60 text-amber-950 dark:text-amber-200"
-                              : "bg-emerald-500/10 dark:bg-emerald-950/40 border-emerald-300/80 dark:border-emerald-800/60 text-emerald-950 dark:text-emerald-200"
-                          }`}
+                          className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg font-mono border transition-all ${isEnding
+                            ? "bg-amber-500/10 dark:bg-amber-950/40 border-amber-300/80 dark:border-amber-800/60 text-amber-950 dark:text-amber-200"
+                            : "bg-emerald-500/10 dark:bg-emerald-950/40 border-emerald-300/80 dark:border-emerald-800/60 text-emerald-950 dark:text-emerald-200"
+                            }`}
                         >
                           <div
-                            className={`flex items-center gap-1.5 text-[11px] font-semibold ${
-                              isEnding
-                                ? "text-amber-800 dark:text-amber-300"
-                                : "text-emerald-800 dark:text-emerald-300"
-                            }`}
+                            className={`flex items-center gap-1.5 text-[11px] font-semibold ${isEnding
+                              ? "text-amber-800 dark:text-amber-300"
+                              : "text-emerald-800 dark:text-emerald-300"
+                              }`}
                           >
                             <Timer
-                              className={`h-3.5 w-3.5 animate-pulse ${
-                                isEnding
-                                  ? "text-amber-600 dark:text-amber-400"
-                                  : "text-emerald-600 dark:text-emerald-400"
-                              }`}
+                              className={`h-3.5 w-3.5 animate-pulse ${isEnding
+                                ? "text-amber-600 dark:text-amber-400"
+                                : "text-emerald-600 dark:text-emerald-400"
+                                }`}
                             />
                             <span>Giờ chơi:</span>
                           </div>
                           <span
-                            className={`font-black text-xs tracking-wider ${
-                              isEnding
-                                ? "text-amber-700 dark:text-amber-400"
-                                : "text-emerald-700 dark:text-emerald-400"
-                            }`}
+                            className={`font-black text-xs tracking-wider ${isEnding
+                              ? "text-amber-700 dark:text-amber-400"
+                              : "text-emerald-700 dark:text-emerald-400"
+                              }`}
                           >
                             {live.elapsedTimeStr}
                           </span>
@@ -1098,7 +1026,7 @@ export default function POS() {
                           onClick={() => setQuickRestockProduct(p)}
                           className="w-full h-6 px-1.5 font-bold text-[9px] border-amber-300 text-amber-800 bg-amber-50 hover:bg-amber-100"
                         >
-                          <span>+ Nhập Quầy</span>
+                          <span>Nhập Quầy</span>
                         </Button>
                       ) : (
                         <div className="w-full h-6 flex items-center justify-center text-[9px] font-bold text-slate-400 bg-slate-100 rounded border border-slate-200">
@@ -1640,8 +1568,8 @@ export default function POS() {
                     type="button"
                     onClick={() => setSelectedDurationOption(null)}
                     className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedDurationOption === null
-                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                      : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                       }`}
                   >
                     Chơi mở (Tự do)
@@ -1650,8 +1578,8 @@ export default function POS() {
                     type="button"
                     onClick={() => setSelectedDurationOption(30)}
                     className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedDurationOption === 30
-                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                      : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                       }`}
                   >
                     30 phút
@@ -1660,8 +1588,8 @@ export default function POS() {
                     type="button"
                     onClick={() => setSelectedDurationOption(45)}
                     className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedDurationOption === 45
-                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                      : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                       }`}
                   >
                     45 phút
@@ -1670,8 +1598,8 @@ export default function POS() {
                     type="button"
                     onClick={() => setSelectedDurationOption(60)}
                     className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedDurationOption === 60
-                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                      : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                       }`}
                   >
                     60 phút (1h)
@@ -1680,8 +1608,8 @@ export default function POS() {
                     type="button"
                     onClick={() => setSelectedDurationOption(90)}
                     className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedDurationOption === 90
-                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                      : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                       }`}
                   >
                     90 phút (1.5h)
@@ -1690,8 +1618,8 @@ export default function POS() {
                     type="button"
                     onClick={() => setSelectedDurationOption(120)}
                     className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedDurationOption === 120
-                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                      : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                       }`}
                   >
                     120 phút (2h)
@@ -1703,8 +1631,8 @@ export default function POS() {
                     type="button"
                     onClick={() => setSelectedDurationOption(targetCourtForSession.available_minutes_until_next)}
                     className={`w-full mt-1 p-2 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all ${selectedDurationOption === targetCourtForSession.available_minutes_until_next
-                        ? "bg-blue-600 text-white border-blue-600"
-                        : "bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100"
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100"
                       }`}
                   >
                     <span>Lấp khoảng trống: {targetCourtForSession.available_minutes_until_next} phút (đến {targetCourtForSession.next_booking_time})</span>

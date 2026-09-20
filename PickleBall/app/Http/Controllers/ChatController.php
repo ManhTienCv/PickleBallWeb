@@ -234,41 +234,6 @@ class ChatController extends Controller
             $conversations = array_values($cachedConv);
         }
 
-        // Khởi tạo cuộc trò chuyện mẫu thực tế nếu danh sách rỗng
-        if (empty($conversations)) {
-            $conversations = [
-                [
-                    'session_id' => 'GUEST_demo_hoangnam',
-                    'customer_name' => 'Nguyễn Lê Hoàng Nam',
-                    'last_message' => 'Bên mình có nhận căng cước vợt lấy ngay trong ca chiều không shop?',
-                    'last_sender' => 'user',
-                    'unread_count' => 1,
-                    'updated_at' => now()->subMinutes(12)->toIso8601String(),
-                ],
-                [
-                    'session_id' => 'GUEST_demo_phuongvu',
-                    'customer_name' => 'Vũ Mai Phương',
-                    'last_message' => 'Mình vừa đặt Sân VIP C1 lúc 18h tối nay, check giúp mình nhé.',
-                    'last_sender' => 'user',
-                    'unread_count' => 0,
-                    'updated_at' => now()->subMinutes(45)->toIso8601String(),
-                ],
-                [
-                    'session_id' => 'GUEST_demo_tiendung',
-                    'customer_name' => 'Đặng Tiến Dũng',
-                    'last_message' => 'Dạ vâng cảm ơn shop, mình đã nhận được bóng Franklin.',
-                    'last_sender' => 'admin',
-                    'unread_count' => 0,
-                    'updated_at' => now()->subHours(2)->toIso8601String(),
-                ],
-            ];
-            $saved = [];
-            foreach ($conversations as $c) {
-                $saved[$c['session_id']] = $c;
-            }
-            Cache::put('demopick_chat_conversations', $saved, 86400 * 7);
-        }
-
         return response()->json([
             'success' => true,
             'data' => $conversations,
@@ -301,50 +266,6 @@ class ChatController extends Controller
         if (isset($allConversations[$sessionId])) {
             $allConversations[$sessionId]['unread_count'] = 0;
             Cache::put('demopick_chat_conversations', $allConversations, 86400 * 7);
-        }
-
-        // Mock messages nếu session mẫu
-        if (empty($messages)) {
-            if ($sessionId === 'GUEST_demo_hoangnam') {
-                $messages = [
-                    [
-                        'id' => 101,
-                        'session_id' => $sessionId,
-                        'sender_type' => 'user',
-                        'sender_name' => 'Nguyễn Lê Hoàng Nam',
-                        'message' => 'Chào shop, sân mình hôm nay còn giờ trống từ 17h đến 19h không ạ?',
-                        'created_at' => now()->subMinutes(15)->toIso8601String(),
-                    ],
-                    [
-                        'id' => 102,
-                        'session_id' => $sessionId,
-                        'sender_type' => 'admin',
-                        'sender_name' => 'DemoPick Support',
-                        'message' => 'Chào anh Nam! Chiều nay bên em còn Sân A2 (Trong nhà) trống khung 17h30 - 19h30 ạ.',
-                        'created_at' => now()->subMinutes(13)->toIso8601String(),
-                    ],
-                    [
-                        'id' => 103,
-                        'session_id' => $sessionId,
-                        'sender_type' => 'user',
-                        'sender_name' => 'Nguyễn Lê Hoàng Nam',
-                        'message' => 'Bên mình có nhận căng cước vợt lấy ngay trong ca chiều không shop?',
-                        'created_at' => now()->subMinutes(12)->toIso8601String(),
-                    ],
-                ];
-            } else {
-                $messages = [
-                    [
-                        'id' => 104,
-                        'session_id' => $sessionId,
-                        'sender_type' => 'user',
-                        'sender_name' => 'Khách hàng',
-                        'message' => 'Xin chào shop, mình cần hỗ trợ thông tin đơn hàng.',
-                        'created_at' => now()->subMinutes(30)->toIso8601String(),
-                    ],
-                ];
-            }
-            Cache::put("demopick_chat_session_{$sessionId}", $messages, 86400 * 7);
         }
 
         return response()->json([

@@ -14,14 +14,14 @@ class CourtController extends Controller
 
     public function index(): JsonResponse
     {
-        $courts = Court::where('status', 'active')->get();
+        $courts = Court::with('pricingRules')->where('status', 'active')->get();
 
         return $this->success(CourtResource::collection($courts), 'Danh sách sân Pickleball.');
     }
 
     public function show(int $id): JsonResponse
     {
-        $court = Court::findOrFail($id);
+        $court = Court::with('pricingRules')->findOrFail($id);
 
         return $this->success(new CourtResource($court), 'Chi tiết sân Pickleball.');
     }

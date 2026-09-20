@@ -66,7 +66,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/user/chat/send', [ChatController::class, 'sendCustomerMessage']);
 
     // ── Orders & Checkout API ─────────────────────────────────
-    Route::get('/orders', [OrderApiController::class, 'index']);
+    Route::get('/orders', [AdminOrderController::class, 'index']);
     Route::post('/orders', [OrderApiController::class, 'create']);
     Route::get('/orders/{code}', [OrderApiController::class, 'show']);
     Route::post('/orders/{code}/cancel', [OrderApiController::class, 'cancelOrder']);
@@ -158,6 +158,9 @@ Route::prefix('v1')->group(function () {
         // Product Reviews Moderation
         Route::get('/reviews', [ReviewController::class, 'adminIndex']);
         Route::put('/reviews/{id}/status', [ReviewController::class, 'updateStatus']);
+
+        // Users & Staff Management
+        Route::get('/users', [\App\Modules\User\Http\Controllers\Admin\AdminUserController::class, 'index']);
     });
 
     // ── 4. Admin Only Operations (Stock Adjustments, Deletions, Reports & Locks) ──

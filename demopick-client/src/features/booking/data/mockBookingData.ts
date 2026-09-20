@@ -102,49 +102,23 @@ export const TIME_SLOTS_RANGE = [
 export function generateMockSlots(dateStr: string): TimeSlot[] {
   const slots: TimeSlot[] = []
 
-  // Giả lập trạng thái cố định để minh họa mọi trường hợp thực tế
-  const presetStatuses: Record<string, 'booked' | 'held' | 'in_use'> = {
-    // Sân A1
-    '1-06': 'booked',
-    '1-17': 'booked',
-    '1-18': 'booked',
-    '1-19': 'held',
-
-    // Sân A2
-    '2-07': 'booked',
-    '2-18': 'booked',
-    '2-20': 'in_use',
-
-    // Sân B1
-    '3-08': 'booked',
-    '3-17': 'booked',
-    '3-18': 'held',
-
-    // Sân B2
-    '4-15': 'in_use',
-    '4-19': 'booked',
-    '4-20': 'booked',
-
-    // Sân C1
-    '5-18': 'booked',
-    '5-19': 'booked',
-    '5-20': 'booked',
-
-    // Sân C2
-    '6-17': 'held',
-    '6-19': 'booked',
-    '6-20': 'booked',
-
-    // Sân D1
-    '7-08': 'booked',
-    '7-18': 'booked',
-    '7-19': 'in_use',
-
-    // Sân D2
-    '8-09': 'booked',
-    '8-17': 'booked',
-    '8-18': 'held',
-  }
+  // Check real bookings in demopick_orders_admin
+  const bookedKeys = new Set<string>()
+  try {
+    const raw = localStorage.getItem('demopick_orders_admin')
+    if (raw) {
+      const orders = JSON.parse(raw)
+      orders.forEach((o: any) => {
+        if (o.status !== 'cancelled' && Array.isArray(o.items)) {
+          o.items.forEach((it: any) => {
+            if (it.item_type === 'booking' && it.slot_ids) {
+              it.slot_ids.forEach((sid: number) => bookedKeys.add(String(sid)))
+            }
+          })
+        }
+      })
+    }
+  } catch {}
 
   MOCK_COURTS.forEach((court) => {
     TIME_SLOTS_RANGE.forEach((startTimeStr) => {
@@ -154,10 +128,8 @@ export function generateMockSlots(dateStr: string): TimeSlot[] {
       const isPeak = hour >= 17
       const price = isPeak ? court.peak_hourly_rate : court.hourly_rate
 
-      const key = `${court.id}-${String(hour).padStart(2, '0')}`
-      const status: TimeSlot['status'] = presetStatuses[key] || 'available'
-
       const slotId = court.id * 1000 + hour
+      const status: TimeSlot['status'] = bookedKeys.has(String(slotId)) ? 'booked' : 'available'
 
       slots.push({
         id: slotId,

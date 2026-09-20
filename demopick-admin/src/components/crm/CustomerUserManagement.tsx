@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { adminService } from "@/services/admin.service";
 import {
   Search,
   UserPlus,
@@ -57,133 +58,23 @@ export interface SystemUser {
 export const initialSystemUsers: SystemUser[] = [
   {
     id: 1,
-    name: "Trần Anh Quân",
-    email: "quan.tran@demopick.vn",
-    phone: "0912 345 678",
+    name: "Quản Trị Viên DemoPick",
+    email: "admin@demopick.vn",
+    phone: "0909 888 999",
     role: "admin",
-    createdAt: "10/01/2026",
+    createdAt: "01/08/2026",
     ordersCount: 0,
     totalSpent: 0,
   },
   {
-    id: 2,
-    name: "Nguyễn Lê Hoàng Nam",
-    email: "hoangnam.pickle@gmail.com",
-    phone: "0988 123 456",
-    role: "customer",
-    createdAt: "15/01/2026",
-    ordersCount: 6,
-    totalSpent: 12450000,
-    recentOrders: [
-      { code: "HD-88291", date: "09/08/2026", total: 5580000, status: "Đã thanh toán", items: "Vợt JOOLA Perseus 3S Carbon, Bóng Franklin X-40" },
-      { code: "BK-90218", date: "11/08/2026", total: 360000, status: "Hoàn tất", items: "Sân VIP 1 (08:00 - 10:00)" },
-    ],
-  },
-  {
     id: 3,
-    name: "Vũ Mai Phương",
-    email: "phuong.vumai@gmail.com",
-    phone: "0903 888 999",
+    name: "Khách Hàng DemoPick",
+    email: "customer@demopick.vn",
+    phone: "0901 234 567",
     role: "customer",
-    createdAt: "18/01/2026",
-    ordersCount: 4,
-    totalSpent: 7890000,
-    recentOrders: [
-      { code: "HD-88295", date: "09/08/2026", total: 5580000, status: "Đang giao", items: "Vợt Franklin Pro 14mm" },
-    ],
-  },
-  {
-    id: 4,
-    name: "Đặng Tiến Dũng",
-    email: "tiendung.sport@gmail.com",
-    phone: "0977 444 555",
-    role: "customer",
-    createdAt: "20/01/2026",
-    ordersCount: 9,
-    totalSpent: 18200000,
-    recentOrders: [
-      { code: "HD-88102", date: "02/08/2026", total: 6200000, status: "Đã giao", items: "Vợt Selkirk Luxx Control Air" },
-    ],
-  },
-  {
-    id: 5,
-    name: "Lê Thị Thu Cúc",
-    email: "thucuc.le@gmail.com",
-    phone: "0918 222 333",
-    role: "customer",
-    createdAt: "02/02/2026",
-    ordersCount: 3,
-    totalSpent: 5100000,
-  },
-  {
-    id: 6,
-    name: "Phạm Hải Đăng",
-    email: "haidang.pham@gmail.com",
-    phone: "0934 777 888",
-    role: "customer",
-    createdAt: "05/02/2026",
-    ordersCount: 5,
-    totalSpent: 9600000,
-  },
-  {
-    id: 7,
-    name: "Ngô Minh Khang",
-    email: "khang.minh@gmail.com",
-    phone: "0922 999 111",
-    role: "customer",
-    createdAt: "12/02/2026",
-    ordersCount: 2,
-    totalSpent: 3200000,
-  },
-  {
-    id: 8,
-    name: "Hoàng Bích Thủy",
-    email: "thuy.hoangbich@gmail.com",
-    phone: "0966 555 444",
-    role: "customer",
-    createdAt: "18/02/2026",
-    ordersCount: 7,
-    totalSpent: 14500000,
-  },
-  {
-    id: 9,
-    name: "Trịnh Quốc Huy",
-    email: "quochuy.trinh@gmail.com",
-    phone: "0945 111 222",
-    role: "customer",
-    createdAt: "22/02/2026",
-    ordersCount: 1,
-    totalSpent: 1850000,
-  },
-  {
-    id: 10,
-    name: "Đỗ Thanh Hằng",
-    email: "thanhhang.do@gmail.com",
-    phone: "0909 666 777",
-    role: "customer",
-    createdAt: "01/03/2026",
-    ordersCount: 8,
-    totalSpent: 16800000,
-  },
-  {
-    id: 11,
-    name: "Bùi Gia Bảo",
-    email: "giabao.bui@gmail.com",
-    phone: "0978 333 444",
-    role: "customer",
-    createdAt: "05/03/2026",
-    ordersCount: 4,
-    totalSpent: 8400000,
-  },
-  {
-    id: 12,
-    name: "Phan Ánh Nguyệt",
-    email: "anhnguyet.phan@gmail.com",
-    phone: "0915 888 666",
-    role: "customer",
-    createdAt: "10/03/2026",
-    ordersCount: 3,
-    totalSpent: 6200000,
+    createdAt: "15/09/2026",
+    ordersCount: 0,
+    totalSpent: 0,
   },
 ];
 
@@ -193,7 +84,10 @@ export default function CustomerUserManagement() {
       const saved = localStorage.getItem("demopick_system_users");
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length >= initialSystemUsers.length) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const filtered = parsed.filter((u: SystemUser) => !u.email.includes("@gmail.com"));
+          if (filtered.length > 0) return filtered;
+        }
       }
     } catch { }
     return initialSystemUsers;
@@ -212,6 +106,26 @@ export default function CustomerUserManagement() {
   const [formEmail, setFormEmail] = useState("");
   const [formPhone, setFormPhone] = useState("");
   const [formRole, setFormRole] = useState<"admin" | "customer">("customer");
+
+  useEffect(() => {
+    adminService.getUsers().then((data) => {
+      if (data && Array.isArray(data) && data.length > 0) {
+        setUsers(
+          data.map((u: any) => ({
+            id: u.id,
+            name: u.name,
+            email: u.email,
+            phone: u.phone || "Chưa cập nhật",
+            role: u.role === "admin" || u.role === "super_admin" ? "admin" : "customer",
+            createdAt: u.createdAt || "15/09/2026",
+            ordersCount: u.ordersCount || 0,
+            totalSpent: u.totalSpent || 0,
+            recentOrders: u.recentOrders || [],
+          }))
+        );
+      }
+    });
+  }, []);
 
   useEffect(() => {
     localStorage.setItem("demopick_system_users", JSON.stringify(users));

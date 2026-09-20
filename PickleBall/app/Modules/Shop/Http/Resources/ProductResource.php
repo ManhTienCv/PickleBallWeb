@@ -24,7 +24,16 @@ class ProductResource extends JsonResource
 
         $firstImage = is_array($this->images) && count($this->images) > 0
             ? $this->images[0]
-            : 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&q=80&w=600';
+            : '/images/pickleball_paddle_joola.jpg';
+
+        $catSlug = $this->category?->slug ?? '';
+        $nameLower = mb_strtolower($this->name);
+        $itemType = 'product';
+        if ($catSlug === 'do-uong-do-an' || str_contains($nameLower, 'nước') || str_contains($nameLower, 'bò húc') || str_contains($nameLower, 'trà') || str_contains($nameLower, 'cà phê') || str_contains($nameLower, 'bánh') || str_contains($nameLower, 'chuối') || str_contains($nameLower, 'pocari') || str_contains($nameLower, 'revive')) {
+            $itemType = 'drink_food';
+        } elseif ($catSlug === 'thiet-bi-dich-vu-cho-thue' || str_contains($nameLower, 'thuê')) {
+            $itemType = 'rental';
+        }
 
         return [
             'id' => $this->id,
@@ -37,6 +46,7 @@ class ProductResource extends JsonResource
             'sale_price' => null,
             'image_url' => $firstImage,
             'images' => $this->images ?? [],
+            'item_type' => $itemType,
             'status' => $this->status,
             'is_featured' => (bool) $this->is_featured,
             'in_stock' => $inStock,

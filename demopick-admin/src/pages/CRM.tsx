@@ -13,93 +13,13 @@ import CustomerUserManagement from "@/components/crm/CustomerUserManagement";
 const initialStaffList: StaffUser[] = [
   {
     id: 1,
-    name: "Phạm Văn Đức",
-    email: "letan01@demopick.com",
-    phone: "0912 888 999",
-    shift: "Ca Sáng (05:00 - 14:00)",
-    role: "Lễ tân POS & Check-in",
-    status: "active",
-    createdAt: "01/01/2026",
-  },
-  {
-    id: 2,
-    name: "Nguyễn Thị Hương",
-    email: "letan02@demopick.com",
-    phone: "0988 777 666",
-    shift: "Ca Chiều (14:00 - 23:00)",
-    role: "Lễ tân POS & Check-in",
-    status: "active",
-    createdAt: "15/01/2026",
-  },
-  {
-    id: 3,
-    name: "Lê Minh Trí",
-    email: "letan.tri@demopick.com",
-    phone: "0903 111 333",
-    shift: "Ca Xoay / Cuối tuần",
-    role: "Lễ tân POS & Check-in",
-    status: "locked",
-    createdAt: "20/01/2026",
-  },
-  {
-    id: 4,
-    name: "Hoàng Thu Trang",
-    email: "thutrang@demopick.com",
-    phone: "0977 222 555",
-    shift: "Ca Sáng (05:00 - 14:00)",
-    role: "Lễ tân POS & Check-in",
-    status: "active",
-    createdAt: "01/02/2026",
-  },
-  {
-    id: 5,
-    name: "Đỗ Tuấn Anh",
-    email: "tuananh@demopick.com",
-    phone: "0966 333 888",
-    shift: "Ca Chiều (14:00 - 23:00)",
-    role: "Lễ tân POS & Check-in",
-    status: "active",
-    createdAt: "05/02/2026",
-  },
-  {
-    id: 6,
-    name: "Vũ Đình Trọng",
-    email: "trong.vu@demopick.com",
-    phone: "0918 444 777",
-    shift: "Ca Tối (17:00 - 23:00)",
-    role: "Lễ tân POS & Check-in",
-    status: "active",
-    createdAt: "10/02/2026",
-  },
-  {
-    id: 7,
-    name: "Trần Bảo Ngọc",
-    email: "baongoc@demopick.com",
-    phone: "0934 555 123",
-    shift: "Ca Sáng (05:00 - 14:00)",
-    role: "Lễ tân POS & Check-in",
-    status: "active",
-    createdAt: "12/02/2026",
-  },
-  {
-    id: 8,
-    name: "Phan Quốc Huy",
-    email: "quochuy@demopick.com",
-    phone: "0922 666 444",
+    name: "Nhân Viên DemoPick",
+    email: "staff@demopick.vn",
+    phone: "0912 345 678",
     shift: "Ca Hành Chính (08:00 - 17:00)",
     role: "Lễ tân POS & Check-in",
     status: "active",
-    createdAt: "15/02/2026",
-  },
-  {
-    id: 9,
-    name: "Bùi Mai Linh",
-    email: "mailinh@demopick.com",
-    phone: "0945 888 222",
-    shift: "Ca Xoay / Cuối tuần",
-    role: "Lễ tân POS & Check-in",
-    status: "active",
-    createdAt: "18/02/2026",
+    createdAt: "15/09/2026",
   },
 ];
 
@@ -113,7 +33,10 @@ export default function CRM() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed && parsed.length >= initialStaffList.length) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const filtered = parsed.filter((s: StaffUser) => !s.email?.includes("@demopick.com"));
+          if (filtered.length > 0) return filtered;
+        }
       } catch { }
     }
     return initialStaffList;

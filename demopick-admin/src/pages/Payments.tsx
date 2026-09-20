@@ -57,203 +57,9 @@ interface BankStatementLog {
   matchStatus: "MATCHED" | "MANUAL";
 }
 
-const initialTransactions: PaymentTransaction[] = [
-  {
-    id: "TX-9901",
-    orderCode: "DP-1002",
-    customerName: "Nguyễn Văn An",
-    amount: 360000,
-    bankName: "VietinBank / VietQR",
-    transferContent: "DP-1002",
-    status: "PENDING",
-    createdAt: "2026-08-18 10:10:00",
-  },
-  {
-    id: "TX-9902",
-    orderCode: "DP-1003",
-    customerName: "Trần Thị Bích",
-    amount: 5580000,
-    bankName: "Vietcombank / VietQR",
-    transferContent: "DP-1003",
-    status: "CONFIRMED_AUTO",
-    createdAt: "2026-08-18 09:15:22",
-  },
-  {
-    id: "TX-9903",
-    orderCode: "DP-1004",
-    customerName: "Phạm Quốc Bảo",
-    amount: 140000,
-    bankName: "MoMo / VietQR",
-    transferContent: "DP-1004",
-    status: "CONFIRMED_AUTO",
-    createdAt: "2026-08-18 08:45:10",
-  },
-  {
-    id: "TX-9904",
-    orderCode: "DP-1005",
-    customerName: "Lê Hoàng Long",
-    amount: 420000,
-    bankName: "Techcombank / VietQR",
-    transferContent: "DP-1005",
-    status: "CONFIRMED_AUTO",
-    createdAt: "2026-08-18 08:20:00",
-  },
-  {
-    id: "TX-9905",
-    orderCode: "DP-1006",
-    customerName: "Đỗ Thu Trang",
-    amount: 720000,
-    bankName: "MB Bank / VietQR",
-    transferContent: "DP-1006",
-    status: "CONFIRMED_AUTO",
-    createdAt: "2026-08-18 08:05:12",
-  },
-  {
-    id: "TX-9906",
-    orderCode: "DP-1007",
-    customerName: "Vũ Minh Quân",
-    amount: 250000,
-    bankName: "BIDV / VietQR",
-    transferContent: "DP-1007",
-    status: "CONFIRMED_AUTO",
-    createdAt: "2026-08-18 07:50:30",
-  },
-  {
-    id: "TX-9907",
-    orderCode: "DP-1008",
-    customerName: "Phan Ánh Nguyệt",
-    amount: 890000,
-    bankName: "ACB / VietQR",
-    transferContent: "DP-1008",
-    status: "CONFIRMED_MANUAL",
-    createdAt: "2026-08-18 07:30:15",
-  },
-  {
-    id: "TX-9908",
-    orderCode: "DP-1009",
-    customerName: "Hoàng Gia Huy",
-    amount: 320000,
-    bankName: "VPBank / VietQR",
-    transferContent: "DP-1009",
-    status: "PENDING",
-    createdAt: "2026-08-18 07:15:00",
-  },
-  {
-    id: "TX-9909",
-    orderCode: "DP-1010",
-    customerName: "Bùi Kiều My",
-    amount: 1200000,
-    bankName: "Vietcombank / VietQR",
-    transferContent: "DP-1010",
-    status: "CONFIRMED_AUTO",
-    createdAt: "2026-08-18 06:55:40",
-  },
-  {
-    id: "TX-9910",
-    orderCode: "DP-1011",
-    customerName: "Trương Tiến Đạt",
-    amount: 180000,
-    bankName: "Techcombank / VietQR",
-    transferContent: "DP-1011",
-    status: "CONFIRMED_AUTO",
-    createdAt: "2026-08-18 06:40:10",
-  },
-  {
-    id: "TX-9911",
-    orderCode: "DP-1012",
-    customerName: "Ngô Mai Phương",
-    amount: 650000,
-    bankName: "VietinBank / VietQR",
-    transferContent: "DP-1012",
-    status: "CONFIRMED_AUTO",
-    createdAt: "2026-08-18 06:20:00",
-  },
-  {
-    id: "TX-9912",
-    orderCode: "DP-1013",
-    customerName: "Đinh Tuấn Kiệt",
-    amount: 450000,
-    bankName: "MB Bank / VietQR",
-    transferContent: "DP-1013",
-    status: "PENDING",
-    createdAt: "2026-08-18 06:05:00",
-  },
-];
+const initialTransactions: PaymentTransaction[] = [];
 
-const initialBankStatements: BankStatementLog[] = [
-  {
-    id: "BS-1029",
-    time: "18/08/2026 09:15:22",
-    bankName: "Vietcombank (VCB)",
-    orderCode: "DP-1003",
-    amount: 5580000,
-    transferContent: "DP-1003",
-    matchStatus: "MATCHED",
-  },
-  {
-    id: "BS-1028",
-    time: "18/08/2026 08:45:10",
-    bankName: "MoMo Gateway",
-    orderCode: "DP-1004",
-    amount: 140000,
-    transferContent: "DP-1004",
-    matchStatus: "MATCHED",
-  },
-  {
-    id: "BS-1027",
-    time: "18/08/2026 08:20:00",
-    bankName: "Techcombank (TCB)",
-    orderCode: "DP-1005",
-    amount: 420000,
-    transferContent: "DP-1005",
-    matchStatus: "MATCHED",
-  },
-  {
-    id: "BS-1026",
-    time: "18/08/2026 08:05:12",
-    bankName: "MB Bank (MBB)",
-    orderCode: "DP-1006",
-    amount: 720000,
-    transferContent: "DP-1006",
-    matchStatus: "MATCHED",
-  },
-  {
-    id: "BS-1025",
-    time: "18/08/2026 07:50:30",
-    bankName: "BIDV",
-    orderCode: "DP-1007",
-    amount: 250000,
-    transferContent: "DP-1007",
-    matchStatus: "MATCHED",
-  },
-  {
-    id: "BS-1024",
-    time: "18/08/2026 07:30:15",
-    bankName: "ACB",
-    orderCode: "DP-1008",
-    amount: 890000,
-    transferContent: "DP-1008",
-    matchStatus: "MANUAL",
-  },
-  {
-    id: "BS-1023",
-    time: "18/08/2026 06:55:40",
-    bankName: "Vietcombank (VCB)",
-    orderCode: "DP-1010",
-    amount: 1200000,
-    transferContent: "DP-1010",
-    matchStatus: "MATCHED",
-  },
-  {
-    id: "BS-1022",
-    time: "18/08/2026 06:40:10",
-    bankName: "Techcombank (TCB)",
-    orderCode: "DP-1011",
-    amount: 180000,
-    transferContent: "DP-1011",
-    matchStatus: "MATCHED",
-  },
-];
+const initialBankStatements: BankStatementLog[] = [];
 
 export default function Payments() {
   const [search, setSearch] = useState("");
@@ -262,15 +68,12 @@ export default function Payments() {
     if (saved) {
       try {
         const parsed: PaymentTransaction[] = JSON.parse(saved);
-        if (parsed.length >= initialTransactions.length) {
-          return parsed.map((t) => ({
-            ...t,
-            transferContent: t.transferContent.startsWith("DP-") ? t.transferContent.split(" ")[0] : t.transferContent,
-          }));
+        if (Array.isArray(parsed)) {
+          return parsed.filter((t) => !t.orderCode?.startsWith("DP-"));
         }
       } catch { }
     }
-    return initialTransactions;
+    return [];
   });
 
   const [bankStatements, setBankStatements] = useState<BankStatementLog[]>(() => {
@@ -278,10 +81,12 @@ export default function Payments() {
     if (saved) {
       try {
         const parsed: BankStatementLog[] = JSON.parse(saved);
-        if (parsed.length >= initialBankStatements.length) return parsed;
+        if (Array.isArray(parsed)) {
+          return parsed.filter((b) => !b.orderCode?.startsWith("DP-"));
+        }
       } catch { }
     }
-    return initialBankStatements;
+    return [];
   });
 
   const [selectedTxDetail, setSelectedTxDetail] = useState<PaymentTransaction | null>(null);

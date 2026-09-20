@@ -34,7 +34,7 @@ const FALLBACK_VOUCHERS: Voucher[] = [
     discount_type: 'fixed',
     discount_value: 50000,
     min_order_amount: 300000,
-    used_count: 42,
+    used_count: 0,
     is_active: true,
   },
   {
@@ -46,7 +46,7 @@ const FALLBACK_VOUCHERS: Voucher[] = [
     discount_value: 10,
     max_discount: 200000,
     min_order_amount: 1000000,
-    used_count: 128,
+    used_count: 0,
     is_active: true,
   },
   {
@@ -57,7 +57,7 @@ const FALLBACK_VOUCHERS: Voucher[] = [
     discount_type: 'fixed',
     discount_value: 30000,
     min_order_amount: 500000,
-    used_count: 310,
+    used_count: 0,
     is_active: true,
   },
   {
@@ -68,7 +68,7 @@ const FALLBACK_VOUCHERS: Voucher[] = [
     discount_type: 'fixed',
     discount_value: 500000,
     min_order_amount: 4500000,
-    used_count: 19,
+    used_count: 0,
     is_active: true,
   },
 ]

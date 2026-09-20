@@ -59,6 +59,9 @@ export interface ProductVariant {
 export interface ProductCategory {
   id?: number
   name?: string
+  slug?: string
+  description?: string
+  image_url?: string | null
 }
 
 export interface TechnicalSpecs {
@@ -1923,87 +1926,33 @@ export const DEFAULT_ADMIN_PRODUCTS: Product[] = [
 
 export const adminService = {
   getCourts: async (): Promise<Court[]> => {
-    return [
-      { id: 1, code: "S01", name: "Sân Pickleball A1", court_number: "A1", type: "Pickleball Standard Indoor", hourly_rate: 140000, peak_hourly_rate: 180000, status: "active" },
-      { id: 2, code: "S02", name: "Sân Pickleball A2", court_number: "A2", type: "Pickleball Standard Indoor", hourly_rate: 140000, peak_hourly_rate: 180000, status: "active" },
-      { id: 3, code: "S03", name: "Sân Pickleball B1", court_number: "B1", type: "Pickleball Standard Outdoor", hourly_rate: 140000, peak_hourly_rate: 180000, status: "active" },
-      { id: 4, code: "S04", name: "Sân Pickleball B2", court_number: "B2", type: "Pickleball Standard Outdoor", hourly_rate: 140000, peak_hourly_rate: 180000, status: "active" },
-      { id: 5, code: "SV1", name: "Sân Pickleball C1", court_number: "C1", type: "Tiêu Chuẩn Pro", hourly_rate: 180000, peak_hourly_rate: 220000, status: "active" },
-      { id: 6, code: "SV2", name: "Sân Pickleball C2", court_number: "C2", type: "Tiêu Chuẩn Pro", hourly_rate: 180000, peak_hourly_rate: 220000, status: "active" },
-      { id: 7, code: "S07", name: "Sân Pickleball D1", court_number: "D1", type: "Tiêu Chuẩn Pro", hourly_rate: 140000, peak_hourly_rate: 180000, status: "active" },
-      { id: 8, code: "S08", name: "Sân Pickleball D2", court_number: "D2", type: "Tiêu Chuẩn Pro", hourly_rate: 140000, peak_hourly_rate: 180000, status: "active" },
-    ]
+    try {
+      const res = await api.get<ApiResponse<Court[]>>('/courts')
+      return res.data?.data || []
+    } catch {
+      return []
+    }
   },
 
   getSlots: async (date: string): Promise<TimeSlot[]> => {
-    const timeHeaders = [
-      "05:00", "06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00",
-      "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"
-    ]
-    const mockSlots: TimeSlot[] = []
-    let slotId = 1
-
-    const bookedConfig: Record<number, { bookedHours: number[]; heldHours: number[]; inUseHours: number[] }> = {
-      1: { bookedHours: [10, 11, 17, 18], heldHours: [12], inUseHours: [8] },
-      2: { bookedHours: [7, 18, 19], heldHours: [14], inUseHours: [] },
-        3: { bookedHours: [6, 7, 19, 20], heldHours: [16], inUseHours: [8] },
-        4: { bookedHours: [9, 15, 18], heldHours: [], inUseHours: [] },
-        5: { bookedHours: [7, 8, 18, 19], heldHours: [17], inUseHours: [] },
-        6: { bookedHours: [8, 9, 19, 20], heldHours: [15], inUseHours: [] },
-        7: { bookedHours: [8, 18], heldHours: [], inUseHours: [19] },
-        8: { bookedHours: [9, 17], heldHours: [18], inUseHours: [] },
-      }
-
-      ;[1, 2, 3, 4, 5, 6, 7, 8].forEach(courtId => {
-        const isVip = courtId >= 5
-        const baseRate = isVip ? 180000 : 140000
-        const peakRate = isVip ? 220000 : 180000
-
-        timeHeaders.forEach(timeStr => {
-          const hour = parseInt(timeStr.split(":")[0], 10)
-          const isPeak = hour >= 17 && hour <= 21
-          const price = isPeak ? peakRate : baseRate
-
-          const cfg = bookedConfig[courtId] || { bookedHours: [], heldHours: [], inUseHours: [] }
-          let status: TimeSlot['status'] = 'available'
-          if (cfg.inUseHours.includes(hour)) {
-            status = 'in_use'
-          } else if (cfg.bookedHours.includes(hour)) {
-            status = 'booked'
-          } else if (cfg.heldHours.includes(hour)) {
-            status = 'held'
-          }
-
-          const endHour = String(hour + 1).padStart(2, '0')
-          mockSlots.push({
-            id: slotId++,
-            court_id: courtId,
-            date,
-            start_time: `${timeStr}:00`,
-            end_time: `${endHour}:00:00`,
-            price,
-            is_peak: isPeak,
-            status,
-            held_expires_at: status === 'held' ? new Date(Date.now() + 8 * 60 * 1000).toISOString() : null,
-          })
-        })
-      })
-      return mockSlots
-    },
+    try {
+      const res = await api.get<ApiResponse<TimeSlot[]>>('/slots', { params: { date } })
+      return res.data?.data || []
+    } catch {
+      return []
+    }
+  },
 
   getProducts: async (): Promise<Product[]> => {
-    const syncedRaw = localStorage.getItem("demopick_synced_products_v3")
-    if (syncedRaw) {
-      try {
-        const syncedList: Product[] = JSON.parse(syncedRaw)
-        if (Array.isArray(syncedList) && syncedList.length > 0) {
-          const syncedIds = new Set(syncedList.map((i) => i.id))
-          const nonSynced = DEFAULT_ADMIN_PRODUCTS.filter((s) => !syncedIds.has(s.id))
-          return [...syncedList, ...nonSynced]
-        }
-      } catch {}
+    try {
+      const res = await api.get<ApiResponse<Product[]>>('/products?per_page=100')
+      if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        return res.data.data
+      }
+      return DEFAULT_ADMIN_PRODUCTS
+    } catch {
+      return DEFAULT_ADMIN_PRODUCTS
     }
-    return DEFAULT_ADMIN_PRODUCTS
   },
 
   posCheckout: async (payload: PosCheckoutRequest): Promise<{ order_code: string }> => {
@@ -2120,147 +2069,21 @@ export const adminService = {
   },
 
   getLiveCourtStatus: async (): Promise<LiveCourtItem[]> => {
-    const now = new Date()
-    // Sân A1 started 45 minutes ago
-    const a1Start = new Date(now.getTime() - 45 * 60 * 1000)
-    const a1StartStr = `${String(a1Start.getHours()).padStart(2, '0')}:${String(a1Start.getMinutes()).padStart(2, '0')}:${String(a1Start.getSeconds()).padStart(2, '0')}`
+    try {
+      const res = await api.get<ApiResponse<LiveCourtItem[]>>('/admin/courts/live-status')
+      return res.data?.data || []
+    } catch {
+      return []
+    }
+  },
 
-    // Sân B1 started 80 minutes ago
-    const b1Start = new Date(now.getTime() - 80 * 60 * 1000)
-    const b1StartStr = `${String(b1Start.getHours()).padStart(2, '0')}:${String(b1Start.getMinutes()).padStart(2, '0')}:${String(b1Start.getSeconds()).padStart(2, '0')}`
-
-    // Sân D1 started 25 minutes ago
-    const d1Start = new Date(now.getTime() - 25 * 60 * 1000)
-    const d1StartStr = `${String(d1Start.getHours()).padStart(2, '0')}:${String(d1Start.getMinutes()).padStart(2, '0')}:${String(d1Start.getSeconds()).padStart(2, '0')}`
-
-    return [
-      {
-        id: 1,
-        name: "Sân Pickleball A1",
-        code: "S01",
-        surface_type: "Trong nhà",
-        status: "in_use",
-        status_label: "ĐANG CHƠI",
-        session_id: 101,
-        start_time: a1StartStr,
-        start_time_formatted: a1StartStr,
-        elapsed_minutes: 45,
-        rounded_minutes: 45,
-        current_price: 105000,
-        hourly_rate: 140000,
-        customer_name: "Hoàng Long",
-        customer_phone: "0912.345.678",
-        expected_duration_minutes: 60,
-        expected_end_time: "15 phút nữa",
-      },
-      {
-        id: 2,
-        name: "Sân Pickleball A2",
-        code: "S02",
-        surface_type: "Trong nhà",
-        status: "available",
-        status_label: "TRỐNG",
-        session_id: null,
-        hourly_rate: 140000,
-        customer_name: null,
-        customer_phone: null,
-        available_minutes_until_next: 90,
-        next_booking_time: "19:30",
-      },
-      {
-        id: 3,
-        name: "Sân Pickleball B1",
-        code: "S03",
-        surface_type: "Ngoài trời",
-        status: "ending",
-        status_label: "SẮP HẾT GIỜ",
-        session_id: 103,
-        start_time: b1StartStr,
-        start_time_formatted: b1StartStr,
-        elapsed_minutes: 80,
-        rounded_minutes: 90,
-        current_price: 210000,
-        hourly_rate: 140000,
-        customer_name: "Chị Minh Thảo",
-        customer_phone: "0988.765.432",
-        expected_duration_minutes: 90,
-        expected_end_time: "10 phút nữa",
-      },
-      {
-        id: 4,
-        name: "Sân Pickleball B2",
-        code: "S04",
-        surface_type: "Ngoài trời",
-        status: "available",
-        status_label: "TRỐNG",
-        session_id: null,
-        hourly_rate: 140000,
-        customer_name: null,
-        customer_phone: null,
-        available_minutes_until_next: 120,
-        next_booking_time: "20:00",
-      },
-      {
-        id: 5,
-        name: "Sân Pickleball C1",
-        code: "SV1",
-        surface_type: "Cụm C",
-        status: "booked",
-        status_label: "ĐÃ ĐẶT",
-        session_id: null,
-        hourly_rate: 180000,
-        customer_name: "CLB Doanh Nhân SG",
-        customer_phone: "0903.111.222",
-        next_booking_time: "18:00 (Hôm nay)",
-      },
-      {
-        id: 6,
-        name: "Sân Pickleball C2",
-        code: "SV2",
-        surface_type: "Cụm C",
-        status: "available",
-        status_label: "TRỐNG",
-        session_id: null,
-        hourly_rate: 180000,
-        customer_name: null,
-        customer_phone: null,
-        available_minutes_until_next: null,
-        next_booking_time: null,
-      },
-      {
-        id: 7,
-        name: "Sân Pickleball D1",
-        code: "S07",
-        surface_type: "Cụm D",
-        status: "in_use",
-        status_label: "ĐANG ĐÁNH",
-        session_id: 1007,
-        start_time: d1StartStr,
-        start_time_formatted: d1StartStr,
-        elapsed_minutes: 25,
-        rounded_minutes: 30,
-        current_price: 70000,
-        hourly_rate: 140000,
-        customer_name: "Anh Hoàng Nam",
-        customer_phone: "0912.333.444",
-        expected_duration_minutes: 60,
-        expected_end_time: "35 phút nữa",
-      },
-      {
-        id: 8,
-        name: "Sân Pickleball D2",
-        code: "S08",
-        surface_type: "Cụm D",
-        status: "available",
-        status_label: "TRỐNG",
-        session_id: null,
-        hourly_rate: 140000,
-        customer_name: null,
-        customer_phone: null,
-        available_minutes_until_next: null,
-        next_booking_time: null,
-      },
-    ]
+  getUsers: async (): Promise<any[]> => {
+    try {
+      const res = await api.get<ApiResponse<any[]>>('/admin/users')
+      return res.data?.data || []
+    } catch {
+      return []
+    }
   },
 
   startCourtSession: async (courtId: number, data: {

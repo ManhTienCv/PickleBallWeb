@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import AppLayout from "@/components/AppLayout";
 import { adminService, TimeSlot } from "@/services/admin.service";
@@ -49,17 +49,33 @@ export default function CourtMap() {
   // Selected slot modal for staff quick action
   const [slotClickData, setSlotClickData] = useState<{ courtName: string; time: string; status: string; price: number } | null>(null);
 
-  // Pickleball Exclusive Courts
-  const allPickleballCourts = [
-    { id: 1, name: "Sân Pickleball A1", cluster: "indoor", type: "Pickleball Standard Indoor", hourly_rate: 140000, peak_hourly_rate: 180000 },
-    { id: 2, name: "Sân Pickleball A2", cluster: "indoor", type: "Pickleball Standard Indoor", hourly_rate: 140000, peak_hourly_rate: 180000 },
-    { id: 3, name: "Sân Pickleball B1", cluster: "outdoor", type: "Pickleball Standard Outdoor", hourly_rate: 140000, peak_hourly_rate: 180000 },
-    { id: 4, name: "Sân Pickleball B2", cluster: "outdoor", type: "Pickleball Standard Outdoor", hourly_rate: 140000, peak_hourly_rate: 180000 },
-    { id: 5, name: "Sân Pickleball C1", cluster: "vip", type: "Tiêu Chuẩn Pro", hourly_rate: 180000, peak_hourly_rate: 220000 },
-    { id: 6, name: "Sân Pickleball C2", cluster: "vip", type: "Tiêu Chuẩn Pro", hourly_rate: 180000, peak_hourly_rate: 220000 },
-    { id: 7, name: "Sân Pickleball D1", cluster: "d", type: "Tiêu Chuẩn Pro", hourly_rate: 140000, peak_hourly_rate: 180000 },
-    { id: 8, name: "Sân Pickleball D2", cluster: "d", type: "Tiêu Chuẩn Pro", hourly_rate: 140000, peak_hourly_rate: 180000 },
-  ];
+  // Fetch real courts from database
+  const { data: dbCourts = [] } = useQuery({
+    queryKey: ["admin-courts"],
+    queryFn: adminService.getCourts,
+  });
+
+  const allPickleballCourts = useMemo(() => {
+    if (dbCourts && dbCourts.length > 0) {
+      return dbCourts.map((c: any) => {
+        let cluster: "indoor" | "outdoor" | "vip" = "indoor";
+        if (c.name?.includes("3") || c.name?.includes("4") || c.name?.includes("B")) {
+          cluster = "outdoor";
+        } else if (c.name?.includes("5") || c.name?.includes("6") || c.name?.includes("C") || c.name?.includes("VIP")) {
+          cluster = "vip";
+        }
+        return {
+          id: c.id,
+          name: c.name,
+          cluster,
+          type: c.type || (cluster === "vip" ? "Tiêu Chuẩn Pro VIP" : cluster === "indoor" ? "Pickleball Trong Nhà" : "Pickleball Ngoài Trời"),
+          hourly_rate: Number(c.hourly_rate) || 140000,
+          peak_hourly_rate: Number(c.peak_hourly_rate) || 180000,
+        };
+      });
+    }
+    return [];
+  }, [dbCourts]);
 
   const pickleballCourts = allPickleballCourts.filter(
     (c) => selectedCluster === "all" || c.cluster === selectedCluster
@@ -93,7 +109,7 @@ export default function CourtMap() {
   const getSlotDetailedStatus = (courtId: number, timeStr: string) => {
     // 1. Check real API slots if returned from backend
     if (slots && slots.length > 0) {
-      const match = slots.find((s: TimeSlot) => s.court_id === courtId && s.start_time?.startsWith(timeStr.split(":")[0]));
+      const match = slots.find((s: any) => s.court_id === courtId && s.start_time?.startsWith(timeStr.split(":")[0]));
       if (match) {
         if (match.status === "in_use") return "in_use";
         if (match.status === "booked") return "booked";
@@ -107,11 +123,6 @@ export default function CourtMap() {
       return "expired";
     }
 
-    // 3. Consistent Demo/Mock data
-    const hour = parseInt(timeStr.split(":")[0]);
-    if (hour === 8 && courtId === 1) return "in_use";
-    if (hour === 9 && courtId === 2) return "held";
-    if ((hour === 10 || hour === 18) && (courtId === 1 || courtId === 5)) return "booked";
     return "available";
   };
 
@@ -263,7 +274,7 @@ export default function CourtMap() {
                   }`}
               >
                 <Layers className="w-3.5 h-3.5" />
-                <span>Tất cả (8 Sân)</span>
+                <span>Tất cả ({allPickleballCourts.length} Sân)</span>
               </button>
 
               <button
@@ -275,7 +286,7 @@ export default function CourtMap() {
                   }`}
               >
                 <Building className="w-3.5 h-3.5" />
-                <span>Cụm A (A1, A2)</span>
+                <span>Cụm Trong Nhà (Sân 1, 2)</span>
               </button>
 
               <button
@@ -287,7 +298,7 @@ export default function CourtMap() {
                   }`}
               >
                 <Sun className="w-3.5 h-3.5" />
-                <span>Cụm B (B1, B2)</span>
+                <span>Cụm Ngoài Trời (Sân 3, 4)</span>
               </button>
 
               <button
@@ -299,19 +310,7 @@ export default function CourtMap() {
                   }`}
               >
                 <Crown className="w-3.5 h-3.5" />
-                <span>Cụm C (C1, C2)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSelectedCluster("d")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors duration-150 shrink-0 flex items-center gap-1 border ${selectedCluster === "d"
-                    ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                    : "bg-purple-50 text-purple-900 border-purple-200 hover:bg-purple-100"
-                  }`}
-              >
-                <Building className="w-3.5 h-3.5" />
-                <span>Cụm D (D1, D2)</span>
+                <span>Cụm VIP Pro (Sân 5, 6)</span>
               </button>
             </div>
           </div>
@@ -454,11 +453,12 @@ export default function CourtMap() {
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
                 {pickleballCourts.map((court) => {
-                  const dotColor = court.name.includes('A')
+                  const cName = court?.name || "Sân Pickleball";
+                  const dotColor = cName.includes('A')
                     ? 'bg-emerald-500'
-                    : court.name.includes('B')
+                    : cName.includes('B')
                     ? 'bg-blue-500'
-                    : court.name.includes('C')
+                    : cName.includes('C')
                     ? 'bg-amber-500'
                     : 'bg-purple-500';
 
@@ -467,22 +467,22 @@ export default function CourtMap() {
                     <td className="py-4 px-4 font-bold text-slate-900 sticky left-0 bg-white border-r border-slate-200 z-20 shadow-md min-w-[210px] w-[210px]">
                       <div className="flex items-center gap-2">
                         <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${dotColor}`} />
-                        <span className="text-sm font-bold text-slate-900 truncate">{court.name}</span>
+                        <span className="text-sm font-bold text-slate-900 truncate">{cName}</span>
                       </div>
                     </td>
 
                     {timeHeaders.map((time) => {
                       const status = getSlotDetailedStatus(court.id, time);
                       const isPeak = parseInt(time.split(":")[0]) >= 17;
-                      const price = isPeak ? court.peak_hourly_rate : court.hourly_rate;
-                      const formattedPrice = `${price / 1000}k VND`;
+                      const price = isPeak ? (court.peak_hourly_rate || 140000) : (court.hourly_rate || 100000);
+                      const formattedPrice = `${Math.round(price / 1000)}k VND`;
 
                       return (
                         <td
                           key={time}
                           style={{ minWidth: `${colWidthPx}px`, transition: "min-width 0.2s ease-out" }}
                           className="p-1.5 border-r border-slate-100 cursor-pointer"
-                          onClick={() => handleSlotClick(court.name, time, status, price)}
+                          onClick={() => handleSlotClick(cName, time, status, price)}
                         >
                           <div
                             style={{

@@ -24,7 +24,6 @@ import {
 } from "lucide-react";
 import CheckInDialog from "@/components/CheckInDialog";
 import { Order, OrderStatus, BackendOrder, BackendOrderItem } from "@/types/order.types";
-import { mockOrders } from "@/data/ordersData";
 import api from "@/lib/api";
 import {
   ResponsiveContainer,
@@ -41,24 +40,20 @@ export default function Dashboard() {
   const [checkInOpen, setCheckInOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Load orders from localStorage with fallback to mockOrders
+  // Load orders from localStorage with fallback to empty array
   const [ordersList, setOrdersList] = useState<Order[]>(() => {
     try {
       const saved = localStorage.getItem("demopick_orders_admin");
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const hasCam = parsed.some((o: Order) => o.code.startsWith("CAM-"));
-          if (!hasCam) {
-            return [...mockOrders.filter((m) => m.code.startsWith("CAM-")), ...parsed];
-          }
-          return parsed;
+          return parsed.filter((o: Order) => !o.code?.startsWith("CAM-") && !o.code?.startsWith("HD260917") && !o.code?.startsWith("HD260918"));
         }
       }
-      return mockOrders;
+      return [];
     } catch (err) {
       console.warn("Failed to load saved admin orders from localStorage:", err);
-      return mockOrders;
+      return [];
     }
   });
 
@@ -86,81 +81,65 @@ export default function Dashboard() {
     try {
       const res = await api.get<{ success: boolean; data: BackendOrder[] }>("/orders");
       const backendOrders = res.data?.data;
-      if (Array.isArray(backendOrders) && backendOrders.length > 0) {
+      if (Array.isArray(backendOrders)) {
+        const mappedList: Order[] = backendOrders.map((bOrder) => {
+          const code = bOrder.order_code || bOrder.code || "";
+          const rawStatus = (bOrder.status || "").toLowerCase();
+          const isPaid = bOrder.payment_status === "paid" || rawStatus === "confirmed" || rawStatus === "paid";
+          let mappedStatus: OrderStatus = isPaid ? "PAID" : "PENDING";
+          if (rawStatus === "refund_pending" || rawStatus === "refunding") {
+            mappedStatus = "REFUND_PENDING";
+          } else if (rawStatus === "refunded") {
+            mappedStatus = "REFUNDED";
+          } else if (rawStatus === "cancelled" || rawStatus === "canceled") {
+            mappedStatus = "CANCELLED";
+          } else if (rawStatus === "shipping" || rawStatus === "delivering") {
+            mappedStatus = "SHIPPING";
+          } else if (rawStatus === "completed") {
+            mappedStatus = "COMPLETED";
+          }
+
+          const mappedMethod =
+            bOrder.payment_method === "momo"
+              ? "MoMo"
+              : bOrder.payment_method === "cod"
+              ? "COD"
+              : "VietQR";
+
+          const dateObj = bOrder.created_at ? new Date(bOrder.created_at) : new Date();
+          const dateStr = dateObj.toISOString().split("T")[0];
+          const timeStr = dateObj.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+
+          return {
+            code,
+            customerName: bOrder.customer_name || "Khách hàng Online",
+            customerPhone: bOrder.customer_phone || "",
+            staffName: "Hệ thống Tự Động Online",
+            type: "Đặt Sân Online",
+            totalAmount: bOrder.total_amount || 0,
+            paymentMethod: mappedMethod,
+            status: mappedStatus,
+            createdAt: `${dateStr} ${timeStr}`,
+            dateStr,
+            shippingAddress: bOrder.shipping_address || "",
+            shippingCarrier: "GHN",
+            shippingFee: bOrder.shipping_fee || 0,
+            items: Array.isArray(bOrder.items)
+              ? bOrder.items.map((it: BackendOrderItem, idx: number) => ({
+                  id: it.id || idx + 1,
+                  name: it.item_name || it.name || "Dịch vụ Pickleball",
+                  qty: it.quantity || it.qty || 1,
+                  price: it.price || 0,
+                }))
+              : [],
+          };
+        });
+
         setOrdersList((prevList) => {
-          const map = new Map<string, Order>();
-          prevList.forEach((o) => map.set(o.code, o));
-
-          backendOrders.forEach((bOrder) => {
-            const code = bOrder.order_code || bOrder.code;
-            if (!code) return;
-
-            const rawStatus = (bOrder.status || "").toLowerCase();
-            const isPaid = bOrder.payment_status === "paid" || rawStatus === "confirmed" || rawStatus === "paid";
-            let mappedStatus: OrderStatus = isPaid ? "PAID" : "PENDING";
-            if (rawStatus === "refund_pending" || rawStatus === "refunding") {
-              mappedStatus = "REFUND_PENDING";
-            } else if (rawStatus === "refunded") {
-              mappedStatus = "REFUNDED";
-            } else if (rawStatus === "cancelled" || rawStatus === "canceled") {
-              mappedStatus = "CANCELLED";
-            } else if (rawStatus === "shipping" || rawStatus === "delivering") {
-              mappedStatus = "SHIPPING";
-            } else if (rawStatus === "completed") {
-              mappedStatus = "COMPLETED";
-            }
-
-            const mappedMethod =
-              bOrder.payment_method === "momo"
-                ? "MoMo"
-                : bOrder.payment_method === "cod"
-                ? "COD"
-                : "VietQR";
-
-            const existing = map.get(code);
-            if (existing) {
-              map.set(code, {
-                ...existing,
-                status: mappedStatus,
-                paymentMethod: mappedMethod,
-                totalAmount: bOrder.total_amount || existing.totalAmount,
-                customerPhone: bOrder.customer_phone || existing.customerPhone,
-                shippingAddress: bOrder.shipping_address || existing.shippingAddress,
-              });
-            } else {
-              const dateObj = bOrder.created_at ? new Date(bOrder.created_at) : new Date();
-              const dateStr = dateObj.toISOString().split("T")[0];
-              const timeStr = dateObj.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
-
-              map.set(code, {
-                code,
-                customerName: bOrder.customer_name || "Khách hàng Online",
-                customerPhone: bOrder.customer_phone || "",
-                staffName: "Hệ thống Tự Động Online",
-                type: "Đặt Sân Online",
-                totalAmount: bOrder.total_amount || 0,
-                paymentMethod: mappedMethod,
-                status: mappedStatus,
-                createdAt: `${dateStr} ${timeStr}`,
-                dateStr,
-                shippingAddress: bOrder.shipping_address || "",
-                shippingCarrier: "GHN",
-                shippingFee: bOrder.shipping_fee || 0,
-                items: Array.isArray(bOrder.items)
-                  ? bOrder.items.map((it: BackendOrderItem, idx: number) => ({
-                      id: it.id || idx + 1,
-                      name: it.item_name || it.name || "Dịch vụ Pickleball",
-                      qty: it.quantity || it.qty || 1,
-                      price: it.price || 0,
-                    }))
-                  : [],
-              });
-            }
-          });
-
-          const updated = Array.from(map.values());
-          localStorage.setItem("demopick_orders_admin", JSON.stringify(updated));
-          return updated;
+          const localPosOrders = (prevList || []).filter((o) => o.type === "POS Quầy");
+          const merged = [...mappedList, ...localPosOrders];
+          localStorage.setItem("demopick_orders_admin", JSON.stringify(merged));
+          return merged;
         });
       }
     } catch {
@@ -241,8 +220,8 @@ export default function Dashboard() {
     const inUseCourts = liveCourts.filter(
       (c) => c.status === "in_use" || c.status === "ending"
     ).length;
-    const totalCourtsCount = courts.length || liveCourts.length || 8;
-    const utilizationRate = Math.round((inUseCourts / totalCourtsCount) * 100);
+    const totalCourtsCount = courts.length || liveCourts.length || 6;
+    const utilizationRate = totalCourtsCount > 0 ? Math.round((inUseCourts / totalCourtsCount) * 100) : 0;
 
     return {
       dayRevenue,
@@ -296,23 +275,7 @@ export default function Dashboard() {
       }
     });
 
-    // If chart entries are mostly empty because mock dates are static, provide realistic aggregate trends
-    const dataList = Array.from(daysMap.values());
-    const hasData = dataList.some((d) => d.total > 0);
-
-    if (!hasData) {
-      return [
-        { date: "12/09", courtRevenue: 2800000, shopRevenue: 1500000, total: 4300000 },
-        { date: "13/09", courtRevenue: 3400000, shopRevenue: 2100000, total: 5500000 },
-        { date: "14/09", courtRevenue: 4200000, shopRevenue: 3500000, total: 7700000 },
-        { date: "15/09", courtRevenue: 3900000, shopRevenue: 2800000, total: 6700000 },
-        { date: "16/09", courtRevenue: 5100000, shopRevenue: 4200000, total: 9300000 },
-        { date: "17/09", courtRevenue: 5800000, shopRevenue: 4900000, total: 10700000 },
-        { date: "Hôm nay", courtRevenue: 6200000, shopRevenue: 5300000, total: 11500000 },
-      ];
-    }
-
-    return dataList;
+    return Array.from(daysMap.values());
   }, [ordersList]);
 
   // 5 Latest Orders
@@ -409,10 +372,10 @@ export default function Dashboard() {
             <div>
               <p className="text-xs text-slate-500 font-semibold uppercase">Doanh thu hôm nay</p>
               <h3 className="text-2xl font-black text-slate-900 mt-1">
-                {formatCurrency(metrics.dayRevenue || 12450000)}
+                {formatCurrency(metrics.dayRevenue || 0)}
               </h3>
               <span className="text-xs text-emerald-600 font-bold flex items-center gap-1 mt-1">
-                <TrendingUp className="h-3.5 w-3.5" /> +15.4% so với hôm qua
+                <TrendingUp className="h-3.5 w-3.5" /> Theo thời gian thực
               </span>
             </div>
             <div className="h-12 w-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
@@ -464,7 +427,7 @@ export default function Dashboard() {
             <div>
               <p className="text-xs text-slate-500 font-semibold uppercase">Thiết bị trong kho</p>
               <h3 className="text-2xl font-black text-slate-900 mt-1">
-                {products.length || 24} Sản phẩm
+                {products.length || 25} Sản phẩm
               </h3>
               <span className="text-xs text-slate-500 mt-1 block">Vợt, bóng & phụ kiện</span>
             </div>

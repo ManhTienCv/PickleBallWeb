@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
+import { adminService } from "@/services/admin.service";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -1705,24 +1706,7 @@ const initialUnifiedProducts: InventoryProduct[] = [
   }
 ];
 
-const initialLogs: InventoryLog[] = [
-  {
-    id: 1,
-    productName: "Băng Quấn Cán Joola Overgrip (Hộp 3 cuộn)",
-    changeQty: 50,
-    stockAfter: 50,
-    note: "Lễ tân [Phạm Văn Đức] nhập bổ sung 50 hộp quấn cán tại quầy vào lúc 10:15",
-    time: "10:15 - 09/02/2026",
-  },
-  {
-    id: 2,
-    productName: "Vợt JOOLA Perseus 3S Carbon 16mm",
-    changeQty: 5,
-    stockAfter: 15,
-    note: "Quản trị viên bổ sung +5 vợt vào kho tổng",
-    time: "08:30 - 09/02/2026",
-  },
-];
+const initialLogs: InventoryLog[] = [];
 
 export default function Inventory() {
   const { user, hasRole } = useAuth();
@@ -1743,24 +1727,51 @@ export default function Inventory() {
     }
   }, [isAdmin]);
 
-  // Products State (guarantee merge of default counter items)
+  // Products State
   const [products, setProducts] = useState<InventoryProduct[]>(() => {
     const saved = localStorage.getItem("demopick_online_products_v3");
-    if (!saved) return initialUnifiedProducts;
+    if (!saved) return [];
     try {
       const parsed: InventoryProduct[] = JSON.parse(saved);
-      const existingIds = new Set(parsed.map((p) => p.id));
-      const missing = initialUnifiedProducts.filter((p) => !existingIds.has(p.id));
-      if (missing.length > 0) {
-        const merged = [...parsed, ...missing];
-        localStorage.setItem("demopick_online_products_v3", JSON.stringify(merged));
-        return merged;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Discard stale cache if it contains old unsplash images or lacks drinks
+        if (parsed.some((p: any) => (p.image || "").includes("unsplash")) || parsed.length < 30) {
+          localStorage.removeItem("demopick_online_products_v3");
+          return [];
+        }
+        return parsed;
       }
-      return parsed;
+      return [];
     } catch {
-      return initialUnifiedProducts;
+      return [];
     }
   });
+
+  // Fetch real products from backend database
+  useEffect(() => {
+    adminService.getProducts().then((apiProducts) => {
+      if (apiProducts && Array.isArray(apiProducts) && apiProducts.length > 0) {
+        const mapped: InventoryProduct[] = apiProducts.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          category: p.category?.name || "Vợt Pickleball",
+          brand: p.brand?.name || "DemoPick",
+          price: Number(p.price) || 0,
+          originalPrice: Number(p.base_price || p.price) || 0,
+          stock: p.stock_quantity ?? (p.variants?.[0]?.stock_quantity ?? (p.variants?.[0]?.stock_qty ?? 50)),
+          status: p.in_stock ? "active" : "inactive",
+          image: p.image_url || "/images/pickleball_paddle_joola.jpg",
+          gallery: [p.image_url || "/images/pickleball_paddle_joola.jpg"],
+          highlights: [p.short_description || "Sản phẩm Pickleball chất lượng cao"],
+          specs: [],
+          description: p.description || p.short_description || "",
+          channel: "all",
+        }));
+        setProducts(mapped);
+        localStorage.setItem("demopick_online_products_v3", JSON.stringify(mapped));
+      }
+    });
+  }, []);
 
   // Categories State
   const [categories, setCategories] = useState<CategoryItem[]>(() => {
@@ -1870,41 +1881,52 @@ export default function Inventory() {
   const itemsPerPage = 10;
 
   // Products filtered by role: Lễ tân only sees Drinks, Foods, and Rentals
+  const getCatName = (p: any): string => {
+    if (!p) return "";
+    if (typeof p.category === "string") return p.category;
+    if (p.category && typeof p.category.name === "string") return p.category.name;
+    return "";
+  };
+
   const roleBaseProducts = useMemo(() => {
     if (isAdmin) return products;
-    return products.filter(
-      (p) =>
-        p.category === "Đồ uống & Đồ ăn" ||
-        p.category === "Thiết bị & Dịch vụ cho thuê" ||
-        p.category.includes("Đồ uống") ||
-        p.category.includes("Đồ ăn") ||
-        p.category.includes("Thuê") ||
+    return products.filter((p) => {
+      const cat = getCatName(p);
+      return (
+        cat === "Đồ uống & Đồ ăn" ||
+        cat === "Thiết bị & Dịch vụ cho thuê" ||
+        cat.includes("Đồ uống") ||
+        cat.includes("Đồ ăn") ||
+        cat.includes("Thuê") ||
         p.channel === "pos_only"
-    );
+      );
+    });
   }, [isAdmin, products]);
 
   // Filtered Products based on search and category pill
   const filteredProducts = roleBaseProducts.filter((p) => {
-    const matchSearch =
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.brand.toLowerCase().includes(searchQuery.toLowerCase());
+    const pName = (p.name || "").toLowerCase();
+    const pBrand = (p.brand || "").toLowerCase();
+    const sQuery = searchQuery.toLowerCase();
+    const matchSearch = pName.includes(sQuery) || pBrand.includes(sQuery);
 
+    const cat = getCatName(p);
     let matchCat = true;
     if (!isAdmin) {
       if (selectedCategory === "Đồ uống & Đồ ăn") {
-        matchCat = p.category === "Đồ uống & Đồ ăn" || p.category.includes("Đồ uống") || p.category.includes("Đồ ăn");
+        matchCat = cat === "Đồ uống & Đồ ăn" || cat.includes("Đồ uống") || cat.includes("Đồ ăn");
       } else if (selectedCategory === "Thiết bị & Dịch vụ cho thuê") {
-        matchCat = p.category === "Thiết bị & Dịch vụ cho thuê" || p.category.includes("Thuê");
+        matchCat = cat === "Thiết bị & Dịch vụ cho thuê" || cat.includes("Thuê");
       }
     } else {
       if (selectedCategory === "drinks") {
-        matchCat = p.category.includes("Đồ uống") || p.category.includes("Nước") || p.category.includes("Đồ ăn");
+        matchCat = cat.includes("Đồ uống") || cat.includes("Nước") || cat.includes("Đồ ăn");
       } else if (selectedCategory === "rental") {
-        matchCat = p.category.includes("Thuê");
+        matchCat = cat.includes("Thuê");
       } else if (selectedCategory === "equipment") {
-        matchCat = p.category.includes("Vợt") || p.category.includes("Bóng") || p.category.includes("Phụ kiện");
+        matchCat = cat.includes("Vợt") || cat.includes("Bóng") || cat.includes("Phụ kiện");
       } else if (selectedCategory !== "all") {
-        matchCat = p.category === selectedCategory;
+        matchCat = cat === selectedCategory;
       }
     }
 
@@ -2627,7 +2649,7 @@ export default function Inventory() {
                                       title="Cộng số lượng kho"
                                     >
                                       <PlusCircle className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
-                                      <span>+ Nhập</span>
+                                      <span>Nhập</span>
                                     </button>
                                     <button
                                       onClick={() => handleOpenPreviewModal(p)}

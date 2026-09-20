@@ -190,7 +190,7 @@ export default function Products() {
     const priceB = Number(b.price) || 0
     if (sortBy === 'price-low') return priceA - priceB
     if (sortBy === 'price-high') return priceB - priceA
-    if (sortBy === 'rating') return (b.id % 5) - (a.id % 5) // rating mock
+    if (sortBy === 'rating') return (Number(b.rating_avg) || 0) - (Number(a.rating_avg) || 0)
     if (sortBy === 'newest') return b.id - a.id
     return 0 // 'featured'
   })

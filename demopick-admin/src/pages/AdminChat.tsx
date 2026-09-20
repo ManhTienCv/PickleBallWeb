@@ -34,36 +34,11 @@ interface ChatMessage {
   created_at: string;
 }
 
-const fallbackConversations: Conversation[] = [
-  {
-    session_id: "GUEST_demo_hoangnam",
-    customer_name: "Nguyễn Lê Hoàng Nam",
-    last_message: "Bên mình có nhận căng cước vợt lấy ngay trong ca chiều không shop?",
-    last_sender: "user",
-    unread_count: 1,
-    updated_at: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
-  },
-  {
-    session_id: "GUEST_demo_phuongvu",
-    customer_name: "Vũ Mai Phương",
-    last_message: "Mình vừa đặt Sân VIP C1 lúc 18h tối nay, check giúp mình nhé.",
-    last_sender: "user",
-    unread_count: 0,
-    updated_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-  },
-  {
-    session_id: "GUEST_demo_tiendung",
-    customer_name: "Đặng Tiến Dũng",
-    last_message: "Dạ vâng cảm ơn shop, mình đã nhận được bóng Franklin.",
-    last_sender: "admin",
-    unread_count: 0,
-    updated_at: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-  },
-];
+const fallbackConversations: Conversation[] = [];
 
 export default function AdminChat() {
   const [conversations, setConversations] = useState<Conversation[]>(fallbackConversations);
-  const [selectedSessionId, setSelectedSessionId] = useState<string>("GUEST_demo_hoangnam");
+  const [selectedSessionId, setSelectedSessionId] = useState<string>("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [search, setSearch] = useState("");
@@ -80,49 +55,28 @@ export default function AdminChat() {
       const res = await api.get("/admin/chat/conversations");
       if (res.data?.success && Array.isArray(res.data.data)) {
         setConversations(res.data.data);
+        if (!selectedSessionId && res.data.data.length > 0) {
+          setSelectedSessionId(res.data.data[0].session_id);
+        }
       }
     } catch {
-      // Giữ fallbackConversations
+      // Giữ fallbackConversations rỗng
     }
   };
 
   // Nạp chi tiết tin nhắn theo session đang chọn
   const fetchMessages = async (sessionId: string) => {
+    if (!sessionId) {
+      setMessages([]);
+      return;
+    }
     try {
       const res = await api.get(`/admin/chat/messages/${sessionId}`);
       if (res.data?.success && Array.isArray(res.data.data)) {
         setMessages(res.data.data);
       }
     } catch {
-      // Fallback tin nhắn mẫu nếu offline
-      if (sessionId === "GUEST_demo_hoangnam") {
-        setMessages([
-          {
-            id: 101,
-            session_id: sessionId,
-            sender_type: "user",
-            sender_name: "Nguyễn Lê Hoàng Nam",
-            message: "Chào shop, sân mình hôm nay còn giờ trống từ 17h đến 19h không ạ?",
-            created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-          },
-          {
-            id: 102,
-            session_id: sessionId,
-            sender_type: "admin",
-            sender_name: "Chủ sân (Admin)",
-            message: "Chào anh Nam! Chiều nay bên em còn Sân A2 (Trong nhà) trống khung 17h30 - 19h30 ạ.",
-            created_at: new Date(Date.now() - 1000 * 60 * 13).toISOString(),
-          },
-          {
-            id: 103,
-            session_id: sessionId,
-            sender_type: "user",
-            sender_name: "Nguyễn Lê Hoàng Nam",
-            message: "Bên mình có nhận căng cước vợt lấy ngay trong ca chiều không shop?",
-            created_at: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
-          },
-        ]);
-      }
+      setMessages([]);
     }
   };
 
@@ -343,102 +297,116 @@ export default function AdminChat() {
 
         {/* KHUNG PHẢI: NỘI DUNG CUỘC TRÒ CHUYỆN */}
         <div className="flex-1 flex flex-col bg-white min-w-0">
-          {/* Header hội thoại */}
-          <div className="h-16 px-6 border-b border-slate-200 flex items-center justify-between bg-white shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center justify-center font-bold text-sm">
-                {activeConversation?.customer_name.charAt(0).toUpperCase() || "K"}
+          {!activeConversation ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-8 space-y-3 bg-slate-50/40">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-inner">
+                <MessageSquare className="w-8 h-8" />
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 leading-tight">
-                  {activeConversation?.customer_name || "Khách hàng"}
-                </h3>
-                <p className="text-[11px] text-slate-400 font-mono mt-0.5">
-                  ID Phiên: {selectedSessionId}
-                </p>
-              </div>
+              <h4 className="text-sm font-bold text-slate-700">Chưa có cuộc trò chuyện nào</h4>
+              <p className="text-xs text-slate-400 text-center max-w-sm">
+                Khi khách hàng gửi tin nhắn qua khung chat trên website, cuộc hội thoại thời gian thực sẽ hiển thị tại đây.
+              </p>
             </div>
-
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[11px] font-semibold py-1 px-2.5">
-                Đang trực tuyến
-              </Badge>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fetchMessages(selectedSessionId)}
-                className="h-8 gap-1 text-xs border-slate-200 text-slate-600"
-                title="Tải lại tin nhắn"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Vùng hiển thị tin nhắn */}
-          <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-slate-50/60">
-            {messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-2">
-                <MessageSquare className="w-10 h-10 text-slate-300" />
-                <p className="text-xs">Chưa có tin nhắn trong cuộc trò chuyện này.</p>
-              </div>
-            ) : (
-              messages.map((m) => {
-                const isAdmin = m.sender_type === "admin";
-                return (
-                  <div key={m.id} className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}>
-                    <div
-                      className={`max-w-[70%] p-3.5 rounded-2xl text-xs leading-relaxed shadow-sm ${
-                        isAdmin
-                          ? "bg-emerald-600 text-white rounded-tr-none shadow-emerald-600/10"
-                          : "bg-white text-slate-800 border border-slate-200 rounded-tl-none"
-                      }`}
-                    >
-                      <div className="flex items-center gap-1.5 mb-1 font-bold text-[10px]">
-                        {isAdmin ? (
-                          <span className="text-emerald-100 flex items-center gap-1">
-                            <ShieldCheck className="w-3 h-3" /> {m.sender_name || "Quản trị viên"}
-                          </span>
-                        ) : (
-                          <span className="text-slate-600 flex items-center gap-1">
-                            <User className="w-3 h-3 text-emerald-600" /> {m.sender_name || "Khách hàng"}
-                          </span>
-                        )}
-                      </div>
-
-                      <p className="whitespace-pre-wrap text-[13px]">{m.message}</p>
-
-                      <div className={`flex items-center justify-end gap-1 mt-1 text-[9px] ${isAdmin ? "text-emerald-100" : "text-slate-400"}`}>
-                        <span>
-                          {new Date(m.created_at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
-                        </span>
-                        {isAdmin && <CheckCheck className="w-3 h-3" />}
-                      </div>
-                    </div>
+          ) : (
+            <>
+              {/* Header hội thoại */}
+              <div className="h-16 px-6 border-b border-slate-200 flex items-center justify-between bg-white shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center justify-center font-bold text-sm">
+                    {activeConversation.customer_name.charAt(0).toUpperCase() || "K"}
                   </div>
-                );
-              })
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 leading-tight">
+                      {activeConversation.customer_name}
+                    </h3>
+                    <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+                      ID Phiên: {selectedSessionId}
+                    </p>
+                  </div>
+                </div>
 
-          {/* Footer: Nhập tin nhắn gửi */}
-          <form onSubmit={handleSendMessage} className="p-4 bg-white border-t border-slate-200 flex items-center gap-2.5 shrink-0">
-            <Input
-              placeholder={`Nhắn phản hồi cho ${activeConversation?.customer_name || "khách hàng"}...`}
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              className="flex-1 bg-slate-50 border-slate-200 rounded-xl text-xs focus:bg-white"
-            />
-            <Button
-              type="submit"
-              disabled={!inputMessage.trim() || isSending}
-              className="gap-2 bg-emerald-600 hover:bg-emerald-500 font-bold text-white rounded-xl h-10 px-5 text-xs shadow-sm"
-            >
-              <Send className="w-4 h-4" />
-              <span>Gửi</span>
-            </Button>
-          </form>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[11px] font-semibold py-1 px-2.5">
+                    Đang trực tuyến
+                  </Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fetchMessages(selectedSessionId)}
+                    className="h-8 gap-1 text-xs border-slate-200 text-slate-600"
+                    title="Tải lại tin nhắn"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Vùng hiển thị tin nhắn */}
+              <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-slate-50/60">
+                {messages.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-2">
+                    <MessageSquare className="w-10 h-10 text-slate-300" />
+                    <p className="text-xs">Chưa có tin nhắn trong cuộc trò chuyện này.</p>
+                  </div>
+                ) : (
+                  messages.map((m) => {
+                    const isAdmin = m.sender_type === "admin";
+                    return (
+                      <div key={m.id} className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}>
+                        <div
+                          className={`max-w-[70%] p-3.5 rounded-2xl text-xs leading-relaxed shadow-sm ${
+                            isAdmin
+                              ? "bg-emerald-600 text-white rounded-tr-none shadow-emerald-600/10"
+                              : "bg-white text-slate-800 border border-slate-200 rounded-tl-none"
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5 mb-1 font-bold text-[10px]">
+                            {isAdmin ? (
+                              <span className="text-emerald-100 flex items-center gap-1">
+                                <ShieldCheck className="w-3 h-3" /> {m.sender_name || "Quản trị viên"}
+                              </span>
+                            ) : (
+                              <span className="text-slate-600 flex items-center gap-1">
+                                <User className="w-3 h-3 text-emerald-600" /> {m.sender_name || "Khách hàng"}
+                              </span>
+                            )}
+                          </div>
+
+                          <p className="whitespace-pre-wrap text-[13px]">{m.message}</p>
+
+                          <div className={`flex items-center justify-end gap-1 mt-1 text-[9px] ${isAdmin ? "text-emerald-100" : "text-slate-400"}`}>
+                            <span>
+                              {new Date(m.created_at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                            {isAdmin && <CheckCheck className="w-3 h-3" />}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Footer: Nhập tin nhắn gửi */}
+              <form onSubmit={handleSendMessage} className="p-4 bg-white border-t border-slate-200 flex items-center gap-2.5 shrink-0">
+                <Input
+                  placeholder={`Nhắn phản hồi cho ${activeConversation.customer_name}...`}
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  className="flex-1 bg-slate-50 border-slate-200 rounded-xl text-xs focus:bg-white"
+                />
+                <Button
+                  type="submit"
+                  disabled={!inputMessage.trim() || isSending}
+                  className="gap-2 bg-emerald-600 hover:bg-emerald-500 font-bold text-white rounded-xl h-10 px-5 text-xs shadow-sm"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>Gửi</span>
+                </Button>
+              </form>
+            </>
+          )}
         </div>
       </div>
     </AppLayout>

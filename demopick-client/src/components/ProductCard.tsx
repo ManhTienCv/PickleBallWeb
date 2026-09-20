@@ -240,10 +240,19 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
           <div className="flex items-center gap-1.5 text-sm pt-0.5">
             <div className="flex items-center text-amber-400">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                <Star
+                  key={i}
+                  className={`h-3.5 w-3.5 ${
+                    i < Math.round(product.rating_avg || 5)
+                      ? 'fill-amber-400 text-amber-400'
+                      : 'text-slate-300 dark:text-slate-600'
+                  }`}
+                />
               ))}
             </div>
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium ml-0.5">(54)</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium ml-0.5">
+              ({product.reviews_count || 0})
+            </span>
           </div>
 
           {/* Price & Action Button (Bottom Row) */}
