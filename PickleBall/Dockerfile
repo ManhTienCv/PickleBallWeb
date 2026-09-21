@@ -1,4 +1,4 @@
-FROM php:8.3-apache
+FROM php:8.4-apache
 
 # Install system dependencies and required PHP extensions
 RUN apt-get update && apt-get install -y \
@@ -38,7 +38,7 @@ RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cac
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Install PHP dependencies without dev packages
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+RUN composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev --ignore-platform-req=php
 
 # Setup entrypoint script
 RUN chmod +x /var/www/html/docker-entrypoint.sh \
