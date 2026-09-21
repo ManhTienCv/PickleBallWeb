@@ -1,5 +1,11 @@
 <?php
 
+$isCloudSsl = env('DB_SSL', false) || str_contains(env('DB_HOST', ''), 'tidbcloud.com');
+$sslOptions = extension_loaded('pdo_mysql') && $isCloudSsl ? [
+    PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA', true),
+    PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
+] : [];
+
 return [
 
     'default' => env('DB_CONNECTION', 'main'),
@@ -29,9 +35,7 @@ return [
             'prefix' => '',
             'strict' => true,
             'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-            ]) : [],
+            'options' => $sslOptions,
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
         ],
 
@@ -50,9 +54,7 @@ return [
             'prefix' => '',
             'strict' => true,
             'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-            ]) : [],
+            'options' => $sslOptions,
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
         ],
 
@@ -71,9 +73,7 @@ return [
             'prefix' => '',
             'strict' => true,
             'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-            ]) : [],
+            'options' => $sslOptions,
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
         ],
 
