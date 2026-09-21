@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: demopick-api
+    runtime: docker
+    dockerfilePath: ./PickleBall/Dockerfile
+    dockerContext: ./PickleBall
+    plan: free
+    region: singapore
+    envVars:
+      - key: APP_NAME
+        value: DemoPick
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: DB_CONNECTION
+        value: main
+      - key: DB_PORT
+        value: "4000"
+      - key: RUN_SEEDERS
+        value: "true"
+      - key: QUEUE_CONNECTION
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: SESSION_DRIVER
+        value: database
