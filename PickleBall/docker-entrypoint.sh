@@ -28,10 +28,13 @@ if [ -n "$DB_HOST" ]; then
     echo "Running database migrations..."
     php artisan migrate --force || echo "Warning: Migration failed, continuing startup..."
 
-    # If RUN_SEEDERS=true is set in Render environment, run the OfficialCatalogSeeder
+    # If RUN_SEEDERS=true is set in Render environment, run seeders idempotently
     if [ "$RUN_SEEDERS" = "true" ]; then
-        echo "Running OfficialCatalogSeeder..."
-        php artisan db:seed --class=OfficialCatalogSeeder --force || echo "Warning: Seeder failed, continuing..."
+        echo "Running seeders (Roles, Admin Users, Official Catalog, Booking Courts)..."
+        php artisan db:seed --class=RoleSeeder --force || echo "Warning: RoleSeeder failed, continuing..."
+        php artisan db:seed --class=AdminUserSeeder --force || echo "Warning: AdminUserSeeder failed, continuing..."
+        php artisan db:seed --class=OfficialCatalogSeeder --force || echo "Warning: OfficialCatalogSeeder failed, continuing..."
+        php artisan db:seed --class=BookingSeeder --force || echo "Warning: BookingSeeder failed, continuing..."
     fi
 fi
 
