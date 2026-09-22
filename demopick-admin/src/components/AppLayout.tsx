@@ -11,7 +11,6 @@ import {
   QrCode,
   LogOut,
   UserCheck,
-  RefreshCw,
   Globe,
   PanelLeftClose,
   PanelLeft,
@@ -105,7 +104,7 @@ interface AppLayoutProps {
 const AppLayout = ({ children, title, subtitle, headerRight, noScroll = false }: AppLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout, login } = useAuth();
+  const { user, logout } = useAuth();
   const [checkInOpen, setCheckInOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
 
@@ -203,19 +202,6 @@ const AppLayout = ({ children, title, subtitle, headerRight, noScroll = false }:
       ),
     }))
     .filter((section) => section.items.length > 0);
-
-  const handleSwitchRole = async () => {
-    const targetEmail = isStaffOnly ? "admin@demopick.vn" : "staff@demopick.vn";
-    try {
-      await login(targetEmail, "12345678");
-      toast.success(
-        `Đã chuyển sang giao diện: ${isStaffOnly ? "Chủ Sân (Admin)" : "Nhân Viên Lễ Tân (Staff POS)"}!`
-      );
-      navigate(isStaffOnly ? "/" : "/pos");
-    } catch {
-      toast.error("Lỗi khi chuyển đổi tài khoản demo.");
-    }
-  };
 
   return (
     <div className="flex h-screen bg-slate-100 overflow-hidden font-sans">
@@ -410,14 +396,6 @@ const AppLayout = ({ children, title, subtitle, headerRight, noScroll = false }:
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={handleSwitchRole}
-                  className="cursor-pointer gap-2 text-xs font-medium py-2 focus:bg-amber-50 focus:text-amber-900 text-slate-700"
-                >
-                  <RefreshCw className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Chuyển sang {isStaffOnly ? "Admin Chủ Sân" : "Lễ Tân POS"}</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
                   onClick={logout}
                   className="cursor-pointer gap-2 text-xs font-medium py-2 text-red-600 focus:bg-red-50 focus:text-red-700"
                 >
@@ -441,18 +419,6 @@ const AppLayout = ({ children, title, subtitle, headerRight, noScroll = false }:
 
           <div className="flex items-center gap-3">
             {headerRight}
-
-            {/* Quick Role Switcher */}
-            <Button
-              onClick={handleSwitchRole}
-              variant="outline"
-              size="sm"
-              className="gap-1.5 border-amber-300 text-amber-900 bg-amber-50 hover:bg-amber-100 font-bold text-xs"
-              title="Chuyển đổi giao diện kiểm thử nhanh giữa Admin và Lễ tân"
-            >
-              <RefreshCw className="w-3.5 h-3.5 text-amber-600" />
-              <span>Chuyển sang {isStaffOnly ? "Admin Chủ Sân" : "Lễ Tân POS"}</span>
-            </Button>
           </div>
         </header>
 

@@ -291,10 +291,6 @@ export function AuthModal() {
       setOtpCountdown(60)
       setView('reset')
       toast.success(res.message || 'Mã OTP đã được gửi đến email của bạn!')
-      if (res.demoOtp) {
-        setResetOtp(res.demoOtp)
-        toast.info(`Mã OTP mẫu của bạn là: ${res.demoOtp}`, { duration: 3000 })
-      }
     } catch (err: any) {
       setError(err.message || 'Không thể gửi mã OTP. Vui lòng thử lại.')
     } finally {

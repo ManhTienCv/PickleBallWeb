@@ -83,7 +83,6 @@ export default function Profile() {
   const [otpStep, setOtpStep] = useState<'input_email' | 'input_otp'>('input_email')
   const [isSendingOtp, setIsSendingOtp] = useState(false)
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false)
-  const [demoOtpHint, setDemoOtpHint] = useState<string | null>(null)
   const [countdown, setCountdown] = useState(0)
 
   // Address Book State
@@ -219,7 +218,6 @@ export default function Profile() {
     setNewEmail('')
     setOtpCode('')
     setOtpStep('input_email')
-    setDemoOtpHint(null)
     setCountdown(0)
     setIsEmailModalOpen(true)
   }
@@ -237,18 +235,10 @@ export default function Profile() {
 
     setIsSendingOtp(true)
     try {
-      const res = await authService.sendEmailOtp(newEmail)
+      await authService.sendEmailOtp(newEmail)
       setOtpStep('input_otp')
       setCountdown(60)
-      if (res.otp) {
-        setDemoOtpHint(res.otp)
-        toast.success(`Mã OTP xác thực đã được gửi tới ${newEmail}!`, {
-          description: `Mã OTP mẫu của bạn là: ${res.otp}`,
-          duration: 2500,
-        })
-      } else {
-        toast.success(`Mã OTP xác thực đã được gửi tới ${newEmail}! Vui lòng kiểm tra hòm thư.`)
-      }
+      toast.success(`Mã OTP xác thực đã được gửi tới ${newEmail}! Vui lòng kiểm tra hòm thư.`)
     } catch (err: any) {
       toast.error(err.message || 'Không thể gửi mã OTP. Vui lòng thử lại.')
     } finally {
@@ -487,7 +477,7 @@ export default function Profile() {
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-3 text-xs font-medium text-slate-600 dark:text-slate-400">
                     <span className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-200/50 dark:border-border/50">
                       <Mail className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span>{user?.email || 'customer@demopick.vn'}</span>
+                      <span>{user?.email || 'Chưa cập nhật email'}</span>
                     </span>
                     <span className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-200/50 dark:border-border/50">
                       <Phone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -710,7 +700,7 @@ export default function Profile() {
                       </Badge>
                     </div>
                     <div className="font-mono text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 break-all">
-                      {user?.email || 'customer@demopick.vn'}
+                      {user?.email || 'Chưa cập nhật email'}
                     </div>
                   </div>
 
@@ -1294,11 +1284,6 @@ export default function Profile() {
                     required
                     className="h-12 text-center font-mono font-black text-xl tracking-widest rounded-xl"
                   />
-                  {demoOtpHint && (
-                    <p className="text-[11px] text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 p-2.5 rounded-xl border border-emerald-200 dark:border-emerald-800 font-medium">
-                      💡 Mã OTP demo: <strong className="font-mono font-black">{demoOtpHint}</strong>
-                    </p>
-                  )}
                   {countdown > 0 ? (
                     <p className="text-[11px] text-slate-400 text-center">Gửi lại mã sau {countdown}s</p>
                   ) : (

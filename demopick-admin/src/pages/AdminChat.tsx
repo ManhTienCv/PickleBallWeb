@@ -200,7 +200,7 @@ export default function AdminChat() {
         )
       );
     } catch {
-      toast.error("Không thể gửi tin nhắn. Đang hoạt động ở chế độ Demo.");
+      toast.error("Không thể gửi tin nhắn. Vui lòng thử lại sau.");
     } finally {
       setIsSending(false);
     }

@@ -70,12 +70,12 @@ export const OrderTrackingDialog: React.FC<OrderTrackingDialogProps> = ({
             </div>
           </div>
 
-          {/* DEMO STEP ADVANCE BUTTON */}
+          {/* STEP ADVANCE BUTTON */}
           <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
                 <FastForward className="w-4 h-4 text-amber-600" />
-                <span>Giả lập chuyển bước hành trình (Báo cáo Demo):</span>
+                <span>Cập nhật tiến trình giao hàng:</span>
               </span>
               <span className="text-[11px] font-bold text-amber-700">
                 Bước {trackingInfo.currentStage} / 5
