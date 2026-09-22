@@ -500,14 +500,42 @@ export function AuthModal() {
                     <span>{isGoogleLoading && googlePreviousView === 'login' ? 'Đang mở Google...' : 'Tiếp tục với tài khoản Google'}</span>
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={fillDemoAccount}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/70 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors text-xs font-medium cursor-pointer"
-                  >
-                    <Zap className="h-3.5 w-3.5 text-amber-500" />
-                    Điền nhanh tài khoản Demo
-                  </button>
+                  {/* Quick Demo Credentials Buttons */}
+                  <div className="pt-2 border-t border-slate-150 dark:border-slate-800 space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                      <span>⚡ Chọn nhanh tài khoản kiểm thử:</span>
+                      <span className="text-[10px] text-slate-400">Pass: 12345678</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLoginEmail('customer@demopick.vn')
+                          setLoginPassword('12345678')
+                          setError(null)
+                          toast.success('Đã chọn tài khoản: Khách Hàng Demo')
+                        }}
+                        className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-xs font-bold cursor-pointer transition-colors shadow-xs"
+                      >
+                        <User className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                        Khách Hàng (Demo)
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLoginEmail('admin@demopick.vn')
+                          setLoginPassword('12345678')
+                          setError(null)
+                          toast.success('Đã chọn tài khoản: Quản Trị Viên (Admin)')
+                        }}
+                        className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl border border-blue-200 dark:border-blue-800/60 bg-blue-50/70 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-xs font-bold cursor-pointer transition-colors shadow-xs"
+                      >
+                        <ShieldCheck className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                        Chủ Sân (Admin)
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 <p className="mt-5 text-center text-xs text-slate-500 dark:text-slate-300">
