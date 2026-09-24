@@ -1,5 +1,6 @@
 import { ReactNode, useState, useEffect, useRef, useLayoutEffect, UIEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
   LayoutDashboard,
   MapPin,
@@ -278,7 +279,11 @@ const AppLayout = ({ children, title, subtitle, headerRight, noScroll = false }:
               <div className="space-y-1">
                 {section.items.map((item) => {
                   const fullPath = location.pathname + location.search;
-                  const isActive = fullPath === item.path || (location.pathname === item.path && !item.path.includes("?"));
+                  let isActive = fullPath === item.path || (location.pathname === item.path && !item.path.includes("?"));
+                  if (!isActive && location.pathname === "/orders" && !location.search) {
+                    if (isStaffOnly && item.path === "/orders?tab=pos") isActive = true;
+                    else if (!isStaffOnly && item.path === "/orders?tab=online") isActive = true;
+                  }
 
                   if (isCollapsed) {
                     return (
@@ -288,12 +293,19 @@ const AppLayout = ({ children, title, subtitle, headerRight, noScroll = false }:
                             to={item.path}
                             onClick={handleNavClick}
                             data-active={isActive ? "true" : undefined}
-                            className={`w-10 h-10 mx-auto rounded-xl flex items-center justify-center transition-all ${isActive
-                              ? "bg-emerald-600 text-white font-semibold shadow-md shadow-emerald-600/20"
+                            className={`relative w-10 h-10 mx-auto rounded-xl flex items-center justify-center transition-colors duration-200 select-none ${isActive
+                              ? "text-white font-semibold"
                               : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
                               }`}
                           >
-                            <item.icon className={`w-5 h-5 ${isActive ? "text-white" : "text-emerald-600"}`} />
+                            {isActive && (
+                              <motion.div
+                                layoutId="admin-sidebar-active-pill"
+                                transition={{ type: "spring", stiffness: 450, damping: 35, mass: 0.8 }}
+                                className="absolute inset-0 bg-emerald-600 rounded-xl shadow-md shadow-emerald-600/25 z-0"
+                              />
+                            )}
+                            <item.icon className={`w-5 h-5 relative z-10 transition-colors duration-200 ${isActive ? "text-white" : "text-emerald-600"}`} />
                           </Link>
                         </TooltipTrigger>
                         <TooltipContent side="right" className="font-semibold text-xs">
@@ -309,13 +321,20 @@ const AppLayout = ({ children, title, subtitle, headerRight, noScroll = false }:
                       to={item.path}
                       onClick={handleNavClick}
                       data-active={isActive ? "true" : undefined}
-                      className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm transition-all ${isActive
-                        ? "bg-emerald-600 text-white font-semibold shadow-sm shadow-emerald-600/20"
+                      className={`relative flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm transition-colors duration-200 select-none ${isActive
+                        ? "text-white font-semibold"
                         : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 font-medium"
                         }`}
                     >
-                      <item.icon className={`w-4 h-4 shrink-0 ${isActive ? "text-white" : "text-emerald-600"}`} />
-                      <span className="truncate">{item.label}</span>
+                      {isActive && (
+                        <motion.div
+                          layoutId="admin-sidebar-active-pill"
+                          transition={{ type: "spring", stiffness: 450, damping: 35, mass: 0.8 }}
+                          className="absolute inset-0 bg-emerald-600 rounded-xl shadow-sm shadow-emerald-600/20 z-0"
+                        />
+                      )}
+                      <item.icon className={`w-4 h-4 shrink-0 relative z-10 transition-colors duration-200 ${isActive ? "text-white" : "text-emerald-600"}`} />
+                      <span className="truncate relative z-10">{item.label}</span>
                     </Link>
                   );
                 })}

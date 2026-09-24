@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { LayoutGroup } from 'framer-motion'
 
 const staffAllowedPaths = ['/pos', '/court-map', '/orders', '/inventory']
 
@@ -33,5 +34,9 @@ export default function ProtectedRoute() {
     return <Navigate to="/pos" replace />
   }
 
-  return <Outlet />
+  return (
+    <LayoutGroup id="admin-sidebar-group">
+      <Outlet />
+    </LayoutGroup>
+  )
 }
