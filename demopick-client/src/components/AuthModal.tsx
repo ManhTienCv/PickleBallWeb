@@ -156,31 +156,19 @@ export function AuthModal() {
               setGoogleId(gid)
               setGooglePhone(regData.phone || '')
 
-              // Kiểm tra xem email đã tồn tại trong database hệ thống chưa
-              const check = await authService.checkEmail(email)
-
-              // TRƯỜNG HỢP 1: Tài khoản đã có trong hệ thống VÀ người dùng bấm từ Đăng nhập ('login')
-              // -> Tự động đăng nhập luôn vào tài khoản, xác thực access_token an toàn phía backend
-              if (check.exists && fromView === 'login') {
-                const session = await authService.loginWithGoogle({
-                  access_token: accessToken,
-                  email,
-                  name: check.name || name,
-                  picture,
-                  googleId: gid,
-                })
-                setSession(session.token, session.user)
-                toast.success(`Đăng nhập Google thành công! Chào mừng ${session.user.name}.`)
-                close()
-                return
-              }
-
-              // TRƯỜNG HỢP 2: Email mới (chưa có trong DB) HOẶC người dùng bấm từ Đăng ký ('register')
-              // -> Chuyển sang Bước 2: Form cho phép người dùng kiểm tra/đổi tên hiển thị trước khi hoàn tất
-              setView('google_complete')
-              if (!check.exists) {
-                toast.info('Tài khoản mới: Vui lòng kiểm tra hoặc đặt lại tên hiển thị của bạn.')
-              }
+              // Đăng nhập / Đăng ký 1-Chạm tức thì (One-Click Google Authentication)
+              // Backend tự động nhận diện: đã có tài khoản thì đăng nhập ngay, tài khoản mới thì tự tạo tài khoản
+              const session = await authService.loginWithGoogle({
+                access_token: accessToken,
+                email,
+                name,
+                picture,
+                googleId: gid,
+              })
+              setSession(session.token, session.user)
+              toast.success(`Đăng nhập Google thành công! Chào mừng ${session.user.name}.`)
+              close()
+              return
             } catch (fetchErr: any) {
               setError(fetchErr.message || 'Lỗi khi đồng bộ dữ liệu hồ sơ Google.')
             } finally {
