@@ -215,9 +215,8 @@ export default function POS() {
     }
   }, [searchParams]);
 
-  // Category filter tabs (Tất cả, Đồ uống & Đồ ăn, Vợt, Bóng, Phụ kiện, Thuê vợt)
+  // Category filter tabs (Đồ uống & Đồ ăn, Vợt, Bóng, Phụ kiện, Thuê vợt)
   const categoriesList = [
-    { id: "all", label: "Tất cả" },
     { id: "Đồ uống", label: "Đồ uống & Đồ ăn" },
     { id: "Vợt Pickleball", label: "Vợt Pickleball" },
     { id: "Bóng Pickleball", label: "Bóng Pickleball" },
@@ -943,8 +942,8 @@ export default function POS() {
         {/* CỘT 2 (Ở GIỮA - 6 COLS): KHOẢNG GIỮA CÓ PHÂN TRANG VÀ LƯỚI SẢN PHẨM */}
         <div className="lg:col-span-6 flex flex-col min-h-0 h-full space-y-2.5">
           {/* Category Tabs */}
-          <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-2 shrink-0">
-            <div className="flex items-center gap-1.5 overflow-x-auto">
+          <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm shrink-0">
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {categoriesList.map((cat) => (
                 <button
                   key={cat.id}
