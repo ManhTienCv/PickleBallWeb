@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { ShoppingCart, Package, LogOut, User as UserIcon, Home, ShoppingBag, CalendarDays, Heart } from 'lucide-react'
+import { ShoppingCart, Package, LogOut, User as UserIcon, Heart } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAuthModalStore } from '@/stores/useAuthModalStore'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { cartService, Cart } from '@/services/cart.service'
 import { wishlistService } from '@/services/wishlist.service'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import ThemeToggle from '@/components/ThemeToggle'
 import PickleballLogo from '@/components/PickleballLogo'
 import CustomerChatWidget from '@/components/CustomerChatWidget'
+import Navbar from '@/components/Navbar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,18 +20,40 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
-const navItems = [
-  { label: 'Trang chủ', path: '/', icon: Home },
-  { label: 'Sản phẩm', path: '/products', icon: ShoppingBag },
-  { label: 'Đặt sân', path: '/booking', icon: CalendarDays },
-]
-
 export default function CustomerLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const { isAuthenticated, user, logout } = useAuth()
   const openLogin = useAuthModalStore((s) => s.openLogin)
   const queryClient = useQueryClient()
+  const shouldReduceMotion = useReducedMotion()
+  const appleEasing = [0.22, 1, 0.36, 1] as const
+
+  const pageVariants = {
+    initial: {
+      opacity: 0,
+      y: shouldReduceMotion ? 0 : 16,
+      scale: shouldReduceMotion ? 1 : 0.99,
+    },
+    enter: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: {
+        duration: 0.42,
+        ease: appleEasing,
+      },
+    },
+    exit: {
+      opacity: 0,
+      y: shouldReduceMotion ? 0 : -14,
+      scale: shouldReduceMotion ? 1 : 0.99,
+      transition: {
+        duration: 0.28,
+        ease: appleEasing,
+      },
+    },
+  }
 
   // Always scroll to top of page on route change or navbar link click
   useEffect(() => {
@@ -110,49 +133,10 @@ export default function CustomerLayout() {
               </div>
             </Link>
 
-            {/* Navigation (Sliding Capsule Pill Glides Ultra-Smoothly On Click) */}
-            <nav className="hidden md:flex items-center gap-1.5 sm:gap-2 relative">
-              {navItems.map((item) => {
-                const isActive = location.pathname === item.path
-                const Icon = item.icon
-
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={scrollToTop}
-                    className="relative flex items-center gap-2.5 px-4 py-2 sm:px-4.5 sm:py-2.5 rounded-xl text-[15px] font-semibold transition-colors duration-200 hover:bg-muted/70 border border-transparent box-border"
-                  >
-                    {isActive && (
-                      <motion.div
-                        layoutId="navbar-active-sliding-pill"
-                        transition={{
-                          type: 'spring',
-                          stiffness: 200,
-                          damping: 24,
-                          mass: 0.9,
-                        }}
-                        className="absolute inset-0 bg-primary/15 dark:bg-primary/25 border border-primary/30 dark:border-primary/40 rounded-xl shadow-sm"
-                      />
-                    )}
-                    <Icon
-                      className={`w-[18px] h-[18px] z-10 transition-colors duration-200 ${
-                        isActive ? 'text-primary dark:text-emerald-400' : 'text-muted-foreground'
-                      }`}
-                    />
-                    <span
-                      className={`z-10 transition-colors duration-200 ${
-                        isActive
-                          ? 'text-primary dark:text-emerald-400 font-semibold'
-                          : 'text-muted-foreground font-medium hover:text-foreground'
-                      }`}
-                    >
-                      {item.label}
-                    </span>
-                  </Link>
-                )
-              })}
-            </nav>
+            {/* Navigation (Gliding Capsule Pill Tab) */}
+            <div className="hidden md:flex items-center">
+              <Navbar />
+            </div>
           </div>
 
           {/* Right Group: Theme Toggle, Cart & Login Actions */}
@@ -285,9 +269,20 @@ export default function CustomerLayout() {
         </div>
       </header>
 
-      {/* Page Content */}
-      <main className="flex-1">
-        <Outlet />
+      {/* Page Content with Grid-Overlay Apple Page Transition */}
+      <main className="flex-1 grid grid-cols-1 grid-rows-1 [&>*]:[grid-area:1/1] overflow-hidden w-full relative">
+        <AnimatePresence mode="sync" initial={false}>
+          <motion.div
+            key={location.pathname}
+            variants={pageVariants}
+            initial="initial"
+            animate="enter"
+            exit="exit"
+            className="w-full flex-1"
+          >
+            <Outlet />
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Footer */}
