@@ -54,35 +54,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     setIsLoading(true)
     try {
-      let newToken = ''
-      let newUser: AdminUser
-
-      try {
-        const response = await api.post<ApiResponse<{ token: string; user: AdminUser }>>(
-          '/auth/login',
-          { email, password }
-        )
-        newToken = response.data.data.token
-        newUser = response.data.data.user
-      } catch (err) {
-        // Dev fallback mode when backend API is offline
-        const isStaff = email.toLowerCase().includes('staff') || email.toLowerCase().includes('letan')
-        newToken = 'mock-token-' + Date.now()
-        newUser = {
-          id: isStaff ? 2 : 1,
-          name: isStaff ? 'Nhân Viên Lễ Tân Quầy' : 'Quản Trị Viên PickleBall',
-          email,
-          phone: isStaff ? '0988 123 456' : '0900 000 001',
-          avatar_url: null,
-          roles: isStaff ? ['staff'] : ['super_admin', 'admin'],
-        }
-      }
+      const response = await api.post<ApiResponse<{ token: string; user: AdminUser }>>(
+        '/auth/login',
+        { email, password }
+      )
+      const newToken = response.data.data.token
+      const newUser = response.data.data.user
 
       const hasAdminAccess = newUser.roles.some(r =>
         ['admin', 'super_admin', 'staff'].includes(r)
       )
       if (!hasAdminAccess) {
-        throw new Error('Bạn không có quyền truy cập trang quản trị.')
+        throw new Error('Tài khoản này không có quyền truy cập trang quản trị.')
       }
 
       setStorage(newToken, newUser)
