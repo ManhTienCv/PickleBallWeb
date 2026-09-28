@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Court, TimeSlot, BookingGridProps } from '../types/booking.types'
 import { Check, Lock, Clock, ZoomIn, ZoomOut, PlayCircle, History, Plus } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { MOCK_COURTS } from '../data/mockBookingData'
 
@@ -164,8 +165,35 @@ export function BookingGrid({ courts: apiCourts, slots, selectedSlotIds, onToggl
                       className="p-1.5 border-r border-slate-100 dark:border-border"
                     >
                       <button
-                        disabled={!isAvailable}
-                        onClick={() => isAvailable && onToggleSlot(slotId)}
+                        onClick={() => {
+                          if (isAvailable) {
+                            onToggleSlot(slotId)
+                            return
+                          }
+                          if (isCutOff) {
+                            toast.warning(
+                              `Ca ${time} (${court.name}) sắp diễn ra trong ≤ 30 phút. Khung giờ này đã khóa đặt online, quý khách vui lòng đến trực tiếp quầy lễ tân hoặc gọi Hotline 0987.654.321 để giữ sân!`,
+                              { duration: 6000 }
+                            )
+                            return
+                          }
+                          if (isExpired) {
+                            toast.info(`Khung giờ ${time} (${court.name}) đã qua thời gian thi đấu hôm nay.`)
+                            return
+                          }
+                          if (isInUse) {
+                            toast.info(`Sân ${court.name} ở ca ${time} hiện đang có người chơi thực tế.`)
+                            return
+                          }
+                          if (isHeld) {
+                            toast.info(`Khung giờ ${time} (${court.name}) đang được một khách hàng khác tạm giữ trong 10 phút.`)
+                            return
+                          }
+                          if (isBooked) {
+                            toast.info(`Khung giờ ${time} (${court.name}) đã được khách đặt thành công trước đó.`)
+                            return
+                          }
+                        }}
                         style={{
                           paddingTop: `${slotPaddingPx}px`,
                           paddingBottom: `${slotPaddingPx}px`,
@@ -173,20 +201,20 @@ export function BookingGrid({ courts: apiCourts, slots, selectedSlotIds, onToggl
                         }}
                         className={`w-full px-1 rounded-xl font-bold flex flex-col items-center justify-center cursor-pointer transition-colors duration-150 group border ${
                           isExpired
-                            ? 'bg-slate-100/90 dark:bg-slate-900/80 text-slate-700 dark:text-slate-300 border-slate-300/80 dark:border-slate-700/80 cursor-not-allowed'
+                            ? 'bg-slate-100/90 dark:bg-slate-900/80 text-slate-700 dark:text-slate-300 border-slate-300/80 dark:border-slate-700/80'
                             : isSelected
                             ? 'bg-emerald-600 dark:bg-emerald-500 text-white border-emerald-500 shadow-md font-bold'
                             : isInUse
-                            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-400 dark:border-emerald-700 cursor-not-allowed'
+                            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-400 dark:border-emerald-700'
                             : isCutOff
-                            ? 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700/60 cursor-not-allowed'
+                            ? 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700/60 hover:bg-amber-500/20 shadow-xs'
                             : isHeld
-                            ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800 cursor-not-allowed'
+                            ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800'
                             : isBooked
-                            ? 'bg-slate-200/90 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 cursor-not-allowed'
+                            ? 'bg-slate-200/90 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700'
                             : isAvailable
                             ? 'bg-[#FAF8F5] dark:bg-[#F7F5F0] text-slate-900 dark:text-slate-900 border-slate-300 dark:border-slate-200 hover:bg-white dark:hover:bg-white hover:border-emerald-500 dark:hover:border-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-700 shadow-sm dark:shadow-md'
-                            : 'bg-slate-200/90 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 cursor-not-allowed'
+                            : 'bg-slate-200/90 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700'
                         }`}
                       >
                         {isExpired ? (
@@ -205,7 +233,7 @@ export function BookingGrid({ courts: apiCourts, slots, selectedSlotIds, onToggl
                             <span className="text-[10px] text-emerald-700 dark:text-emerald-300 font-bold">Đang chơi</span>
                           </div>
                         ) : isCutOff ? (
-                          <div className="flex items-center gap-1" title="Khung giờ cận kề đã chuyển sang đặt trực tiếp tại quầy">
+                          <div className="flex items-center gap-1" title="Khung giờ sắp bắt đầu trong ≤ 30 phút. Bấm để xem thông tin liên hệ quầy lễ tân.">
                             <Clock className="h-3 w-3 text-amber-600 dark:text-amber-400 shrink-0" />
                             <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold">Tại quầy</span>
                           </div>

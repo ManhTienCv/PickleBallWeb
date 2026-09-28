@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { format, addDays } from 'date-fns'
 import { vi } from 'date-fns/locale'
-import { CalendarIcon, CalendarDays, RefreshCw, Tag, MapPin, Phone, Clock, Navigation, CheckCircle2, Info, ArrowRight } from 'lucide-react'
+import { CalendarIcon, CalendarDays, RefreshCw, Tag, MapPin, Phone, Clock, Navigation, CheckCircle2, Info, ArrowRight, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 import { authHelpers } from '@/stores/useAuthStore'
@@ -301,6 +301,23 @@ export default function CourtBooking() {
           <Info className="h-4 w-4 text-primary shrink-0" />
           <span>Thời gian khoá sân tự động: 10 phút sau khi bấm Tạm giữ</span>
         </div>
+      </div>
+
+      {/* Real-time Business Rule Alert / Explainer */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 mb-4 bg-amber-500/10 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700/60 rounded-2xl text-xs sm:text-sm text-amber-900 dark:text-amber-200">
+        <div className="flex items-start sm:items-center gap-2.5">
+          <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 sm:mt-0" />
+          <span>
+            <strong className="font-bold">Quy tắc đặt sân sát giờ:</strong> Các ca sân sắp bắt đầu trong vòng <strong className="text-amber-700 dark:text-amber-400 underline decoration-amber-500/50">≤ 30 phút</strong> sẽ chuyển sang trạng thái <span className="font-extrabold text-amber-800 dark:text-amber-300 bg-amber-200/70 dark:bg-amber-900/60 px-2 py-0.5 rounded-lg border border-amber-300/80">Tại quầy</span> và tạm khóa giữ chỗ online để ưu tiên phục vụ khách trực tiếp tại sân.
+          </span>
+        </div>
+        <a
+          href="tel:0987654321"
+          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs shrink-0 shadow-sm transition-colors cursor-pointer"
+        >
+          <Phone className="w-3.5 h-3.5" />
+          <span>Hotline: 0987.654.321</span>
+        </a>
       </div>
 
       {/* Cluster Filter Buttons */}

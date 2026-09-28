@@ -3,7 +3,7 @@ import { Court, TimeSlot, Hold } from '../types/booking.types'
 export const MOCK_COURTS: Court[] = [
   {
     id: 1,
-    name: 'Sân Pickleball A1',
+    name: 'Sân A1',
     court_number: 'A1',
     type: 'Trong Nhà • Tiêu Chuẩn Pro',
     hourly_rate: 140000,
@@ -14,7 +14,7 @@ export const MOCK_COURTS: Court[] = [
   },
   {
     id: 2,
-    name: 'Sân Pickleball A2',
+    name: 'Sân A2',
     court_number: 'A2',
     type: 'Trong Nhà • Tiêu Chuẩn Pro',
     hourly_rate: 140000,
@@ -25,7 +25,7 @@ export const MOCK_COURTS: Court[] = [
   },
   {
     id: 3,
-    name: 'Sân Pickleball B1',
+    name: 'Sân B1',
     court_number: 'B1',
     type: 'Ngoài Trời • Mái Vòm Che',
     hourly_rate: 140000,
@@ -36,7 +36,7 @@ export const MOCK_COURTS: Court[] = [
   },
   {
     id: 4,
-    name: 'Sân Pickleball B2',
+    name: 'Sân B2',
     court_number: 'B2',
     type: 'Ngoài Trời • Mái Vòm Che',
     hourly_rate: 140000,
@@ -47,7 +47,7 @@ export const MOCK_COURTS: Court[] = [
   },
   {
     id: 5,
-    name: 'Sân Pickleball C1',
+    name: 'Sân C1 (VIP)',
     court_number: 'C1',
     type: 'Tiêu Chuẩn Pro',
     hourly_rate: 180000,
@@ -58,7 +58,7 @@ export const MOCK_COURTS: Court[] = [
   },
   {
     id: 6,
-    name: 'Sân Pickleball C2',
+    name: 'Sân C2 (VIP)',
     court_number: 'C2',
     type: 'Tiêu Chuẩn Pro',
     hourly_rate: 180000,
@@ -69,7 +69,7 @@ export const MOCK_COURTS: Court[] = [
   },
   {
     id: 7,
-    name: 'Sân Pickleball D1',
+    name: 'Sân D1',
     court_number: 'D1',
     type: 'Tiêu Chuẩn Pro',
     hourly_rate: 140000,
@@ -80,7 +80,7 @@ export const MOCK_COURTS: Court[] = [
   },
   {
     id: 8,
-    name: 'Sân Pickleball D2',
+    name: 'Sân D2',
     court_number: 'D2',
     type: 'Tiêu Chuẩn Pro',
     hourly_rate: 140000,

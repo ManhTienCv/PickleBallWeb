@@ -18,6 +18,8 @@ class BookingSeeder extends Seeder
             ['name' => 'Sân B2', 'code' => 'COURT_B2', 'location' => 'Khu B - Ngoài trời', 'surface_type' => 'Cushioned Acrylic', 'image_url' => '/images/pickleball_court.jpg'],
             ['name' => 'Sân C1 (VIP)', 'code' => 'COURT_C1_VIP', 'location' => 'Khu C - VIP Mái che', 'surface_type' => 'Indoor Wooden Flex', 'image_url' => '/images/pickleball_match.jpg'],
             ['name' => 'Sân C2 (VIP)', 'code' => 'COURT_C2_VIP', 'location' => 'Khu C - VIP Mái che', 'surface_type' => 'Indoor Wooden Flex', 'image_url' => '/images/pickleball_court_indoor.jpg'],
+            ['name' => 'Sân D1', 'code' => 'COURT_D1', 'location' => 'Khu D - Tiêu chuẩn', 'surface_type' => 'Cushion Master', 'image_url' => '/images/pickleball_court_outdoor.jpg'],
+            ['name' => 'Sân D2', 'code' => 'COURT_D2', 'location' => 'Khu D - Tiêu chuẩn', 'surface_type' => 'Cushion Master', 'image_url' => '/images/pickleball_court.jpg'],
         ];
 
         foreach ($courtsData as $cData) {
