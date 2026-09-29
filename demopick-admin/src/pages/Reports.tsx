@@ -120,7 +120,7 @@ export default function Reports() {
     setIsRefreshing(true);
     try {
       // 1. Fetch backend orders
-      const resOrders = await api.get("/orders");
+      const resOrders = await api.get("/admin/orders");
       if (resOrders.data?.data && Array.isArray(resOrders.data.data)) {
         const backendOrders = resOrders.data.data;
         setOrders((prev) => {

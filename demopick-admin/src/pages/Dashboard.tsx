@@ -79,7 +79,7 @@ export default function Dashboard() {
   const refreshBackendOrders = async () => {
     setIsRefreshing(true);
     try {
-      const res = await api.get<{ success: boolean; data: BackendOrder[] }>("/orders");
+      const res = await api.get<{ success: boolean; data: BackendOrder[] }>("/admin/orders");
       const backendOrders = res.data?.data;
       if (Array.isArray(backendOrders)) {
         const mappedList: Order[] = backendOrders.map((bOrder) => {
@@ -220,7 +220,7 @@ export default function Dashboard() {
     const inUseCourts = liveCourts.filter(
       (c) => c.status === "in_use" || c.status === "ending"
     ).length;
-    const totalCourtsCount = courts.length || liveCourts.length || 6;
+    const totalCourtsCount = courts.length || liveCourts.length || 8;
     const utilizationRate = totalCourtsCount > 0 ? Math.round((inUseCourts / totalCourtsCount) * 100) : 0;
 
     return {

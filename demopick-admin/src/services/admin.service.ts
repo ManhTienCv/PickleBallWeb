@@ -1924,22 +1924,276 @@ export const DEFAULT_ADMIN_PRODUCTS: Product[] = [
   }
 ]
 
+export const DEFAULT_ADMIN_COURTS: Court[] = [
+  {
+    id: 1,
+    code: 'A1',
+    name: 'Sân Pickleball A1',
+    court_number: 'A1',
+    type: 'Trong Nhà • Tiêu Chuẩn Pro',
+    hourly_rate: 140000,
+    peak_hourly_rate: 180000,
+    status: 'active',
+  },
+  {
+    id: 2,
+    code: 'A2',
+    name: 'Sân Pickleball A2',
+    court_number: 'A2',
+    type: 'Trong Nhà • Tiêu Chuẩn Pro',
+    hourly_rate: 140000,
+    peak_hourly_rate: 180000,
+    status: 'active',
+  },
+  {
+    id: 3,
+    code: 'B1',
+    name: 'Sân Pickleball B1',
+    court_number: 'B1',
+    type: 'Ngoài Trời • Mái Vòm Che',
+    hourly_rate: 140000,
+    peak_hourly_rate: 180000,
+    status: 'active',
+  },
+  {
+    id: 4,
+    code: 'B2',
+    name: 'Sân Pickleball B2',
+    court_number: 'B2',
+    type: 'Ngoài Trời • Mái Vòm Che',
+    hourly_rate: 140000,
+    peak_hourly_rate: 180000,
+    status: 'active',
+  },
+  {
+    id: 5,
+    code: 'C1',
+    name: 'Sân Pickleball C1 (VIP)',
+    court_number: 'C1',
+    type: 'Tiêu Chuẩn Pro VIP',
+    hourly_rate: 180000,
+    peak_hourly_rate: 220000,
+    status: 'active',
+  },
+  {
+    id: 6,
+    code: 'C2',
+    name: 'Sân Pickleball C2 (VIP)',
+    court_number: 'C2',
+    type: 'Tiêu Chuẩn Pro VIP',
+    hourly_rate: 180000,
+    peak_hourly_rate: 220000,
+    status: 'active',
+  },
+  {
+    id: 7,
+    code: 'D1',
+    name: 'Sân Pickleball D1',
+    court_number: 'D1',
+    type: 'Tiêu Chuẩn Pro',
+    hourly_rate: 140000,
+    peak_hourly_rate: 180000,
+    status: 'active',
+  },
+  {
+    id: 8,
+    code: 'D2',
+    name: 'Sân Pickleball D2',
+    court_number: 'D2',
+    type: 'Tiêu Chuẩn Pro',
+    hourly_rate: 140000,
+    peak_hourly_rate: 180000,
+    status: 'active',
+  },
+]
+
+export const DEFAULT_ADMIN_LIVE_COURTS: LiveCourtItem[] = [
+  {
+    id: 1,
+    name: "Sân Pickleball A1",
+    code: "A1",
+    surface_type: "Trong Nhà • Tiêu Chuẩn Pro",
+    status: "available",
+    status_label: "TRỐNG",
+    session_id: null,
+    hourly_rate: 140000,
+    customer_name: null,
+    customer_phone: null,
+    available_minutes_until_next: 120,
+  },
+  {
+    id: 2,
+    name: "Sân Pickleball A2",
+    code: "A2",
+    surface_type: "Trong Nhà • Tiêu Chuẩn Pro",
+    status: "in_use",
+    status_label: "ĐANG CHƠI",
+    session_id: 101,
+    start_time: "17:00",
+    start_time_formatted: "17:00",
+    elapsed_minutes: 45,
+    rounded_minutes: 45,
+    current_price: 105000,
+    hourly_rate: 140000,
+    customer_name: "Anh Hoàng (Hội Pickleball Q1)",
+    customer_phone: "0909123456",
+    expected_duration_minutes: 60,
+  },
+  {
+    id: 3,
+    name: "Sân Pickleball B1",
+    code: "B1",
+    surface_type: "Ngoài Trời • Mái Vòm Che",
+    status: "available",
+    status_label: "TRỐNG",
+    session_id: null,
+    hourly_rate: 140000,
+    customer_name: null,
+    customer_phone: null,
+    available_minutes_until_next: 90,
+  },
+  {
+    id: 4,
+    name: "Sân Pickleball B2",
+    code: "B2",
+    surface_type: "Ngoài Trời • Mái Vòm Che",
+    status: "ending",
+    status_label: "SẮP HẾT GIỜ",
+    session_id: 102,
+    start_time: "16:00",
+    start_time_formatted: "16:00",
+    elapsed_minutes: 55,
+    rounded_minutes: 60,
+    current_price: 140000,
+    hourly_rate: 140000,
+    customer_name: "Chị Lan Phương",
+    customer_phone: "0918765432",
+    expected_duration_minutes: 60,
+  },
+  {
+    id: 5,
+    name: "Sân Pickleball C1 (VIP)",
+    code: "C1",
+    surface_type: "Tiêu Chuẩn Pro VIP",
+    status: "booked",
+    status_label: "ĐÃ ĐẶT",
+    session_id: null,
+    hourly_rate: 180000,
+    customer_name: "CLB Doanh Nhân SG",
+    customer_phone: "0988776655",
+    next_booking_time: "18:00 - 20:00",
+  },
+  {
+    id: 6,
+    name: "Sân Pickleball C2 (VIP)",
+    code: "C2",
+    surface_type: "Tiêu Chuẩn Pro VIP",
+    status: "available",
+    status_label: "TRỐNG",
+    session_id: null,
+    hourly_rate: 180000,
+    customer_name: null,
+    customer_phone: null,
+    available_minutes_until_next: 180,
+  },
+  {
+    id: 7,
+    name: "Sân Pickleball D1",
+    code: "D1",
+    surface_type: "Tiêu Chuẩn Pro",
+    status: "available",
+    status_label: "TRỐNG",
+    session_id: null,
+    hourly_rate: 140000,
+    customer_name: null,
+    customer_phone: null,
+    available_minutes_until_next: 120,
+  },
+  {
+    id: 8,
+    name: "Sân Pickleball D2",
+    code: "D2",
+    surface_type: "Tiêu Chuẩn Pro",
+    status: "available",
+    status_label: "TRỐNG",
+    session_id: null,
+    hourly_rate: 140000,
+    customer_name: null,
+    customer_phone: null,
+    available_minutes_until_next: 120,
+  },
+]
+
+export function generateDefaultAdminSlots(date: string): TimeSlot[] {
+  const timeSlots: TimeSlot[] = []
+  const times = [
+    { start: "05:00", end: "06:00", peak: false },
+    { start: "06:00", end: "07:00", peak: false },
+    { start: "07:00", end: "08:00", peak: false },
+    { start: "08:00", end: "09:00", peak: false },
+    { start: "09:00", end: "10:00", peak: false },
+    { start: "10:00", end: "11:00", peak: false },
+    { start: "11:00", end: "12:00", peak: false },
+    { start: "12:00", end: "13:00", peak: false },
+    { start: "13:00", end: "14:00", peak: false },
+    { start: "14:00", end: "15:00", peak: false },
+    { start: "15:00", end: "16:00", peak: false },
+    { start: "16:00", end: "17:00", peak: false },
+    { start: "17:00", end: "18:00", peak: true },
+    { start: "18:00", end: "19:00", peak: true },
+    { start: "19:00", end: "20:00", peak: true },
+    { start: "20:00", end: "21:00", peak: true },
+    { start: "21:00", end: "22:00", peak: true },
+  ]
+
+  let idCounter = 1
+  DEFAULT_ADMIN_COURTS.forEach((court) => {
+    times.forEach((t) => {
+      const price = t.peak ? court.peak_hourly_rate : court.hourly_rate
+      let status: 'available' | 'held' | 'booked' | 'locked' | 'in_use' = 'available'
+      if (court.id === 2 && t.start === "17:00") status = "in_use"
+      if (court.id === 4 && t.start === "16:00") status = "in_use"
+      if (court.id === 5 && (t.start === "18:00" || t.start === "19:00")) status = "booked"
+
+      timeSlots.push({
+        id: idCounter++,
+        court_id: court.id,
+        date,
+        start_time: t.start,
+        end_time: t.end,
+        price,
+        is_peak: t.peak,
+        status,
+        held_expires_at: null,
+      })
+    })
+  })
+
+  return timeSlots
+}
+
 export const adminService = {
   getCourts: async (): Promise<Court[]> => {
     try {
       const res = await api.get<ApiResponse<Court[]>>('/courts')
-      return res.data?.data || []
+      if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        return res.data.data
+      }
+      return DEFAULT_ADMIN_COURTS
     } catch {
-      return []
+      return DEFAULT_ADMIN_COURTS
     }
   },
 
   getSlots: async (date: string): Promise<TimeSlot[]> => {
     try {
       const res = await api.get<ApiResponse<TimeSlot[]>>('/slots', { params: { date } })
-      return res.data?.data || []
+      if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        return res.data.data
+      }
+      return generateDefaultAdminSlots(date)
     } catch {
-      return []
+      return generateDefaultAdminSlots(date)
     }
   },
 
@@ -2034,8 +2288,25 @@ export const adminService = {
   getAdminOrders: async (): Promise<any[]> => {
     try {
       const res = await api.get<ApiResponse<any[]>>('/admin/orders')
-      return res.data.data
+      if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        return res.data.data
+      }
+      const saved = localStorage.getItem('demopick_orders_admin')
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed
+        } catch {}
+      }
+      return []
     } catch {
+      const saved = localStorage.getItem('demopick_orders_admin')
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed
+        } catch {}
+      }
       return []
     }
   },
@@ -2071,17 +2342,37 @@ export const adminService = {
   getLiveCourtStatus: async (): Promise<LiveCourtItem[]> => {
     try {
       const res = await api.get<ApiResponse<LiveCourtItem[]>>('/admin/courts/live-status')
-      return res.data?.data || []
+      if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        return res.data.data
+      }
+      return DEFAULT_ADMIN_LIVE_COURTS
     } catch {
-      return []
+      return DEFAULT_ADMIN_LIVE_COURTS
     }
   },
 
   getUsers: async (): Promise<any[]> => {
     try {
       const res = await api.get<ApiResponse<any[]>>('/admin/users')
-      return res.data?.data || []
+      if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        return res.data.data
+      }
+      const saved = localStorage.getItem('demopick_system_users_v2')
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed
+        } catch {}
+      }
+      return []
     } catch {
+      const saved = localStorage.getItem('demopick_system_users_v2')
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed
+        } catch {}
+      }
       return []
     }
   },

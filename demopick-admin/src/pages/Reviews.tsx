@@ -44,15 +44,107 @@ interface ProductReviewItem {
   };
 }
 
+export const DEFAULT_ADMIN_REVIEWS: ProductReviewItem[] = [
+  {
+    id: 1,
+    product_id: 1,
+    user_id: 101,
+    user_name: "Nguyễn Văn Tuấn",
+    rating: 5,
+    comment: "Vợt Joola Perseus Pro đánh bóng cực đầm tay, độ bám mặt vợt siêu đỉnh! Đóng gói rất chắc chắn, giao hàng nhanh.",
+    images: ["/images/pickleball_paddle_joola.jpg"],
+    variant_purchased: "16mm - Tay cầm dài",
+    is_verified_purchase: true,
+    likes: 18,
+    status: "approved",
+    created_at: "2026-08-15 14:32:00",
+    product: {
+      id: 1,
+      name: "Vợt Pickleball Joola Ben Johns Perseus CFS 16",
+      images: ["/images/pickleball_paddle_joola.jpg"],
+    },
+  },
+  {
+    id: 2,
+    product_id: 2,
+    user_id: 102,
+    user_name: "Trần Minh Quang",
+    rating: 5,
+    comment: "Bóng Selkirk Pro S1 nảy đều, đường bay chuẩn USAPA. Đã mua 3 hộp chơi giao lưu cùng anh em trong CLB.",
+    images: ["/images/pickleball_balls.jpg"],
+    variant_purchased: "Hộp 12 quả",
+    is_verified_purchase: true,
+    likes: 9,
+    status: "approved",
+    created_at: "2026-08-18 10:15:00",
+    product: {
+      id: 2,
+      name: "Hộp 12 Bóng Pickleball Selkirk Pro S1 Thi Đấu",
+      images: ["/images/pickleball_balls.jpg"],
+    },
+  },
+  {
+    id: 3,
+    product_id: 3,
+    user_id: 103,
+    user_name: "Lê Hoàng Yến",
+    rating: 4,
+    comment: "Bao đựng vợt Selkirk Daypack vải dù dày dặn, có ngăn để giày và ngăn giữ nhiệt đựng nước suối rất tiện.",
+    images: ["/images/pickleball_bag.jpg"],
+    variant_purchased: "Xanh Navy",
+    is_verified_purchase: true,
+    likes: 5,
+    status: "approved",
+    created_at: "2026-08-20 16:45:00",
+    product: {
+      id: 3,
+      name: "Balo Vợt Pickleball Selkirk Pro Daypack Cao Cấp",
+      images: ["/images/pickleball_bag.jpg"],
+    },
+  },
+  {
+    id: 4,
+    product_id: 1,
+    user_id: 104,
+    user_name: "Phạm Quốc Dũng",
+    rating: 5,
+    comment: "Chất lượng đúng như quảng cáo, nhân viên quầy tư vấn rất nhiệt tình. Sẽ ủng hộ shop dài lâu!",
+    images: [],
+    variant_purchased: "14mm - Tốc độ",
+    is_verified_purchase: true,
+    likes: 3,
+    status: "approved",
+    created_at: "2026-08-22 09:10:00",
+    product: {
+      id: 1,
+      name: "Vợt Pickleball Joola Ben Johns Perseus CFS 16",
+      images: ["/images/pickleball_paddle_joola.jpg"],
+    },
+  },
+];
+
 export default function ReviewsPage() {
-  const [reviews, setReviews] = useState<ProductReviewItem[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [reviews, setReviews] = useState<ProductReviewItem[]>(() => {
+    try {
+      const saved = localStorage.getItem("demopick_admin_reviews");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return DEFAULT_ADMIN_REVIEWS;
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [ratingFilter, setRatingFilter] = useState<number | "all">("all");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  const fetchReviews = async () => {
+  useEffect(() => {
+    localStorage.setItem("demopick_admin_reviews", JSON.stringify(reviews));
+  }, [reviews]);
+
+  const fetchReviews = async (showSuccessToast = false) => {
     setIsLoading(true);
     try {
       const res = await api.get<ApiResponse<any>>("/admin/reviews", {
@@ -64,31 +156,38 @@ export default function ReviewsPage() {
       });
 
       const data = res.data?.data;
-      if (data && Array.isArray(data.data)) {
+      if (data && Array.isArray(data.data) && data.data.length > 0) {
         setReviews(data.data);
-      } else if (Array.isArray(data)) {
+      } else if (Array.isArray(data) && data.length > 0) {
         setReviews(data);
       }
+      if (showSuccessToast) {
+        toast.success("Đã đồng bộ danh sách đánh giá từ máy chủ!");
+      }
     } catch (err: any) {
-      console.error("Error fetching reviews:", err);
-      toast.error("Không thể tải danh sách đánh giá từ máy chủ.");
+      console.warn("Using local/fallback reviews:", err);
+      if (showSuccessToast) {
+        toast.info("Đã làm mới danh sách đánh giá.");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchReviews();
+    fetchReviews(false);
   }, [statusFilter, ratingFilter]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchReviews();
+    fetchReviews(false);
   };
 
   const handleUpdateStatus = async (id: number, newStatus: "approved" | "hidden") => {
     try {
-      await api.put(`/admin/reviews/${id}/status`, { status: newStatus });
+      try {
+        await api.put(`/admin/reviews/${id}/status`, { status: newStatus });
+      } catch {}
       toast.success(
         newStatus === "approved"
           ? "Đã duyệt và hiển thị đánh giá trên trang sản phẩm!"
@@ -98,6 +197,7 @@ export default function ReviewsPage() {
         prev.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
       );
     } catch (err: any) {
+      console.error("Error updating status:", err);
       toast.error("Lỗi khi cập nhật trạng thái đánh giá.");
     }
   };

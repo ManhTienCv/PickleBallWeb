@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import { adminService, Product, LiveCourtItem } from "@/services/admin.service";
+import { adminService, Product, LiveCourtItem, DEFAULT_ADMIN_COURTS, DEFAULT_ADMIN_LIVE_COURTS } from "@/services/admin.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -125,20 +125,18 @@ export default function POS() {
 
   // Dynamic fallback courts matching real database courts
   const defaultCourtStatusList = useMemo((): CourtStatusItem[] => {
-    if (rawCourts && rawCourts.length > 0) {
-      return rawCourts.map((c) => ({
-        id: c.id,
-        name: c.name,
-        status: "available",
-        statusLabel: "TRỐNG",
-        statusColor: "bg-slate-100 text-slate-500 border-slate-200",
-        time: "Sẵn sàng thi đấu",
-        hours: 1,
-        rate: Number(c.hourly_rate) || 140000,
-        customerName: null,
-      }));
-    }
-    return [];
+    const list = (rawCourts && rawCourts.length > 0) ? rawCourts : DEFAULT_ADMIN_COURTS;
+    return list.map((c) => ({
+      id: c.id,
+      name: c.name,
+      status: "available",
+      statusLabel: "TRỐNG",
+      statusColor: "bg-slate-100 text-slate-500 border-slate-200",
+      time: "Sẵn sàng thi đấu",
+      hours: 1,
+      rate: Number(c.hourly_rate) || 140000,
+      customerName: null,
+    }));
   }, [rawCourts]);
 
   // Merge API live courts with formatting

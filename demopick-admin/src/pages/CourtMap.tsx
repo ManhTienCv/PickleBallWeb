@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import AppLayout from "@/components/AppLayout";
-import { adminService, TimeSlot } from "@/services/admin.service";
+import { adminService, TimeSlot, DEFAULT_ADMIN_COURTS } from "@/services/admin.service";
 import { format, addDays, isSameDay, nextSaturday, nextSunday } from "date-fns";
 import { vi } from "date-fns/locale";
 import {
@@ -27,6 +27,7 @@ import {
   Crown,
   Layers,
   Activity,
+  Sparkles,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -56,25 +57,25 @@ export default function CourtMap() {
   });
 
   const allPickleballCourts = useMemo(() => {
-    if (dbCourts && dbCourts.length > 0) {
-      return dbCourts.map((c: any) => {
-        let cluster: "indoor" | "outdoor" | "vip" = "indoor";
-        if (c.name?.includes("3") || c.name?.includes("4") || c.name?.includes("B")) {
-          cluster = "outdoor";
-        } else if (c.name?.includes("5") || c.name?.includes("6") || c.name?.includes("C") || c.name?.includes("VIP")) {
-          cluster = "vip";
-        }
-        return {
-          id: c.id,
-          name: c.name,
-          cluster,
-          type: c.type || (cluster === "vip" ? "Tiêu Chuẩn Pro VIP" : cluster === "indoor" ? "Pickleball Trong Nhà" : "Pickleball Ngoài Trời"),
-          hourly_rate: Number(c.hourly_rate) || 140000,
-          peak_hourly_rate: Number(c.peak_hourly_rate) || 180000,
-        };
-      });
-    }
-    return [];
+    const rawList = (dbCourts && dbCourts.length > 0) ? dbCourts : DEFAULT_ADMIN_COURTS;
+    return rawList.map((c: any) => {
+      let cluster: "indoor" | "outdoor" | "vip" | "d" = "indoor";
+      if (c.name?.includes("3") || c.name?.includes("4") || c.name?.includes("B")) {
+        cluster = "outdoor";
+      } else if (c.name?.includes("5") || c.name?.includes("6") || c.name?.includes("C") || c.name?.includes("VIP")) {
+        cluster = "vip";
+      } else if (c.name?.includes("7") || c.name?.includes("8") || c.name?.includes("D") || c.code?.includes("D")) {
+        cluster = "d";
+      }
+      return {
+        id: c.id,
+        name: c.name,
+        cluster,
+        type: c.type || (cluster === "vip" ? "Tiêu Chuẩn Pro VIP" : cluster === "outdoor" ? "Pickleball Ngoài Trời" : cluster === "d" ? "Tiêu Chuẩn Pro" : "Pickleball Trong Nhà"),
+        hourly_rate: Number(c.hourly_rate) || 140000,
+        peak_hourly_rate: Number(c.peak_hourly_rate) || 180000,
+      };
+    });
   }, [dbCourts]);
 
   const pickleballCourts = allPickleballCourts.filter(
@@ -311,6 +312,18 @@ export default function CourtMap() {
               >
                 <Crown className="w-3.5 h-3.5" />
                 <span>Cụm VIP Pro (Sân 5, 6)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedCluster("d")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors duration-150 shrink-0 flex items-center gap-1 border ${selectedCluster === "d"
+                    ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                    : "bg-purple-50 text-purple-900 border-purple-200 hover:bg-purple-100"
+                  }`}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Cụm Mở Rộng D (Sân 7, 8)</span>
               </button>
             </div>
           </div>

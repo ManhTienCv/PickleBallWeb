@@ -190,6 +190,22 @@ export default function Home() {
       status: 'Sẵn sàng đón khách',
       image: '/images/pickleball_court_indoor.jpg',
     },
+    {
+      id: 'D1',
+      name: 'Sân D1 (Khu D - Sân Mở Rộng)',
+      type: 'Tiêu Chuẩn Pro / Đèn Chiếu Sáng Cao Cấp',
+      price: 'Từ 90.000 - 180.000 đ/h',
+      status: 'Sẵn sàng đón khách',
+      image: '/images/pickleball_court_outdoor.jpg',
+    },
+    {
+      id: 'D2',
+      name: 'Sân D2 (Khu D - Sân Mở Rộng)',
+      type: 'Tiêu Chuẩn Pro / Thảm Êm Ái Chuẩn Quốc Tế',
+      price: 'Từ 90.000 - 180.000 đ/h',
+      status: 'Sẵn sàng đón khách',
+      image: '/images/pickleball_court.jpg',
+    },
   ]
 
   return (
@@ -217,7 +233,7 @@ export default function Home() {
               </h1>
 
               <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl font-normal">
-                Hệ thống thể thao liên thông tiện lợi: Giữ chỗ 6 cụm sân thi đấu tự động 24/7 với 10 phút giữ chỗ an toàn và mua sắm vợt bóng chính hãng chuẩn quốc tế chỉ trong một nền tảng duy nhất.
+                Hệ thống thể thao liên thông tiện lợi: Giữ chỗ 8 cụm sân thi đấu tự động 24/7 với 10 phút giữ chỗ an toàn và mua sắm vợt bóng chính hãng chuẩn quốc tế chỉ trong một nền tảng duy nhất.
               </p>
 
               {/* Action Buttons */}

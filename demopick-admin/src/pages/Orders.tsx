@@ -124,7 +124,7 @@ export default function Orders() {
   const fetchBackendOrders = async (showToast = false) => {
     setIsRefreshing(true);
     try {
-      const res = await api.get<{ success: boolean; data: BackendOrder[] }>("/orders");
+      const res = await api.get<{ success: boolean; data: BackendOrder[] }>("/admin/orders");
       const backendOrders = res.data?.data;
       if (Array.isArray(backendOrders)) {
         const mappedList: Order[] = backendOrders.map((bOrder) => {
