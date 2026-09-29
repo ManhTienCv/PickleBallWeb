@@ -1,0 +1,19 @@
+{
+  "name": "pickleball-web-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DemoPick Pickleball - Fullstack SOA Monorepo (Spring Boot + React)",
+  "scripts": {
+    "dev": "concurrently -k -n \"BOOT,CLIENT,ADMIN\" -c \"blue.bold,green.bold,magenta.bold\" \"npm run dev:backend\" \"npm run dev:client\" \"npm run dev:admin\"",
+    "dev:backend": "cd PickleBall-SpringBoot && mvn spring-boot:run",
+    "dev:client": "cd demopick-client && npm run dev",
+    "dev:admin": "cd demopick-admin && npm run dev",
+    "build:backend": "cd PickleBall-SpringBoot && mvn clean package -DskipTests",
+    "build:client": "cd demopick-client && npm run build",
+    "build:admin": "cd demopick-admin && npm run build",
+    "build": "npm run build:backend && npm run build:client && npm run build:admin"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
