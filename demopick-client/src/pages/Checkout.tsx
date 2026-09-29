@@ -36,8 +36,6 @@ import {
   MapPin,
   Sparkles,
   ExternalLink,
-  Copy,
-  Check,
   Tag,
   Ticket,
   Percent,
@@ -67,14 +65,6 @@ export default function CheckoutPage() {
   // Saved addresses
   const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([])
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
-  const [copiedField, setCopiedField] = useState<string | null>(null)
-
-  const handleCopy = (text: string, fieldName: string) => {
-    navigator.clipboard.writeText(text)
-    setCopiedField(fieldName)
-    toast.success(`Đã sao chép ${fieldName}!`)
-    setTimeout(() => setCopiedField(null), 2000)
-  }
 
   const [customerName, setCustomerName] = useState(currentUser?.name || '')
   const [customerPhone, setCustomerPhone] = useState(currentUser?.phone || '')
@@ -760,91 +750,17 @@ export default function CheckoutPage() {
                       </div>
                       <div className="space-y-0.5">
                         <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-2">
-                          <span>Cổng MoMo All-In-One (AIO Gateway v2)</span>
+                          <span>Cổng thanh toán MoMo</span>
                           <Badge className="bg-pink-100 text-[#a50064] dark:bg-pink-900/60 dark:text-pink-200 border-none text-[10px] font-bold">
                             Chuyển hướng Gateway
                           </Badge>
                         </div>
                         <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                          Chuyển hướng tới Hosted Payment Page của MoMo. Hỗ trợ quét mã QR MoMo hoặc <b>nhập số thẻ ATM nội địa Napas</b> trực tiếp.
+                          Hỗ trợ quét mã QR MoMo hoặc thẻ ATM nội địa Napas / Visa / Mastercard.
                         </div>
                       </div>
                     </Label>
                   </div>
-
-                  {paymentMethod === 'momo' && (
-                    <div className="mt-4 pt-3.5 border-t border-pink-200/70 dark:border-pink-900/50 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 text-xs font-black text-[#a50064] dark:text-pink-400">
-                          <CreditCard className="w-4 h-4" />
-                          <span>Thông tin thẻ ATM Sandbox để thử nghiệm thanh toán nhập chay:</span>
-                        </div>
-                        <Badge variant="outline" className="text-[10px] border-pink-300 text-[#a50064]">
-                          Sandbox Test Mode
-                        </Badge>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-white dark:bg-slate-900/80 p-3.5 rounded-xl border border-pink-100 dark:border-pink-950 text-xs">
-                        <div className="space-y-1">
-                          <span className="text-[11px] text-slate-400 font-semibold block">Ngân hàng thụ hưởng:</span>
-                          <span className="font-bold text-slate-800 dark:text-slate-200">NCB (Ngân Hàng Quốc Dân)</span>
-                        </div>
-
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[11px] text-slate-400 font-semibold">Số thẻ ATM:</span>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleCopy('9704198526191432198', 'Số thẻ')
-                              }}
-                              className="text-[10px] text-pink-600 hover:text-pink-700 flex items-center gap-1 font-bold cursor-pointer"
-                            >
-                              {copiedField === 'Số thẻ' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                              <span>{copiedField === 'Số thẻ' ? 'Đã chép' : 'Sao chép'}</span>
-                            </button>
-                          </div>
-                          <span className="font-mono font-bold text-slate-900 dark:text-slate-100 tracking-wider">
-                            9704 1985 2619 1432 198
-                          </span>
-                        </div>
-
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[11px] text-slate-400 font-semibold">Tên chủ thẻ:</span>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleCopy('NGUYEN VAN A', 'Tên chủ thẻ')
-                              }}
-                              className="text-[10px] text-pink-600 hover:text-pink-700 flex items-center gap-1 font-bold cursor-pointer"
-                            >
-                              {copiedField === 'Tên chủ thẻ' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                              <span>{copiedField === 'Tên chủ thẻ' ? 'Đã chép' : 'Sao chép'}</span>
-                            </button>
-                          </div>
-                          <span className="font-bold text-slate-800 dark:text-slate-200 uppercase">NGUYEN VAN A</span>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="space-y-1">
-                            <span className="text-[11px] text-slate-400 font-semibold block">Ngày phát hành:</span>
-                            <span className="font-mono font-bold text-slate-800 dark:text-slate-200">07/15</span>
-                          </div>
-                          <div className="space-y-1">
-                            <span className="text-[11px] text-slate-400 font-semibold block">Mã OTP:</span>
-                            <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">000000</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 italic leading-relaxed">
-                        💡 <b>Cách nhập</b>: Sau khi bấm nút bên phải, hệ thống sẽ mở Cổng MoMo chính thức. Chọn phương thức <b>Thẻ ATM</b> &rarr; chọn <b>NCB</b> &rarr; điền Số thẻ, Tên chủ thẻ và Ngày phát hành ở trên &rarr; Nhập OTP <b>000000</b> để hoàn tất.
-                      </p>
-                    </div>
-                  )}
                 </div>
 
                 {/* Option 2: Cash On Delivery (COD) */}
@@ -1045,7 +961,7 @@ export default function CheckoutPage() {
                     : isExpired
                     ? 'Phiên Đã Hết Hạn - Bấm Gia Hạn'
                     : paymentMethod === 'momo'
-                    ? 'Thanh Toán MoMo AIO Gateway'
+                    ? 'Thanh toán MoMo'
                     : 'Xác Nhận Đặt Hàng COD'}
                 </span>
                 <ArrowRight className="h-4.5 w-4.5" />
