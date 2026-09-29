@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { bookingService, Hold, BookingGrid, HoldTimerToast } from '@/features/booking'
+import { bookingService, Hold, BookingGrid, HoldTimerToast, MOCK_COURTS, generateMockSlots } from '@/features/booking'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -24,14 +24,18 @@ export default function CourtBooking() {
 
   const dateStr = format(selectedDate, 'yyyy-MM-dd')
 
-  const { data: courts = [] } = useQuery({
+  const { data: courts = MOCK_COURTS } = useQuery({
     queryKey: ['courts'],
     queryFn: bookingService.getCourts,
+    placeholderData: MOCK_COURTS,
+    staleTime: 1000 * 60 * 5,
   })
 
   const { data: slots = [], isLoading, refetch } = useQuery({
     queryKey: ['slots', dateStr],
     queryFn: () => bookingService.getSlots(dateStr),
+    placeholderData: () => generateMockSlots(dateStr),
+    staleTime: 1000 * 30,
   })
 
   // Filter courts by cluster safely
@@ -345,7 +349,7 @@ export default function CourtBooking() {
       </div>
 
       {/* Main Grid */}
-      {isLoading ? (
+      {isLoading && (!slots || slots.length === 0) ? (
         <div className="h-96 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />
       ) : (
         <BookingGrid

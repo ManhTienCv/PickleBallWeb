@@ -5,7 +5,7 @@ import { MOCK_COURTS, generateMockSlots, mockCreateHold } from '../data/mockBook
 export const bookingService = {
   async getCourts(): Promise<Court[]> {
     try {
-      const res = await api.get<ApiResponse<Court[]>>('/courts')
+      const res = await api.get<ApiResponse<Court[]>>('/courts', { timeout: 3500 })
       if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
         return res.data.data
       }
@@ -19,6 +19,7 @@ export const bookingService = {
     try {
       const res = await api.get<ApiResponse<TimeSlot[]>>('/slots', {
         params: { date, ...(courtId ? { court_id: courtId } : {}) },
+        timeout: 3500,
       })
       if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
         return res.data.data
