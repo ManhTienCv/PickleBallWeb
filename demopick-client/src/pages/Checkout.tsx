@@ -61,7 +61,7 @@ export default function CheckoutPage() {
 
   const currentUser = authHelpers.getUser()
   const [paymentMethod, setPaymentMethod] = useState<'momo' | 'cod'>('momo')
-  
+
   // Saved addresses
   const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([])
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
@@ -116,7 +116,7 @@ export default function CheckoutPage() {
       if (raw && (raw.includes('Nguyễn Văn An') || raw.includes('addr-01') || raw.includes('0987654321'))) {
         localStorage.removeItem('demopick_user_addresses')
       }
-    } catch {}
+    } catch { }
     const addrs = addressService.getSavedAddresses()
     setSavedAddresses(addrs)
     shippingService.getGHNProvinces().then((provs) => {
@@ -372,21 +372,19 @@ export default function CheckoutPage() {
     <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 max-w-6xl xl:max-w-7xl font-sans">
       {/* Sticky Countdown Header */}
       <div
-        className={`border p-4 rounded-2xl mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs transition-colors ${
-          isExpired
+        className={`border p-4 rounded-2xl mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs transition-colors ${isExpired
             ? 'bg-rose-500/10 dark:bg-rose-950/40 border-rose-300 dark:border-rose-700/60'
             : secondsLeft < 300
-            ? 'bg-orange-500/10 dark:bg-orange-950/40 border-orange-300 dark:border-orange-700/60'
-            : 'bg-amber-500/10 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700/60'
-        }`}
+              ? 'bg-orange-500/10 dark:bg-orange-950/40 border-orange-300 dark:border-orange-700/60'
+              : 'bg-amber-500/10 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700/60'
+          }`}
       >
         <div className="flex items-center gap-3">
           <div
-            className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-              isExpired
+            className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isExpired
                 ? 'bg-rose-500/20 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400'
                 : 'bg-amber-500/20 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400'
-            }`}
+              }`}
           >
             <Clock className={`w-5 h-5 ${isExpired ? '' : 'animate-pulse'}`} />
           </div>
@@ -394,11 +392,10 @@ export default function CheckoutPage() {
             <div className="font-extrabold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
               <span>{isExpired ? 'Phiên giữ đơn thanh toán đã hết hạn' : 'Thời gian giữ đơn & hoàn tất thanh toán'}</span>
               <Badge
-                className={`text-[11px] font-bold ${
-                  isExpired
+                className={`text-[11px] font-bold ${isExpired
                     ? 'bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200 border-rose-300 dark:border-rose-700'
                     : 'bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700'
-                }`}
+                  }`}
               >
                 {isExpired ? 'Hết giờ' : '20 phút'}
               </Badge>
@@ -425,23 +422,21 @@ export default function CheckoutPage() {
             </Button>
           )}
           <div
-            className={`flex items-center gap-2 bg-white dark:bg-card px-4 py-2 rounded-xl border shadow-inner ${
-              isExpired
+            className={`flex items-center gap-2 bg-white dark:bg-card px-4 py-2 rounded-xl border shadow-inner ${isExpired
                 ? 'border-rose-300 dark:border-rose-700'
                 : 'border-amber-300 dark:border-amber-700'
-            }`}
+              }`}
           >
             <span className="text-xs font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
               {isExpired ? 'Trạng thái:' : 'Thời gian còn lại:'}
             </span>
             <span
-              className={`font-mono text-xl font-black tracking-wider ${
-                isExpired
+              className={`font-mono text-xl font-black tracking-wider ${isExpired
                   ? 'text-rose-600 dark:text-rose-400'
                   : secondsLeft < 300
-                  ? 'text-orange-600 dark:text-orange-400 animate-pulse'
-                  : 'text-emerald-600 dark:text-emerald-400'
-              }`}
+                    ? 'text-orange-600 dark:text-orange-400 animate-pulse'
+                    : 'text-emerald-600 dark:text-emerald-400'
+                }`}
             >
               {isExpired ? '00:00' : formattedTime}
             </span>
@@ -469,518 +464,512 @@ export default function CheckoutPage() {
 
       {/* Main Checkout Form */}
       <form onSubmit={handleProceedToPayment} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          <div className="lg:col-span-7 xl:col-span-8 space-y-6">
-            {/* Customer Contact & Delivery Info */}
-            <Card className="p-6 border-slate-200 dark:border-border bg-white dark:bg-card space-y-5 rounded-3xl shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-border">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                    <MapPin className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-slate-100">
-                      Thông Tin Nhận Hàng
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-normal">
-                      Điền thông tin để nhân viên giao hàng liên hệ nhanh chóng
-                    </p>
-                  </div>
+        <div className="lg:col-span-7 xl:col-span-8 space-y-6">
+          {/* Customer Contact & Delivery Info */}
+          <Card className="p-6 border-slate-200 dark:border-border bg-white dark:bg-card space-y-5 rounded-3xl shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-border">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                  <MapPin className="w-4 h-4" />
                 </div>
-
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowMapPickerModal(true)}
-                  className="h-10 px-3.5 rounded-2xl border-emerald-400 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 bg-emerald-50/90 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/80 font-bold text-xs gap-2 shrink-0 cursor-pointer shadow-sm hover:shadow transition-all group"
-                  title="Nhấn vào đây để mở bản đồ định vị GPS và tự động điền địa chỉ giao hàng"
-                >
-                  <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:scale-125 transition-transform" />
-                  <div className="text-left leading-tight">
-                    <span className="block font-extrabold text-xs">Ghim vị trí bản đồ</span>
-                    <span className="block text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Bấm để tự động điền địa chỉ GPS</span>
-                  </div>
-                </Button>
+                <div>
+                  <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-slate-100">
+                    Thông Tin Nhận Hàng
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-normal">
+                    Điền thông tin để nhân viên giao hàng liên hệ nhanh chóng
+                  </p>
+                </div>
               </div>
 
-              {/* SAVED ADDRESS SELECTOR CHIPS */}
-              {savedAddresses.length > 0 && (
-                <div className="flex items-center gap-2 flex-wrap bg-[#FAF8F5] dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200/80 dark:border-border">
-                  <span className="text-xs font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                    Sổ địa chỉ:
-                  </span>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {savedAddresses.map((addr) => {
-                      const isSelected = selectedAddressId === addr.id
-                      return (
-                        <button
-                          key={addr.id}
-                          type="button"
-                          onClick={() => handleSelectSavedAddress(addr)}
-                          className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                            isSelected
-                              ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 shadow-xs'
-                              : 'border-slate-200 dark:border-border bg-white dark:bg-card text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setShowMapPickerModal(true)}
+                className="h-10 px-3.5 rounded-2xl border-emerald-400 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 bg-emerald-50/90 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/80 font-bold text-xs gap-2 shrink-0 cursor-pointer shadow-sm hover:shadow transition-all group"
+                title="Nhấn vào đây để mở bản đồ định vị GPS và tự động điền địa chỉ giao hàng"
+              >
+                <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:scale-125 transition-transform" />
+                <div className="text-left leading-tight">
+                  <span className="block font-extrabold text-xs">Ghim vị trí bản đồ</span>
+                  <span className="block text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Bấm để tự động điền địa chỉ GPS</span>
+                </div>
+              </Button>
+            </div>
+
+            {/* SAVED ADDRESS SELECTOR CHIPS */}
+            {savedAddresses.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap bg-[#FAF8F5] dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200/80 dark:border-border">
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                  Sổ địa chỉ:
+                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  {savedAddresses.map((addr) => {
+                    const isSelected = selectedAddressId === addr.id
+                    return (
+                      <button
+                        key={addr.id}
+                        type="button"
+                        onClick={() => handleSelectSavedAddress(addr)}
+                        className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${isSelected
+                            ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 shadow-xs'
+                            : 'border-slate-200 dark:border-border bg-white dark:bg-card text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                           }`}
-                        >
-                          <span>{addr.label === 'home' ? 'Nhà riêng' : addr.label === 'office' ? 'Văn phòng' : 'Sân bóng'}</span>
-                          {addr.isDefault && (
-                            <span className="text-[9px] bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100 px-1.5 py-0.2 rounded font-normal">
-                              Mặc định
-                            </span>
-                          )}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Row 1: Name & Phone */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="cName" className="font-bold text-xs text-slate-700 dark:text-slate-300">
-                    Họ và tên người nhận <span className="text-rose-500">*</span>
-                  </Label>
-                  <Input
-                    id="cName"
-                    value={customerName}
-                    placeholder="Ví dụ: Nguyễn Văn A"
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    className="rounded-xl font-medium h-11"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="cPhone" className="font-bold text-xs text-slate-700 dark:text-slate-300">
-                    Số điện thoại nhận hàng <span className="text-rose-500">*</span>
-                  </Label>
-                  <Input
-                    id="cPhone"
-                    value={customerPhone}
-                    placeholder="Ví dụ: 0912345678"
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    className="rounded-xl font-medium h-11"
-                    required
-                  />
+                      >
+                        <span>{addr.label === 'home' ? 'Nhà riêng' : addr.label === 'office' ? 'Văn phòng' : 'Sân bóng'}</span>
+                        {addr.isDefault && (
+                          <span className="text-[9px] bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100 px-1.5 py-0.2 rounded font-normal">
+                            Mặc định
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
+            )}
 
-              {/* Row: Email nhận hóa đơn điện tử */}
+            {/* Row 1: Name & Phone */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="cEmail" className="font-bold text-xs text-slate-700 dark:text-slate-300">
-                    Email nhận hóa đơn điện tử & xác nhận đơn hàng
-                  </Label>
-                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Tự động gửi hóa đơn DemoPick Club</span>
-                </div>
-                <Input
-                  id="cEmail"
-                  type="email"
-                  value={customerEmail}
-                  placeholder="Ví dụ: yourname@gmail.com (để nhận hóa đơn và mã vận đơn GHN)"
-                  onChange={(e) => setCustomerEmail(e.target.value)}
-                  className="rounded-xl font-medium h-11"
-                />
-              </div>
-
-              {/* Row 2: GHN 3-Tier Selectors */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="font-bold text-xs text-slate-700 dark:text-slate-300">
-                    1. Tỉnh / Thành phố <span className="text-rose-500">*</span>
-                  </Label>
-                  <select
-                    value={selectedProvinceId || ''}
-                    onChange={(e) => {
-                      const pId = Number(e.target.value)
-                      setSelectedProvinceId(pId)
-                      const pObj = provinces.find((p) => p.ProvinceID === pId)
-                      if (pObj) setSelectedProvinceName(pObj.ProvinceName)
-                    }}
-                    className="w-full h-11 px-3 rounded-xl border border-slate-200 dark:border-border bg-white dark:bg-card text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    {provinces.map((prov) => (
-                      <option key={prov.ProvinceID} value={prov.ProvinceID}>
-                        {prov.ProvinceName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className="font-bold text-xs text-slate-700 dark:text-slate-300">
-                    2. Quận / Huyện <span className="text-rose-500">*</span>
-                  </Label>
-                  <select
-                    value={selectedDistrictId || ''}
-                    onChange={(e) => {
-                      const dId = Number(e.target.value)
-                      setSelectedDistrictId(dId)
-                      const dObj = districts.find((d) => d.DistrictID === dId)
-                      if (dObj) setSelectedDistrictName(dObj.DistrictName)
-                    }}
-                    className="w-full h-11 px-3 rounded-xl border border-slate-200 dark:border-border bg-white dark:bg-card text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    {districts.map((dist) => (
-                      <option key={dist.DistrictID} value={dist.DistrictID}>
-                        {dist.DistrictName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className="font-bold text-xs text-slate-700 dark:text-slate-300">
-                    3. Phường / Xã <span className="text-rose-500">*</span>
-                  </Label>
-                  <select
-                    value={selectedWardCode || ''}
-                    onChange={(e) => {
-                      const wCode = e.target.value
-                      setSelectedWardCode(wCode)
-                      const wObj = wards.find((w) => w.WardCode === wCode)
-                      if (wObj) setSelectedWardName(wObj.WardName)
-                    }}
-                    className="w-full h-11 px-3 rounded-xl border border-slate-200 dark:border-border bg-white dark:bg-card text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    {wards.map((ward) => (
-                      <option key={ward.WardCode} value={ward.WardCode}>
-                        {ward.WardName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Row 3: Street Address */}
-              <div className="space-y-1.5">
-                <Label htmlFor="address" className="font-bold text-xs text-slate-700 dark:text-slate-300">
-                  Địa chỉ chi tiết (Số nhà, tên ngõ/đường) <span className="text-rose-500">*</span>
+                <Label htmlFor="cName" className="font-bold text-xs text-slate-700 dark:text-slate-300">
+                  Họ và tên người nhận <span className="text-rose-500">*</span>
                 </Label>
                 <Input
-                  id="address"
-                  value={streetAddress}
-                  onChange={(e) => setStreetAddress(e.target.value)}
-                  placeholder="Ví dụ: Số 10 Đường Pickleball, Tòa nhà SportHub..."
+                  id="cName"
+                  value={customerName}
+                  placeholder="Ví dụ: Nguyễn Văn A"
+                  onChange={(e) => setCustomerName(e.target.value)}
                   className="rounded-xl font-medium h-11"
                   required
                 />
               </div>
 
-              {/* Row 3: Note */}
               <div className="space-y-1.5">
-                <Label htmlFor="note" className="font-bold text-xs text-slate-700 dark:text-slate-300">
-                  Ghi chú giao hàng (Không bắt buộc)
+                <Label htmlFor="cPhone" className="font-bold text-xs text-slate-700 dark:text-slate-300">
+                  Số điện thoại nhận hàng <span className="text-rose-500">*</span>
                 </Label>
                 <Input
-                  id="note"
-                  placeholder="Ví dụ: Giao giờ hành chính, gọi trước khi giao 15 phút..."
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
+                  id="cPhone"
+                  value={customerPhone}
+                  placeholder="Ví dụ: 0912345678"
+                  onChange={(e) => setCustomerPhone(e.target.value)}
                   className="rounded-xl font-medium h-11"
+                  required
                 />
               </div>
-            </Card>
+            </div>
 
-            {/* GHN Express Logistics Info Card */}
-            <Card className="p-6 border-slate-200 dark:border-border bg-white dark:bg-card space-y-4 rounded-3xl shadow-sm">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-border">
-                <div className="flex items-center gap-2">
-                  <Truck className="h-5 w-5 text-[#27c372]" />
-                  <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-slate-100">
-                    Đối Tác Giao Hàng: GHN Express
-                  </h3>
-                </div>
-                {isFreeship && (
-                  <Badge className="bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 font-bold text-xs gap-1">
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                    <span>Freeship Đơn &gt; 1 Triệu</span>
-                  </Badge>
-                )}
+            {/* Row: Email nhận hóa đơn điện tử */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="cEmail" className="font-bold text-xs text-slate-700 dark:text-slate-300">
+                  Email nhận hóa đơn điện tử & xác nhận đơn hàng
+                </Label>
+                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Tự động gửi hóa đơn DemoPick Club</span>
+              </div>
+              <Input
+                id="cEmail"
+                type="email"
+                value={customerEmail}
+                placeholder="Ví dụ: yourname@gmail.com (để nhận hóa đơn và mã vận đơn GHN)"
+                onChange={(e) => setCustomerEmail(e.target.value)}
+                className="rounded-xl font-medium h-11"
+              />
+            </div>
+
+            {/* Row 2: GHN 3-Tier Selectors */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label className="font-bold text-xs text-slate-700 dark:text-slate-300">
+                  1. Tỉnh / Thành phố <span className="text-rose-500">*</span>
+                </Label>
+                <select
+                  value={selectedProvinceId || ''}
+                  onChange={(e) => {
+                    const pId = Number(e.target.value)
+                    setSelectedProvinceId(pId)
+                    const pObj = provinces.find((p) => p.ProvinceID === pId)
+                    if (pObj) setSelectedProvinceName(pObj.ProvinceName)
+                  }}
+                  className="w-full h-11 px-3 rounded-xl border border-slate-200 dark:border-border bg-white dark:bg-card text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  {provinces.map((prov) => (
+                    <option key={prov.ProvinceID} value={prov.ProvinceID}>
+                      {prov.ProvinceName}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div className="p-4 rounded-2xl border-2 border-emerald-600/30 bg-emerald-50/40 dark:bg-emerald-950/30 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-extrabold text-slate-900 dark:text-slate-100 text-sm">
-                    Dịch vụ GHN TMĐT Tiêu Chuẩn
-                  </span>
-                  <Badge className="bg-orange-50 text-orange-700 border-orange-200 font-bold text-xs">GHN Express</Badge>
-                </div>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Mạng lưới phủ sóng 100% xã phường toàn quốc. Theo dõi hành trình thời gian thực sau khi xuất kho.
-                </p>
-                <div className="flex items-center justify-between pt-2 border-t border-emerald-200/60 dark:border-emerald-800/40 text-xs">
-                  <span className="text-slate-600 dark:text-slate-400">
-                    Thời gian dự kiến: <b className="text-slate-900 dark:text-slate-100">{expectedDeliveryTime}</b>
-                  </span>
-                  <span className="font-black text-emerald-700 dark:text-emerald-400 text-sm">
-                    {isFreeship ? 'Miễn phí (0đ)' : `${new Intl.NumberFormat('vi-VN').format(ghnShippingFee)} đ`}
-                  </span>
-                </div>
+              <div className="space-y-1.5">
+                <Label className="font-bold text-xs text-slate-700 dark:text-slate-300">
+                  2. Quận / Huyện <span className="text-rose-500">*</span>
+                </Label>
+                <select
+                  value={selectedDistrictId || ''}
+                  onChange={(e) => {
+                    const dId = Number(e.target.value)
+                    setSelectedDistrictId(dId)
+                    const dObj = districts.find((d) => d.DistrictID === dId)
+                    if (dObj) setSelectedDistrictName(dObj.DistrictName)
+                  }}
+                  className="w-full h-11 px-3 rounded-xl border border-slate-200 dark:border-border bg-white dark:bg-card text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  {districts.map((dist) => (
+                    <option key={dist.DistrictID} value={dist.DistrictID}>
+                      {dist.DistrictName}
+                    </option>
+                  ))}
+                </select>
               </div>
-            </Card>
 
-            {/* Payment Method Selection - HOSTED GATEWAY & COD */}
-            <Card className="p-6 border-slate-200 dark:border-border bg-white dark:bg-card space-y-4 rounded-3xl shadow-sm">
-              <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-slate-100 pb-3 border-b border-slate-100 dark:border-border">
-                Phương Thức Thanh Toán Bảo Mật
-              </h3>
+              <div className="space-y-1.5">
+                <Label className="font-bold text-xs text-slate-700 dark:text-slate-300">
+                  3. Phường / Xã <span className="text-rose-500">*</span>
+                </Label>
+                <select
+                  value={selectedWardCode || ''}
+                  onChange={(e) => {
+                    const wCode = e.target.value
+                    setSelectedWardCode(wCode)
+                    const wObj = wards.find((w) => w.WardCode === wCode)
+                    if (wObj) setSelectedWardName(wObj.WardName)
+                  }}
+                  className="w-full h-11 px-3 rounded-xl border border-slate-200 dark:border-border bg-white dark:bg-card text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  {wards.map((ward) => (
+                    <option key={ward.WardCode} value={ward.WardCode}>
+                      {ward.WardName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-              <RadioGroup
-                value={paymentMethod}
-                onValueChange={(val: any) => setPaymentMethod(val)}
-                className="space-y-3"
+            {/* Row 3: Street Address */}
+            <div className="space-y-1.5">
+              <Label htmlFor="address" className="font-bold text-xs text-slate-700 dark:text-slate-300">
+                Địa chỉ chi tiết (Số nhà, tên ngõ/đường) <span className="text-rose-500">*</span>
+              </Label>
+              <Input
+                id="address"
+                value={streetAddress}
+                onChange={(e) => setStreetAddress(e.target.value)}
+                placeholder="Ví dụ: Số 10 Đường Pickleball, Tòa nhà SportHub..."
+                className="rounded-xl font-medium h-11"
+                required
+              />
+            </div>
+
+            {/* Row 3: Note */}
+            <div className="space-y-1.5">
+              <Label htmlFor="note" className="font-bold text-xs text-slate-700 dark:text-slate-300">
+                Ghi chú giao hàng (Không bắt buộc)
+              </Label>
+              <Input
+                id="note"
+                placeholder="Ví dụ: Giao giờ hành chính, gọi trước khi giao 15 phút..."
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                className="rounded-xl font-medium h-11"
+              />
+            </div>
+          </Card>
+
+          {/* GHN Express Logistics Info Card */}
+          <Card className="p-6 border-slate-200 dark:border-border bg-white dark:bg-card space-y-4 rounded-3xl shadow-sm">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-border">
+              <div className="flex items-center gap-2">
+                <Truck className="h-5 w-5 text-[#27c372]" />
+                <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-slate-100">
+                  Đối Tác Giao Hàng: GHN Express
+                </h3>
+              </div>
+              {isFreeship && (
+                <Badge className="bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 font-bold text-xs gap-1">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>Freeship Đơn &gt; 1 Triệu</span>
+                </Badge>
+              )}
+            </div>
+
+            <div className="p-4 rounded-2xl border-2 border-emerald-600/30 bg-emerald-50/40 dark:bg-emerald-950/30 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-extrabold text-slate-900 dark:text-slate-100 text-sm">
+                  Dịch vụ GHN TMĐT Tiêu Chuẩn
+                </span>
+                <Badge className="bg-orange-50 text-orange-700 border-orange-200 font-bold text-xs">GHN Express</Badge>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-emerald-200/60 dark:border-emerald-800/40 text-xs">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Thời gian dự kiến: <b className="text-slate-900 dark:text-slate-100">{expectedDeliveryTime}</b>
+                </span>
+                <span className="font-black text-emerald-700 dark:text-emerald-400 text-sm">
+                  {isFreeship ? 'Miễn phí (0đ)' : `${new Intl.NumberFormat('vi-VN').format(ghnShippingFee)} đ`}
+                </span>
+              </div>
+            </div>
+          </Card>
+
+          {/* Payment Method Selection - HOSTED GATEWAY & COD */}
+          <Card className="p-6 border-slate-200 dark:border-border bg-white dark:bg-card space-y-4 rounded-3xl shadow-sm">
+            <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-slate-100 pb-3 border-b border-slate-100 dark:border-border">
+              Phương Thức Thanh Toán Bảo Mật
+            </h3>
+
+            <RadioGroup
+              value={paymentMethod}
+              onValueChange={(val: any) => setPaymentMethod(val)}
+              className="space-y-3"
+            >
+              {/* Option 1: MoMo AIO Hosted Gateway (QR Code & ATM Napas Card) */}
+              <div
+                className={`rounded-2xl border p-4 transition-all cursor-pointer ${paymentMethod === 'momo'
+                    ? 'border-[#a50064] bg-pink-50/20 dark:bg-pink-950/20 shadow-xs ring-1 ring-[#a50064]/20'
+                    : 'border-slate-200 dark:border-border hover:border-slate-300 dark:hover:border-slate-600'
+                  }`}
+                onClick={() => setPaymentMethod('momo')}
               >
-                {/* Option 1: MoMo AIO Hosted Gateway (QR Code & ATM Napas Card) */}
-                <div
-                  className={`rounded-2xl border p-4 transition-all cursor-pointer ${
-                    paymentMethod === 'momo'
-                      ? 'border-[#a50064] bg-pink-50/20 dark:bg-pink-950/20 shadow-xs ring-1 ring-[#a50064]/20'
-                      : 'border-slate-200 dark:border-border hover:border-slate-300 dark:hover:border-slate-600'
-                  }`}
-                  onClick={() => setPaymentMethod('momo')}
-                >
-                  <div className="flex items-center space-x-3">
-                    <RadioGroupItem value="momo" id="momo-method" />
-                    <Label htmlFor="momo-method" className="flex items-center gap-3 cursor-pointer flex-1">
-                      <div className="w-10 h-10 rounded-xl bg-pink-100 dark:bg-pink-950/50 flex items-center justify-center shrink-0 border border-pink-200">
-                        <ExternalLink className="h-5 w-5 text-[#a50064] dark:text-pink-400" />
-                      </div>
-                      <div className="space-y-0.5">
-                        <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-2">
-                          <span>Cổng thanh toán MoMo</span>
-                          <Badge className="bg-pink-100 text-[#a50064] dark:bg-pink-900/60 dark:text-pink-200 border-none text-[10px] font-bold">
-                            Chuyển hướng Gateway
-                          </Badge>
-                        </div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                          Hỗ trợ quét mã QR MoMo hoặc thẻ ATM nội địa Napas / Visa / Mastercard.
-                        </div>
-                      </div>
-                    </Label>
-                  </div>
-                </div>
-
-                {/* Option 2: Cash On Delivery (COD) */}
-                <div
-                  className={`flex items-center space-x-3 rounded-2xl border p-4 transition-all cursor-pointer ${
-                    paymentMethod === 'cod'
-                      ? 'border-[#27c372] bg-[#27c372]/5 dark:bg-emerald-950/40 shadow-xs'
-                      : 'border-slate-200 dark:border-border hover:border-slate-300 dark:hover:border-slate-600'
-                  }`}
-                >
-                  <RadioGroupItem value="cod" id="cod-method" />
-                  <Label htmlFor="cod-method" className="flex items-center gap-3 cursor-pointer flex-1">
-                    <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/50 flex items-center justify-center shrink-0 border border-amber-200">
-                      <Banknote className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                <div className="flex items-center space-x-3">
+                  <RadioGroupItem value="momo" id="momo-method" />
+                  <Label htmlFor="momo-method" className="flex items-center gap-3 cursor-pointer flex-1">
+                    <div className="w-10 h-10 rounded-xl bg-pink-100 dark:bg-pink-950/50 flex items-center justify-center shrink-0 border border-pink-200">
+                      <ExternalLink className="h-5 w-5 text-[#a50064] dark:text-pink-400" />
                     </div>
                     <div className="space-y-0.5">
-                      <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm">
-                        Thanh toán khi nhận hàng (Thu tiền mặt COD)
+                      <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-2">
+                        <span>Cổng thanh toán MoMo</span>
+                        <Badge className="bg-pink-100 text-[#a50064] dark:bg-pink-900/60 dark:text-pink-200 border-none text-[10px] font-bold">
+                          Chuyển hướng Gateway
+                        </Badge>
                       </div>
                       <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                        Thanh toán tiền mặt cho Shipper GHN Express khi kiện hàng được giao tới.
+                        Hỗ trợ quét mã QR MoMo hoặc thẻ ATM nội địa Napas / Visa / Mastercard.
                       </div>
                     </div>
                   </Label>
                 </div>
-              </RadioGroup>
-            </Card>
-          </div>
-
-          {/* Sidebar Order Summary (Right Column) */}
-          <div className="lg:col-span-5 xl:col-span-4 sticky top-28 space-y-4">
-            <Card className="p-6 border-slate-200 dark:border-border bg-white dark:bg-card space-y-4 rounded-3xl shadow-sm">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-border">
-                <h3 className="font-extrabold text-lg text-slate-900 dark:text-slate-100">
-                  Tóm Tắt Đơn Hàng
-                </h3>
-                <Badge variant="outline" className="text-xs font-bold text-slate-600 dark:text-slate-300">
-                  {cart?.items?.length || 0} sản phẩm
-                </Badge>
               </div>
 
-              {holdId && (
-                <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-xs text-amber-800 dark:text-amber-200 space-y-1 font-semibold">
-                  <span className="font-black text-amber-900 dark:text-amber-100">✓ Đang giữ lịch Thuê Sân</span>
-                  <p>Mã đặt lịch: #{holdId}</p>
-                </div>
-              )}
-
-              {cart && cart.items.length > 0 && (
-                <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
-                  {cart.items.map((item) => (
-                    <div key={item.id} className="flex justify-between items-center gap-3 text-xs font-medium">
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-slate-800 dark:text-slate-200 truncate" title={item.product?.name}>
-                          {item.product?.name}
-                        </p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                          Số lượng: <b className="text-slate-700 dark:text-slate-300">{item.quantity}</b>
-                        </p>
-                      </div>
-                      <span className="font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap shrink-0">
-                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.subtotal)}
-                      </span>
+              {/* Option 2: Cash On Delivery (COD) */}
+              <div
+                className={`flex items-center space-x-3 rounded-2xl border p-4 transition-all cursor-pointer ${paymentMethod === 'cod'
+                    ? 'border-[#27c372] bg-[#27c372]/5 dark:bg-emerald-950/40 shadow-xs'
+                    : 'border-slate-200 dark:border-border hover:border-slate-300 dark:hover:border-slate-600'
+                  }`}
+              >
+                <RadioGroupItem value="cod" id="cod-method" />
+                <Label htmlFor="cod-method" className="flex items-center gap-3 cursor-pointer flex-1">
+                  <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/50 flex items-center justify-center shrink-0 border border-amber-200">
+                    <Banknote className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm">
+                      Thanh toán khi nhận hàng (Thu tiền mặt COD)
                     </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Shipping fee breakdown */}
-              <div className="space-y-2.5 pt-3 border-t border-slate-100 dark:border-border text-xs">
-                <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
-                  <span className="whitespace-nowrap">Tiền hàng:</span>
-                  <span className="font-semibold text-slate-900 dark:text-slate-100">
-                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(cartTotal)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
-                  <span className="whitespace-nowrap">Phí ship (GHN Express):</span>
-                  <span className="font-bold text-emerald-700 dark:text-emerald-400">
-                    {isFreeship ? (
-                      <span className="text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold">
-                        Miễn phí (Freeship)
-                      </span>
-                    ) : (
-                      `${new Intl.NumberFormat('vi-VN').format(effectiveShippingFee)} đ`
-                    )}
-                  </span>
-                </div>
-
-                {appliedVoucher && (
-                  <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
-                    <span className="whitespace-nowrap flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400">
-                      <Percent className="w-3 h-3" />
-                      Voucher ({appliedVoucher.code}):
-                    </span>
-                    <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
-                      - {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(voucherDiscount)}
-                    </span>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      Thanh toán tiền mặt cho Shipper GHN Express khi kiện hàng được giao tới.
+                    </div>
                   </div>
-                )}
+                </Label>
               </div>
+            </RadioGroup>
+          </Card>
+        </div>
 
-              {/* Voucher / Coupon Input & Picker */}
-              <div className="pt-3 border-t border-slate-100 dark:border-border space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
-                    <Ticket className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Mã Giảm Giá / Voucher</span>
+        {/* Sidebar Order Summary (Right Column) */}
+        <div className="lg:col-span-5 xl:col-span-4 sticky top-28 space-y-4">
+          <Card className="p-6 border-slate-200 dark:border-border bg-white dark:bg-card space-y-4 rounded-3xl shadow-sm">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-border">
+              <h3 className="font-extrabold text-lg text-slate-900 dark:text-slate-100">
+                Tóm Tắt Đơn Hàng
+              </h3>
+              <Badge variant="outline" className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                {cart?.items?.length || 0} sản phẩm
+              </Badge>
+            </div>
+
+            {holdId && (
+              <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-xs text-amber-800 dark:text-amber-200 space-y-1 font-semibold">
+                <span className="font-black text-amber-900 dark:text-amber-100">✓ Đang giữ lịch Thuê Sân</span>
+                <p>Mã đặt lịch: #{holdId}</p>
+              </div>
+            )}
+
+            {cart && cart.items.length > 0 && (
+              <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
+                {cart.items.map((item) => (
+                  <div key={item.id} className="flex justify-between items-center gap-3 text-xs font-medium">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-slate-800 dark:text-slate-200 truncate" title={item.product?.name}>
+                        {item.product?.name}
+                      </p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Số lượng: <b className="text-slate-700 dark:text-slate-300">{item.quantity}</b>
+                      </p>
+                    </div>
+                    <span className="font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap shrink-0">
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.subtotal)}
+                    </span>
                   </div>
-                  {availableVouchers.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowVoucherModal(true)}
-                      className="text-[11px] font-bold text-primary hover:underline flex items-center gap-0.5 cursor-pointer"
-                    >
-                      <span>Chọn mã ({availableVouchers.length})</span>
-                    </button>
+                ))}
+              </div>
+            )}
+
+            {/* Shipping fee breakdown */}
+            <div className="space-y-2.5 pt-3 border-t border-slate-100 dark:border-border text-xs">
+              <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
+                <span className="whitespace-nowrap">Tiền hàng:</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(cartTotal)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
+                <span className="whitespace-nowrap">Phí ship (GHN Express):</span>
+                <span className="font-bold text-emerald-700 dark:text-emerald-400">
+                  {isFreeship ? (
+                    <span className="text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold">
+                      Miễn phí (Freeship)
+                    </span>
+                  ) : (
+                    `${new Intl.NumberFormat('vi-VN').format(effectiveShippingFee)} đ`
                   )}
-                </div>
+                </span>
+              </div>
 
-                {appliedVoucher ? (
-                  <div className="flex items-center justify-between p-2.5 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-6 h-6 rounded-lg bg-emerald-500 text-white flex items-center justify-center font-black shrink-0 text-[10px]">
-                        %
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-extrabold text-emerald-800 dark:text-emerald-200 truncate">
-                          {appliedVoucher.code}
-                        </p>
-                        <p className="text-[10px] text-emerald-600 dark:text-emerald-400">
-                          Đã giảm {new Intl.NumberFormat('vi-VN').format(appliedVoucher.discount_amount)} đ
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleRemoveVoucher}
-                      className="w-6 h-6 rounded-full hover:bg-emerald-200/60 dark:hover:bg-emerald-800 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0 cursor-pointer"
-                      title="Hủy mã này"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex gap-1.5">
-                    <div className="relative flex-1">
-                      <Tag className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                      <Input
-                        placeholder="Nhập mã..."
-                        value={voucherCodeInput}
-                        onChange={(e) => setVoucherCodeInput(e.target.value.toUpperCase())}
-                        className="pl-8 text-xs h-9 uppercase font-mono tracking-wider font-semibold rounded-xl"
-                      />
-                    </div>
-                    <Button
-                      type="button"
-                      size="sm"
-                      disabled={isApplyingVoucher || !voucherCodeInput.trim()}
-                      onClick={() => handleApplyVoucher()}
-                      className="h-9 px-3 text-xs font-bold rounded-xl shrink-0 cursor-pointer"
-                    >
-                      {isApplyingVoucher ? '...' : 'Áp dụng'}
-                    </Button>
-                  </div>
+              {appliedVoucher && (
+                <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
+                  <span className="whitespace-nowrap flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400">
+                    <Percent className="w-3 h-3" />
+                    Voucher ({appliedVoucher.code}):
+                  </span>
+                  <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
+                    - {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(voucherDiscount)}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Voucher / Coupon Input & Picker */}
+            <div className="pt-3 border-t border-slate-100 dark:border-border space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+                  <Ticket className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Mã Giảm Giá / Voucher</span>
+                </div>
+                {availableVouchers.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowVoucherModal(true)}
+                    className="text-[11px] font-bold text-primary hover:underline flex items-center gap-0.5 cursor-pointer"
+                  >
+                    <span>Chọn mã ({availableVouchers.length})</span>
+                  </button>
                 )}
               </div>
 
-              {/* Grand Total Row */}
-              <div className="pt-3 border-t border-slate-200 dark:border-border space-y-1">
-                <div className="flex justify-between items-center gap-3">
-                  <span className="font-black text-sm sm:text-base text-slate-900 dark:text-slate-100 whitespace-nowrap">
-                    Tổng thanh toán:
-                  </span>
-                  <span className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(grandTotal)}
-                  </span>
+              {appliedVoucher ? (
+                <div className="flex items-center justify-between p-2.5 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-6 h-6 rounded-lg bg-emerald-500 text-white flex items-center justify-center font-black shrink-0 text-[10px]">
+                      %
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-extrabold text-emerald-800 dark:text-emerald-200 truncate">
+                        {appliedVoucher.code}
+                      </p>
+                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                        Đã giảm {new Intl.NumberFormat('vi-VN').format(appliedVoucher.discount_amount)} đ
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRemoveVoucher}
+                    className="w-6 h-6 rounded-full hover:bg-emerald-200/60 dark:hover:bg-emerald-800 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0 cursor-pointer"
+                    title="Hủy mã này"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 </div>
-                <p className="text-[11px] text-slate-400 dark:text-slate-500 text-right">Đã bao gồm thuế VAT & phí dịch vụ</p>
-              </div>
+              ) : (
+                <div className="flex gap-1.5">
+                  <div className="relative flex-1">
+                    <Tag className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                    <Input
+                      placeholder="Nhập mã..."
+                      value={voucherCodeInput}
+                      onChange={(e) => setVoucherCodeInput(e.target.value.toUpperCase())}
+                      className="pl-8 text-xs h-9 uppercase font-mono tracking-wider font-semibold rounded-xl"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={isApplyingVoucher || !voucherCodeInput.trim()}
+                    onClick={() => handleApplyVoucher()}
+                    className="h-9 px-3 text-xs font-bold rounded-xl shrink-0 cursor-pointer"
+                  >
+                    {isApplyingVoucher ? '...' : 'Áp dụng'}
+                  </Button>
+                </div>
+              )}
+            </div>
 
-              {/* Action Button inside sticky sidebar */}
-              <Button
-                type="submit"
-                size="lg"
-                disabled={isSubmitting || isExpired}
-                className={`w-full text-white font-bold rounded-2xl h-12 text-sm sm:text-base gap-2 shadow-lg cursor-pointer transition-all ${
-                  isExpired
-                    ? 'bg-slate-400 dark:bg-slate-700 cursor-not-allowed shadow-none'
-                    : paymentMethod === 'momo'
+            {/* Grand Total Row */}
+            <div className="pt-3 border-t border-slate-200 dark:border-border space-y-1">
+              <div className="flex justify-between items-center gap-3">
+                <span className="font-black text-sm sm:text-base text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                  Tổng thanh toán:
+                </span>
+                <span className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(grandTotal)}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 text-right">Đã bao gồm thuế VAT & phí dịch vụ</p>
+            </div>
+
+            {/* Action Button inside sticky sidebar */}
+            <Button
+              type="submit"
+              size="lg"
+              disabled={isSubmitting || isExpired}
+              className={`w-full text-white font-bold rounded-2xl h-12 text-sm sm:text-base gap-2 shadow-lg cursor-pointer transition-all ${isExpired
+                  ? 'bg-slate-400 dark:bg-slate-700 cursor-not-allowed shadow-none'
+                  : paymentMethod === 'momo'
                     ? 'bg-[#a50064] hover:bg-[#8e0056] shadow-pink-600/20'
                     : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
                 }`}
-              >
-                <span>
-                  {isSubmitting
-                    ? 'Đang xử lý...'
-                    : isExpired
+            >
+              <span>
+                {isSubmitting
+                  ? 'Đang xử lý...'
+                  : isExpired
                     ? 'Phiên Đã Hết Hạn - Bấm Gia Hạn'
                     : paymentMethod === 'momo'
-                    ? 'Thanh toán MoMo'
-                    : 'Xác Nhận Đặt Hàng COD'}
-                </span>
-                <ArrowRight className="h-4.5 w-4.5" />
-              </Button>
+                      ? 'Thanh toán MoMo'
+                      : 'Xác Nhận Đặt Hàng COD'}
+              </span>
+              <ArrowRight className="h-4.5 w-4.5" />
+            </Button>
 
-              <div className="pt-2 flex items-center justify-center gap-4 text-[11px] text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-border">
-                <div className="flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <span>Bảo mật SSL</span>
-                </div>
-                <div>•</div>
-                <div className="flex items-center gap-1">
-                  <Truck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <span>Giao toàn quốc</span>
-                </div>
+            <div className="pt-2 flex items-center justify-center gap-4 text-[11px] text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-border">
+              <div className="flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Bảo mật SSL</span>
               </div>
-            </Card>
-          </div>
-        </form>
+              <div>•</div>
+              <div className="flex items-center gap-1">
+                <Truck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Giao toàn quốc</span>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </form>
 
       {/* MAP PICKER MODAL IN CHECKOUT */}
       <Dialog open={showMapPickerModal} onOpenChange={setShowMapPickerModal}>
@@ -1075,7 +1064,7 @@ export default function CheckoutPage() {
       </Dialog>
 
       {/* Session Expired Modal */}
-      <Dialog open={isExpired} onOpenChange={() => {}}>
+      <Dialog open={isExpired} onOpenChange={() => { }}>
         <DialogContent className="sm:max-w-md bg-white dark:bg-card rounded-3xl p-6 font-sans border-border text-card-foreground">
           <DialogHeader className="space-y-2">
             <DialogTitle className="text-lg font-black text-rose-600 dark:text-rose-400 flex items-center gap-2">
@@ -1131,13 +1120,12 @@ export default function CheckoutPage() {
               return (
                 <div
                   key={v.id}
-                  className={`p-3.5 rounded-2xl border transition-all flex items-start justify-between gap-3 ${
-                    isCurrent
+                  className={`p-3.5 rounded-2xl border transition-all flex items-start justify-between gap-3 ${isCurrent
                       ? 'border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/30'
                       : isEligible
-                      ? 'border-slate-200 dark:border-border hover:border-primary/50 bg-card'
-                      : 'border-slate-200/60 dark:border-border/40 opacity-60 bg-muted/20'
-                  }`}
+                        ? 'border-slate-200 dark:border-border hover:border-primary/50 bg-card'
+                        : 'border-slate-200/60 dark:border-border/40 opacity-60 bg-muted/20'
+                    }`}
                 >
                   <div className="space-y-1 min-w-0 flex-1">
                     <div className="flex items-center gap-2">
@@ -1163,13 +1151,12 @@ export default function CheckoutPage() {
                     size="sm"
                     disabled={!isEligible || isCurrent || isApplyingVoucher}
                     onClick={() => handleApplyVoucher(v.code)}
-                    className={`rounded-xl text-xs font-bold shrink-0 h-8 px-3 ${
-                      isCurrent
+                    className={`rounded-xl text-xs font-bold shrink-0 h-8 px-3 ${isCurrent
                         ? 'bg-emerald-600 text-white'
                         : isEligible
-                        ? 'bg-primary hover:bg-primary/90'
-                        : 'bg-muted text-muted-foreground'
-                    }`}
+                          ? 'bg-primary hover:bg-primary/90'
+                          : 'bg-muted text-muted-foreground'
+                      }`}
                   >
                     {isCurrent ? 'Đang dùng' : isEligible ? 'Áp dụng' : 'Chưa đủ ĐK'}
                   </Button>
