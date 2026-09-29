@@ -25,14 +25,18 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# ── Laravel Specific ──
-/PickleBall/storage/*.key
-/PickleBall/storage/framework/cache/*
-/PickleBall/storage/framework/sessions/*
-/PickleBall/storage/framework/views/*
-/PickleBall/storage/logs/*
-/PickleBall/auth.json
-/PickleBall/bootstrap/cache/*
+# ── Legacy Laravel Backend (Preserved locally for reference/reuse) ──
+/PickleBall/
+
+
+# ── Spring Boot & Java Specific ──
+/PickleBall-SpringBoot/target/
+/PickleBall-SpringBoot/.mvn/
+/PickleBall-SpringBoot/out/
+*.class
+*.jar
+*.war
+
 
 # ── OS & IDE Files ──
 .DS_Store
@@ -45,3 +49,4 @@ Thumbs.db
 /Note/
 /note/
 _demopick-server-backup
+Phat trien huong dich vu

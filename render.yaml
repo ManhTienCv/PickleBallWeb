@@ -2,8 +2,8 @@ services:
   - type: web
     name: demopick-api
     runtime: docker
-    dockerfilePath: ./PickleBall/Dockerfile
-    dockerContext: ./PickleBall
+    dockerfilePath: ./PickleBall-SpringBoot/Dockerfile
+    dockerContext: ./PickleBall-SpringBoot
     plan: free
     region: singapore
     envVars:
@@ -11,17 +11,53 @@ services:
         value: DemoPick
       - key: APP_ENV
         value: production
-      - key: APP_DEBUG
-        value: "false"
-      - key: DB_CONNECTION
-        value: main
+      - key: PORT
+        value: "8080"
+      - key: DB_HOST
+        sync: false
       - key: DB_PORT
         value: "4000"
-      - key: RUN_SEEDERS
-        value: "true"
-      - key: QUEUE_CONNECTION
-        value: database
-      - key: CACHE_STORE
-        value: database
-      - key: SESSION_DRIVER
-        value: database
+      - key: DB_DATABASE
+        value: demopick
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://demopick-client.vercel.app,https://demopick-admin.vercel.app,http://localhost:5173,http://localhost:5174
+      - key: MOMO_PARTNER_CODE
+        value: MOMOBKUN20180529
+      - key: MOMO_ACCESS_KEY
+        value: klm05TvNBzhg7h7j
+      - key: MOMO_SECRET_KEY
+        sync: false
+      - key: MOMO_ENDPOINT
+        value: https://test-payment.momo.vn/v2/gateway/api/create
+      - key: MOMO_REDIRECT_URL
+        value: https://demopick-client.vercel.app/payment/momo/callback
+      - key: MOMO_IPN_URL
+        value: https://demopick-api.onrender.com/api/v1/webhooks/payment/momo
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: MAIL_HOST
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: GHN_API_URL
+        value: https://online-gateway.ghn.vn/shiip/public-api/v2
+      - key: GHN_API_TOKEN
+        sync: false
+      - key: GHN_SHOP_ID
+        value: "6643423"
+      - key: GHN_SENDER_DISTRICT_ID
+        value: "1485"
+      - key: GHN_SENDER_WARD_CODE
+        value: "1A0607"
