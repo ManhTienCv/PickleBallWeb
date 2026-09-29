@@ -10,7 +10,7 @@ import java.time.LocalTime;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "time_slots", catalog = "demopick_booking")
+@Table(name = "time_slots")
 public class TimeSlot {
 
     @Id

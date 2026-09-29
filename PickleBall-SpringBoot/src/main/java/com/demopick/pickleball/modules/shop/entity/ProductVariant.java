@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
-@Table(name = "product_variants", catalog = "demopick_shop")
+@Table(name = "product_variants")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class ProductVariant {
 

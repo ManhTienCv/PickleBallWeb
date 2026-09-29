@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 
 @Entity
-@Table(name = "orders", catalog = "demopick_main")
+@Table(name = "orders")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Order {
 

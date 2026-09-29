@@ -7,7 +7,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "holds", catalog = "demopick_booking")
+@Table(name = "holds")
 public class Hold {
 
     @Id
