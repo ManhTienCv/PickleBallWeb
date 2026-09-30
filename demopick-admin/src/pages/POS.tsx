@@ -213,8 +213,9 @@ export default function POS() {
     }
   }, [searchParams]);
 
-  // Category filter tabs (Đồ uống & Đồ ăn, Vợt, Bóng, Phụ kiện, Thuê vợt)
+  // Category filter tabs (Tất cả, Đồ uống & Đồ ăn, Vợt, Bóng, Phụ kiện, Thuê vợt)
   const categoriesList = [
+    { id: "all", label: "Tất cả" },
     { id: "Đồ uống", label: "Đồ uống & Đồ ăn" },
     { id: "Vợt Pickleball", label: "Vợt Pickleball" },
     { id: "Bóng Pickleball", label: "Bóng Pickleball" },
@@ -229,65 +230,85 @@ export default function POS() {
     const sQuery = (search || "").toLowerCase();
 
     const matchSearch = pName.includes(sQuery) || pSlug.includes(sQuery);
+    if (!matchSearch) return false;
 
-    let matchCat = true;
-    const catName = p.category?.name || "";
+    const catId = p.category?.id || (p as any).categoryId || (p as any).category_id;
+    const catName = (p.category?.name || "").toLowerCase();
+    const catSlug = (p.category?.slug || "").toLowerCase();
+    const itemType = p.item_type || (p as any).itemType || "";
+
+    const isDrinkFood =
+      itemType === "drink_food" ||
+      catId === 5 ||
+      catId === 7 ||
+      catSlug === "do-uong-do-an" ||
+      catSlug.includes("do-uong") ||
+      catName.includes("đồ uống") ||
+      catName.includes("đồ ăn") ||
+      catName.includes("giải khát") ||
+      pSlug.includes("pocari") ||
+      pSlug.includes("revive") ||
+      pSlug.includes("lavie") ||
+      pSlug.includes("red-bull") ||
+      pSlug.includes("dua") ||
+      pSlug.includes("tra-chanh") ||
+      pSlug.includes("coffee") ||
+      pSlug.includes("granola") ||
+      pSlug.includes("snickers") ||
+      pSlug.includes("dole") ||
+      pSlug.includes("banana");
+
+    const isRental =
+      itemType === "rental" ||
+      catId === 6 ||
+      catSlug.includes("thue") ||
+      catName.includes("thuê") ||
+      catName.includes("cho thuê") ||
+      pSlug.includes("thue-");
 
     if (activeCategory === "all") {
-      matchCat = true;
+      return true;
     } else if (activeCategory === "Đồ uống") {
-      // Chỉ lấy đúng các sản phẩm Đồ uống & Đồ ăn quầy sân
-      matchCat =
-        p.item_type === "drink_food" ||
-        p.category?.id === 5 ||
-        p.category?.slug === "do-uong-do-an" ||
-        catName.toLowerCase().includes("đồ uống") ||
-        catName.toLowerCase().includes("đồ ăn") ||
-        catName.toLowerCase().includes("giải khát");
-    } else if (activeCategory === "Vợt Pickleball") {
-      matchCat =
-        p.item_type !== "rental" &&
-        p.item_type !== "drink_food" &&
-        (
-          p.category?.id === 1 ||
-          p.category?.slug === "vot-pickleball" ||
-          (catName.includes("Vợt") && !catName.includes("Bao vợt"))
-        );
-    } else if (activeCategory === "Bóng Pickleball") {
-      matchCat =
-        p.item_type !== "rental" &&
-        p.item_type !== "drink_food" &&
-        (
-          p.category?.id === 2 ||
-          p.category?.slug === "bong-pickleball" ||
-          catName.includes("Bóng")
-        );
-    } else if (activeCategory === "Phụ kiện") {
-      matchCat =
-        p.item_type !== "rental" &&
-        p.item_type !== "drink_food" &&
-        (
-          p.category?.id === 3 ||
-          p.category?.id === 4 ||
-          p.category?.slug === "phu-kien-bao-vot" ||
-          p.category?.slug === "quan-ao-trang-phuc" ||
-          catName.includes("Phụ kiện") ||
-          catName.includes("Bao vợt") ||
-          catName.includes("Quần áo") ||
-          catName.includes("Trang phục") ||
-          catName.includes("Giày")
-        );
+      return isDrinkFood;
     } else if (activeCategory === "Thuê vợt") {
-      matchCat =
-        p.item_type === "rental" ||
-        p.category?.id === 6 ||
-        p.category?.slug === "cho-thue-thiet-bi" ||
-        catName.includes("Cho thuê") ||
-        catName.includes("Thuê") ||
-        pName.includes("thuê");
+      return isRental;
+    } else if (activeCategory === "Vợt Pickleball") {
+      return (
+        !isDrinkFood &&
+        !isRental &&
+        (catId === 1 ||
+          catSlug.includes("vot") ||
+          (catName.includes("vợt") && !catName.includes("bao vợt")) ||
+          pSlug.startsWith("vot-") ||
+          pSlug.includes("paddle"))
+      );
+    } else if (activeCategory === "Bóng Pickleball") {
+      return (
+        !isDrinkFood &&
+        !isRental &&
+        (catId === 2 ||
+          catSlug.includes("bong") ||
+          catName.includes("bóng") ||
+          pSlug.startsWith("bong-") ||
+          pSlug.includes("hop-"))
+      );
+    } else if (activeCategory === "Phụ kiện") {
+      return (
+        !isDrinkFood &&
+        !isRental &&
+        (catId === 3 ||
+          catId === 4 ||
+          catSlug.includes("phu-kien") ||
+          catSlug.includes("quan-ao") ||
+          catName.includes("phụ kiện") ||
+          catName.includes("bao vợt") ||
+          catName.includes("quần áo") ||
+          catName.includes("trang phục") ||
+          catName.includes("giày"))
+      );
     }
 
-    return matchSearch && matchCat;
+    return true;
   });
 
   // Pagination Calculations

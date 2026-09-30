@@ -14,12 +14,15 @@ import com.demopick.pickleball.modules.shop.repository.ProductRepository;
 import com.demopick.pickleball.modules.shop.repository.ProductVariantRepository;
 import com.demopick.pickleball.modules.user.entity.User;
 import com.demopick.pickleball.modules.user.repository.UserRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -39,6 +42,7 @@ public class DataInitializer implements CommandLineRunner {
     private final ProductRepository productRepository;
     private final ProductVariantRepository productVariantRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ObjectMapper objectMapper;
 
     public DataInitializer(
             UserRepository userRepository,
@@ -48,7 +52,8 @@ public class DataInitializer implements CommandLineRunner {
             BrandRepository brandRepository,
             ProductRepository productRepository,
             ProductVariantRepository productVariantRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            ObjectMapper objectMapper) {
         this.userRepository = userRepository;
         this.courtRepository = courtRepository;
         this.timeSlotRepository = timeSlotRepository;
@@ -57,6 +62,7 @@ public class DataInitializer implements CommandLineRunner {
         this.productRepository = productRepository;
         this.productVariantRepository = productVariantRepository;
         this.passwordEncoder = passwordEncoder;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -237,88 +243,114 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void seedShopData() {
-        if (categoryRepository.count() == 0) {
-            log.info("Khởi tạo danh mục sản phẩm & thương hiệu...");
-            Category cat1 = new Category();
-            cat1.setName("Vợt Pickleball");
-            cat1.setSlug("vot-pickleball");
-            cat1.setDescription("Các dòng vợt thi đấu chuẩn USAPA từ Joola, Selkirk, CRBN.");
-            categoryRepository.save(cat1);
-
-            Category cat2 = new Category();
-            cat2.setName("Bóng Pickleball");
-            cat2.setSlug("bong-pickleball");
-            cat2.setDescription("Bóng tập luyện và thi đấu chính hãng.");
-            categoryRepository.save(cat2);
-
-            Category cat3 = new Category();
-            cat3.setName("Bao & Balo Đựng Vợt");
-            cat3.setSlug("balo-tui-dung-vot");
-            cat3.setDescription("Túi và balo thể thao thời trang cao cấp.");
-            categoryRepository.save(cat3);
-
-            Category cat4 = new Category();
-            cat4.setName("Phụ Kiện Sân Đấu");
-            cat4.setSlug("phu-kien-san-dau");
-            cat4.setDescription("Băng quấn cán, chì trợ lực, khăn lau mồ hôi.");
-            categoryRepository.save(cat4);
-
-            Category cat5 = new Category();
-            cat5.setName("Đồ Uống & Dịch Vụ POS");
-            cat5.setSlug("do-uong-dich-vu-pos");
-            cat5.setDescription("Nước khoáng, điện giải Pocari, Revive phục vụ tại quầy.");
-            categoryRepository.save(cat5);
+        // 1. Khởi tạo danh mục chuẩn nếu chưa có
+        List<String[]> standardCategories = List.of(
+            new String[]{"vot-pickleball", "Vợt Pickleball", "Các dòng vợt thi đấu chuẩn USAPA từ Joola, Selkirk, CRBN."},
+            new String[]{"bong-pickleball", "Bóng Pickleball", "Bóng tập luyện và thi đấu chính hãng."},
+            new String[]{"phu-kien-bao-vot", "Phụ kiện & Bao vợt", "Bao vợt, balo và phụ kiện thi đấu chuyên nghiệp."},
+            new String[]{"quan-ao-trang-phuc", "Quần áo & Trang phục", "Trang phục thi đấu Pickleball thoáng khí dry-fit."},
+            new String[]{"do-uong-do-an", "Đồ uống & Đồ ăn", "Nước khoáng, điện giải Pocari, Revive và đồ ăn nhẹ phục vụ tại quầy."},
+            new String[]{"thiet-bi-dich-vu-cho-thue", "Thiết bị & Dịch vụ cho thuê", "Cho thuê vợt tập, máy bắn bóng tự động."}
+        );
+        for (String[] catInfo : standardCategories) {
+            if (categoryRepository.findBySlug(catInfo[0]).isEmpty()) {
+                Category cat = new Category();
+                cat.setSlug(catInfo[0]);
+                cat.setName(catInfo[1]);
+                cat.setDescription(catInfo[2]);
+                cat.setIsActive(true);
+                categoryRepository.save(cat);
+            }
         }
 
-        if (brandRepository.count() == 0) {
-            Brand b1 = new Brand();
-            b1.setName("Joola");
-            b1.setSlug("joola");
-            brandRepository.save(b1);
+        // 2. Đồng bộ danh mục 42 sản phẩm và đồ uống POS nếu số lượng dưới 30
+        if (productRepository.count() < 30) {
+            log.info("Bắt đầu khởi tạo đồng bộ toàn bộ 42 sản phẩm và menu đồ uống POS từ catalog.json...");
+            try (InputStream is = getClass().getResourceAsStream("/data/catalog.json")) {
+                if (is != null) {
+                    JsonNode root = objectMapper.readTree(is);
+                    if (root.isArray()) {
+                        int addedCount = 0;
+                        for (JsonNode node : root) {
+                            String slug = node.path("slug").asText();
+                            if (productRepository.findBySlugAndDeletedAtIsNull(slug).isPresent()) {
+                                continue;
+                            }
 
-            Brand b2 = new Brand();
-            b2.setName("Selkirk");
-            b2.setSlug("selkirk");
-            brandRepository.save(b2);
+                            // Category
+                            JsonNode catNode = node.path("category");
+                            String catSlug = catNode.path("slug").asText("vot-pickleball");
+                            String catName = catNode.path("name").asText("Vợt Pickleball");
+                            Category cat = categoryRepository.findBySlug(catSlug).orElseGet(() -> {
+                                Category newCat = new Category();
+                                newCat.setName(catName);
+                                newCat.setSlug(catSlug);
+                                newCat.setIsActive(true);
+                                return categoryRepository.save(newCat);
+                            });
 
-            Brand b3 = new Brand();
-            b3.setName("Franklin");
-            b3.setSlug("franklin");
-            brandRepository.save(b3);
+                            // Brand
+                            JsonNode brandNode = node.path("brand");
+                            String brandSlug = brandNode.path("slug").asText("joola");
+                            String brandName = brandNode.path("name").asText("JOOLA");
+                            Brand brand = brandRepository.findBySlug(brandSlug).orElseGet(() -> {
+                                Brand newBrand = new Brand();
+                                newBrand.setName(brandName);
+                                newBrand.setSlug(brandSlug);
+                                newBrand.setIsActive(true);
+                                return brandRepository.save(newBrand);
+                            });
 
-            Brand b4 = new Brand();
-            b4.setName("CRBN");
-            b4.setSlug("crbn");
-            brandRepository.save(b4);
-        }
+                            Product prod = new Product();
+                            prod.setName(node.path("name").asText());
+                            prod.setSlug(slug);
+                            prod.setShortDescription(node.path("short_description").asText(node.path("name").asText()));
+                            prod.setDescription(node.path("description").asText());
+                            prod.setCategoryId(cat.getId());
+                            prod.setBrandId(brand.getId());
+                            BigDecimal price = BigDecimal.valueOf(node.path("base_price").asDouble(node.path("price").asDouble(0.0)));
+                            prod.setBasePrice(price);
+                            prod.setStatus("active");
+                            prod.setIsFeatured(node.path("is_featured").asBoolean(true));
+                            prod.setItemType(node.path("item_type").asText("product"));
+                            String img = node.path("image_url").asText("/images/pickleball_paddle_joola.jpg");
+                            prod.setImages("[\"" + img + "\"]");
+                            productRepository.save(prod);
 
-        if (productRepository.count() == 0) {
-            log.info("Khởi tạo sản phẩm mẫu cho cửa hàng...");
-            Category paddleCat = categoryRepository.findBySlug("vot-pickleball").orElse(null);
-            Brand joolaBrand = brandRepository.findBySlug("joola").orElse(null);
-
-            if (paddleCat != null && joolaBrand != null) {
-                Product p1 = new Product();
-                p1.setName("Vợt Pickleball Joola Ben Johns Perseus CFS 16");
-                p1.setSlug("vot-pickleball-joola-ben-johns-perseus-cfs-16");
-                p1.setShortDescription("Dòng vợt cao cấp sở hữu mặt Carbon Friction Surface trợ lực tối đa.");
-                p1.setDescription("Vợt Joola Perseus CFS 16mm đem lại khả năng kiểm soát bóng đỉnh cao và lực đánh uy lực.");
-                p1.setCategoryId(paddleCat.getId());
-                p1.setBrandId(joolaBrand.getId());
-                p1.setBasePrice(BigDecimal.valueOf(5690000));
-                p1.setStatus("active");
-                p1.setIsFeatured(true);
-                p1.setImages("[\"/images/pickleball_paddle_joola.jpg\"]");
-                productRepository.save(p1);
-
-                ProductVariant v1 = new ProductVariant();
-                v1.setProduct(p1);
-                v1.setSku("JOOLA-PERSEUS-16");
-                v1.setColor("Đen / Carbon");
-                v1.setWeight("230g (8.1 oz)");
-                v1.setStockQty(25);
-                v1.setStatus("active");
-                productVariantRepository.save(v1);
+                            // Variants
+                            JsonNode variantsNode = node.path("variants");
+                            if (variantsNode.isArray() && variantsNode.size() > 0) {
+                                for (JsonNode vn : variantsNode) {
+                                    ProductVariant v = new ProductVariant();
+                                    v.setProduct(prod);
+                                    v.setSku(vn.path("sku").asText("SKU-" + prod.getId()));
+                                    v.setColor(vn.path("color").asText("Tiêu chuẩn"));
+                                    v.setWeight(vn.path("weight").asText("Tiêu chuẩn"));
+                                    v.setStockQty(vn.path("stock_quantity").asInt(50));
+                                    v.setPriceOverride(BigDecimal.valueOf(vn.path("price").asDouble(price.doubleValue())));
+                                    v.setStatus("active");
+                                    productVariantRepository.save(v);
+                                }
+                            } else {
+                                ProductVariant v = new ProductVariant();
+                                v.setProduct(prod);
+                                v.setSku("SKU-" + prod.getId());
+                                v.setColor("Tiêu chuẩn");
+                                v.setWeight("Tiêu chuẩn");
+                                v.setStockQty(50);
+                                v.setPriceOverride(price);
+                                v.setStatus("active");
+                                productVariantRepository.save(v);
+                            }
+                            addedCount++;
+                        }
+                        log.info("Đã đồng bộ bổ sung thành công {} sản phẩm và menu đồ uống POS vào cơ sở dữ liệu.", addedCount);
+                    }
+                } else {
+                    log.warn("Không tìm thấy file /data/catalog.json trong resources.");
+                }
+            } catch (Exception e) {
+                log.error("Lỗi khi khởi tạo danh mục catalog.json: {}", e.getMessage(), e);
             }
         }
     }

@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 @Table(name = "product_variants")
@@ -103,6 +104,26 @@ public class ProductVariant {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    @JsonProperty("stock_quantity")
+    public Integer getStockQuantity() { return stockQty != null ? stockQty : 0; }
+
+    @JsonProperty("price")
+    public BigDecimal getPrice() {
+        if (priceOverride != null) return priceOverride;
+        if (product != null && product.getBasePrice() != null) return product.getBasePrice();
+        return BigDecimal.ZERO;
+    }
+
+    @JsonProperty("option_name")
+    public String getOptionName() { return "Quy cách"; }
+
+    @JsonProperty("option_value")
+    public String getOptionValue() {
+        if (color != null && !color.isEmpty()) return color;
+        if (weight != null && !weight.isEmpty()) return weight;
+        return "Tiêu chuẩn";
+    }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

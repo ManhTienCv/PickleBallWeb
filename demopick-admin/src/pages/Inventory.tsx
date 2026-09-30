@@ -1730,20 +1730,20 @@ export default function Inventory() {
   // Products State
   const [products, setProducts] = useState<InventoryProduct[]>(() => {
     const saved = localStorage.getItem("demopick_online_products_v3");
-    if (!saved) return [];
+    if (!saved) return initialUnifiedProducts;
     try {
       const parsed: InventoryProduct[] = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
         // Discard stale cache if it contains old unsplash images or lacks drinks
         if (parsed.some((p: any) => (p.image || "").includes("unsplash")) || parsed.length < 30) {
           localStorage.removeItem("demopick_online_products_v3");
-          return [];
+          return initialUnifiedProducts;
         }
         return parsed;
       }
-      return [];
+      return initialUnifiedProducts;
     } catch {
-      return [];
+      return initialUnifiedProducts;
     }
   });
 
@@ -1767,8 +1767,15 @@ export default function Inventory() {
           description: p.description || p.short_description || "",
           channel: "all",
         }));
-        setProducts(mapped);
-        localStorage.setItem("demopick_online_products_v3", JSON.stringify(mapped));
+        if (mapped.length >= 30) {
+          setProducts(mapped);
+          localStorage.setItem("demopick_online_products_v3", JSON.stringify(mapped));
+        } else {
+          const mappedIds = new Set(mapped.map((m) => m.id));
+          const merged = [...mapped, ...initialUnifiedProducts.filter((u) => !mappedIds.has(u.id))];
+          setProducts(merged);
+          localStorage.setItem("demopick_online_products_v3", JSON.stringify(merged));
+        }
       }
     });
   }, []);

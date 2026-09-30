@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 @Entity
@@ -34,11 +35,22 @@ public class Product {
     @Column(name = "brand_id")
     private Long brandId;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "brand_id", insertable = false, updatable = false)
+    private Brand brand;
+
     @Column(name = "category_id")
     private Long categoryId;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "category_id", insertable = false, updatable = false)
+    private Category category;
+
     @Column(name = "base_price", precision = 15, scale = 2)
     private BigDecimal basePrice;
+
+    @Column(name = "item_type", length = 30)
+    private String itemType = "product"; // product, drink_food, rental
 
     @Column(length = 20)
     private String status = "active"; // active, draft, archived
@@ -106,6 +118,42 @@ public class Product {
 
     public List<ProductVariant> getVariants() { return variants; }
     public void setVariants(List<ProductVariant> variants) { this.variants = variants; }
+
+    public String getItemType() { return itemType; }
+    public void setItemType(String itemType) { this.itemType = itemType; }
+
+    public Category getCategory() { return category; }
+    public void setCategory(Category category) { this.category = category; }
+
+    public Brand getBrand() { return brand; }
+    public void setBrand(Brand brand) { this.brand = brand; }
+
+    @JsonProperty("price")
+    public BigDecimal getPrice() { return basePrice; }
+
+    @JsonProperty("item_type")
+    public String getItemTypeSnake() { return itemType; }
+
+    @JsonProperty("image_url")
+    public String getImageUrl() {
+        if (images != null && !images.isEmpty()) {
+            if (images.startsWith("[\"") && images.contains("\"]")) {
+                int start = 2;
+                int end = images.indexOf("\"", start);
+                if (end > start) {
+                    return images.substring(start, end).replace("\\/", "/");
+                }
+            } else if (images.startsWith("/")) {
+                return images;
+            }
+        }
+        return "/images/pickleball_paddle_joola.jpg";
+    }
+
+    @JsonProperty("in_stock")
+    public boolean getInStock() {
+        return "active".equalsIgnoreCase(status);
+    }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
