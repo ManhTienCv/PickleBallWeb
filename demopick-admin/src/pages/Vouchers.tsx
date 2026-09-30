@@ -47,72 +47,7 @@ interface VoucherItem {
   created_at: string;
 }
 
-export const DEFAULT_ADMIN_VOUCHERS: VoucherItem[] = [
-  {
-    id: 1,
-    code: "WELCOME2026",
-    title: "Ưu Đãi Hội Viên Mới",
-    description: "Giảm ngay 50.000đ cho đơn hàng đầu tiên từ 300.000đ",
-    discount_type: "fixed",
-    discount_value: 50000,
-    max_discount: null,
-    min_order_amount: 300000,
-    usage_limit: 1000,
-    used_count: 142,
-    start_date: "2026-01-01",
-    end_date: "2026-12-31",
-    is_active: true,
-    created_at: "2026-01-01 08:00:00",
-  },
-  {
-    id: 2,
-    code: "PICKLEBALL10",
-    title: "Giảm 10% Vợt Thi Đấu",
-    description: "Áp dụng cho mọi dòng vợt USAPA cao cấp Joola & Selkirk",
-    discount_type: "percentage",
-    discount_value: 10,
-    max_discount: 200000,
-    min_order_amount: 500000,
-    usage_limit: 500,
-    used_count: 89,
-    start_date: "2026-06-01",
-    end_date: "2026-12-31",
-    is_active: true,
-    created_at: "2026-06-01 09:00:00",
-  },
-  {
-    id: 3,
-    code: "FREESHIP",
-    title: "Miễn Phí Giao Hàng Toàn Quốc",
-    description: "Hỗ trợ tối đa 35.000đ cước chuyển phát nhanh GHN",
-    discount_type: "fixed",
-    discount_value: 35000,
-    max_discount: 35000,
-    min_order_amount: 400000,
-    usage_limit: 2000,
-    used_count: 531,
-    start_date: "2026-03-01",
-    end_date: "2026-12-31",
-    is_active: true,
-    created_at: "2026-03-01 10:00:00",
-  },
-  {
-    id: 4,
-    code: "VIPCOURT20",
-    title: "Giảm 20.000đ Ca Sân Giờ Vàng",
-    description: "Dành riêng cho ca sân Pickleball từ 17:00 - 22:00",
-    discount_type: "fixed",
-    discount_value: 20000,
-    max_discount: null,
-    min_order_amount: 140000,
-    usage_limit: 300,
-    used_count: 178,
-    start_date: "2026-05-01",
-    end_date: "2026-10-31",
-    is_active: true,
-    created_at: "2026-05-01 14:00:00",
-  },
-];
+export const DEFAULT_ADMIN_VOUCHERS: VoucherItem[] = [];
 
 export default function VouchersPage() {
   const [vouchers, setVouchers] = useState<VoucherItem[]>(() => {
@@ -120,10 +55,19 @@ export default function VouchersPage() {
       const saved = localStorage.getItem("demopick_admin_vouchers");
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) {
+          // Clear legacy mock vouchers
+          return parsed.filter(
+            (v: any) =>
+              v.code !== "WELCOME2026" &&
+              v.code !== "PICKLEBALL10" &&
+              v.code !== "FREESHIP" &&
+              v.code !== "VIPCOURT20"
+          );
+        }
       }
     } catch {}
-    return DEFAULT_ADMIN_VOUCHERS;
+    return [];
   });
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -159,16 +103,18 @@ export default function VouchersPage() {
       });
 
       const data = res.data?.data;
-      if (data && Array.isArray(data.data) && data.data.length > 0) {
+      if (data && Array.isArray(data.data)) {
         setVouchers(data.data);
-      } else if (Array.isArray(data) && data.length > 0) {
+      } else if (Array.isArray(data)) {
         setVouchers(data);
+      } else {
+        setVouchers([]);
       }
       if (showSuccessToast) {
         toast.success("Đã đồng bộ danh sách mã ưu đãi!");
       }
     } catch (err) {
-      console.warn("Using local/fallback vouchers:", err);
+      console.warn("Using local vouchers:", err);
       if (showSuccessToast) {
         toast.info("Đã làm mới danh sách mã ưu đãi.");
       }

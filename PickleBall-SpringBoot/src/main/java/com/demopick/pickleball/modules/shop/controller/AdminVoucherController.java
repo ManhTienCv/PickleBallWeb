@@ -19,56 +19,6 @@ public class AdminVoucherController {
         this.voucherRepository = voucherRepository;
     }
 
-    @PostConstruct
-    public void seedInitialVouchers() {
-        if (voucherRepository.count() == 0) {
-            Voucher v1 = new Voucher();
-            v1.setCode("WELCOME2026");
-            v1.setTitle("Ưu Đãi Hội Viên Mới");
-            v1.setDescription("Giảm ngay 50.000đ cho đơn hàng đầu tiên từ 300.000đ");
-            v1.setDiscountType("fixed");
-            v1.setDiscountValue(50000.0);
-            v1.setMaxDiscount(null);
-            v1.setMinOrderAmount(300000.0);
-            v1.setUsageLimit(1000);
-            v1.setUsedCount(142);
-            v1.setStartDate("2026-01-01");
-            v1.setEndDate("2026-12-31");
-            v1.setIsActive(true);
-            voucherRepository.save(v1);
-
-            Voucher v2 = new Voucher();
-            v2.setCode("PICKLEBALL10");
-            v2.setTitle("Giảm 10% Vợt Thi Đấu");
-            v2.setDescription("Áp dụng cho mọi dòng vợt USAPA cao cấp Joola & Selkirk");
-            v2.setDiscountType("percentage");
-            v2.setDiscountValue(10.0);
-            v2.setMaxDiscount(200000.0);
-            v2.setMinOrderAmount(500000.0);
-            v2.setUsageLimit(500);
-            v2.setUsedCount(89);
-            v2.setStartDate("2026-06-01");
-            v2.setEndDate("2026-12-31");
-            v2.setIsActive(true);
-            voucherRepository.save(v2);
-
-            Voucher v3 = new Voucher();
-            v3.setCode("FREESHIP");
-            v3.setTitle("Miễn Phí Giao Hàng Toàn Quốc");
-            v3.setDescription("Hỗ trợ tối đa 35.000đ cước chuyển phát nhanh GHN");
-            v3.setDiscountType("fixed");
-            v3.setDiscountValue(35000.0);
-            v3.setMaxDiscount(35000.0);
-            v3.setMinOrderAmount(400000.0);
-            v3.setUsageLimit(2000);
-            v3.setUsedCount(531);
-            v3.setStartDate("2026-03-01");
-            v3.setEndDate("2026-12-31");
-            v3.setIsActive(true);
-            voucherRepository.save(v3);
-        }
-    }
-
     @GetMapping
     public ResponseEntity<ApiResponse<List<Voucher>>> getVouchers(
             @RequestParam(required = false) String search,

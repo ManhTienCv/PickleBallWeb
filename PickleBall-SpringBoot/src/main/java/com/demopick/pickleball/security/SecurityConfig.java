@@ -57,6 +57,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/admin/vouchers/**").permitAll()
                         .requestMatchers("/api/v1/vouchers/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/admin/reviews/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/admin/chat/**").permitAll()
+                        .requestMatchers("/api/v1/chat/**").permitAll()
                         // Admin endpoints
                         .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "STAFF")
                         // Other requests require authentication
@@ -77,7 +79,8 @@ public class SecurityConfig {
                 "http://127.0.0.1:5173",
                 "http://127.0.0.1:5174",
                 "https://demopick-client.vercel.app",
-                "https://demopick-admin.vercel.app"
+                "https://demopick-admin.vercel.app",
+                "https://pickleball-admin-pi.vercel.app"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Trace-Id", "Accept"));

@@ -34,32 +34,7 @@ interface ChatMessage {
   created_at: string;
 }
 
-const fallbackConversations: Conversation[] = [
-  {
-    session_id: "CHAT-VIP-001",
-    customer_name: "Anh Hoàng (Hội Pickleball Q1)",
-    last_message: "Shop cho mình hỏi sân A1 tối nay có trang bị bóng tập chưa ạ?",
-    last_sender: "user",
-    unread_count: 1,
-    updated_at: "17:15",
-  },
-  {
-    session_id: "CHAT-VIP-002",
-    customer_name: "Chị Lan Phương",
-    last_message: "Dạ vâng, bên mình đã chuẩn bị sẵn vợt Joola Perseus cho chị rồi ạ.",
-    last_sender: "admin",
-    unread_count: 0,
-    updated_at: "16:45",
-  },
-  {
-    session_id: "CHAT-VIP-003",
-    customer_name: "CLB Doanh Nhân SG",
-    last_message: "Cuối tuần này CLB muốn đặt 2 sân VIP liền kề từ 18h-21h được không?",
-    last_sender: "user",
-    unread_count: 2,
-    updated_at: "15:30",
-  },
-];
+const fallbackConversations: Conversation[] = [];
 
 const formatChatTime = (timeStr?: string): string => {
   if (!timeStr) return "";
@@ -76,8 +51,24 @@ const formatChatTime = (timeStr?: string): string => {
 };
 
 export default function AdminChat() {
-  const [conversations, setConversations] = useState<Conversation[]>(fallbackConversations);
-  const [selectedSessionId, setSelectedSessionId] = useState<string>("CHAT-VIP-001");
+  const [conversations, setConversations] = useState<Conversation[]>(() => {
+    try {
+      const saved = localStorage.getItem("demopick_admin_chat_conversations");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.filter(
+            (c: any) =>
+              !c.customer_name?.includes("Anh Hoàng") &&
+              !c.customer_name?.includes("Lan Phương") &&
+              !c.customer_name?.includes("Doanh Nhân")
+          );
+        }
+      }
+    } catch {}
+    return [];
+  });
+  const [selectedSessionId, setSelectedSessionId] = useState<string>("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [search, setSearch] = useState("");
@@ -88,18 +79,26 @@ export default function AdminChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  useEffect(() => {
+    if (conversations.length > 0) {
+      localStorage.setItem("demopick_admin_chat_conversations", JSON.stringify(conversations));
+    } else {
+      localStorage.removeItem("demopick_admin_chat_conversations");
+    }
+  }, [conversations]);
+
   // Nạp danh sách hội thoại
   const fetchConversations = async () => {
     try {
       const res = await api.get("/admin/chat/conversations");
-      if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+      if (res.data?.success && Array.isArray(res.data.data)) {
         setConversations(res.data.data);
-        if (!selectedSessionId) {
+        if (!selectedSessionId && res.data.data.length > 0) {
           setSelectedSessionId(res.data.data[0].session_id);
         }
       }
     } catch {
-      // Giữ fallbackConversations
+      // Keep empty
     }
   };
 
@@ -111,53 +110,14 @@ export default function AdminChat() {
     }
     try {
       const res = await api.get(`/admin/chat/messages/${sessionId}`);
-      if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+      if (res.data?.success && Array.isArray(res.data.data)) {
         setMessages(res.data.data);
         return;
       }
     } catch {
-      // Fallback
+      // Keep empty
     }
-
-    if (sessionId === "CHAT-VIP-001") {
-      setMessages([
-        {
-          id: 1,
-          session_id: sessionId,
-          sender_type: "user",
-          sender_name: "Anh Hoàng",
-          message: "Chào shop, mình vừa đặt sân A1 khung 17h-19h.",
-          created_at: "17:10",
-        },
-        {
-          id: 2,
-          session_id: sessionId,
-          sender_type: "admin",
-          sender_name: "Lễ tân DemoPick",
-          message: "Chào anh Hoàng! Sân A1 đã được bật đèn và vệ sinh sẵn sàng rồi ạ.",
-          created_at: "17:12",
-        },
-        {
-          id: 3,
-          session_id: sessionId,
-          sender_type: "user",
-          sender_name: "Anh Hoàng",
-          message: "Shop cho mình hỏi sân A1 tối nay có trang bị bóng tập chưa ạ?",
-          created_at: "17:15",
-        },
-      ]);
-    } else {
-      setMessages([
-        {
-          id: 10,
-          session_id: sessionId,
-          sender_type: "user",
-          sender_name: "Khách hàng",
-          message: "Xin chào DemoPick, tư vấn giúp mình lịch sân với ạ.",
-          created_at: "Vừa xong",
-        },
-      ]);
-    }
+    setMessages([]);
   };
 
   // 1. Nạp danh sách hội thoại và tin nhắn ban đầu (1 lần duy nhất)

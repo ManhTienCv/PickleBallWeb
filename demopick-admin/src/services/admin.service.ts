@@ -2019,25 +2019,20 @@ export const DEFAULT_ADMIN_LIVE_COURTS: LiveCourtItem[] = [
     hourly_rate: 140000,
     customer_name: null,
     customer_phone: null,
-    available_minutes_until_next: 120,
+    available_minutes_until_next: 180,
   },
   {
     id: 2,
     name: "Sân Pickleball A2",
     code: "A2",
     surface_type: "Trong Nhà • Tiêu Chuẩn Pro",
-    status: "in_use",
-    status_label: "ĐANG CHƠI",
-    session_id: 101,
-    start_time: "17:00",
-    start_time_formatted: "17:00",
-    elapsed_minutes: 45,
-    rounded_minutes: 45,
-    current_price: 105000,
+    status: "available",
+    status_label: "TRỐNG",
+    session_id: null,
     hourly_rate: 140000,
-    customer_name: "Anh Hoàng (Hội Pickleball Q1)",
-    customer_phone: "0909123456",
-    expected_duration_minutes: 60,
+    customer_name: null,
+    customer_phone: null,
+    available_minutes_until_next: 180,
   },
   {
     id: 3,
@@ -2050,38 +2045,33 @@ export const DEFAULT_ADMIN_LIVE_COURTS: LiveCourtItem[] = [
     hourly_rate: 140000,
     customer_name: null,
     customer_phone: null,
-    available_minutes_until_next: 90,
+    available_minutes_until_next: 180,
   },
   {
     id: 4,
     name: "Sân Pickleball B2",
     code: "B2",
     surface_type: "Ngoài Trời • Mái Vòm Che",
-    status: "ending",
-    status_label: "SẮP HẾT GIỜ",
-    session_id: 102,
-    start_time: "16:00",
-    start_time_formatted: "16:00",
-    elapsed_minutes: 55,
-    rounded_minutes: 60,
-    current_price: 140000,
+    status: "available",
+    status_label: "TRỐNG",
+    session_id: null,
     hourly_rate: 140000,
-    customer_name: "Chị Lan Phương",
-    customer_phone: "0918765432",
-    expected_duration_minutes: 60,
+    customer_name: null,
+    customer_phone: null,
+    available_minutes_until_next: 180,
   },
   {
     id: 5,
     name: "Sân Pickleball C1 (VIP)",
     code: "C1",
     surface_type: "Tiêu Chuẩn Pro VIP",
-    status: "booked",
-    status_label: "ĐÃ ĐẶT",
+    status: "available",
+    status_label: "TRỐNG",
     session_id: null,
     hourly_rate: 180000,
-    customer_name: "CLB Doanh Nhân SG",
-    customer_phone: "0988776655",
-    next_booking_time: "18:00 - 20:00",
+    customer_name: null,
+    customer_phone: null,
+    available_minutes_until_next: 180,
   },
   {
     id: 6,
@@ -2107,7 +2097,7 @@ export const DEFAULT_ADMIN_LIVE_COURTS: LiveCourtItem[] = [
     hourly_rate: 140000,
     customer_name: null,
     customer_phone: null,
-    available_minutes_until_next: 120,
+    available_minutes_until_next: 180,
   },
   {
     id: 8,
@@ -2120,7 +2110,7 @@ export const DEFAULT_ADMIN_LIVE_COURTS: LiveCourtItem[] = [
     hourly_rate: 140000,
     customer_name: null,
     customer_phone: null,
-    available_minutes_until_next: 120,
+    available_minutes_until_next: 180,
   },
 ]
 
@@ -2150,10 +2140,7 @@ export function generateDefaultAdminSlots(date: string): TimeSlot[] {
   DEFAULT_ADMIN_COURTS.forEach((court) => {
     times.forEach((t) => {
       const price = t.peak ? court.peak_hourly_rate : court.hourly_rate
-      let status: 'available' | 'held' | 'booked' | 'locked' | 'in_use' = 'available'
-      if (court.id === 2 && t.start === "17:00") status = "in_use"
-      if (court.id === 4 && t.start === "16:00") status = "in_use"
-      if (court.id === 5 && (t.start === "18:00" || t.start === "19:00")) status = "booked"
+      const status: 'available' | 'held' | 'booked' | 'locked' | 'in_use' = 'available'
 
       timeSlots.push({
         id: idCounter++,

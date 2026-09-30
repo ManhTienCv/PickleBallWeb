@@ -480,8 +480,8 @@ export default function POS() {
     if (targetCourt) {
       const now = new Date();
       const startTimeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
-      const custName = targetCourt.customerName || checkInRes?.customer_name || "CLB Doanh Nhân SG";
-      const custPhone = targetCourt.customerPhone || "0903.111.222";
+      const custName = targetCourt.customerName || checkInRes?.customer_name || "Khách Check-in";
+      const custPhone = targetCourt.customerPhone || checkInRes?.customer_phone || "";
 
       setLocalCourtOverrides((prev) => ({
         ...prev,

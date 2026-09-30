@@ -24,7 +24,7 @@ export function BookingGrid({ courts: apiCourts, slots, selectedSlotIds, onToggl
     return now >= slotEndTime
   }
 
-  // 60-minute Cut-off buffer: Khóa giữ chỗ online cho ca đang diễn ra hoặc ca sắp bắt đầu trong ≤ 60 phút để ưu tiên POS
+  // 30-minute Cut-off buffer: Khóa giữ chỗ online cho ca đang diễn ra hoặc ca sắp bắt đầu trong ≤ 30 phút để ưu tiên POS
   const isSlotCutOff = (timeStr: string, date?: Date) => {
     if (!date) return false
     const now = new Date()
@@ -40,9 +40,9 @@ export function BookingGrid({ courts: apiCourts, slots, selectedSlotIds, onToggl
     // Nếu ca đang diễn ra (hiện tại nằm giữa giờ bắt đầu và giờ kết thúc) -> chỉ phục vụ tại quầy
     if (now >= slotStartTime && now < slotEndTime) return true
 
-    // Nếu ca sắp bắt đầu trong vòng 60 phút tới (0 < diffMinutes <= 60) -> ưu tiên khách tại quầy
+    // Nếu ca sắp bắt đầu trong vòng 30 phút tới (0 < diffMinutes <= 30) -> ưu tiên khách tại quầy
     const diffMinutes = (slotStartTime.getTime() - now.getTime()) / (1000 * 60)
-    return diffMinutes > 0 && diffMinutes <= 60
+    return diffMinutes > 0 && diffMinutes <= 30
   }
 
   // Fallback to exclusive Pickleball courts if api is returning mock or empty
@@ -178,7 +178,7 @@ export function BookingGrid({ courts: apiCourts, slots, selectedSlotIds, onToggl
                           }
                           if (isCutOff) {
                             toast.warning(
-                              `Ca ${time} (${court.name}) đang diễn ra hoặc sắp bắt đầu trong ≤ 60 phút. Khung giờ này ưu tiên phục vụ trực tiếp tại quầy lễ tân hoặc Hotline 0987.654.321!`,
+                              `Ca ${time} (${court.name}) đang diễn ra hoặc sắp bắt đầu trong ≤ 30 phút. Khung giờ này ưu tiên phục vụ trực tiếp tại quầy lễ tân hoặc Hotline 0987.654.321!`,
                               { duration: 6000 }
                             )
                             return
@@ -239,7 +239,7 @@ export function BookingGrid({ courts: apiCourts, slots, selectedSlotIds, onToggl
                             <span className="text-[10px] text-emerald-700 dark:text-emerald-300 font-bold">Đang chơi</span>
                           </div>
                         ) : isCutOff ? (
-                          <div className="flex items-center gap-1" title="Khung giờ đang diễn ra hoặc sắp bắt đầu trong ≤ 60 phút. Bấm để xem thông tin liên hệ quầy lễ tân.">
+                          <div className="flex items-center gap-1" title="Khung giờ đang diễn ra hoặc sắp bắt đầu trong ≤ 30 phút. Bấm để xem thông tin liên hệ quầy lễ tân.">
                             <Clock className="h-3 w-3 text-amber-600 dark:text-amber-400 shrink-0" />
                             <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold">Tại quầy</span>
                           </div>

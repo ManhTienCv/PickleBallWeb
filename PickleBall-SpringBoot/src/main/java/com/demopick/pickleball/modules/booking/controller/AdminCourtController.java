@@ -31,10 +31,21 @@ public class AdminCourtController {
         List<Court> courts = bookingService.getAllCourts();
         List<Map<String, Object>> liveList = courts.stream().map(c -> {
             Map<String, Object> map = new HashMap<>();
+            map.put("id", c.getId());
             map.put("court_id", c.getId());
+            map.put("name", c.getName());
             map.put("court_name", c.getName());
+            map.put("code", c.getCode());
             map.put("court_code", c.getCode());
-            map.put("status", c.getStatus());
+            double rate = (c.getId() != null && (c.getId() == 5 || c.getId() == 6)) ? 180000.0 : 140000.0;
+            map.put("surface_type", c.getSurfaceType() != null ? c.getSurfaceType() : "Tiêu Chuẩn Pro");
+            map.put("status", "available");
+            map.put("status_label", "TRỐNG");
+            map.put("session_id", null);
+            map.put("hourly_rate", rate);
+            map.put("customer_name", null);
+            map.put("customer_phone", null);
+            map.put("available_minutes_until_next", 180);
             map.put("is_in_use", false);
             return map;
         }).toList();

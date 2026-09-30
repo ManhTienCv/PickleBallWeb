@@ -283,9 +283,9 @@ export default function CourtBooking() {
             <span className="h-3.5 w-3.5 rounded-full bg-amber-500 shrink-0" />
             <span className="text-foreground">Tạm giữ (10p)</span>
           </div>
-          <div className="flex items-center gap-1.5" title="Khung giờ đang diễn ra hoặc cận kề (dưới 60 phút) chỉ đặt trực tiếp tại quầy tiếp tân">
+          <div className="flex items-center gap-1.5" title="Khung giờ đang diễn ra hoặc cận kề (dưới 30 phút) chỉ đặt trực tiếp tại quầy tiếp tân">
             <span className="h-3.5 w-3.5 rounded-full bg-amber-400/80 border border-amber-600 shrink-0" />
-            <span className="text-foreground">Tại quầy (≤60p)</span>
+            <span className="text-foreground">Tại quầy (≤30p)</span>
           </div>
           <div className="flex items-center gap-1.5" title="Sân hiện đang có khách đang đánh thực tế">
             <span className="h-3.5 w-3.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
@@ -312,7 +312,7 @@ export default function CourtBooking() {
         <div className="flex items-start sm:items-center gap-2.5">
           <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 sm:mt-0" />
           <span>
-            <strong className="font-bold">Quy tắc đặt sân sát giờ:</strong> Các ca sân đang diễn ra hoặc sắp bắt đầu trong vòng <strong className="text-amber-700 dark:text-amber-400 underline decoration-amber-500/50">≤ 60 phút</strong> sẽ chuyển sang trạng thái <span className="font-extrabold text-amber-800 dark:text-amber-300 bg-amber-200/70 dark:bg-amber-900/60 px-2 py-0.5 rounded-lg border border-amber-300/80">Tại quầy</span> và tạm khóa giữ chỗ online để ưu tiên phục vụ khách trực tiếp tại sân.
+            <strong className="font-bold">Quy tắc đặt sân sát giờ:</strong> Các ca sân đang diễn ra hoặc sắp bắt đầu trong vòng <strong className="text-amber-700 dark:text-amber-400 underline decoration-amber-500/50">≤ 30 phút</strong> sẽ chuyển sang trạng thái <span className="font-extrabold text-amber-800 dark:text-amber-300 bg-amber-200/70 dark:bg-amber-900/60 px-2 py-0.5 rounded-lg border border-amber-300/80">Tại quầy</span> và tạm khóa giữ chỗ online để ưu tiên phục vụ khách trực tiếp tại sân.
           </span>
         </div>
         <a
