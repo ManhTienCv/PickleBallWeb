@@ -59,6 +59,11 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
   const handleToggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    if (!authHelpers.isAuthenticated()) {
+      toast.info('Vui lòng đăng nhập để thêm sản phẩm vào danh sách yêu thích.')
+      useAuthModalStore.getState().openLogin()
+      return
+    }
     const res = await wishlistService.toggleWishlist(product)
     setIsWishlisted(res.in_wishlist)
     if (res.in_wishlist) {
@@ -76,8 +81,23 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
   const handleOpenQuickView = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    if (!authHelpers.isAuthenticated()) {
+      toast.info('Vui lòng đăng nhập để xem thông tin chi tiết sản phẩm.')
+      useAuthModalStore.getState().openLogin()
+      return
+    }
     scrollPosRef.current = window.scrollY || document.documentElement.scrollTop || 0
     setQuickViewOpen(true)
+  }
+
+  const handleProductLinkClick = (e: React.MouseEvent) => {
+    if (!authHelpers.isAuthenticated()) {
+      e.preventDefault()
+      e.stopPropagation()
+      toast.info('Vui lòng đăng nhập để xem thông tin chi tiết sản phẩm.')
+      useAuthModalStore.getState().openLogin()
+      return
+    }
   }
 
   const handleOpenChange = (open: boolean) => {
@@ -167,7 +187,7 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
       <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200/90 dark:border-border bg-white dark:bg-card shadow-sm transition-all duration-300 hover:shadow-xl dark:hover:shadow-black/60 hover:border-emerald-500/50">
         {/* Product Image Box */}
         <div className="aspect-[4/3] sm:aspect-square overflow-hidden bg-[#FAF8F5] dark:bg-slate-900/60 relative block group/img">
-          <Link to={`/products/${product.slug || product.id}`}>
+          <Link to={`/products/${product.slug || product.id}`} onClick={handleProductLinkClick}>
             <img
               src={product.image_url || '/images/pickleball_paddle_joola.jpg'}
               alt={product.name}
@@ -233,7 +253,7 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
 
           {/* Product Name (2 Lines Clamp) */}
           <h3 className="font-semibold text-slate-900 dark:text-slate-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-2 text-base leading-snug min-h-[2.8rem]">
-            <Link to={`/products/${product.slug || product.id}`}>{product.name}</Link>
+            <Link to={`/products/${product.slug || product.id}`} onClick={handleProductLinkClick}>{product.name}</Link>
           </h3>
 
           {/* Star Rating & Review Count */}

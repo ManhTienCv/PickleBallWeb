@@ -18,9 +18,11 @@ import {
 import { toast } from 'sonner'
 import { authHelpers } from '@/stores/useAuthStore'
 import { useAuthModalStore } from '@/stores/useAuthModalStore'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function WishlistPage() {
   const navigate = useNavigate()
+  const { isAuthenticated } = useAuth()
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -35,6 +37,12 @@ export default function WishlistPage() {
   }
 
   useEffect(() => {
+    if (!authHelpers.isAuthenticated()) {
+      setIsLoading(false)
+      toast.info('Vui lòng đăng nhập để xem danh sách yêu thích.')
+      useAuthModalStore.getState().openLogin()
+      return
+    }
     loadWishlist()
 
     const handleWishlistUpdated = () => {
@@ -44,7 +52,7 @@ export default function WishlistPage() {
     return () => {
       window.removeEventListener('wishlist-updated', handleWishlistUpdated)
     }
-  }, [])
+  }, [isAuthenticated])
 
   const handleRemove = async (productId: number, e: React.MouseEvent) => {
     e.preventDefault()
@@ -75,6 +83,28 @@ export default function WishlistPage() {
     } catch {
       toast.error('Lỗi khi thêm vào giỏ hàng.')
     }
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="container mx-auto py-16 px-4 max-w-md text-center">
+        <div className="w-16 h-16 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900/50 flex items-center justify-center mx-auto mb-5 text-rose-600">
+          <Heart className="w-8 h-8 fill-rose-600" />
+        </div>
+        <h2 className="text-2xl font-extrabold text-foreground mb-2">
+          Danh Sách Yêu Thích
+        </h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          Vui lòng đăng nhập để xem và quản lý các sản phẩm bạn đã lưu.
+        </p>
+        <Button
+          onClick={() => useAuthModalStore.getState().openLogin()}
+          className="h-11 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md cursor-pointer"
+        >
+          Đăng Nhập Ngay
+        </Button>
+      </div>
+    )
   }
 
   if (isLoading) {

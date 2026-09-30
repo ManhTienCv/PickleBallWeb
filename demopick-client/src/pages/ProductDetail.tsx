@@ -36,11 +36,14 @@ import {
   ArrowRight,
   Gift,
   Heart,
+  Lock,
+  KeyRound,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { wishlistService } from '@/services/wishlist.service'
 import { authHelpers } from '@/stores/useAuthStore'
 import { useAuthModalStore } from '@/stores/useAuthModalStore'
+import { useAuth } from '@/contexts/AuthContext'
 
 // Default color palettes with authentic Pickleball local assets
 const DEFAULT_COLOR_VARIANTS = [
@@ -91,6 +94,14 @@ export default function ProductDetail() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { isAuthenticated } = useAuth()
+
+  useEffect(() => {
+    if (!authHelpers.isAuthenticated()) {
+      toast.info('Vui lòng đăng nhập để xem thông tin chi tiết sản phẩm.')
+      useAuthModalStore.getState().openLogin()
+    }
+  }, [])
 
   // State
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null)
@@ -266,6 +277,11 @@ export default function ProductDetail() {
 
   const handleToggleWishlist = async () => {
     if (!product) return
+    if (!authHelpers.isAuthenticated()) {
+      toast.info('Vui lòng đăng nhập để thêm sản phẩm vào danh sách yêu thích.')
+      useAuthModalStore.getState().openLogin()
+      return
+    }
     const res = await wishlistService.toggleWishlist(product)
     setIsWishlisted(res.in_wishlist)
     if (res.in_wishlist) {
@@ -333,10 +349,64 @@ export default function ProductDetail() {
   if (isError || !product) {
     return (
       <div className="container mx-auto py-16 text-center">
-        <h2 className="text-2xl font-bold text-slate-900">Không tìm thấy sản phẩm</h2>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Không tìm thấy sản phẩm</h2>
         <Button onClick={() => navigate('/products')} className="mt-4">
           Quay lại cửa hàng
         </Button>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="container mx-auto py-12 px-4 max-w-4xl">
+        {/* Breadcrumb preview */}
+        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-6">
+          <Link to="/" className="hover:text-foreground">Trang chủ</Link>
+          <span>/</span>
+          <Link to="/products" className="hover:text-foreground">Sản phẩm</Link>
+          <span>/</span>
+          <span className="text-foreground font-medium">{product?.name || 'Chi tiết sản phẩm'}</span>
+        </div>
+
+        <div className="bg-white dark:bg-card border border-border/80 rounded-3xl p-8 sm:p-12 text-center shadow-xl relative overflow-hidden">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center mx-auto mb-5 text-emerald-600 dark:text-emerald-400">
+            <Lock className="w-8 h-8" />
+          </div>
+
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight mb-3">
+            Yêu Cầu Đăng Nhập
+          </h2>
+
+          {product && (
+            <p className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400 mb-2">
+              {product.name}
+            </p>
+          )}
+
+          <p className="text-sm sm:text-base text-muted-foreground max-w-md mx-auto mb-8 leading-relaxed">
+            Bạn cần đăng nhập tài khoản để xem thông số kỹ thuật chi tiết, công nghệ lõi, đánh giá trải nghiệm thực tế và mua sắm sản phẩm này.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5">
+            <Button
+              onClick={() => useAuthModalStore.getState().openLogin()}
+              className="w-full sm:w-auto h-12 px-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl text-sm gap-2 shadow-lg shadow-emerald-600/25 active:scale-95 transition-all cursor-pointer"
+            >
+              <KeyRound className="w-4 h-4" />
+              <span>Đăng Nhập Ngay</span>
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => navigate('/products')}
+              className="w-full sm:w-auto h-12 px-6 rounded-2xl text-sm font-semibold border-border hover:bg-muted text-foreground cursor-pointer"
+            >
+              Xem danh mục sản phẩm khác
+            </Button>
+          </div>
+        </div>
       </div>
     )
   }
@@ -381,6 +451,11 @@ export default function ProductDetail() {
   // Handle submit review
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!authHelpers.isAuthenticated()) {
+      toast.info('Vui lòng đăng nhập để gửi nhận xét đánh giá.')
+      useAuthModalStore.getState().openLogin()
+      return
+    }
     if (!newAuthor.trim()) {
       toast.error('Vui lòng nhập họ và tên của bạn')
       return
@@ -415,6 +490,11 @@ export default function ProductDetail() {
   }
 
   const handleLikeReview = (reviewId: string) => {
+    if (!authHelpers.isAuthenticated()) {
+      toast.info('Vui lòng đăng nhập để thích đánh giá.')
+      useAuthModalStore.getState().openLogin()
+      return
+    }
     shopService.likeReview(product?.id || 1, reviewId)
     setReviews(
       reviews.map((r) => (r.id === reviewId ? { ...r, likes: r.likes + 1 } : r))
@@ -851,7 +931,14 @@ export default function ProductDetail() {
 
                 <div className="md:col-span-3 flex justify-center">
                   <Button
-                    onClick={() => setShowReviewForm(!showReviewForm)}
+                    onClick={() => {
+                      if (!authHelpers.isAuthenticated()) {
+                        toast.info('Vui lòng đăng nhập để gửi nhận xét đánh giá.')
+                        useAuthModalStore.getState().openLogin()
+                        return
+                      }
+                      setShowReviewForm(!showReviewForm)
+                    }}
                     className="w-full h-10 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl gap-2 shadow-sm"
                   >
                     <MessageSquarePlus className="w-4 h-4" />

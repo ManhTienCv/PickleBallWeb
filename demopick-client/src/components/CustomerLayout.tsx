@@ -10,6 +10,7 @@ import { motion } from 'framer-motion'
 import ThemeToggle from '@/components/ThemeToggle'
 import PickleballLogo from '@/components/PickleballLogo'
 import CustomerChatWidget from '@/components/CustomerChatWidget'
+import { toast } from 'sonner'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -163,7 +164,14 @@ export default function CustomerLayout() {
             {/* Wishlist Button */}
             <Link
               to="/wishlist"
-              onClick={scrollToTop}
+              onClick={(e) => {
+                scrollToTop()
+                if (!isAuthenticated) {
+                  e.preventDefault()
+                  toast.info('Vui lòng đăng nhập để xem danh sách yêu thích.')
+                  openLogin()
+                }
+              }}
               aria-label="Danh sách yêu thích"
               className="relative p-3 rounded-full text-foreground hover:bg-muted transition-colors block border border-transparent hover:border-border cursor-pointer select-none"
             >
@@ -180,7 +188,14 @@ export default function CustomerLayout() {
             {/* Cart Button (Solid, no bounce) */}
             <Link
               to="/cart"
-              onClick={scrollToTop}
+              onClick={(e) => {
+                scrollToTop()
+                if (!isAuthenticated) {
+                  e.preventDefault()
+                  toast.info('Vui lòng đăng nhập để xem giỏ hàng.')
+                  openLogin()
+                }
+              }}
               aria-label="Giỏ hàng"
               className="relative p-3 rounded-full text-foreground hover:bg-muted transition-colors block border border-transparent hover:border-border cursor-pointer select-none"
             >
