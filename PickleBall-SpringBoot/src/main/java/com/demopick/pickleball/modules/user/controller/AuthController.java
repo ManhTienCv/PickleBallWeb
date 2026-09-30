@@ -34,6 +34,35 @@ public class AuthController {
         return ResponseEntity.status(201).body(ApiResponse.success(result, "Đăng ký tài khoản thành công."));
     }
 
+    @PostMapping("/google")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> googleLogin(@RequestBody com.demopick.pickleball.modules.user.dto.GoogleAuthRequest request) {
+        Map<String, Object> result = authService.googleLogin(request);
+        return ResponseEntity.ok(ApiResponse.success(result, "Đăng nhập với Google thành công."));
+    }
+
+    @PostMapping("/check-email")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> checkEmail(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        Map<String, Object> result = authService.checkEmail(email);
+        return ResponseEntity.ok(ApiResponse.success(result, "Kiểm tra email thành công."));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> forgotPassword(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        Map<String, Object> result = authService.forgotPassword(email);
+        return ResponseEntity.ok(ApiResponse.success(result, "Mã xác thực đã được tạo thành công."));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String otp = request.get("otp");
+        String newPassword = request.get("newPassword");
+        authService.resetPassword(email, otp, newPassword);
+        return ResponseEntity.ok(ApiResponse.success(null, "Đặt lại mật khẩu thành công."));
+    }
+
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<AuthResponse>> me(Authentication authentication) {
         if (authentication == null || authentication.getPrincipal() == null) {
