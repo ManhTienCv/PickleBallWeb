@@ -213,9 +213,8 @@ export default function POS() {
     }
   }, [searchParams]);
 
-  // Category filter tabs (Tất cả, Đồ uống & Đồ ăn, Vợt, Bóng, Phụ kiện, Thuê vợt)
+  // Category filter tabs (Đồ uống & Đồ ăn, Vợt, Bóng, Phụ kiện, Thuê vợt)
   const categoriesList = [
-    { id: "all", label: "Tất cả" },
     { id: "Đồ uống", label: "Đồ uống & Đồ ăn" },
     { id: "Vợt Pickleball", label: "Vợt Pickleball" },
     { id: "Bóng Pickleball", label: "Bóng Pickleball" },
