@@ -12,7 +12,6 @@ import CourtMap from "./pages/CourtMap";
 import POS from "./pages/POS";
 import Orders from "./pages/Orders";
 import Payments from "./pages/Payments";
-import CRM from "./pages/CRM";
 import Inventory from "./pages/Inventory";
 import Reports from "./pages/Reports";
 import AdminChat from "./pages/AdminChat";
