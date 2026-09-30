@@ -65,10 +65,11 @@ public class AuthService {
         user.setPhone(request.getPhone());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setStatus("active");
+        user.setRole(user.getRole());
 
         user = userRepository.save(user);
 
-        String token = tokenProvider.generateToken(user.getId(), user.getEmail(), "customer");
+        String token = tokenProvider.generateToken(user.getId(), user.getEmail(), user.getRole());
 
         Map<String, Object> result = new HashMap<>();
         result.put("token", token);

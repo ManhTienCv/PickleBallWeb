@@ -33,7 +33,7 @@ public class User {
 
     private String status = "active";
 
-    @Transient
+    @Column(name = "role", length = 30)
     private String role; // customer, staff, admin
 
     @CreationTimestamp
@@ -56,11 +56,20 @@ public class User {
     }
 
     public String getRole() {
-        if (this.role != null) return this.role;
-        if (this.email != null && (this.email.contains("admin") || this.email.contains("manhtien"))) {
+        if (this.role != null && !this.role.isBlank() && !"customer".equalsIgnoreCase(this.role)) {
+            return this.role;
+        }
+        if (this.email != null && (this.email.toLowerCase().contains("admin") || this.email.toLowerCase().contains("manhtien"))) {
             return "admin";
         }
-        return "customer";
+        if (this.email != null && this.email.toLowerCase().contains("staff")) {
+            return "staff";
+        }
+        return this.role != null && !this.role.isBlank() ? this.role : "customer";
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 
     public Long getId() { return id; }
@@ -86,8 +95,6 @@ public class User {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
-
-    public void setRole(String role) { this.role = role; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

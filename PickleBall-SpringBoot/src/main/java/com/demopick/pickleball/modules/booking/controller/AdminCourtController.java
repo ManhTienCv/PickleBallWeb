@@ -87,13 +87,36 @@ public class AdminCourtController {
         return ResponseEntity.ok(ApiResponse.success(result, "Kết thúc phiên sử dụng sân thành công."));
     }
 
+    private final Map<String, String> checkedInRecords = new java.util.concurrent.ConcurrentHashMap<>();
+
     @PostMapping("/checkin/scan")
     public ResponseEntity<ApiResponse<Map<String, Object>>> scanCheckIn(@RequestBody Map<String, String> payload) {
         String code = payload.get("code");
+        if (code == null || code.isBlank()) {
+            code = payload.get("qr_token");
+        }
+        if (code == null || code.isBlank()) {
+            code = payload.get("booking_code");
+        }
+        if (code == null || code.isBlank()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Vui lòng cung cấp mã vé hoặc quét mã QR.", null));
+        }
+
+        String cleanCode = code.trim().toUpperCase();
+
+        if (checkedInRecords.containsKey(cleanCode)) {
+            String prevTime = checkedInRecords.get(cleanCode);
+            return ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT)
+                    .body(ApiResponse.error("Vé #" + cleanCode + " đã được check-in trước đó vào lúc " + prevTime + "! Không thể sử dụng lại.", null));
+        }
+
+        String now = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy"));
+        checkedInRecords.put(cleanCode, now);
+
         Map<String, Object> result = new HashMap<>();
-        result.put("scanned_code", code);
+        result.put("scanned_code", cleanCode);
         result.put("status", "checked_in");
-        result.put("checkin_time", java.time.LocalDateTime.now().toString());
+        result.put("checkin_time", now);
         return ResponseEntity.ok(ApiResponse.success(result, "Check-in mã vé vào sân thành công."));
     }
 }

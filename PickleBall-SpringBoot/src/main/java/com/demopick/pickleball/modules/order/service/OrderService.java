@@ -12,7 +12,9 @@ import com.demopick.pickleball.modules.order.entity.OrderItem;
 import com.demopick.pickleball.modules.order.repository.OrderItemRepository;
 import com.demopick.pickleball.modules.order.repository.OrderRepository;
 import com.demopick.pickleball.modules.shop.entity.ProductVariant;
+import com.demopick.pickleball.modules.shop.entity.Voucher;
 import com.demopick.pickleball.modules.shop.repository.ProductVariantRepository;
+import com.demopick.pickleball.modules.shop.repository.VoucherRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,6 +37,7 @@ public class OrderService {
     private final TimeSlotRepository timeSlotRepository;
     private final HoldRepository holdRepository;
     private final ProductVariantRepository productVariantRepository;
+    private final VoucherRepository voucherRepository;
 
     @Value("${momo.secret-key}")
     private String momoSecretKey;
@@ -46,12 +49,14 @@ public class OrderService {
                         OrderItemRepository orderItemRepository,
                         TimeSlotRepository timeSlotRepository,
                         HoldRepository holdRepository,
-                        ProductVariantRepository productVariantRepository) {
+                        ProductVariantRepository productVariantRepository,
+                        VoucherRepository voucherRepository) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.timeSlotRepository = timeSlotRepository;
         this.holdRepository = holdRepository;
         this.productVariantRepository = productVariantRepository;
+        this.voucherRepository = voucherRepository;
     }
 
     @Transactional
@@ -147,8 +152,47 @@ public class OrderService {
             }
         }
 
-        if (totalAmount.compareTo(BigDecimal.ZERO) <= 0) {
-            totalAmount = BigDecimal.valueOf(100000);
+        BigDecimal subtotal = totalAmount;
+        BigDecimal discountAmount = BigDecimal.ZERO;
+
+        // Apply voucher if provided
+        if (request.getVoucherCode() != null && !request.getVoucherCode().trim().isEmpty()) {
+            String vCode = request.getVoucherCode().trim();
+            Voucher voucher = voucherRepository.findByCode(vCode).orElse(null);
+            if (voucher == null || !Boolean.TRUE.equals(voucher.getIsActive())) {
+                throw new ApiException("Mã giảm giá không tồn tại hoặc đã bị khóa.", HttpStatus.BAD_REQUEST);
+            }
+
+            if (voucher.getMinOrderAmount() != null && subtotal.compareTo(BigDecimal.valueOf(voucher.getMinOrderAmount())) < 0) {
+                throw new ApiException("Đơn hàng chưa đạt giá trị tối thiểu " + voucher.getMinOrderAmount().longValue() + "đ để sử dụng mã này.", HttpStatus.BAD_REQUEST);
+            }
+
+            if (voucher.getUsageLimit() != null && voucher.getUsedCount() != null && voucher.getUsedCount() >= voucher.getUsageLimit()) {
+                throw new ApiException("Mã giảm giá đã hết lượt sử dụng.", HttpStatus.BAD_REQUEST);
+            }
+
+            if ("percentage".equalsIgnoreCase(voucher.getDiscountType())) {
+                BigDecimal pct = BigDecimal.valueOf(voucher.getDiscountValue() != null ? voucher.getDiscountValue() : 0);
+                BigDecimal calc = subtotal.multiply(pct).divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+                if (voucher.getMaxDiscount() != null && voucher.getMaxDiscount() > 0) {
+                    calc = calc.min(BigDecimal.valueOf(voucher.getMaxDiscount()));
+                }
+                discountAmount = calc;
+            } else {
+                discountAmount = BigDecimal.valueOf(voucher.getDiscountValue() != null ? voucher.getDiscountValue() : 0);
+            }
+
+            if (discountAmount.compareTo(subtotal) > 0) {
+                discountAmount = subtotal;
+            }
+
+            voucher.setUsedCount((voucher.getUsedCount() != null ? voucher.getUsedCount() : 0) + 1);
+            voucherRepository.save(voucher);
+        }
+
+        BigDecimal finalTotal = subtotal.subtract(discountAmount);
+        if (finalTotal.compareTo(BigDecimal.ZERO) < 0) {
+            finalTotal = BigDecimal.ZERO;
         }
 
         // 3. Create Order
@@ -159,9 +203,9 @@ public class OrderService {
         order.setOrderCode(orderCode);
         order.setUserId(userId);
         order.setOrderType(orderType);
-        order.setSubtotal(totalAmount);
-        order.setDiscount(BigDecimal.ZERO);
-        order.setTotalAmount(totalAmount);
+        order.setSubtotal(subtotal);
+        order.setDiscount(discountAmount);
+        order.setTotalAmount(finalTotal);
         order.setStatus("pending");
         order.setPaymentStatus("unpaid");
         order.setPickupNotes(request.getPickupNotes());
@@ -181,12 +225,12 @@ public class OrderService {
         }
 
         // 4. Generate MoMo Sandbox Pay URL or VietQR URL
-        String payUrl = momoRedirectUrl + "?orderId=" + orderCode + "&amount=" + totalAmount;
+        String payUrl = momoRedirectUrl + "?orderId=" + orderCode + "&amount=" + finalTotal;
         String qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=DEMOPICK-" + orderCode;
 
         return new CheckoutResponse(
                 orderCode,
-                totalAmount,
+                finalTotal,
                 request.getPaymentMethod() != null ? request.getPaymentMethod() : "momo",
                 payUrl,
                 qrCodeUrl

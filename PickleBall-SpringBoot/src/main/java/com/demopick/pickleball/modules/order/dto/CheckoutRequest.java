@@ -18,10 +18,16 @@ public class CheckoutRequest {
     @JsonProperty("pickup_notes")
     private String pickupNotes;
 
+    @JsonProperty("voucher_code")
+    private String voucherCode;
+
     @JsonProperty("cart_items")
     private List<CartItemDto> cartItems;
 
     public CheckoutRequest() {}
+
+    public String getVoucherCode() { return voucherCode; }
+    public void setVoucherCode(String voucherCode) { this.voucherCode = voucherCode; }
 
     public Long getHoldId() { return holdId; }
     public void setHoldId(Long holdId) { this.holdId = holdId; }

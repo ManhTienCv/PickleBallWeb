@@ -1,6 +1,8 @@
 package com.demopick.pickleball.modules.shop.controller;
 
 import com.demopick.pickleball.common.dto.ApiResponse;
+import com.demopick.pickleball.modules.shop.entity.Review;
+import com.demopick.pickleball.modules.shop.repository.ReviewRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,43 +12,53 @@ import java.util.*;
 @RequestMapping("/api/v1/admin/reviews")
 public class AdminReviewController {
 
-    private static final List<Map<String, Object>> REVIEWS = Collections.synchronizedList(new ArrayList<>());
+    private final ReviewRepository reviewRepository;
+
+    public AdminReviewController(ReviewRepository reviewRepository) {
+        this.reviewRepository = reviewRepository;
+    }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getReviews(
+    public ResponseEntity<ApiResponse<List<Review>>> getReviews(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Integer rating,
             @RequestParam(required = false) String search
     ) {
-        List<Map<String, Object>> filtered = new ArrayList<>(REVIEWS);
+        List<Review> list;
         if (status != null && !status.isBlank() && !"all".equalsIgnoreCase(status)) {
-            filtered = filtered.stream()
-                    .filter(r -> status.equalsIgnoreCase(String.valueOf(r.get("status"))))
-                    .toList();
+            list = reviewRepository.findByStatusOrderByCreatedAtDesc(status.toLowerCase());
+        } else {
+            list = reviewRepository.findAllByOrderByCreatedAtDesc();
         }
+
         if (rating != null) {
-            filtered = filtered.stream()
-                    .filter(r -> Objects.equals(r.get("rating"), rating))
-                    .toList();
+            list = list.stream().filter(r -> Objects.equals(r.getRating(), rating)).toList();
         }
-        return ResponseEntity.ok(ApiResponse.success(filtered, "Lấy danh sách đánh giá thành công."));
+        if (search != null && !search.isBlank()) {
+            String kw = search.trim().toLowerCase();
+            list = list.stream().filter(r -> 
+                    (r.getUserName() != null && r.getUserName().toLowerCase().contains(kw)) ||
+                    (r.getComment() != null && r.getComment().toLowerCase().contains(kw))
+            ).toList();
+        }
+
+        return ResponseEntity.ok(ApiResponse.success(list, "Lấy danh sách đánh giá thành công."));
     }
 
     @PutMapping("/{id}/status")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> updateStatus(
+    public ResponseEntity<ApiResponse<Review>> updateStatus(
             @PathVariable Long id,
             @RequestBody Map<String, String> payload
     ) {
-        String newStatus = payload.get("status");
-        for (Map<String, Object> r : REVIEWS) {
-            if (Objects.equals(r.get("id"), id)) {
-                r.put("status", newStatus);
-                return ResponseEntity.ok(ApiResponse.success(r, "Cập nhật trạng thái đánh giá thành công."));
+        Review review = reviewRepository.findById(id).orElse(null);
+        if (review != null) {
+            String newStatus = payload.get("status");
+            if (newStatus != null && !newStatus.isBlank()) {
+                review.setStatus(newStatus.toLowerCase());
+                review = reviewRepository.save(review);
             }
+            return ResponseEntity.ok(ApiResponse.success(review, "Cập nhật trạng thái đánh giá thành công."));
         }
-        Map<String, Object> dummy = new HashMap<>();
-        dummy.put("id", id);
-        dummy.put("status", newStatus);
-        return ResponseEntity.ok(ApiResponse.success(dummy, "Cập nhật thành công."));
+        return ResponseEntity.notFound().build();
     }
 }

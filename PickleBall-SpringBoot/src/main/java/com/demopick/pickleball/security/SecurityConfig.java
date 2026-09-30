@@ -58,7 +58,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/vouchers/**").permitAll()
                         .requestMatchers("/api/v1/wishlist/**").permitAll()
                         .requestMatchers("/api/v1/chat/**").permitAll()
-                        // Admin endpoints (strictly require ADMIN or STAFF)
+                        // Admin-only endpoints (reports & user management require ADMIN)
+                        .requestMatchers("/api/v1/admin/reports/**", "/api/v1/admin/users/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
+                        // General operations endpoints (courts, POS, orders, chat, vouchers) permit STAFF
                         .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "STAFF")
                         // Other requests require authentication
                         .anyRequest().authenticated()
