@@ -71,7 +71,7 @@ export const DEFAULT_ADMIN_REVIEWS: ProductReviewItem[] = [
     user_name: "Trần Minh Quang",
     rating: 5,
     comment: "Bóng Selkirk Pro S1 nảy đều, đường bay chuẩn USAPA. Đã mua 3 hộp chơi giao lưu cùng anh em trong CLB.",
-    images: ["/images/pickleball_balls.jpg"],
+    images: ["/images/pickleball_balls_yellow.jpg"],
     variant_purchased: "Hộp 12 quả",
     is_verified_purchase: true,
     likes: 9,
@@ -80,7 +80,7 @@ export const DEFAULT_ADMIN_REVIEWS: ProductReviewItem[] = [
     product: {
       id: 2,
       name: "Hộp 12 Bóng Pickleball Selkirk Pro S1 Thi Đấu",
-      images: ["/images/pickleball_balls.jpg"],
+      images: ["/images/pickleball_balls_yellow.jpg"],
     },
   },
   {
@@ -90,7 +90,7 @@ export const DEFAULT_ADMIN_REVIEWS: ProductReviewItem[] = [
     user_name: "Lê Hoàng Yến",
     rating: 4,
     comment: "Bao đựng vợt Selkirk Daypack vải dù dày dặn, có ngăn để giày và ngăn giữ nhiệt đựng nước suối rất tiện.",
-    images: ["/images/pickleball_bag.jpg"],
+    images: ["/images/pickleball_backpack_apex.jpg"],
     variant_purchased: "Xanh Navy",
     is_verified_purchase: true,
     likes: 5,
@@ -99,7 +99,7 @@ export const DEFAULT_ADMIN_REVIEWS: ProductReviewItem[] = [
     product: {
       id: 3,
       name: "Balo Vợt Pickleball Selkirk Pro Daypack Cao Cấp",
-      images: ["/images/pickleball_bag.jpg"],
+      images: ["/images/pickleball_backpack_apex.jpg"],
     },
   },
   {
@@ -459,6 +459,9 @@ export default function ReviewsPage() {
                                   src={imgUrl}
                                   alt={`Attached ${i}`}
                                   className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLElement).style.display = 'none';
+                                  }}
                                 />
                                 <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                   <Eye className="w-4 h-4 text-white" />

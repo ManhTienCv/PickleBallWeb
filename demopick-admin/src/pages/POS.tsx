@@ -878,9 +878,9 @@ export default function POS() {
                         <div className="flex items-center gap-1 text-slate-500">
                           <Clock className="h-3 w-3 text-slate-400" />
                           <span>
-                            {court.available_minutes_until_next
+                            {court.available_minutes_until_next && court.next_booking_time
                               ? `Trống ${court.available_minutes_until_next}p (đến ${court.next_booking_time})`
-                              : "Sẵn sàng thi đấu"}
+                              : "Sẵn sàng đón khách"}
                           </span>
                         </div>
                         <div className="flex items-center justify-between font-bold text-slate-700">

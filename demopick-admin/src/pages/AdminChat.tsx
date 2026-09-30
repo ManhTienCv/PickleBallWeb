@@ -61,6 +61,20 @@ const fallbackConversations: Conversation[] = [
   },
 ];
 
+const formatChatTime = (timeStr?: string): string => {
+  if (!timeStr) return "";
+  if (timeStr === "Vừa xong" || (timeStr.length <= 5 && timeStr.includes(":"))) {
+    return timeStr;
+  }
+  try {
+    const d = new Date(timeStr);
+    if (isNaN(d.getTime())) return timeStr;
+    return d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return timeStr;
+  }
+};
+
 export default function AdminChat() {
   const [conversations, setConversations] = useState<Conversation[]>(fallbackConversations);
   const [selectedSessionId, setSelectedSessionId] = useState<string>("CHAT-VIP-001");
@@ -339,7 +353,7 @@ export default function AdminChat() {
                           {conv.customer_name}
                         </p>
                         <span className="text-[10px] text-slate-400 shrink-0">
-                          {new Date(conv.updated_at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+                          {formatChatTime(conv.updated_at)}
                         </span>
                       </div>
 
@@ -442,7 +456,7 @@ export default function AdminChat() {
 
                           <div className={`flex items-center justify-end gap-1 mt-1 text-[9px] ${isAdmin ? "text-emerald-100" : "text-slate-400"}`}>
                             <span>
-                              {new Date(m.created_at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+                              {formatChatTime(m.created_at)}
                             </span>
                             {isAdmin && <CheckCheck className="w-3 h-3" />}
                           </div>

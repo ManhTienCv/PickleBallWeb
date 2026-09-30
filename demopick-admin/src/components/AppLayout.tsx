@@ -88,8 +88,7 @@ const menuSections: MenuSection[] = [
     title: "BÁO CÁO & HỆ THỐNG",
     items: [
       { icon: BarChart3, label: "Báo cáo & Nhật ký", path: "/reports", roles: ["admin", "super_admin"] },
-      { icon: Users, label: "Người dùng", path: "/users", roles: ["admin", "super_admin"] },
-      { icon: UserCheck, label: "Quản Lý Ca Trực Lễ Tân", path: "/crm", roles: ["admin", "super_admin"] },
+      { icon: Users, label: "Tài Khoản & Ca Trực", path: "/users", roles: ["admin", "super_admin"] },
     ],
   },
 ];

@@ -9,6 +9,7 @@ export function BookingGrid({ courts: apiCourts, slots, selectedSlotIds, onToggl
   const [zoomLevel, setZoomLevel] = useState<number>(100) // 60% - 160%
 
   // Real-time calculation helper to check if a slot is past relative to actual local time
+  // Một ca (vd 08:00) diễn ra từ 08:00 đến 09:00. Ca chỉ "Quá giờ" khi thời gian hiện tại đã vượt qua giờ kết thúc (sau 09:00).
   const isSlotExpired = (timeStr: string, date?: Date) => {
     if (!date) return false
     const now = new Date()
@@ -18,12 +19,12 @@ export function BookingGrid({ courts: apiCourts, slots, selectedSlotIds, onToggl
     if (targetDate < today) return true
     if (targetDate > today) return false
 
-    const slotHour = parseInt(timeStr.split(':')[0], 10)
-    const currentHour = now.getHours()
-    return slotHour <= currentHour
+    const [startH, startM] = timeStr.split(':').map((v) => parseInt(v, 10))
+    const slotEndTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startH + 1, startM || 0, 0)
+    return now >= slotEndTime
   }
 
-  // 30-minute Cut-off buffer: close online booking for slots starting within 30 minutes today
+  // 60-minute Cut-off buffer: Khóa giữ chỗ online cho ca đang diễn ra hoặc ca sắp bắt đầu trong ≤ 60 phút để ưu tiên POS
   const isSlotCutOff = (timeStr: string, date?: Date) => {
     if (!date) return false
     const now = new Date()
@@ -32,11 +33,16 @@ export function BookingGrid({ courts: apiCourts, slots, selectedSlotIds, onToggl
 
     if (targetDate.getTime() !== today.getTime()) return false
 
-    const [hrs, mins] = timeStr.split(':').map((v) => parseInt(v, 10))
-    const slotTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hrs, mins || 0, 0)
-    const diffMinutes = (slotTime.getTime() - now.getTime()) / (1000 * 60)
+    const [startH, startM] = timeStr.split(':').map((v) => parseInt(v, 10))
+    const slotStartTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startH, startM || 0, 0)
+    const slotEndTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startH + 1, startM || 0, 0)
 
-    return diffMinutes <= 30
+    // Nếu ca đang diễn ra (hiện tại nằm giữa giờ bắt đầu và giờ kết thúc) -> chỉ phục vụ tại quầy
+    if (now >= slotStartTime && now < slotEndTime) return true
+
+    // Nếu ca sắp bắt đầu trong vòng 60 phút tới (0 < diffMinutes <= 60) -> ưu tiên khách tại quầy
+    const diffMinutes = (slotStartTime.getTime() - now.getTime()) / (1000 * 60)
+    return diffMinutes > 0 && diffMinutes <= 60
   }
 
   // Fallback to exclusive Pickleball courts if api is returning mock or empty
@@ -172,7 +178,7 @@ export function BookingGrid({ courts: apiCourts, slots, selectedSlotIds, onToggl
                           }
                           if (isCutOff) {
                             toast.warning(
-                              `Ca ${time} (${court.name}) sắp diễn ra trong ≤ 30 phút. Khung giờ này đã khóa đặt online, quý khách vui lòng đến trực tiếp quầy lễ tân hoặc gọi Hotline 0987.654.321 để giữ sân!`,
+                              `Ca ${time} (${court.name}) đang diễn ra hoặc sắp bắt đầu trong ≤ 60 phút. Khung giờ này ưu tiên phục vụ trực tiếp tại quầy lễ tân hoặc Hotline 0987.654.321!`,
                               { duration: 6000 }
                             )
                             return
@@ -233,7 +239,7 @@ export function BookingGrid({ courts: apiCourts, slots, selectedSlotIds, onToggl
                             <span className="text-[10px] text-emerald-700 dark:text-emerald-300 font-bold">Đang chơi</span>
                           </div>
                         ) : isCutOff ? (
-                          <div className="flex items-center gap-1" title="Khung giờ sắp bắt đầu trong ≤ 30 phút. Bấm để xem thông tin liên hệ quầy lễ tân.">
+                          <div className="flex items-center gap-1" title="Khung giờ đang diễn ra hoặc sắp bắt đầu trong ≤ 60 phút. Bấm để xem thông tin liên hệ quầy lễ tân.">
                             <Clock className="h-3 w-3 text-amber-600 dark:text-amber-400 shrink-0" />
                             <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold">Tại quầy</span>
                           </div>

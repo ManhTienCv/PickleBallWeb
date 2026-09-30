@@ -110,7 +110,7 @@ export default function AddStaffDialog({
               className="w-full h-9 px-3 border border-slate-200 rounded-lg text-xs font-semibold bg-white"
             >
               <option value="Ca Sáng (05:00 - 14:00)">Ca Sáng (05:00 - 14:00)</option>
-              <option value="Ca Chiều (14:00 - 23:00)">Ca Chiều (14:00 - 23:00)</option>
+              <option value="Ca Chiều (14:00 - 22:00)">Ca Chiều (14:00 - 22:00)</option>
               <option value="Ca Xoay / Cuối tuần">Ca Xoay / Cuối tuần</option>
             </select>
           </div>
