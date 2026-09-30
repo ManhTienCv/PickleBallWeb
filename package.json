@@ -2,7 +2,7 @@
   "name": "pickleball-web-system",
   "version": "1.0.0",
   "private": true,
-  "description": "DemoPick Pickleball - Fullstack SOA Monorepo (Spring Boot + React)",
+  "description": "DemoPick Pickleball - Fullstack Monorepo (Modular Monolith Spring Boot 3 + React Client & Admin, định hướng phân rã SOA/Microservices)",
   "scripts": {
     "dev": "concurrently -k -n \"BOOT,CLIENT,ADMIN\" -c \"blue.bold,green.bold,magenta.bold\" \"npm run dev:backend\" \"npm run dev:client\" \"npm run dev:admin\"",
     "dev:backend": "cd PickleBall-SpringBoot && mvn spring-boot:run",

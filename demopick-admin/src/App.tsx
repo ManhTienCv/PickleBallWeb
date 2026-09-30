@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, useNavigate, useLocation, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -30,34 +30,6 @@ const queryClient = new QueryClient({
   },
 });
 
-// Tự động chuyển hướng về Trang Tổng Quan (Dashboard) mỗi khi bấm F5 hoặc Reload lại trang
-function ResetToHomeOnReload() {
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  useEffect(() => {
-    try {
-      const navEntries = performance.getEntriesByType?.("navigation") as PerformanceNavigationTiming[];
-      const isReload =
-        (navEntries && navEntries.length > 0 && navEntries[0]?.type === "reload") ||
-        (performance as any)?.navigation?.type === 1;
-
-      if (isReload) {
-        try {
-          sessionStorage.removeItem("demopick_admin_sidebar_scroll");
-        } catch {}
-        if (location.pathname !== "/" && location.pathname !== "/login") {
-          navigate("/", { replace: true });
-        }
-      }
-    } catch {
-      // Fallback ignore
-    }
-  }, []);
-
-  return null;
-}
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -65,7 +37,6 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <ResetToHomeOnReload />
           <Routes>
             {/* Public Auth Route */}
             <Route path="/login" element={<Login />} />

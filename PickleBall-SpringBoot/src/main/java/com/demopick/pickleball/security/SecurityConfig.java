@@ -55,6 +55,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/payments/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/admin/courts/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/admin/vouchers/**").permitAll()
+                        .requestMatchers("/api/v1/vouchers/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/admin/reviews/**").permitAll()
                         // Admin endpoints
                         .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "STAFF")

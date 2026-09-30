@@ -1,114 +1,148 @@
 package com.demopick.pickleball.modules.shop.controller;
 
 import com.demopick.pickleball.common.dto.ApiResponse;
+import com.demopick.pickleball.modules.shop.entity.Voucher;
+import com.demopick.pickleball.modules.shop.repository.VoucherRepository;
+import jakarta.annotation.PostConstruct;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/api/v1/admin/vouchers")
 public class AdminVoucherController {
 
-    private static final List<Map<String, Object>> VOUCHERS = Collections.synchronizedList(new ArrayList<>());
+    private final VoucherRepository voucherRepository;
 
-    static {
-        Map<String, Object> v1 = new HashMap<>();
-        v1.put("id", 1L);
-        v1.put("code", "WELCOME2026");
-        v1.put("title", "Ưu Đãi Hội Viên Mới");
-        v1.put("description", "Giảm ngay 50.000đ cho đơn hàng đầu tiên từ 300.000đ");
-        v1.put("discount_type", "fixed");
-        v1.put("discount_value", 50000);
-        v1.put("max_discount", null);
-        v1.put("min_order_amount", 300000);
-        v1.put("usage_limit", 1000);
-        v1.put("used_count", 142);
-        v1.put("start_date", "2026-01-01");
-        v1.put("end_date", "2026-12-31");
-        v1.put("is_active", true);
-        v1.put("created_at", "2026-01-01 08:00:00");
-        VOUCHERS.add(v1);
+    public AdminVoucherController(VoucherRepository voucherRepository) {
+        this.voucherRepository = voucherRepository;
+    }
 
-        Map<String, Object> v2 = new HashMap<>();
-        v2.put("id", 2L);
-        v2.put("code", "PICKLEBALL10");
-        v2.put("title", "Giảm 10% Vợt Thi Đấu");
-        v2.put("description", "Áp dụng cho mọi dòng vợt USAPA cao cấp Joola & Selkirk");
-        v2.put("discount_type", "percentage");
-        v2.put("discount_value", 10);
-        v2.put("max_discount", 200000);
-        v2.put("min_order_amount", 500000);
-        v2.put("usage_limit", 500);
-        v2.put("used_count", 89);
-        v2.put("start_date", "2026-06-01");
-        v2.put("end_date", "2026-12-31");
-        v2.put("is_active", true);
-        v2.put("created_at", "2026-06-01 09:00:00");
-        VOUCHERS.add(v2);
+    @PostConstruct
+    public void seedInitialVouchers() {
+        if (voucherRepository.count() == 0) {
+            Voucher v1 = new Voucher();
+            v1.setCode("WELCOME2026");
+            v1.setTitle("Ưu Đãi Hội Viên Mới");
+            v1.setDescription("Giảm ngay 50.000đ cho đơn hàng đầu tiên từ 300.000đ");
+            v1.setDiscountType("fixed");
+            v1.setDiscountValue(50000.0);
+            v1.setMaxDiscount(null);
+            v1.setMinOrderAmount(300000.0);
+            v1.setUsageLimit(1000);
+            v1.setUsedCount(142);
+            v1.setStartDate("2026-01-01");
+            v1.setEndDate("2026-12-31");
+            v1.setIsActive(true);
+            voucherRepository.save(v1);
 
-        Map<String, Object> v3 = new HashMap<>();
-        v3.put("id", 3L);
-        v3.put("code", "FREESHIP");
-        v3.put("title", "Miễn Phí Giao Hàng Toàn Quốc");
-        v3.put("description", "Hỗ trợ tối đa 35.000đ cước chuyển phát nhanh GHN");
-        v3.put("discount_type", "fixed");
-        v3.put("discount_value", 35000);
-        v3.put("max_discount", 35000);
-        v3.put("min_order_amount", 400000);
-        v3.put("usage_limit", 2000);
-        v3.put("used_count", 531);
-        v3.put("start_date", "2026-03-01");
-        v3.put("end_date", "2026-12-31");
-        v3.put("is_active", true);
-        v3.put("created_at", "2026-03-01 10:00:00");
-        VOUCHERS.add(v3);
+            Voucher v2 = new Voucher();
+            v2.setCode("PICKLEBALL10");
+            v2.setTitle("Giảm 10% Vợt Thi Đấu");
+            v2.setDescription("Áp dụng cho mọi dòng vợt USAPA cao cấp Joola & Selkirk");
+            v2.setDiscountType("percentage");
+            v2.setDiscountValue(10.0);
+            v2.setMaxDiscount(200000.0);
+            v2.setMinOrderAmount(500000.0);
+            v2.setUsageLimit(500);
+            v2.setUsedCount(89);
+            v2.setStartDate("2026-06-01");
+            v2.setEndDate("2026-12-31");
+            v2.setIsActive(true);
+            voucherRepository.save(v2);
+
+            Voucher v3 = new Voucher();
+            v3.setCode("FREESHIP");
+            v3.setTitle("Miễn Phí Giao Hàng Toàn Quốc");
+            v3.setDescription("Hỗ trợ tối đa 35.000đ cước chuyển phát nhanh GHN");
+            v3.setDiscountType("fixed");
+            v3.setDiscountValue(35000.0);
+            v3.setMaxDiscount(35000.0);
+            v3.setMinOrderAmount(400000.0);
+            v3.setUsageLimit(2000);
+            v3.setUsedCount(531);
+            v3.setStartDate("2026-03-01");
+            v3.setEndDate("2026-12-31");
+            v3.setIsActive(true);
+            voucherRepository.save(v3);
+        }
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getVouchers(
+    public ResponseEntity<ApiResponse<List<Voucher>>> getVouchers(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String status
     ) {
-        List<Map<String, Object>> filtered = new ArrayList<>(VOUCHERS);
+        List<Voucher> list;
         if (search != null && !search.isBlank()) {
-            String lower = search.toLowerCase();
-            filtered = filtered.stream()
-                    .filter(v -> String.valueOf(v.get("code")).toLowerCase().contains(lower) ||
-                                 String.valueOf(v.get("title")).toLowerCase().contains(lower))
-                    .toList();
+            list = voucherRepository.searchVouchers(search.trim());
+        } else {
+            list = voucherRepository.findAllByOrderByCreatedAtDesc();
         }
-        return ResponseEntity.ok(ApiResponse.success(filtered, "Lấy danh sách mã ưu đãi thành công."));
+
+        if (status != null && !status.isBlank() && !"all".equalsIgnoreCase(status)) {
+            boolean active = "active".equalsIgnoreCase(status);
+            list = list.stream().filter(v -> Objects.equals(v.getIsActive(), active)).toList();
+        }
+
+        return ResponseEntity.ok(ApiResponse.success(list, "Lấy danh sách mã ưu đãi thành công."));
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<Map<String, Object>>> createVoucher(@RequestBody Map<String, Object> payload) {
-        Map<String, Object> newVoucher = new HashMap<>(payload);
-        newVoucher.put("id", System.currentTimeMillis());
-        newVoucher.put("used_count", 0);
-        newVoucher.put("created_at", java.time.LocalDateTime.now().toString());
-        VOUCHERS.add(0, newVoucher);
-        return ResponseEntity.ok(ApiResponse.success(newVoucher, "Tạo mã ưu đãi thành công."));
+    public ResponseEntity<ApiResponse<Voucher>> createVoucher(@RequestBody Voucher voucher) {
+        if (voucher.getCode() == null || voucher.getCode().isBlank()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Mã voucher không được để trống.", null));
+        }
+
+        String cleanCode = voucher.getCode().trim().toUpperCase();
+        if (voucherRepository.existsByCode(cleanCode)) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Mã voucher '" + cleanCode + "' đã tồn tại trên hệ thống.", null));
+        }
+
+        voucher.setCode(cleanCode);
+        if (voucher.getUsedCount() == null) {
+            voucher.setUsedCount(0);
+        }
+        if (voucher.getIsActive() == null) {
+            voucher.setIsActive(true);
+        }
+
+        Voucher saved = voucherRepository.save(voucher);
+        return ResponseEntity.ok(ApiResponse.success(saved, "Tạo mã ưu đãi thành công."));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> updateVoucher(
+    public ResponseEntity<ApiResponse<Voucher>> updateVoucher(
             @PathVariable Long id,
-            @RequestBody Map<String, Object> payload
+            @RequestBody Voucher updated
     ) {
-        for (Map<String, Object> v : VOUCHERS) {
-            if (Objects.equals(v.get("id"), id)) {
-                v.putAll(payload);
-                return ResponseEntity.ok(ApiResponse.success(v, "Cập nhật mã ưu đãi thành công."));
-            }
+        Optional<Voucher> opt = voucherRepository.findById(id);
+        if (opt.isEmpty()) {
+            return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(ApiResponse.success(payload, "Cập nhật thành công."));
+
+        Voucher v = opt.get();
+        if (updated.getTitle() != null) v.setTitle(updated.getTitle());
+        if (updated.getDescription() != null) v.setDescription(updated.getDescription());
+        if (updated.getDiscountType() != null) v.setDiscountType(updated.getDiscountType());
+        if (updated.getDiscountValue() != null) v.setDiscountValue(updated.getDiscountValue());
+        if (updated.getMaxDiscount() != null) v.setMaxDiscount(updated.getMaxDiscount());
+        if (updated.getMinOrderAmount() != null) v.setMinOrderAmount(updated.getMinOrderAmount());
+        if (updated.getUsageLimit() != null) v.setUsageLimit(updated.getUsageLimit());
+        if (updated.getStartDate() != null) v.setStartDate(updated.getStartDate());
+        if (updated.getEndDate() != null) v.setEndDate(updated.getEndDate());
+        if (updated.getIsActive() != null) v.setIsActive(updated.getIsActive());
+
+        Voucher saved = voucherRepository.save(v);
+        return ResponseEntity.ok(ApiResponse.success(saved, "Cập nhật mã ưu đãi thành công."));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteVoucher(@PathVariable Long id) {
-        VOUCHERS.removeIf(v -> Objects.equals(v.get("id"), id));
+        if (voucherRepository.existsById(id)) {
+            voucherRepository.deleteById(id);
+        }
         return ResponseEntity.ok(ApiResponse.success(null, "Xóa mã ưu đãi thành công."));
     }
 }

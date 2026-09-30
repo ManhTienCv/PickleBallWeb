@@ -37,11 +37,22 @@ export const bookingService = {
       if (res.data?.data) {
         return res.data.data
       }
-    } catch (err) {
-      console.warn('API /booking/hold error, using fallback:', err)
+      throw new Error(res.data?.message || 'Không thể giữ chỗ khung giờ này.')
+    } catch (err: any) {
+      if (err.response?.data?.message) {
+        throw new Error(err.response.data.message)
+      }
+      if (err.response?.data?.error?.message) {
+        throw new Error(err.response.data.error.message)
+      }
+      // Chỉ fallback chế độ demo khi hoàn toàn không có kết nối mạng tới server
+      if (!err.response) {
+        console.warn('Backend unavailable, using local mock hold for demo:', err)
+        const slots = currentSlots.length > 0 ? currentSlots : generateMockSlots(new Date().toISOString().split('T')[0])
+        return mockCreateHold(slotIds, slots)
+      }
+      throw new Error(err.message || 'Không thể tạo giữ chỗ khung giờ này.')
     }
-    const slots = currentSlots.length > 0 ? currentSlots : generateMockSlots(new Date().toISOString().split('T')[0])
-    return mockCreateHold(slotIds, slots)
   },
 
   async releaseHold(holdId: number): Promise<void> {

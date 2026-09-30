@@ -224,7 +224,7 @@ export const cartService = {
     const optimisticCart = normalizeCart({ id: 1, items: updatedItems })
     saveLocalCart(optimisticCart, true)
 
-    // Background sync to Laravel server
+    // Background sync to Backend server
     api.post<ApiResponse<any>>('/cart/items', {
       item_type: 'product',
       variant_id: targetVariantId,

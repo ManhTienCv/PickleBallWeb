@@ -74,23 +74,23 @@
 | `DB_DATABASE` | `demopick` | Tên Database |
 | `DB_USERNAME` | *(Dán User từ TiDB Cloud)* | Tài khoản DB |
 | `DB_PASSWORD` | *(Dán Password từ TiDB Cloud)* | Mật khẩu DB |
-| `JWT_SECRET` | `demopick_super_secret_key_pickleball_spring_boot_ptpmhdv_2026_secure_key_at_least_32_bytes` | Chuỗi mã hoá Bearer JWT |
+| `JWT_SECRET` | `<your-32-byte-secret-key>` | Chuỗi mã hoá Bearer JWT (tối thiểu 32 ký tự ngẫu nhiên) |
 | `CORS_ALLOWED_ORIGINS` | `https://demopick-client.vercel.app,https://demopick-admin.vercel.app,http://localhost:5173,http://localhost:5174` | Cho phép Vercel gọi API |
-| `MOMO_PARTNER_CODE` | `MOMOBKUN20180529` | Mã đối tác MoMo Sandbox |
-| `MOMO_ACCESS_KEY` | `klm05TvNBzhg7h7j` | Access key MoMo |
-| `MOMO_SECRET_KEY` | `at67qH6mk8w5Y1nAyMoYKMWACiEi2bsa` | Secret key MoMo |
+| `MOMO_PARTNER_CODE` | `MOMOBKUN20180529` | Mã đối tác MoMo Sandbox (Test) |
+| `MOMO_ACCESS_KEY` | `<your-momo-access-key>` | Access key MoMo |
+| `MOMO_SECRET_KEY` | `<your-momo-secret-key>` | Secret key MoMo |
 | `MOMO_ENDPOINT` | `https://test-payment.momo.vn/v2/gateway/api/create` | Gateway thanh toán MoMo |
 | `MOMO_REDIRECT_URL`| `https://demopick-client.vercel.app/payment/momo/callback` | Điều hướng sau thanh toán |
 | `MOMO_IPN_URL` | `https://demopick-api.onrender.com/api/v1/webhooks/payment/momo` | Webhook IPN xử lý kết quả |
 | `MAIL_HOST` | `smtp.gmail.com` | Máy chủ gửi mail SMTP |
 | `MAIL_PORT` | `587` | Cổng TLS Gmail |
-| `MAIL_USERNAME` | `nvmtein@gmail.com` | Tài khoản Gmail gửi OTP |
-| `MAIL_PASSWORD` | `rsaegcuzmnruldjs` | App Password Gmail (16 ký tự) |
-| `MAIL_FROM_ADDRESS`| `nvmtein@gmail.com` | Email người gửi hiển thị |
+| `MAIL_USERNAME` | `<your-email>@gmail.com` | Tài khoản Gmail gửi OTP |
+| `MAIL_PASSWORD` | `<your-gmail-16-char-app-password>` | App Password Gmail (16 ký tự bảo mật) |
+| `MAIL_FROM_ADDRESS`| `<your-email>@gmail.com` | Email người gửi hiển thị |
 | `MAIL_FROM_NAME` | `Pickleball` | Tên người gửi |
 | `GHN_API_URL` | `https://online-gateway.ghn.vn/shiip/public-api/v2` | API Giao Hàng Nhanh |
-| `GHN_API_TOKEN` | `5a8e6646-a763-11f1-be93-ea52ad3d88b7` | Token GHN Express |
-| `GHN_SHOP_ID` | `6643423` | Shop ID đăng ký GHN |
+| `GHN_API_TOKEN` | `<your-ghn-api-token>` | Token GHN Express |
+| `GHN_SHOP_ID` | `<your-ghn-shop-id>` | Shop ID đăng ký GHN |
 | `GHN_SENDER_DISTRICT_ID` | `1485` | Quận gửi hàng |
 | `GHN_SENDER_WARD_CODE` | `1A0607` | Phường gửi hàng |
 
