@@ -1,6 +1,7 @@
 package com.demopick.pickleball.modules.order.service;
 
 import com.demopick.pickleball.common.exception.ApiException;
+import com.demopick.pickleball.modules.booking.entity.Hold;
 import com.demopick.pickleball.modules.booking.entity.TimeSlot;
 import com.demopick.pickleball.modules.booking.repository.HoldRepository;
 import com.demopick.pickleball.modules.booking.repository.TimeSlotRepository;
@@ -66,9 +67,42 @@ public class OrderService {
         }
 
         // 1. Process Booking Slot if requested
+        Hold holdToConvert = null;
         if (request.getSlotId() != null) {
-            TimeSlot slot = timeSlotRepository.findById(request.getSlotId())
+            Long slotId = request.getSlotId();
+            TimeSlot slot = timeSlotRepository.findByIdWithLock(slotId)
                     .orElseThrow(() -> new ApiException("Không tìm thấy ca sân.", HttpStatus.NOT_FOUND));
+
+            if ("booked".equalsIgnoreCase(slot.getStatus())) {
+                throw new ApiException("Ca sân này đã được đặt và thanh toán.", HttpStatus.CONFLICT);
+            }
+
+            // Strictly validate hold
+            LocalDateTime now = LocalDateTime.now();
+            Long holdId = request.getHoldId();
+            Hold hold = null;
+
+            if (holdId != null) {
+                hold = holdRepository.findById(holdId).orElse(null);
+            } else {
+                // Fallback lookup active hold by slot
+                hold = holdRepository.findBySlotIdAndStatusAndExpiresAtAfter(slotId, "active", now).orElse(null);
+            }
+
+            if (hold == null || !"active".equalsIgnoreCase(hold.getStatus()) || hold.getExpiresAt().isBefore(now)) {
+                throw new ApiException("Thời gian giữ chỗ ca sân đã hết hạn hoặc không tồn tại. Vui lòng chọn lại ca sân.", HttpStatus.GONE);
+            }
+
+            if (!slotId.equals(hold.getSlotId())) {
+                throw new ApiException("Mã giữ chỗ không khớp với ca sân được chọn.", HttpStatus.BAD_REQUEST);
+            }
+
+            // Verify hold ownership if userId is present
+            if (userId != null && hold.getUserId() != null && !userId.equals(hold.getUserId())) {
+                throw new ApiException("Lượt giữ chỗ này thuộc về tài khoản khác.", HttpStatus.FORBIDDEN);
+            }
+
+            holdToConvert = hold;
 
             BigDecimal slotPrice = slot.getPrice() != null ? slot.getPrice() : BigDecimal.valueOf(150000);
             totalAmount = totalAmount.add(slotPrice);
@@ -140,6 +174,12 @@ public class OrderService {
             orderItemRepository.save(item);
         }
 
+        // Convert hold to 'converted' so auto-release cronjob does not expire it
+        if (holdToConvert != null) {
+            holdToConvert.setStatus("converted");
+            holdRepository.save(holdToConvert);
+        }
+
         // 4. Generate MoMo Sandbox Pay URL or VietQR URL
         String payUrl = momoRedirectUrl + "?orderId=" + orderCode + "&amount=" + totalAmount;
         String qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=DEMOPICK-" + orderCode;
@@ -180,6 +220,12 @@ public class OrderService {
             if (order == null) {
                 log.warn("Order not found for MoMo Webhook: {}", orderCode);
                 return false;
+            }
+
+            // Idempotency: if already marked paid, return true immediately
+            if ("paid".equalsIgnoreCase(order.getPaymentStatus())) {
+                log.info("Order {} is already marked as PAID. Skipping duplicate processing.", orderCode);
+                return true;
             }
 
             if (resultCode != null && resultCode == 0) {

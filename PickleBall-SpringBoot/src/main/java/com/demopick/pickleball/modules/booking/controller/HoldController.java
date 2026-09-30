@@ -39,14 +39,15 @@ public class HoldController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> releaseHold(
             @PathVariable Long id,
-            Authentication authentication
+            Authentication authentication,
+            @RequestHeader(value = "X-Session-Id", required = false) String sessionId
     ) {
         Long userId = null;
         if (authentication != null && authentication.getPrincipal() instanceof Long) {
             userId = (Long) authentication.getPrincipal();
         }
 
-        bookingService.releaseHold(id, userId);
+        bookingService.releaseHold(id, userId, sessionId);
         return ResponseEntity.ok(ApiResponse.success(null, "Hủy giữ chỗ thành công."));
     }
 }

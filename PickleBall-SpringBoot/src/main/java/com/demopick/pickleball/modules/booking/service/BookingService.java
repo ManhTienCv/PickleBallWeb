@@ -138,19 +138,43 @@ public class BookingService {
             throw new ApiException("Ca sân này đã được đặt và thanh toán.", HttpStatus.CONFLICT);
         }
 
-        // 3. Check existing active hold by another user
+        // 3. Check existing active hold
         Optional<Hold> existingHold = holdRepository.findBySlotIdAndStatusAndExpiresAtAfter(
                 slotId, "active", now
         );
 
         if (existingHold.isPresent()) {
             Hold hold = existingHold.get();
-            if (userId != null && !userId.equals(hold.getUserId())) {
+            // If held by another authenticated user
+            if (userId != null && hold.getUserId() != null && !userId.equals(hold.getUserId())) {
                 throw new ApiException("Ca sân này vừa có người giữ chỗ.", HttpStatus.CONFLICT);
             }
+            // If held by another guest session
+            if (userId == null && sessionId != null && hold.getSessionId() != null && !sessionId.equals(hold.getSessionId())) {
+                throw new ApiException("Ca sân này vừa có người giữ chỗ.", HttpStatus.CONFLICT);
+            }
+
+            // Same user/session: RENEW existing hold (extend by 10 mins), DO NOT create duplicate records
+            LocalDateTime expiresAt = now.plusMinutes(10);
+            hold.setExpiresAt(expiresAt);
+            if (userId != null) hold.setUserId(userId);
+            if (sessionId != null) hold.setSessionId(sessionId);
+            hold = holdRepository.save(hold);
+
+            slot.setStatus("held");
+            timeSlotRepository.save(slot);
+
+            return new HoldResponse(
+                    hold.getId(),
+                    slotId,
+                    slot.getCourtId(),
+                    expiresAt.toString(),
+                    600,
+                    slot.getPrice()
+            );
         }
 
-        // Create or update hold (10 minutes)
+        // Create new hold (10 minutes)
         LocalDateTime expiresAt = now.plusMinutes(10);
         Hold hold = new Hold();
         hold.setSlotId(slotId);
@@ -175,19 +199,43 @@ public class BookingService {
     }
 
     @Transactional
-    public void releaseHold(Long slotId, Long userId) {
-        Hold hold = holdRepository.findBySlotIdAndStatusAndExpiresAtAfter(slotId, "active", LocalDateTime.now())
-                .orElse(null);
+    public void releaseHold(Long id, Long userId, String sessionId) {
+        Hold hold = holdRepository.findById(id).orElse(null);
+        Long actualSlotId = null;
 
         if (hold != null) {
+            actualSlotId = hold.getSlotId();
+        } else {
+            // Fallback if caller passed slotId instead of holdId
+            hold = holdRepository.findBySlotIdAndStatusAndExpiresAtAfter(id, "active", LocalDateTime.now()).orElse(null);
+            actualSlotId = id;
+        }
+
+        if (hold != null) {
+            // Verify ownership: must match userId or sessionId
+            if (userId != null && hold.getUserId() != null && !userId.equals(hold.getUserId())) {
+                throw new ApiException("Bạn không có quyền hủy giữ chỗ của người khác.", HttpStatus.FORBIDDEN);
+            }
+            if (userId == null && sessionId != null && hold.getSessionId() != null && !sessionId.equals(hold.getSessionId())) {
+                throw new ApiException("Bạn không có quyền hủy giữ chỗ của phiên khác.", HttpStatus.FORBIDDEN);
+            }
+
             hold.setStatus("expired");
             holdRepository.save(hold);
         }
 
-        TimeSlot slot = timeSlotRepository.findById(slotId).orElse(null);
-        if (slot != null && "held".equalsIgnoreCase(slot.getStatus())) {
-            slot.setStatus("available");
-            timeSlotRepository.save(slot);
+        if (actualSlotId != null) {
+            // Only revert slot to 'available' if NO other active hold exists for this slot
+            boolean hasOtherActiveHolds = holdRepository.existsBySlotIdAndStatusAndExpiresAtAfter(
+                    actualSlotId, "active", LocalDateTime.now()
+            );
+            if (!hasOtherActiveHolds) {
+                TimeSlot slot = timeSlotRepository.findById(actualSlotId).orElse(null);
+                if (slot != null && "held".equalsIgnoreCase(slot.getStatus())) {
+                    slot.setStatus("available");
+                    timeSlotRepository.save(slot);
+                }
+            }
         }
     }
 
@@ -201,11 +249,17 @@ public class BookingService {
             hold.setStatus("expired");
             holdRepository.save(hold);
 
-            TimeSlot slot = timeSlotRepository.findById(hold.getSlotId()).orElse(null);
-            if (slot != null && "held".equalsIgnoreCase(slot.getStatus())) {
-                slot.setStatus("available");
-                timeSlotRepository.save(slot);
-                log.info("Auto released expired hold for slot id: {}", slot.getId());
+            // Only set slot to 'available' if NO other active hold exists for this slot
+            boolean stillHasActiveHold = holdRepository.existsBySlotIdAndStatusAndExpiresAtAfter(
+                    hold.getSlotId(), "active", now
+            );
+            if (!stillHasActiveHold) {
+                TimeSlot slot = timeSlotRepository.findById(hold.getSlotId()).orElse(null);
+                if (slot != null && "held".equalsIgnoreCase(slot.getStatus())) {
+                    slot.setStatus("available");
+                    timeSlotRepository.save(slot);
+                    log.info("Auto released expired hold for slot id: {}", slot.getId());
+                }
             }
         }
     }

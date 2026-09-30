@@ -1,119 +1,166 @@
 -- ========================================================
--- Cấu hình kết nối tham khảo (dành cho Backend)
--- Tên DB tương ứng với cấu hình của bạn:
--- DB_HOST=localhost
--- DB_PORT=5432
--- DB_NAME=PickleBall
--- DB_USER=RoleBall
--- DB_PASSWORD=PickcleBallDB
+-- CSDL HỆ THỐNG DEMOPICK PICKLEBALL (MySQL 8.0+ / TiDB Cloud)
+-- Charset: utf8mb4 / Collation: utf8mb4_unicode_ci
 -- ========================================================
 
--- Chạy file này trên pgAdmin 4 để khởi tạo các bảng
--- Lưu ý: Bạn cần tạo database "PickleBall" trước khi chạy script.
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
 
--- 1. Bảng Khách hàng (Áp dụng Fixed vs Casual model)
-CREATE TABLE IF NOT EXISTS customers (
-    id SERIAL PRIMARY KEY,
-    customer_code VARCHAR(20) UNIQUE NOT NULL,
-    full_name VARCHAR(100) NOT NULL,
+-- 1. Bảng Khách hàng & Người dùng (Users / Customers)
+CREATE TABLE IF NOT EXISTS users (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
     phone VARCHAR(20) UNIQUE,
-    player_level VARCHAR(50) DEFAULT 'NEWBIE', -- Trình độ (NEWBIE, PRO, v.v.)
-    customer_type VARCHAR(20) DEFAULT 'CASUAL', -- Loại khách (FIXED, CASUAL)
-    total_spent DECIMAL(15, 2) DEFAULT 0.00,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+    password VARCHAR(255) NOT NULL,
+    avatar_url VARCHAR(500),
+    google_id VARCHAR(100),
+    status VARCHAR(20) DEFAULT 'active',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_user_email (email),
+    INDEX idx_user_google_id (google_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2. Bảng Sân bóng (Pickleball, Tennis, v.v.)
+-- 2. Bảng Sân bóng (Courts)
 CREATE TABLE IF NOT EXISTS courts (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
-    court_type VARCHAR(50) NOT NULL, -- PICKLEBALL, TENNIS, PADEL
-    price_per_hour DECIMAL(15, 2) NOT NULL,
-    status VARCHAR(20) DEFAULT 'AVAILABLE', -- AVAILABLE, PLAYING, MAINTENANCE
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    code VARCHAR(20) NOT NULL UNIQUE,
+    surface_type VARCHAR(50) DEFAULT 'Tiêu Chuẩn Pro',
+    hourly_rate DECIMAL(15, 2) NOT NULL DEFAULT 140000.00,
+    status VARCHAR(20) DEFAULT 'available', -- available, maintenance, closed
+    deleted_at DATETIME NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 3. Bảng Đặt Sân (Bookings)
-CREATE TABLE IF NOT EXISTS bookings (
-    id SERIAL PRIMARY KEY,
-    court_id INT REFERENCES courts(id),
-    customer_id INT REFERENCES customers(id),
-    start_time TIMESTAMP NOT NULL,
-    end_time TIMESTAMP NOT NULL,
-    status VARCHAR(20) DEFAULT 'SCHEDULED', -- SCHEDULED, COMPLETED, CANCELLED
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- 3. Bảng Khung giờ ca sân (Time Slots)
+CREATE TABLE IF NOT EXISTS time_slots (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    court_id BIGINT NOT NULL,
+    date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    price DECIMAL(15, 2) NOT NULL DEFAULT 150000.00,
+    status VARCHAR(20) DEFAULT 'available', -- available, held, booked, locked
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_slots_court FOREIGN KEY (court_id) REFERENCES courts(id) ON DELETE CASCADE,
+    INDEX idx_slot_date (date),
+    INDEX idx_slot_court_date (court_id, date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 4. Bảng Danh mục Kho / Dịch vụ POS
+-- 4. Bảng Giữ chỗ tạm thời (Holds - 10 phút)
+CREATE TABLE IF NOT EXISTS holds (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    slot_id BIGINT NOT NULL,
+    user_id BIGINT NULL,
+    session_id VARCHAR(100) NULL,
+    status VARCHAR(20) DEFAULT 'active', -- active, expired, converted, cancelled
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_holds_slot FOREIGN KEY (slot_id) REFERENCES time_slots(id) ON DELETE CASCADE,
+    INDEX idx_hold_slot_status (slot_id, status),
+    INDEX idx_hold_expires (status, expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 5. Bảng Danh mục Sản phẩm (Categories)
 CREATE TABLE IF NOT EXISTS categories (
-    id SERIAL PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    type VARCHAR(50) NOT NULL -- POS (Bán hàng) hoặc INVENTORY (Kho)
-);
+    slug VARCHAR(120) NOT NULL UNIQUE,
+    deleted_at DATETIME NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5. Bảng Sản phẩm (Đồ uống, Thuê vợt, Phụ kiện)
+-- 6. Bảng Thương hiệu (Brands)
+CREATE TABLE IF NOT EXISTS brands (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    slug VARCHAR(120) NOT NULL UNIQUE,
+    deleted_at DATETIME NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 7. Bảng Sản phẩm (Products)
 CREATE TABLE IF NOT EXISTS products (
-    id SERIAL PRIMARY KEY,
-    sku VARCHAR(50) UNIQUE,
-    name VARCHAR(100) NOT NULL,
-    category_id INT REFERENCES categories(id),
-    type VARCHAR(50), -- DRINKS, RACKETS, ACCESSORIES
-    stock INT DEFAULT 0,
-    max_stock INT DEFAULT 100,
-    price DECIMAL(15, 2) NOT NULL,
-    status VARCHAR(50) DEFAULT 'Healthy', -- Healthy, Warning, Critical Low
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    slug VARCHAR(250) NOT NULL UNIQUE,
+    category_id BIGINT,
+    brand_id BIGINT,
+    short_description VARCHAR(500),
+    description TEXT,
+    price DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
+    base_price DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
+    image_url VARCHAR(500),
+    status VARCHAR(20) DEFAULT 'active',
+    deleted_at DATETIME NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_prod_category FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
+    CONSTRAINT fk_prod_brand FOREIGN KEY (brand_id) REFERENCES brands(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 6. Bảng Hóa đơn POS (Orders)
+-- 8. Bảng Biến thể Sản phẩm & Tồn kho (Product Variants)
+CREATE TABLE IF NOT EXISTS product_variants (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    product_id BIGINT NOT NULL,
+    sku VARCHAR(100) NOT NULL UNIQUE,
+    variant_name VARCHAR(100),
+    stock_qty INT NOT NULL DEFAULT 50,
+    price_override DECIMAL(15, 2),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_variant_prod FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 9. Bảng Hóa đơn & Đơn hàng (Orders)
 CREATE TABLE IF NOT EXISTS orders (
-    id SERIAL PRIMARY KEY,
-    order_code VARCHAR(50) UNIQUE NOT NULL,
-    customer_id INT REFERENCES customers(id), -- Có thể NULL nếu khách vãng lai mua lẻ
-    booking_id INT REFERENCES bookings(id), -- Hóa đơn được gắn liền với 1 lượt đặt sân (Tùy chọn)
-    subtotal DECIMAL(15, 2) NOT NULL,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    order_code VARCHAR(50) NOT NULL UNIQUE,
+    user_id BIGINT NULL,
+    order_type VARCHAR(20) DEFAULT 'mixed', -- booking, shop, mixed
+    subtotal DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
     discount DECIMAL(15, 2) DEFAULT 0.00,
-    surcharge DECIMAL(15, 2) DEFAULT 0.00,
-    total DECIMAL(15, 2) NOT NULL,
-    payment_method VARCHAR(50), -- CASH, TRANSFER
-    status VARCHAR(20) DEFAULT 'PAID', -- PAID, PENDING, CANCELLED
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+    total_amount DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
+    status VARCHAR(30) DEFAULT 'pending', -- pending, confirmed, completed, cancelled
+    payment_status VARCHAR(30) DEFAULT 'unpaid', -- unpaid, paid, refunded
+    pickup_notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_order_user (user_id),
+    INDEX idx_order_code (order_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 7. Bảng Chi tiết Hóa đơn (Order Items)
+-- 10. Bảng Chi tiết Hóa đơn (Order Items)
 CREATE TABLE IF NOT EXISTS order_items (
-    id SERIAL PRIMARY KEY,
-    order_id INT REFERENCES orders(id) ON DELETE CASCADE,
-    product_id INT REFERENCES products(id),
-    quantity INT NOT NULL CHECK (quantity > 0),
-    price_at_time DECIMAL(15, 2) NOT NULL -- Lưu giá trị tiền ngay thời điểm bán để tránh báo cáo bị thay đổi khi giá update
-);
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    order_id BIGINT NOT NULL,
+    item_type VARCHAR(30) NOT NULL, -- booking_slot, product
+    reference_id BIGINT, -- slot_id hoặc variant_id
+    item_name VARCHAR(255) NOT NULL,
+    item_sku VARCHAR(100),
+    unit_price DECIMAL(15, 2) NOT NULL,
+    quantity INT NOT NULL DEFAULT 1,
+    total_price DECIMAL(15, 2) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_items_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 8. Bảng Lich sử Kho (Inventory Transactions - Giao dịch Nhập/Mất/Xuất)
-CREATE TABLE IF NOT EXISTS inventory_transactions (
-    id SERIAL PRIMARY KEY,
-    product_id INT REFERENCES products(id),
-    transaction_type VARCHAR(20), -- IMPORT, EXPORT, POS_DEDUCTION, LOSS
-    quantity_changed INT NOT NULL,
-    reference_id INT, -- Có thể là Order ID nếu xuất từ POS
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- 11. Bảng Khuyến mãi / Voucher (Vouchers)
+CREATE TABLE IF NOT EXISTS vouchers (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    discount_percent INT DEFAULT 0,
+    max_discount_amount DECIMAL(15, 2),
+    min_order_amount DECIMAL(15, 2) DEFAULT 0.00,
+    status VARCHAR(20) DEFAULT 'active',
+    expires_at DATETIME NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ========================================================
--- Tạo Function để tự động cập nhật updated_at
--- ========================================================
-CREATE OR REPLACE FUNCTION trigger_set_timestamp()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER set_timestamp
-BEFORE UPDATE ON customers
-FOR EACH ROW
-EXECUTE FUNCTION trigger_set_timestamp();
+SET FOREIGN_KEY_CHECKS = 1;
