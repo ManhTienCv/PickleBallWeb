@@ -110,7 +110,10 @@ export default function CourtMap() {
   const getSlotDetailedStatus = (courtId: number, timeStr: string) => {
     // 1. Check real API slots if returned from backend
     if (slots && slots.length > 0) {
-      const match = slots.find((s: any) => s.court_id === courtId && s.start_time?.startsWith(timeStr.split(":")[0]));
+      const match = slots.find((s: any) => 
+        (s.court_id === courtId || s.courtId === courtId) && 
+        (s.start_time || s.startTime)?.startsWith(timeStr.split(":")[0])
+      );
       if (match) {
         if (match.status === "in_use") return "in_use";
         if (match.status === "booked") return "booked";

@@ -45,18 +45,43 @@ export function BookingGrid({ courts: apiCourts, slots, selectedSlotIds, onToggl
     return diffMinutes > 0 && diffMinutes <= 30
   }
 
+  const getStartTime = (s: any): string => {
+    if (!s) return ''
+    return s.start_time || s.startTime || ''
+  }
+
+  const getCourtId = (s: any): number => {
+    if (!s) return 0
+    return s.court_id ?? s.courtId ?? 0
+  }
+
   // Fallback to exclusive Pickleball courts if api is returning mock or empty
   const pickleballCourts: Court[] = apiCourts.length > 0 ? apiCourts : MOCK_COURTS
 
-  // Default time headers if slots not yet fetched
-  const timeHeaders = slots.length > 0
-    ? Array.from(new Set(slots.map((s) => s.start_time.substring(0, 5)))).sort()
+  // Default time headers if slots not yet fetched or invalid
+  const extractedTimes = slots && slots.length > 0
+    ? Array.from(
+        new Set(
+          slots
+            .map((s) => {
+              const st = getStartTime(s)
+              return st ? st.substring(0, 5) : ''
+            })
+            .filter((t): t is string => Boolean(t))
+        )
+      ).sort()
+    : []
+
+  const timeHeaders = extractedTimes.length > 0
+    ? extractedTimes
     : ["05:00", "06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"]
 
   const getSlot = (courtId: number, startTime: string) => {
-    return slots.find(
-      (s) => s.court_id === courtId && s.start_time.substring(0, 5) === startTime
-    )
+    return slots.find((s) => {
+      const cId = getCourtId(s)
+      const st = getStartTime(s)
+      return cId === courtId && st.startsWith(startTime)
+    })
   }
 
   // Smooth sizing calculations
@@ -158,7 +183,7 @@ export function BookingGrid({ courts: apiCourts, slots, selectedSlotIds, onToggl
                   const slotId = slot ? slot.id : (court.id * 100 + parseInt(time.split(":")[0]))
                   const isSelected = selectedSlotIds.includes(slotId)
                   const isExpired = isSlotExpired(time, selectedDate)
-                  const isCutOff = isSlotCutOff(time, selectedDate) || Boolean(slot?.is_cut_off)
+                  const isCutOff = isSlotCutOff(time, selectedDate) || Boolean(slot?.is_cut_off || (slot as any)?.is_cutoff || (slot as any)?.isCutoff)
                   const isInUse = slot?.status === 'in_use'
                   const isHeld = slot?.status === 'held'
                   const isBooked = slot?.status === 'booked' || slot?.status === 'locked'

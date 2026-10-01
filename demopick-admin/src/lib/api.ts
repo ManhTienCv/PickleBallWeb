@@ -23,11 +23,12 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// Response interceptor: handle 401
+// Response interceptor: handle 401 Unauthorized & 403 Forbidden (expired or invalid token)
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status
+    if (status === 401 || status === 403) {
       localStorage.removeItem('demopick_admin_token')
       localStorage.removeItem('demopick_admin_user')
       if (window.location.pathname !== '/login') {

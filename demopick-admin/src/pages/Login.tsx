@@ -74,10 +74,39 @@ export default function Login() {
               />
             </div>
           </CardContent>
-          <CardFooter>
-            <Button type="submit" className="w-full font-bold bg-primary hover:bg-primary/90" disabled={isLoading}>
+          <CardFooter className="flex flex-col gap-3">
+            <Button type="submit" className="w-full font-bold bg-primary hover:bg-primary/90 text-white" disabled={isLoading}>
               {isLoading ? 'Đang xác thực...' : 'Đăng Nhập Quản Trị'}
             </Button>
+            <div className="w-full border-t border-slate-800/80 pt-3">
+              <p className="text-[11px] text-slate-400 text-center mb-2 font-medium">Tài khoản trải nghiệm thực tế:</p>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setEmail('admin@demopick.vn')
+                    setPassword('admin123')
+                  }}
+                  className="text-xs bg-slate-900 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 h-8"
+                >
+                  ⚡ Admin demo
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setEmail('staff@demopick.vn')
+                    setPassword('staff123')
+                  }}
+                  className="text-xs bg-slate-900 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 h-8"
+                >
+                  ⚡ Staff demo
+                </Button>
+              </div>
+            </div>
           </CardFooter>
         </form>
       </Card>

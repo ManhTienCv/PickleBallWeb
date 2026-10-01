@@ -23,6 +23,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
+import java.util.Optional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -77,8 +78,9 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void seedUsers() {
-        if (userRepository.count() == 0) {
-            log.info("Khởi tạo tài khoản hệ thống mặc định (Admin, Staff, Customer)...");
+        log.info("Kiểm tra và đồng bộ tài khoản hệ thống mặc định (Admin, Staff, Customer)...");
+        Optional<User> adminOpt = userRepository.findByEmail("admin@demopick.vn");
+        if (adminOpt.isEmpty()) {
             User admin = new User();
             admin.setName("Quản Trị Viên DemoPick");
             admin.setEmail("admin@demopick.vn");
@@ -87,7 +89,18 @@ public class DataInitializer implements CommandLineRunner {
             admin.setRole("admin");
             admin.setStatus("active");
             userRepository.save(admin);
+            log.info("Đã tạo mới tài khoản quản trị admin@demopick.vn / admin123");
+        } else {
+            User admin = adminOpt.get();
+            admin.setRole("admin");
+            admin.setStatus("active");
+            admin.setPassword(passwordEncoder.encode("admin123"));
+            userRepository.save(admin);
+            log.info("Đã đồng bộ mật khẩu tài khoản admin@demopick.vn / admin123");
+        }
 
+        Optional<User> staffOpt = userRepository.findByEmail("staff@demopick.vn");
+        if (staffOpt.isEmpty()) {
             User staff = new User();
             staff.setName("Nhân Viên Lễ Tân DemoPick");
             staff.setEmail("staff@demopick.vn");
@@ -96,7 +109,18 @@ public class DataInitializer implements CommandLineRunner {
             staff.setRole("staff");
             staff.setStatus("active");
             userRepository.save(staff);
+            log.info("Đã tạo mới tài khoản nhân viên staff@demopick.vn / staff123");
+        } else {
+            User staff = staffOpt.get();
+            staff.setRole("staff");
+            staff.setStatus("active");
+            staff.setPassword(passwordEncoder.encode("staff123"));
+            userRepository.save(staff);
+            log.info("Đã đồng bộ mật khẩu tài khoản staff@demopick.vn / staff123");
+        }
 
+        Optional<User> customerOpt = userRepository.findByEmail("customer@demopick.vn");
+        if (customerOpt.isEmpty()) {
             User customer = new User();
             customer.setName("Khách Hàng Thân Thiết");
             customer.setEmail("customer@demopick.vn");
@@ -105,6 +129,7 @@ public class DataInitializer implements CommandLineRunner {
             customer.setRole("customer");
             customer.setStatus("active");
             userRepository.save(customer);
+            log.info("Đã tạo mới tài khoản khách hàng customer@demopick.vn / customer123");
         }
     }
 

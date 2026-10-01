@@ -51,10 +51,12 @@ export default function CourtBooking() {
   // Selected slots data with details & price calculation
   const selectedSlotsData = selectedSlotIds.map((id) => {
     const slot = slots.find((s) => s.id === id)
-    const courtId = slot ? slot.court_id : Math.floor(id / 1000)
+    const courtId = slot ? ((slot as any).court_id ?? (slot as any).courtId ?? Math.floor(id / 1000)) : Math.floor(id / 1000)
     const court = courts.find((c) => c.id === courtId)
-    const timeStr = slot?.start_time ? `${slot.start_time.substring(0, 5)} - ${slot.end_time ? slot.end_time.substring(0, 5) : ''}` : `${Math.floor(id % 100)}:00`
-    const isPeak = slot ? Boolean(slot.is_peak) : parseInt(timeStr.split(':')[0], 10) >= 17
+    const startTime = (slot as any)?.start_time || (slot as any)?.startTime || ''
+    const endTime = (slot as any)?.end_time || (slot as any)?.endTime || ''
+    const timeStr = startTime ? `${startTime.substring(0, 5)} - ${endTime ? endTime.substring(0, 5) : ''}` : `${Math.floor(id % 100)}:00`
+    const isPeak = slot ? Boolean((slot as any).is_peak ?? (slot as any).isPeak) : parseInt(timeStr.split(':')[0], 10) >= 17
     const defaultPrice = isPeak ? (court?.peak_hourly_rate || 180000) : (court?.hourly_rate || 140000)
     const price = slot?.price || defaultPrice
 

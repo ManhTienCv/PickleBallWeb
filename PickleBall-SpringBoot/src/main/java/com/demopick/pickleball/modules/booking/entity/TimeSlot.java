@@ -1,5 +1,6 @@
 package com.demopick.pickleball.modules.booking.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -48,23 +49,48 @@ public class TimeSlot {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
+    @JsonProperty("courtId")
     public Long getCourtId() { return courtId; }
     public void setCourtId(Long courtId) { this.courtId = courtId; }
 
+    @JsonProperty("court_id")
+    public Long getCourtIdSnake() { return courtId; }
+
+    @JsonProperty("date")
     public LocalDate getDate() { return date; }
     public void setDate(LocalDate date) { this.date = date; }
 
+    @JsonProperty("startTime")
     public LocalTime getStartTime() { return startTime; }
     public void setStartTime(LocalTime startTime) { this.startTime = startTime; }
 
+    @JsonProperty("start_time")
+    public LocalTime getStartTimeSnake() { return startTime; }
+
+    @JsonProperty("endTime")
     public LocalTime getEndTime() { return endTime; }
     public void setEndTime(LocalTime endTime) { this.endTime = endTime; }
 
+    @JsonProperty("end_time")
+    public LocalTime getEndTimeSnake() { return endTime; }
+
+    @JsonProperty("price")
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }
 
+    @JsonProperty("status")
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    @JsonProperty("is_peak")
+    public Boolean getIsPeak() {
+        return startTime != null && startTime.getHour() >= 17;
+    }
+
+    @JsonProperty("isPeak")
+    public Boolean getIsPeakCamel() {
+        return getIsPeak();
+    }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
