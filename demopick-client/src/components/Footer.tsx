@@ -123,7 +123,7 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* CỘT 2: DỊCH VỤ & TIỆN ÍCH (3 CỘT - CÁC TRANG CHỨC NĂNG RIÊNG BIỆT) */}
+          {/* CỘT 2: DỊCH VỤ & TIỆN ÍCH */}
           <div className="lg:col-span-3 space-y-4">
             <h3 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
               <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
@@ -135,12 +135,6 @@ export default function Footer() {
                 <Link to="/booking" onClick={scrollToTop} className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1.5 transition-colors">
                   <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60" />
                   <span>Đặt sân trực tuyến (8 Sân Pro)</span>
-                </Link>
-              </li>
-              <li>
-                <Link to="/orders" onClick={scrollToTop} className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1.5 transition-colors">
-                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60" />
-                  <span>Tra cứu vé & Check-in QR</span>
                 </Link>
               </li>
               <li>
@@ -158,7 +152,7 @@ export default function Footer() {
               <li>
                 <Link to="/profile" onClick={scrollToTop} className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1.5 transition-colors">
                   <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60" />
-                  <span>Hồ sơ & Tài khoản hội viên</span>
+                  <span>Hồ sơ</span>
                 </Link>
               </li>
             </ul>

@@ -180,8 +180,6 @@ export default function Profile() {
 
   useEffect(() => {
     if (!isAuthenticated && !user) {
-      navigate('/', { replace: true })
-      useAuthModalStore.getState().openLogin()
       return
     }
     if (user) {
@@ -190,7 +188,7 @@ export default function Profile() {
     }
     reloadAddresses()
     loadOrders()
-  }, [user, isAuthenticated, navigate])
+  }, [user, isAuthenticated])
 
   // Countdown timer for OTP resend
   useEffect(() => {
@@ -432,6 +430,26 @@ export default function Profile() {
 
   const defaultAddr = addresses.find((a) => a.isDefault) || addresses[0]
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'U'
+
+  if (!isAuthenticated && !user) {
+    return (
+      <div className="container mx-auto py-20 px-4 max-w-md text-center">
+        <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center mx-auto mb-4 text-slate-400">
+          <User className="w-10 h-10" />
+        </div>
+        <h2 className="text-2xl font-bold text-foreground mb-2">Hồ Sơ Hội Viên</h2>
+        <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+          Bạn đang xem thông tin ở chế độ khách. Đăng nhập để xem lịch sử đặt sân, tích điểm hội viên và quản lý thông tin cá nhân.
+        </p>
+        <Button
+          onClick={() => useAuthModalStore.getState().openLogin()}
+          className="h-11 px-7 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md cursor-pointer"
+        >
+          Đăng Nhập Tài Khoản
+        </Button>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-slate-50/50 dark:bg-background">

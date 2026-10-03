@@ -17,12 +17,6 @@ export default function CartPage() {
   const { isAuthenticated } = useAuth()
   const { startTimer, resetTimer } = useCheckoutTimer()
 
-  useEffect(() => {
-    if (!authHelpers.isAuthenticated()) {
-      toast.info('Vui lòng đăng nhập để xem giỏ hàng.')
-      useAuthModalStore.getState().openLogin()
-    }
-  }, [])
 
   useEffect(() => {
     // Exiting checkout flow to cart resets the 20-minute timer per requirements
@@ -79,27 +73,6 @@ export default function CartPage() {
     },
   })
 
-  if (!isAuthenticated) {
-    return (
-      <div className="container mx-auto py-16 px-4 max-w-md text-center">
-        <div className="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center mx-auto mb-5 text-emerald-600">
-          <ShoppingCart className="w-8 h-8" />
-        </div>
-        <h2 className="text-2xl font-extrabold text-foreground mb-2">
-          Giỏ Hàng Của Bạn
-        </h2>
-        <p className="text-sm text-muted-foreground mb-6">
-          Vui lòng đăng nhập để xem các sản phẩm trong giỏ hàng và tiến hành thanh toán.
-        </p>
-        <Button
-          onClick={() => useAuthModalStore.getState().openLogin()}
-          className="h-11 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md cursor-pointer"
-        >
-          Đăng Nhập Ngay
-        </Button>
-      </div>
-    )
-  }
 
   if (isLoading) {
     return (
