@@ -12,6 +12,7 @@ import {
   Calendar,
   ShoppingBag,
   ChevronRight,
+  Layers,
 } from 'lucide-react'
 
 export default function Footer() {
@@ -68,7 +69,7 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* 2. NỘI DUNG FOOTER CHÍNH (3 CỘT THÔNG TIN CÂN ĐỐI) */}
+      {/* 2. NỘI DUNG FOOTER CHÍNH (3 CỘT THÔNG TIN CHUẨN XÁC) */}
       <div className="container mx-auto max-w-7xl px-5 sm:px-7 lg:px-9 py-12 lg:py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-12">
           
@@ -79,80 +80,91 @@ export default function Footer() {
                 <PickleballLogo size={28} />
               </div>
               <div className="flex items-baseline">
-                <span className="font-bold text-2xl text-foreground tracking-tight">Pick Web</span>
-                <span className="ml-1 text-xs font-semibold px-2 py-0.5 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full">Club & Shop</span>
+                <span className="font-bold text-2xl text-foreground tracking-tight">Pick</span>
+                <span className="ml-1.5 text-xs font-semibold px-2 py-0.5 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full">Club & Shop</span>
               </div>
             </Link>
 
             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-xl">
-              Hệ thống tổ hợp thể thao Pickleball chuẩn thi đấu quốc tế kết hợp siêu thị phân phối vợt, bóng thi đấu và phụ kiện chính hãng hàng đầu Việt Nam.
+              Nền tảng thể thao trực tuyến kết hợp đặt sân Pickleball tự động và cung cấp dụng cụ thi đấu chính hãng. Giữ chỗ chuẩn xác, check-in mã QR tức thì và hỗ trợ người chơi 24/7.
             </p>
 
             <div className="space-y-3 text-xs text-muted-foreground">
               <div className="flex items-start gap-3">
                 <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                <span>Cụm liên hợp 8 sân thể thao Pickleball, Số 28 Dịch Vọng Hậu, Cầu Giấy, Hà Nội</span>
+                <span>Cụm 8 sân thể thao Pickleball, Số 28 Dịch Vọng Hậu, Cầu Giấy, Hà Nội</span>
               </div>
 
               <div className="flex items-center gap-3">
                 <Phone className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>Hotline đặt sân & hỗ trợ: <strong className="text-foreground font-bold">1900 6868</strong> (08:00 - 22:00)</span>
+                <span>
+                  Hotline đặt sân & hỗ trợ:{' '}
+                  <a href="tel:19006868" className="text-foreground font-bold hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+                    1900 6868
+                  </a>{' '}
+                  (08:00 - 22:00)
+                </span>
               </div>
 
               <div className="flex items-center gap-3">
                 <Mail className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>Email hỗ trợ: <strong className="text-foreground">support@demopick.vn</strong></span>
+                <span>
+                  Email hỗ trợ:{' '}
+                  <a href="mailto:support@demopick.vn" className="text-foreground hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+                    support@demopick.vn
+                  </a>
+                </span>
               </div>
 
               <div className="flex items-center gap-3">
                 <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>Mở cửa vận hành: <strong className="text-foreground">05:00 – 23:00</strong> (Tất cả các ngày)</span>
+                <span>Mở cửa vận hành: <strong className="text-foreground">05:00 – 23:00</strong> (Tất cả các ngày trong tuần)</span>
               </div>
             </div>
           </div>
 
-          {/* CỘT 2: DỊCH VỤ SÂN BÃI (3 CỘT) */}
+          {/* CỘT 2: DỊCH VỤ & TIỆN ÍCH (3 CỘT - CÁC TRANG CHỨC NĂNG RIÊNG BIỆT) */}
           <div className="lg:col-span-3 space-y-4">
             <h3 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
               <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>Dịch Vụ Đặt Sân</span>
+              <span>Dịch Vụ & Tiện Ích</span>
             </h3>
 
             <ul className="space-y-2.5 text-xs">
               <li>
                 <Link to="/booking" onClick={scrollToTop} className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1.5 transition-colors">
                   <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60" />
-                  <span>Sơ đồ 8 sân (Trong nhà & Ngoài trời)</span>
-                </Link>
-              </li>
-              <li>
-                <Link to="/booking" onClick={scrollToTop} className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1.5 transition-colors">
-                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60" />
-                  <span>Lưới ca giờ thi đấu (17 ca/ngày)</span>
-                </Link>
-              </li>
-              <li>
-                <Link to="/booking" onClick={scrollToTop} className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1.5 transition-colors">
-                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60" />
-                  <span>Bảng giá giờ thường & giờ cao điểm</span>
-                </Link>
-              </li>
-              <li>
-                <Link to="/booking" onClick={scrollToTop} className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1.5 transition-colors">
-                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60" />
-                  <span>Quy định giữ chỗ tạm thời 10 phút</span>
+                  <span>Đặt sân trực tuyến (8 Sân Pro)</span>
                 </Link>
               </li>
               <li>
                 <Link to="/orders" onClick={scrollToTop} className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1.5 transition-colors">
                   <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60" />
-                  <span>Vé điện tử & Check-in quét mã QR</span>
+                  <span>Tra cứu vé & Check-in QR</span>
+                </Link>
+              </li>
+              <li>
+                <Link to="/cart" onClick={scrollToTop} className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1.5 transition-colors">
+                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60" />
+                  <span>Giỏ hàng & Khuyến mãi</span>
+                </Link>
+              </li>
+              <li>
+                <Link to="/wishlist" onClick={scrollToTop} className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1.5 transition-colors">
+                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60" />
+                  <span>Sản phẩm yêu thích đã lưu</span>
+                </Link>
+              </li>
+              <li>
+                <Link to="/profile" onClick={scrollToTop} className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1.5 transition-colors">
+                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60" />
+                  <span>Hồ sơ & Tài khoản hội viên</span>
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* CỘT 3: CỬA HÀNG THIẾT BỊ (3 CỘT) */}
+          {/* CỘT 3: THIẾT BỊ THỂ THAO (3 CỘT - BỘ LỌC DANH MỤC TRỰC TIẾP) */}
           <div className="lg:col-span-3 space-y-4">
             <h3 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
               <ShoppingBag className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
@@ -161,33 +173,33 @@ export default function Footer() {
 
             <ul className="space-y-2.5 text-xs">
               <li>
-                <Link to="/products" onClick={scrollToTop} className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1.5 transition-colors">
+                <Link to="/products?category=V%E1%BB%A3t%20Pickleball" onClick={scrollToTop} className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1.5 transition-colors">
                   <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60" />
                   <span>Vợt Pickleball Carbon</span>
                 </Link>
               </li>
               <li>
-                <Link to="/products" onClick={scrollToTop} className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1.5 transition-colors">
+                <Link to="/products?category=B%C3%B3ng%20Pickleball" onClick={scrollToTop} className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1.5 transition-colors">
                   <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60" />
                   <span>Bóng thi đấu chuẩn USAPA</span>
                 </Link>
               </li>
               <li>
-                <Link to="/products" onClick={scrollToTop} className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1.5 transition-colors">
+                <Link to="/products?category=Ph%E1%BB%A5%20ki%E1%BB%87n%20%26%20Bao%20v%E1%BB%A3t" onClick={scrollToTop} className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1.5 transition-colors">
                   <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60" />
-                  <span>Túi đựng vợt & Balo cao cấp</span>
+                  <span>Phụ kiện & Bao vợt</span>
+                </Link>
+              </li>
+              <li>
+                <Link to="/products?category=Qu%E1%BA%A7n%20%C3%A1o%20%26%20Trang%20ph%E1%BB%A5c" onClick={scrollToTop} className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1.5 transition-colors">
+                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60" />
+                  <span>Quần áo & Trang phục</span>
                 </Link>
               </li>
               <li>
                 <Link to="/products" onClick={scrollToTop} className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1.5 transition-colors">
                   <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60" />
-                  <span>Quấn cán & Phụ kiện bảo hộ</span>
-                </Link>
-              </li>
-              <li>
-                <Link to="/cart" onClick={scrollToTop} className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1.5 transition-colors">
-                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60" />
-                  <span>Mã khuyến mãi & Voucher</span>
+                  <span>Tất cả sản phẩm thiết bị</span>
                 </Link>
               </li>
             </ul>
@@ -200,7 +212,7 @@ export default function Footer() {
       <div className="border-t border-border bg-muted/40 py-5">
         <div className="container mx-auto max-w-7xl px-5 sm:px-7 lg:px-9 text-center text-xs text-muted-foreground">
           <p>
-            © 2026 <strong className="text-foreground">Pick Web (DemoPick)</strong> — Nền tảng Đặt sân Thể thao & Thương mại điện tử Pickleball. Bảo lưu mọi quyền.
+            © 2026 <strong className="text-foreground">Pick (DemoPick)</strong> — Nền tảng Đặt sân Thể thao & Thương mại điện tử Pickleball. Bảo lưu mọi quyền.
           </p>
         </div>
       </div>

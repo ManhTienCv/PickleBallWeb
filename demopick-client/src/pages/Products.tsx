@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { shopService, Product } from '@/services/shop.service'
@@ -25,14 +25,23 @@ import { useAuthModalStore } from '@/stores/useAuthModalStore'
 
 export default function Products() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
 
   // Filter States
-  const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [selectedCategory, setSelectedCategory] = useState<string>(() => searchParams.get('category') || 'all')
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
   const [priceRange, setPriceRange] = useState<string>('all') // 'all', 'under-1m', '1m-3m', '3m-5m', 'above-5m'
   const [inStockOnly, setInStockOnly] = useState<boolean>(false)
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [sortBy, setSortBy] = useState<string>('featured')
+
+  // Đồng bộ URL query param khi người dùng bấm danh mục từ Header, Footer hoặc Banner
+  useEffect(() => {
+    const catParam = searchParams.get('category')
+    if (catParam) {
+      setSelectedCategory(catParam)
+    }
+  }, [searchParams])
   const [currentPage, setCurrentPage] = useState<number>(1)
   const itemsPerPage = 9
 
