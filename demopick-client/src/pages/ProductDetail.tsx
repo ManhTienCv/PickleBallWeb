@@ -36,14 +36,11 @@ import {
   ArrowRight,
   Gift,
   Heart,
-  Lock,
-  KeyRound,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { wishlistService } from '@/services/wishlist.service'
 import { authHelpers } from '@/stores/useAuthStore'
 import { useAuthModalStore } from '@/stores/useAuthModalStore'
-import { useAuth } from '@/contexts/AuthContext'
 
 // Default color palettes with authentic Pickleball local assets
 const DEFAULT_COLOR_VARIANTS = [
@@ -94,14 +91,7 @@ export default function ProductDetail() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { isAuthenticated } = useAuth()
 
-  useEffect(() => {
-    if (!authHelpers.isAuthenticated()) {
-      toast.info('Vui lòng đăng nhập để xem thông tin chi tiết sản phẩm.')
-      useAuthModalStore.getState().openLogin()
-    }
-  }, [])
 
   // State
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null)
@@ -357,59 +347,6 @@ export default function ProductDetail() {
     )
   }
 
-  if (!isAuthenticated) {
-    return (
-      <div className="container mx-auto py-12 px-4 max-w-4xl">
-        {/* Breadcrumb preview */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-6">
-          <Link to="/" className="hover:text-foreground">Trang chủ</Link>
-          <span>/</span>
-          <Link to="/products" className="hover:text-foreground">Sản phẩm</Link>
-          <span>/</span>
-          <span className="text-foreground font-medium">{product?.name || 'Chi tiết sản phẩm'}</span>
-        </div>
-
-        <div className="bg-white dark:bg-card border border-border/80 rounded-3xl p-8 sm:p-12 text-center shadow-xl relative overflow-hidden">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center mx-auto mb-5 text-emerald-600 dark:text-emerald-400">
-            <Lock className="w-8 h-8" />
-          </div>
-
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight mb-3">
-            Yêu Cầu Đăng Nhập
-          </h2>
-
-          {product && (
-            <p className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400 mb-2">
-              {product.name}
-            </p>
-          )}
-
-          <p className="text-sm sm:text-base text-muted-foreground max-w-md mx-auto mb-8 leading-relaxed">
-            Bạn cần đăng nhập tài khoản để xem thông số kỹ thuật chi tiết, công nghệ lõi, đánh giá trải nghiệm thực tế và mua sắm sản phẩm này.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5">
-            <Button
-              onClick={() => useAuthModalStore.getState().openLogin()}
-              className="w-full sm:w-auto h-12 px-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl text-sm gap-2 shadow-lg shadow-emerald-600/25 active:scale-95 transition-all cursor-pointer"
-            >
-              <KeyRound className="w-4 h-4" />
-              <span>Đăng Nhập Ngay</span>
-              <ArrowRight className="w-4 h-4" />
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={() => navigate('/products')}
-              className="w-full sm:w-auto h-12 px-6 rounded-2xl text-sm font-semibold border-border hover:bg-muted text-foreground cursor-pointer"
-            >
-              Xem danh mục sản phẩm khác
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   const currentPrice = selectedVariant
     ? selectedVariant.price ?? product?.price ?? 0

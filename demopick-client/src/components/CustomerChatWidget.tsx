@@ -17,6 +17,32 @@ export default function CustomerChatWidget() {
   const [inputMessage, setInputMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatWindowRef = useRef<HTMLDivElement>(null);
+
+  // Tự động đóng khung chat khi nhấp chuột ra ngoài (Click Outside Dismiss) hoặc bấm phím Escape
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (chatWindowRef.current && !chatWindowRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
 
   // Sinh và lưu trữ session_id và chatToken của khách trong LocalStorage (Chống IDOR)
   const [sessionId] = useState<string>(() => {
@@ -46,8 +72,11 @@ export default function CustomerChatWidget() {
     const fetchInitialMessages = async () => {
       try {
         const tokenParam = chatToken ? `&token=${encodeURIComponent(chatToken)}` : "";
-        const res = await api.get(`/user/chat/messages?session_id=${sessionId}${tokenParam}`, {
-          headers: chatToken ? { "X-Chat-Token": chatToken } : {},
+        const res = await api.get(`/chat/messages?session_id=${sessionId}${tokenParam}`, {
+          headers: {
+            "X-Skip-Auth-Modal": "true",
+            ...(chatToken ? { "X-Chat-Token": chatToken } : {}),
+          },
         });
         if (res.data?.session_token) {
           setChatToken(res.data.session_token);
@@ -81,7 +110,7 @@ export default function CustomerChatWidget() {
     // 2. Mở kết nối Server-Sent Events (SSE) thời gian thực chuẩn Senior (Zero Polling)
     try {
       const apiBase = import.meta.env.VITE_API_BASE_URL || "/api/v1";
-      const streamUrl = `${apiBase}/user/chat/stream?session_id=${encodeURIComponent(sessionId)}`;
+      const streamUrl = `${apiBase}/chat/stream?session_id=${encodeURIComponent(sessionId)}`;
       eventSource = new EventSource(streamUrl);
 
       eventSource.addEventListener("message", (e) => {
@@ -145,14 +174,19 @@ export default function CustomerChatWidget() {
     try {
       setIsSending(true);
       const res = await api.post(
-        "/user/chat/send",
+        "/chat/messages",
         {
           session_id: sessionId,
           message: textToSend,
+          sender_type: "user",
+          sender_name: "Khách hàng",
           token: chatToken,
         },
         {
-          headers: chatToken ? { "X-Chat-Token": chatToken } : {},
+          headers: {
+            "X-Skip-Auth-Modal": "true",
+            ...(chatToken ? { "X-Chat-Token": chatToken } : {}),
+          },
         }
       );
       if (res.data?.session_token && !chatToken) {
@@ -185,7 +219,10 @@ export default function CustomerChatWidget() {
 
       {/* Cửa sổ Khung Chat */}
       {isOpen && (
-        <div className="w-[350px] sm:w-[380px] h-[500px] bg-card text-card-foreground rounded-3xl shadow-2xl border border-border flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-300">
+        <div
+          ref={chatWindowRef}
+          className="w-[350px] sm:w-[380px] h-[500px] bg-card text-card-foreground rounded-3xl shadow-2xl border border-border flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-300"
+        >
           {/* Header */}
           <div className="bg-emerald-600 p-4 text-white flex items-center justify-between shadow-md shrink-0">
             <div className="flex items-center gap-2.5">

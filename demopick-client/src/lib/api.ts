@@ -39,7 +39,14 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    if (error.response?.status === 401) {
+    const url = error.config?.url || ''
+    const isExcluded =
+      url.includes('/chat') ||
+      url.includes('/public') ||
+      Boolean((error.config as any)?.skipAuthModal) ||
+      Boolean(error.config?.headers?.['X-Skip-Auth-Modal'])
+
+    if (error.response?.status === 401 && !isExcluded) {
       localStorage.removeItem('demopick_token')
       localStorage.removeItem('demopick_user')
       useAuthModalStore.getState().openLogin()

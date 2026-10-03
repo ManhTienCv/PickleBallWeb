@@ -10,6 +10,7 @@ import { motion } from 'framer-motion'
 import ThemeToggle from '@/components/ThemeToggle'
 import PickleballLogo from '@/components/PickleballLogo'
 import CustomerChatWidget from '@/components/CustomerChatWidget'
+import Footer from '@/components/Footer'
 import { toast } from 'sonner'
 import {
   DropdownMenu,
@@ -305,17 +306,8 @@ export default function CustomerLayout() {
         <Outlet />
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border bg-card text-card-foreground py-8 mt-12 transition-colors duration-300">
-        <div className="container mx-auto px-4 text-center space-y-1.5">
-          <p className="text-sm font-bold text-foreground">
-            © 2026 Pick Web — Hệ thống Thiết bị thể thao & Đặt sân Pickleball hàng đầu
-          </p>
-          <p className="text-xs text-muted-foreground font-normal">
-            Cung cấp vợt bóng chính hãng, dịch vụ đặt sân chuyên nghiệp & giao hàng toàn quốc
-          </p>
-        </div>
-      </footer>
+      {/* Professional Comprehensive Footer */}
+      <Footer />
 
       {/* Floating 2-way Live Chat Widget */}
       <CustomerChatWidget />

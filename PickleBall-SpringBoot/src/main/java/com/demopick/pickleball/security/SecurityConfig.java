@@ -69,7 +69,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/payments", "/api/v1/payments/**").permitAll()
                         .requestMatchers("/api/v1/vouchers", "/api/v1/vouchers/**").permitAll()
                         .requestMatchers("/api/v1/wishlist", "/api/v1/wishlist/**").permitAll()
-                        .requestMatchers("/api/v1/chat", "/api/v1/chat/**").permitAll()
+                        .requestMatchers("/api/v1/chat", "/api/v1/chat/**", "/api/v1/user/chat", "/api/v1/user/chat/**").permitAll()
                         // Admin-only endpoints (reports & user management require ADMIN)
                         .requestMatchers("/api/v1/admin/reports/**", "/api/v1/admin/users/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
                         // General operations endpoints (courts, POS, orders, chat, vouchers) permit STAFF
