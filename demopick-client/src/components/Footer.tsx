@@ -11,11 +11,7 @@ import {
   RotateCcw,
   Calendar,
   ShoppingBag,
-  CreditCard,
-  QrCode,
-  Sparkles,
   ChevronRight,
-  Headphones,
 } from 'lucide-react'
 
 export default function Footer() {
@@ -72,12 +68,12 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* 2. NỘI DUNG FOOTER CHÍNH (4 CỘT THÔNG TIN CHUYÊN NGHIỆP) */}
+      {/* 2. NỘI DUNG FOOTER CHÍNH (3 CỘT THÔNG TIN CÂN ĐỐI) */}
       <div className="container mx-auto max-w-7xl px-5 sm:px-7 lg:px-9 py-12 lg:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-12">
           
-          {/* CỘT 1: THƯƠNG HIỆU & LIÊN HỆ CƠ SỞ (4 CỘT) */}
-          <div className="lg:col-span-4 space-y-5">
+          {/* CỘT 1: THƯƠNG HIỆU & LIÊN HỆ CƠ SỞ (6 CỘT) */}
+          <div className="lg:col-span-6 space-y-5">
             <Link to="/" onClick={scrollToTop} className="flex items-center gap-3 group select-none">
               <div className="w-11 h-11 rounded-2xl bg-emerald-500/15 dark:bg-emerald-500/25 border border-emerald-500/30 flex items-center justify-center shadow-md shadow-emerald-500/10">
                 <PickleballLogo size={28} />
@@ -88,7 +84,7 @@ export default function Footer() {
               </div>
             </Link>
 
-            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-xl">
               Hệ thống tổ hợp thể thao Pickleball chuẩn thi đấu quốc tế kết hợp siêu thị phân phối vợt, bóng thi đấu và phụ kiện chính hãng hàng đầu Việt Nam.
             </p>
 
@@ -115,7 +111,7 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* CỘT 2: DỊCH VỤ SÂN BÃI (2.5 CỘT) */}
+          {/* CỘT 2: DỊCH VỤ SÂN BÃI (3 CỘT) */}
           <div className="lg:col-span-3 space-y-4">
             <h3 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
               <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
@@ -156,8 +152,8 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* CỘT 3: CỬA HÀNG THIẾT BỊ (2.5 CỘT) */}
-          <div className="lg:col-span-2 space-y-4">
+          {/* CỘT 3: CỬA HÀNG THIẾT BỊ (3 CỘT) */}
+          <div className="lg:col-span-3 space-y-4">
             <h3 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
               <ShoppingBag className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>Thiết Bị Thể Thao</span>
@@ -197,56 +193,15 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* CỘT 4: HỖ TRỢ & PHƯƠNG THỨC THANH TOÁN (3 CỘT) */}
-          <div className="lg:col-span-3 space-y-4">
-            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
-              <CreditCard className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>Thanh Toán & Vận Chuyển</span>
-            </h3>
-
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Hỗ trợ đa dạng phương thức thanh toán an toàn, bảo mật chữ ký điện tử HMAC-SHA256:
-            </p>
-
-            {/* Badges Thanh toán */}
-            <div className="flex flex-wrap gap-2 pt-1">
-              <span className="px-2.5 py-1 rounded-lg bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20 text-xs font-bold">
-                MoMo QR
-              </span>
-              <span className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-xs font-bold">
-                VietQR Napas247
-              </span>
-              <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold">
-                Tiền mặt tại quầy
-              </span>
-            </div>
-
-            {/* Đối tác vận chuyển */}
-            <div className="pt-2">
-              <span className="text-[11px] font-bold text-foreground block mb-1.5">Đối tác giao vận chính thức:</span>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="px-2 py-0.5 rounded bg-muted border border-border text-[11px] font-medium">Giao Hàng Nhanh (GHN)</span>
-                <span className="px-2 py-0.5 rounded bg-muted border border-border text-[11px] font-medium">Hỏa tốc 2H</span>
-              </div>
-            </div>
-          </div>
-
         </div>
       </div>
 
-      {/* 3. DÒNG BẢN QUYỀN & CHỨNG NHẬN DƯỚI CÙNG (SUB-FOOTER) */}
+      {/* 3. DÒNG BẢN QUYỀN DƯỚI CÙNG (SUB-FOOTER) */}
       <div className="border-t border-border bg-muted/40 py-5">
-        <div className="container mx-auto max-w-7xl px-5 sm:px-7 lg:px-9 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left text-xs text-muted-foreground">
+        <div className="container mx-auto max-w-7xl px-5 sm:px-7 lg:px-9 text-center text-xs text-muted-foreground">
           <p>
             © 2026 <strong className="text-foreground">Pick Web (DemoPick)</strong> — Nền tảng Đặt sân Thể thao & Thương mại điện tử Pickleball. Bảo lưu mọi quyền.
           </p>
-          <div className="flex items-center gap-4 text-[11px]">
-            <span className="hover:text-foreground cursor-pointer">Điều khoản dịch vụ</span>
-            <span>•</span>
-            <span className="hover:text-foreground cursor-pointer">Chính sách bảo mật</span>
-            <span>•</span>
-            <span className="hover:text-foreground cursor-pointer">Quy chế hoạt động</span>
-          </div>
         </div>
       </div>
     </footer>
