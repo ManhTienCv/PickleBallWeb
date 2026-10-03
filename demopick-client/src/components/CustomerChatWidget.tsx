@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { MessageSquare, Send, Bot, ShieldCheck, Minimize2 } from "lucide-react";
+import { MessageSquare, Send, Bot, ShieldCheck, Minimize2, Phone } from "lucide-react";
 import api from "@/lib/api";
 
 interface ChatMessage {
@@ -13,7 +13,16 @@ interface ChatMessage {
 
 export default function CustomerChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
+    {
+      id: 1,
+      session_id: "default",
+      sender_type: "admin",
+      sender_name: "DemoPick Assistant",
+      message: "Xin chào! DemoPick Club có thể hỗ trợ gì cho bạn về đặt sân hoặc mua phụ kiện Pickleball?",
+      created_at: new Date().toISOString(),
+    },
+  ]);
   const [inputMessage, setInputMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -82,7 +91,7 @@ export default function CustomerChatWidget() {
           setChatToken(res.data.session_token);
           localStorage.setItem("demopick_chat_token", res.data.session_token);
         }
-        if (res.data?.success && Array.isArray(res.data.data)) {
+        if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
           setMessages(res.data.data);
         }
       } catch {
@@ -233,7 +242,7 @@ export default function CustomerChatWidget() {
                 <h3 className="font-bold text-sm leading-tight">Hỗ Trợ DemoPick Club</h3>
                 <p className="text-[11px] text-emerald-100 flex items-center gap-1 mt-0.5">
                   <span className="w-2 h-2 bg-emerald-300 rounded-full animate-pulse inline-block"></span>
-                  Trực tuyến | Phản hồi ngay
+                  Trực tuyến | Hotline: 1900 6868
                 </p>
               </div>
             </div>
@@ -246,6 +255,17 @@ export default function CustomerChatWidget() {
             </button>
           </div>
 
+          {/* Dòng lưu ý phản hồi chậm & Hotline liên hệ trực tiếp */}
+          <div className="bg-amber-500/10 dark:bg-amber-500/20 border-b border-amber-500/25 px-3.5 py-2.5 text-[11px] text-amber-950 dark:text-amber-200 flex items-start gap-2 shrink-0">
+            <Phone className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <p className="leading-snug">
+              Tư vấn viên có thể phản hồi chậm do quá tải. Quý khách cần hỗ trợ gấp vui lòng gọi trực tiếp hotline{' '}
+              <a href="tel:19006868" className="font-bold text-emerald-700 dark:text-emerald-400 underline hover:text-emerald-800">
+                1900 6868
+              </a>.
+            </p>
+          </div>
+
           {/* Danh sách tin nhắn */}
           <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-muted/30 text-xs">
             {messages.map((m) => {
@@ -253,11 +273,10 @@ export default function CustomerChatWidget() {
               return (
                 <div key={m.id} className={`flex ${isAdmin ? "justify-start" : "justify-end"}`}>
                   <div
-                    className={`max-w-[82%] p-3 rounded-2xl ${
-                      isAdmin
-                        ? "bg-card text-foreground border border-border rounded-tl-none shadow-sm"
-                        : "bg-emerald-600 text-white rounded-tr-none shadow-md shadow-emerald-600/20"
-                    }`}
+                    className={`max-w-[82%] p-3 rounded-2xl ${isAdmin
+                      ? "bg-card text-foreground border border-border rounded-tl-none shadow-sm"
+                      : "bg-emerald-600 text-white rounded-tr-none shadow-md shadow-emerald-600/20"
+                      }`}
                   >
                     {isAdmin && (
                       <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mb-1 flex items-center gap-1">

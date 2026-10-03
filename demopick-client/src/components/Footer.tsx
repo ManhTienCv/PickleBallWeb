@@ -72,7 +72,7 @@ export default function Footer() {
       {/* 2. NỘI DUNG FOOTER CHÍNH (3 CỘT THÔNG TIN CHUẨN XÁC) */}
       <div className="container mx-auto max-w-7xl px-5 sm:px-7 lg:px-9 py-12 lg:py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-12">
-          
+
           {/* CỘT 1: THƯƠNG HIỆU & LIÊN HỆ CƠ SỞ (6 CỘT) */}
           <div className="lg:col-span-6 space-y-5">
             <Link to="/" onClick={scrollToTop} className="flex items-center gap-3 group select-none">
@@ -212,7 +212,7 @@ export default function Footer() {
       <div className="border-t border-border bg-muted/40 py-5">
         <div className="container mx-auto max-w-7xl px-5 sm:px-7 lg:px-9 text-center text-xs text-muted-foreground">
           <p>
-            © 2026 <strong className="text-foreground">Pick (DemoPick)</strong> — Nền tảng Đặt sân Thể thao & Thương mại điện tử Pickleball. Bảo lưu mọi quyền.
+            © 2026 <strong className="text-foreground">Pick </strong> — Nền tảng Đặt sân Thể thao & Thương mại điện tử Pickleball.
           </p>
         </div>
       </div>
