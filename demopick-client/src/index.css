@@ -107,39 +107,23 @@
   * {
     @apply border-border;
     font-family: 'Be Vietnam Pro', sans-serif;
+    scrollbar-width: none; /* Firefox: ẩn thanh cuộn */
+    -ms-overflow-style: none; /* IE và Edge cũ */
+  }
+
+  /* Ẩn hoàn toàn thanh cuộn trên tất cả trình duyệt WebKit (Chrome, Safari, Edge) */
+  *::-webkit-scrollbar,
+  ::-webkit-scrollbar {
+    display: none !important;
+    width: 0px !important;
+    height: 0px !important;
   }
 
   html {
     font-size: 16px; /* Standard 100% rem font scale for clear legibility */
     min-height: 100%;
-    scrollbar-gutter: stable;
-  }
-
-  /* Custom Slim Scrollbar to prevent layout shift & look modern */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: rgba(148, 163, 184, 0.4);
-    border-radius: 9999px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(148, 163, 184, 0.7);
-  }
-
-  .dark ::-webkit-scrollbar-thumb {
-    background: rgba(100, 116, 139, 0.4);
-  }
-
-  .dark ::-webkit-scrollbar-thumb:hover {
-    background: rgba(100, 116, 139, 0.7);
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
 
   body {
@@ -150,6 +134,14 @@
     font-family: 'Be Vietnam Pro', sans-serif;
     -webkit-font-smoothing: antialiased;
     transition: background-color 0.3s ease, color 0.3s ease;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  /* Triệt tiêu dải trắng và khoảng đệm do Radix UI tự gán khi mở Dialog/Modal */
+  body[data-scroll-locked] {
+    padding-right: 0px !important;
+    margin-right: 0px !important;
   }
 
   #root {
@@ -216,5 +208,20 @@
 
   .badge-available {
     @apply bg-accent text-accent-foreground;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar,
+  .scrollbar-none::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  .no-scrollbar,
+  .scrollbar-none {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
   }
 }
