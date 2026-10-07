@@ -1,7 +1,7 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Truck, Zap, Navigation, Printer, Eye, RotateCcw } from "lucide-react";
+import { Truck, Zap, Navigation, Printer, Eye, RotateCcw, ArrowRight, CheckCircle2, XCircle, PackageCheck } from "lucide-react";
 import { Order, OrderStatus } from "@/types/order.types";
 
 interface OnlineOrdersTableProps {
@@ -165,80 +165,132 @@ export const OnlineOrdersTable: React.FC<OnlineOrdersTableProps> = ({
                       {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(order.totalAmount)}
                     </td>
 
-                    {/* 6. TRẠNG THÁI */}
+                    {/* 6. TRẠNG THÁI (Badge tĩnh - Read-only DFSM State) */}
                     <td className="py-4 px-4 align-top">
                       {isRefundPending ? (
-                        <Badge className="bg-amber-500 text-white font-bold inline-flex items-center gap-1 text-[11px] py-1.5 px-3 rounded-full shadow-xs animate-pulse">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500 text-white shadow-xs animate-pulse">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white" />
                           <span>Chờ hoàn tiền</span>
-                        </Badge>
+                        </span>
                       ) : isRefunded ? (
-                        <Badge className="bg-blue-600 text-white font-bold inline-flex items-center gap-1 text-[11px] py-1.5 px-3 rounded-full shadow-xs">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-600 text-white shadow-xs">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white" />
                           <span>Đã hoàn tiền</span>
-                        </Badge>
+                        </span>
+                      ) : isCancelled ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-600 border border-rose-200 shadow-xs">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                          <span>Đã hủy</span>
+                        </span>
+                      ) : isCompleted ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-xs">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          <span>Thành công</span>
+                        </span>
+                      ) : isShipped ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 shadow-xs">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                          <span>Đang giao hàng</span>
+                        </span>
+                      ) : (order.status === "READY_TO_PICK" || order.status === "PICKING") ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-xs">
+                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                          <span>Chờ lấy hàng</span>
+                        </span>
+                      ) : order.status === "RETURNED" ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-orange-50 text-orange-700 border border-orange-200 shadow-xs">
+                          <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                          <span>Hoàn hàng</span>
+                        </span>
                       ) : (
-                        <div className="relative inline-block w-36">
-                          <select
-                            value={
-                              order.status === "REFUNDED" || order.status === "CANCELLED"
-                                ? "CANCELLED"
-                                : order.status === "SHIPPED"
-                                ? "SHIPPING"
-                                : isPending
-                                ? "PENDING"
-                                : order.status
-                            }
-                            onChange={(e) => onUpdateStatus(order.code, e.target.value as OrderStatus)}
-                            className={`w-full py-1.5 px-3 rounded-full text-xs font-bold border transition-colors cursor-pointer appearance-none text-center ${
-                              isCancelled
-                                ? "bg-rose-50 text-rose-600 border-rose-200"
-                                : isCompleted
-                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                : isShipped
-                                ? "bg-blue-50 text-blue-700 border-blue-200"
-                                : "bg-amber-50 text-amber-700 border-amber-200"
-                            }`}
-                          >
-                            <option value="PENDING">Chờ xử lý</option>
-                            <option value="READY_TO_PICK">Chờ lấy hàng</option>
-                            <option value="PICKING">Đang lấy hàng</option>
-                            <option value="SHIPPING">Đang giao</option>
-                            <option value="COMPLETED">Thành công</option>
-                            <option value="RETURNED">Hoàn hàng</option>
-                            <option value="CANCELLED">Hủy đơn hàng</option>
-                          </select>
-                        </div>
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 shadow-xs">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                          <span>Chờ xử lý</span>
+                        </span>
                       )}
                     </td>
 
-                    {/* 7. TÁC VỤ */}
+                    {/* 7. TÁC VỤ (Nút chuyển tiếp tuần tự DFSM & Chống sai lỗi Poka-Yoke) */}
                     <td className="py-4 px-4 text-right align-top whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1.5">
-                        {isRefundPending && onConfirmRefund && (
-                          <Button
-                            size="sm"
-                            onClick={() => onConfirmRefund(order.code)}
-                            className="h-8 px-2.5 text-xs bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl shadow-sm gap-1.5 cursor-pointer animate-pulse"
-                            title="Xác nhận đối soát hoàn tiền cho khách"
-                          >
-                            <RotateCcw className="w-3.5 h-3.5" />
-                            <span>Hoàn Tiền</span>
-                          </Button>
-                        )}
-
-                        {canDispatchGHN && (
-                          <Button
-                            size="sm"
-                            onClick={() => onDispatchGHN(order)}
-                            className="h-8 px-2.5 text-xs bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl shadow-sm gap-1.5 cursor-pointer"
-                            title="1-Click bàn giao xuất kho sang GHN Express"
-                          >
-                            <Zap className="w-3.5 h-3.5 text-amber-200 fill-amber-200" />
-                            <span>1-Click GHN</span>
-                          </Button>
-                        )}
-
-                        {(isShipped || isCompleted || order.trackingNumber) && (
+                        {/* 1. ĐƠN MỚI: PENDING / CONFIRMED -> Bấm [Duyệt đơn →] & [Hủy] */}
+                        {isPending && (
                           <>
+                            <Button
+                              size="sm"
+                              onClick={() => onUpdateStatus(order.code, "READY_TO_PICK")}
+                              className="h-8 px-2.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-sm gap-1.5 cursor-pointer"
+                              title="Duyệt đơn và chuyển kho chuẩn bị hàng"
+                            >
+                              <span>Duyệt đơn</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => onUpdateStatus(order.code, "CANCELLED")}
+                              className="h-8 px-2 text-xs border-rose-200 text-rose-600 hover:bg-rose-50 font-semibold rounded-xl gap-1 cursor-pointer"
+                              title="Hủy đơn hàng này"
+                            >
+                              <XCircle className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Hủy</span>
+                            </Button>
+                          </>
+                        )}
+
+                        {/* 2. KHO CHUẨN BỊ XONG: READY_TO_PICK / PICKING -> Bấm [1-Click GHN] / [Giao hàng →] & [Hủy] */}
+                        {(order.status === "READY_TO_PICK" || order.status === "PICKING") && (
+                          <>
+                            {canDispatchGHN ? (
+                              <Button
+                                size="sm"
+                                onClick={() => onDispatchGHN(order)}
+                                className="h-8 px-2.5 text-xs bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl shadow-sm gap-1.5 cursor-pointer"
+                                title="1-Click xuất vận đơn và bàn giao GHN Express"
+                              >
+                                <Zap className="w-3.5 h-3.5 text-amber-200 fill-amber-200" />
+                                <span>1-Click GHN</span>
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                onClick={() => onUpdateStatus(order.code, "SHIPPING")}
+                                className="h-8 px-2.5 text-xs bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-sm gap-1.5 cursor-pointer"
+                                title="Bàn giao shipper xuất phát giao hàng"
+                              >
+                                <Truck className="w-3.5 h-3.5" />
+                                <span>Giao hàng</span>
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => onUpdateStatus(order.code, "CANCELLED")}
+                              className="h-8 px-2 text-xs border-rose-200 text-rose-600 hover:bg-rose-50 font-semibold rounded-xl gap-1 cursor-pointer"
+                              title="Hủy đơn hàng trước khi shipper đến lấy"
+                            >
+                              <XCircle className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Hủy</span>
+                            </Button>
+                          </>
+                        )}
+
+                        {/* 3. ĐANG VẬN CHUYỂN: SHIPPING / SHIPPED -> Bấm [Giao thành công ✓] | KHÓA HỦY ĐƠN */}
+                        {isShipped && (
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={() => onUpdateStatus(order.code, "COMPLETED")}
+                              className="h-8 px-2.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-sm gap-1.5 cursor-pointer"
+                              title="Xác nhận khách đã nhận hàng thành công"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Giao thành công</span>
+                            </Button>
+
                             <Button
                               size="sm"
                               onClick={() => onOpenTrackingModal(order)}
@@ -262,6 +314,46 @@ export const OnlineOrdersTable: React.FC<OnlineOrdersTableProps> = ({
                           </>
                         )}
 
+                        {/* 4. HOÀN THÀNH: COMPLETED -> Xem hành trình (nếu có vận đơn) */}
+                        {isCompleted && order.trackingNumber && (
+                          <Button
+                            size="sm"
+                            onClick={() => onOpenTrackingModal(order)}
+                            className="h-8 px-2 text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold rounded-xl shadow-xs gap-1 cursor-pointer"
+                            title="Xem hành trình vận đơn đã giao"
+                          >
+                            <Navigation className="w-3.5 h-3.5" />
+                            <span className="hidden xl:inline">Hành trình</span>
+                          </Button>
+                        )}
+
+                        {/* 5. HOÀN TIỀN: REFUND_PENDING -> Xác nhận mã đối soát chuyển khoản */}
+                        {isRefundPending && onConfirmRefund && (
+                          <Button
+                            size="sm"
+                            onClick={() => onConfirmRefund(order.code)}
+                            className="h-8 px-2.5 text-xs bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl shadow-sm gap-1.5 cursor-pointer animate-pulse"
+                            title="Xác nhận đối soát hoàn tiền cho khách qua Ref Code"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            <span>Hoàn Tiền</span>
+                          </Button>
+                        )}
+
+                        {/* 6. TRẢ HÀNG VỀ KHO: RETURNED -> Xác nhận nhập lại kho */}
+                        {order.status === "RETURNED" && (
+                          <Button
+                            size="sm"
+                            onClick={() => onUpdateStatus(order.code, "CANCELLED")}
+                            className="h-8 px-2.5 text-xs bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl shadow-sm gap-1.5 cursor-pointer"
+                            title="Xác nhận đã nhận hàng hoàn về kho"
+                          >
+                            <PackageCheck className="w-3.5 h-3.5" />
+                            <span>Nhận hàng hoàn</span>
+                          </Button>
+                        )}
+
+                        {/* 7. NÚT XEM CHI TIẾT ĐƠN HÀNG (LUÔN CÓ) */}
                         <Button
                           size="sm"
                           onClick={() => onSelectOrder(order)}
