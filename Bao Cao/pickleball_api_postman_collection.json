@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "pickleball-api-v1-qa-suite",
+    "_postman_id": "a8f3b2e1-4c5d-4e9a-8f1a-9b8c7d6e5f4a",
     "name": "DemoPick PickleBall API v1 - 25 Automated QA Suite",
     "description": "Bộ kịch bản kiểm thử tự động 25/25 Test Cases chuẩn hóa môn Phát triển phần mềm hướng dịch vụ (PTPMHDV) cho hệ thống PickleBallWeb. Bao gồm kiểm thử luồng nghiệp vụ, kiểm thử hợp đồng, kiểm thử đồng thời (Concurrency Lock) và kiểm thử biên âm tính (Security & Negative Cases).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -1122,7 +1122,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer eyJhbGciOiJIUzI1NiJ9.INVALID_TAMPERED_PAYLOAD.abc123xyz"
+                "value": "Bearer invalid_tampered_jwt_signature_test_token_abc123"
               }
             ],
             "url": {
