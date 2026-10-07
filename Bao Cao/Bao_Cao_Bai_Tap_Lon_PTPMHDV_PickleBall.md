@@ -245,7 +245,7 @@ Vận dụng các nguyên lý, quy chuẩn của học phần **Phát triển ph
 1. **Phương pháp nghiên cứu lý thuyết**: Nghiên cứu các chuẩn tài liệu RFC về giao thức HTTP/1.1 và HTTP/2, nguyên lý thiết kế REST của Roy Fielding, cơ chế xác thực Token-based Authentication, và các mô hình xử lý tranh chấp dữ liệu (Pessimistic/Optimistic Concurrency Control).
 2. **Phương pháp phân tích và thiết kế hệ thống**: Sử dụng ngôn ngữ mô hình hóa thống nhất (UML) để xây dựng Sơ đồ Use Case, Sơ đồ tuần tự (Sequence Diagram) và Sơ đồ quan hệ thực thể (ERD) bằng công cụ Mermaid.
 3. **Phương pháp thực nghiệm và phát triển phần mềm**: Áp dụng mô hình phát triển phần mềm linh hoạt (Agile/Scrum), chia nhỏ thành các chặng hoàn thiện dịch vụ API Backend trước, sau đó phát triển Client SPA tiêu thụ dịch vụ.
-4. **Phương pháp kiểm thử và đánh giá**: Sử dụng Postman để kiểm thử chức năng và phi chức năng của từng endpoint API; thực hiện kiểm thử tích hợp giao diện người dùng và đo lường độ phản hồi.
+4. **Phương pháp kiểm thử và đánh giá**: Kết hợp công cụ Postman (kiểm thử hợp đồng và khám phá API) với bộ công cụ tự động hóa Python QA Suite chuyên sâu (kiểm định đa luồng tranh chấp khóa bi quan, xác thực tính nguyên tử giao dịch và hồi quy toàn hệ thống); thực hiện kiểm thử tích hợp giao diện người dùng E2E và đo lường độ phản hồi.
 
 ---
 
@@ -256,7 +256,7 @@ Báo cáo kết quả nghiên cứu bài tập lớn được tổ chức thành
 * **Chương 1 — Cơ sở lý thuyết, công nghệ và giải pháp**: Phân tích kiến trúc SOA, nguyên lý RESTful Web Service, cơ chế trao đổi dữ liệu và so sánh cơ sở lựa chọn công nghệ (Spring Boot 3, Java 21, React 18, MySQL).
 * **Chương 2 — Phân tích và thiết kế hệ thống**: Phân tích các quy tắc nghiệp vụ, mô hình hóa Use Case, thiết kế kiến trúc phân tầng, thiết kế cơ sở dữ liệu quan hệ, đặc tả danh mục RESTful API và thiết kế tích hợp ứng dụng Client.
 * **Chương 3 — Cài đặt và triển khai hệ thống**: Trình bày chi tiết mã nguồn hiện thực hóa các tầng Controller, Service, Repository trong Spring Boot 3, xây dựng Hooks/Context trong React Client và quy trình đóng gói triển khai lên Vercel/Cloud.
-* **Chương 4 — Kiểm thử và đánh giá hệ thống**: Trình bày bộ dữ liệu kiểm thử API qua Postman, kịch bản kiểm thử tích hợp luồng nghiệp vụ toàn trình (E2E) và bảng đối chiếu đánh giá mức độ hoàn thành.
+* **Chương 4 — Kiểm thử và đánh giá hệ thống**: Trình bày kết quả kiểm thử tự động chuyên sâu Python QA Suite (19/19 Test Cases) và kiểm thử Postman, kịch bản kiểm thử tích hợp luồng nghiệp vụ toàn trình (E2E) và bảng đối chiếu đánh giá mức độ hoàn thành.
 * **Kết luận và hướng phát triển**: Tổng kết các kết quả đạt được, chỉ ra những mặt hạn chế và đề xuất giải pháp nâng cấp hệ thống trong tương lai.
 
 ---
@@ -433,7 +433,7 @@ Spring Boot 3 chạy trên nền Java 21 LTS là giải pháp công nghệ máy 
 | **Frontend Framework** | **React 18 (TypeScript)** | Vue.js, Angular, Blade Monolith | Hệ sinh thái thư viện phong phú, quản lý Virtual DOM tốt, Type-safety chuẩn mực |
 | **State Management** | **TanStack Query v5** | Redux Toolkit, Zustand, Context | Quản lý Server-state chuyên dụng, tự động cache, đồng bộ trạng thái API không cần code boilerplate |
 | **Cơ sở dữ liệu** | **MySQL 8.x** | MongoDB, PostgreSQL | Khóa cấp dòng Row-level Lock xuất sắc, bảo đảm giao dịch ACID cho nghiệp vụ giữ chỗ và thanh toán |
-| **Kiểm thử API** | **Postman** | Swagger UI, cURL | Khả năng tự động hóa Test Scripts, quản lý Collection biến môi trường, mô phỏng kịch bản giả lập |
+| **Kiểm thử API** | **Postman & Python QA Suite** | Swagger UI, cURL, JMeter | Kiểm thử hợp đồng API (Postman) và kịch bản tự động hóa đa luồng kiểm định khóa bi quan, ACID (Python) |
 
 ---
 
@@ -718,7 +718,7 @@ flowchart TD
     subgraph DICH_VU_NGOAI["DỊCH VỤ TÍCH HỢP BÊN THỨ BA (THIRD-PARTY SERVICES)"]
         MoMoGW["Cổng thanh toán MoMo\n(API Gateway & Webhook IPN HMAC-SHA256)"]
         VietQR["Hệ thống tạo mã VietQR\n(Chuyển khoản liên ngân hàng 24/7)"]
-        GHN["Đơn vị vận chuyển GHN\n(Tính phí & Tạo vận đơn tự động)"]
+        QRServer["Dịch vụ sinh mã QR vé vào sân\n(ZXing Engine / QR Ticket)"]
     end
 
     ClientWeb -- "HTTPS / JSON (REST API)" --> CorsRoute
@@ -740,7 +740,7 @@ flowchart TD
 
     OrderMod <-->|"API Thanh toán & Nhận Webhook"| MoMoGW
     OrderMod -->|"Sinh mã thanh toán động"| VietQR
-    OrderMod <-->|"Tính phí ship & Tạo đơn"| GHN
+    OrderMod -->|"Sinh mã vé QR Check-in"| QRServer
 ```
 
 #### 2.3.2. Thiết kế các tầng bên trong Backend Service
