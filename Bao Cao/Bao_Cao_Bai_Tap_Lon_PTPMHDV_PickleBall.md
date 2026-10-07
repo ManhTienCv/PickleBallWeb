@@ -133,15 +133,18 @@ Mặc dù nhóm đã nỗ lực hết sức để hoàn thiện đề tài từ 
     * 1.1.2. So sánh Enterprise SOA, Microservices và Modular Monolith
     * 1.1.3. 8 Nguyên lý thiết kế dịch vụ cốt lõi theo Thomas Erl
   * 1.2. Nguyên lý thiết kế và tiêu thụ Web API
-    * 1.2.1. Cấp độ trưởng thành Richardson (RMM Level 2)
-    * 1.2.2. Cấu trúc Token xác thực RFC 7519 JWT
-    * 1.2.3. Chữ ký số bảo mật HMAC-SHA256
+    * 1.2.1. Chuẩn kiến trúc RESTful Web Service và Mô hình Trưởng thành Richardson (RMM)
+    * 1.2.2. So sánh giao tiếp dịch vụ RESTful (JSON) và SOAP/WSDL (XML)
+    * 1.2.3. Quy tắc định danh Resource và Endpoint
+    * 1.2.4. Chuẩn hóa cấu trúc Request và Response
+    * 1.2.5. Cơ chế bảo mật API và Xác thực Webhook
   * 1.3. Công nghệ và giải pháp lựa chọn
 * **CHƯƠNG 2. PHÂN TÍCH VÀ THIẾT KẾ HỆ THỐNG**
   * 2.1. Phân tích bài toán và các quy tắc nghiệp vụ
-    * 2.1.1. Phương pháp luận mô hình hóa dịch vụ IBM SOMA 3 pha
-    * 2.1.2. Quản trị dịch vụ 3 tầng (SOA Governance)
-    * 2.1.3. Các quy tắc nghiệp vụ cốt lõi (Slot Hold, Cut-off 30p, Atomic Mixed Order)
+    * 2.1.1. Tác nhân hệ thống (Actors)
+    * 2.1.2. Các quy tắc nghiệp vụ then chốt (Core Business Rules)
+    * 2.1.3. Phương pháp luận mô hình hóa dịch vụ IBM SOMA 3 pha
+    * 2.1.4. Quản trị dịch vụ 3 tầng (SOA Governance)
   * 2.2. Mô hình hóa chức năng và nghiệp vụ
   * 2.3. Thiết kế kiến trúc hệ thống
   * 2.4. Thiết kế cơ sở dữ liệu
@@ -305,7 +308,7 @@ Trong bối cảnh bài toán xây dựng hệ thống đặt sân thể thao v�
 > **Biện luận kiến trúc**: Đề tài áp dụng triết lý phân rã dịch vụ của SOA nhưng đóng gói dưới dạng **Modular Monolith** chạy trên Spring Boot 3 kết hợp **Headless RESTful API**. Giải pháp này đảm bảo đầy đủ các nguyên tắc thiết kế dịch vụ mà vẫn giữ được tính nguyên tử ACID cho **Đơn hàng hỗn hợp** (vừa giữ sân vừa trừ kho sản phẩm trong cùng một giao dịch), loại bỏ triệt để độ trễ mạng và rủi ro lỗi phân tán của Microservices.
 
 #### 1.1.3. Đối chiếu 8 Nguyên tắc Thiết kế Dịch vụ Chuẩn hóa (Thomas Erl)
-Theo lý thuyết kinh điển của Thomas Erl — chuyên gia đầu ngành về kiến trúc SOA, một hệ thống đạt chuẩn hướng dịch vụ cần đáp ứng 8 nguyên tắc cốt lõi. Bảng dưới đây đối chiếu cụ thể 8 nguyên tắc này với mã nguồn thực tế của dự án PickleBallWeb:
+Theo lý thuyết kinh điển của Thomas Erl [2] — chuyên gia đầu ngành về kiến trúc SOA, một hệ thống đạt chuẩn hướng dịch vụ cần đáp ứng 8 nguyên tắc cốt lõi. Bảng dưới đây đối chiếu cụ thể 8 nguyên tắc này với mã nguồn thực tế của dự án PickleBallWeb:
 
 | STT | Nguyên tắc chuẩn hóa (Thomas Erl) | Diễn giải lý thuyết | Hiện thực hóa trong hệ thống PickleBallWeb |
 | :---: | :--- | :--- | :--- |
@@ -315,7 +318,7 @@ Theo lý thuyết kinh điển của Thomas Erl — chuyên gia đầu ngành v�
 | 4 | **Service Reusability** *(Khả năng tái sử dụng)* | Thiết kế dịch vụ để phục vụ cho nhiều ngữ cảnh và nhiều tác nhân tiêu thụ khác nhau. | Endpoint `GET /api/v1/courts/availability` được tái sử dụng đồng thời cho Khách hàng xem ma trận trực tuyến và Lễ tân theo dõi trên bản đồ CourtMap. |
 | 5 | **Service Autonomy** *(Tính tự chủ dịch vụ)* | Dịch vụ có toàn quyền kiểm soát logic và phạm vi thực thi của chính mình. | Module Booking tự chủ hoàn toàn trong việc kiểm tra tính khả dụng của ca sân và quản lý luồng đếm ngược giữ chỗ 10 phút. |
 | 6 | **Service Statelessness** *(Tính phi trạng thái)* | Dịch vụ hạn chế lưu giữ trạng thái của phiên người dùng trên bộ nhớ máy chủ. | Xác thực hoàn toàn bằng chuỗi Bearer Token JWT; máy chủ không lưu HTTP Session trên RAM, bảo đảm khả năng mở rộng quy mô ngang (Scale-out). |
-| 7 | **Service Discoverability** *(Khả năng khám phá)* | Dịch vụ được mô tả rõ ràng để người phát triển dễ dàng tìm kiếm và tích hợp. | Danh mục 37 RESTful Endpoints được định danh theo danh từ tài nguyên chuẩn mực, có tiền tố phiên bản `/api/v1/` nhất quán. |
+| 7 | **Service Discoverability** *(Khả năng khám phá)* | Dịch vụ được mô tả rõ ràng để người phát triển dễ dàng tìm kiếm và tích hợp. | Danh mục 37 RESTful Endpoints được định danh theo danh từ tài nguyên chuẩn mực, có tiền tố `/api/v1/` nhất quán; xuất bản tài liệu tương tác qua Springdoc-OpenAPI tại `/swagger-ui/index.html`. |
 | 8 | **Service Composability** *(Khả năng phối hợp)* | Các dịch vụ đơn lẻ có thể kết hợp với nhau để tạo thành một quy trình nghiệp vụ lớn hơn. | `OrderService` phối hợp dịch vụ kiểm tra giữ chỗ sân (`BookingModule`) và dịch vụ trừ tồn kho biến thể (`ShopModule`) trong cùng một đơn hàng hỗn hợp. |
 
 #### 1.1.4. Mô hình Decoupled Headless Client-Server
@@ -330,7 +333,7 @@ Theo lý thuyết kinh điển của Thomas Erl — chuyên gia đầu ngành v�
 ### 1.2. Nguyên lý thiết kế và tiêu thụ Web API
 
 #### 1.2.1. Chuẩn kiến trúc RESTful Web Service và Mô hình Trưởng thành Richardson (RMM)
-REST (Representational State Transfer) là phong cách kiến trúc phần mềm tận dụng tối đa các giao thức có sẵn của nền tảng web (đặc biệt là HTTP/1.1 và HTTP/2) để truyền tải và điều khiển trạng thái tài nguyên. Một hệ thống API chuẩn RESTful phải tuân thủ nghiêm ngặt 6 ràng buộc:
+REST (Representational State Transfer) là phong cách kiến trúc phần mềm do Roy Thomas Fielding đề xuất trong luận án tiến sĩ năm 2000 [1], tận dụng tối đa các giao thức có sẵn của nền tảng web (đặc biệt là HTTP/1.1 và HTTP/2) để truyền tải và điều khiển trạng thái tài nguyên. Một hệ thống API chuẩn RESTful phải tuân thủ nghiêm ngặt 6 ràng buộc:
 1. **Kiến trúc Client - Server**: Phân tách rõ ràng mối quan tâm giữa giao diện người dùng và lưu trữ dữ liệu.
 2. **Phi trạng thái (Stateless)**: Mỗi request gửi từ Client lên Server phải chứa đầy đủ mọi thông tin cần thiết để Server có thể hiểu và thực thi. Server không được lưu session phiên làm việc của Client trong bộ nhớ máy chủ.
 3. **Khả năng lưu bộ nhớ đệm (Cacheable)**: Dữ liệu phản hồi phải được định danh rõ có thể lưu cache hay không để giảm tải cho hệ thống.
@@ -339,7 +342,7 @@ REST (Representational State Transfer) là phong cách kiến trúc phần mềm
 6. **Mã theo yêu cầu (Code on Demand - Tùy chọn)**: Cho phép server gửi mã thực thi (Javascript) về client khi cần thiết.
 
 ##### Đánh giá theo Mô hình Trưởng thành Richardson (Richardson Maturity Model - RMM):
-Để định lượng mức độ chuẩn hóa hướng dịch vụ của Web API, dự án đối chiếu với 4 cấp độ của mô hình RMM (Leonard Richardson):
+Để định lượng mức độ chuẩn hóa hướng dịch vụ của Web API, dự án đối chiếu với 4 cấp độ của mô hình RMM (Leonard Richardson & Sam Ruby) [3]:
 * **Level 0 (The Swamp of POX)**: Dùng HTTP đơn thuần như một đường ống RPC (Remote Procedure Call), thường chỉ dùng 1 endpoint duy nhất (ví dụ: `/api/service`) với phương thức POST.
 * **Level 1 (Resources)**: Bắt đầu định danh các tài nguyên riêng biệt qua các đường dẫn URI khác nhau (`/courts`, `/products`, `/orders`).
 * **Level 2 (HTTP Verbs & Status Codes)**: Sử dụng chính xác các động từ HTTP (`GET, POST, PUT, DELETE`) và trả về đúng mã trạng thái HTTP chuẩn (`200, 201, 400, 403, 404, 409, 422`).
@@ -347,7 +350,20 @@ REST (Representational State Transfer) là phong cách kiến trúc phần mềm
 
 > **Kết luận đánh giá RMM**: Hệ thống PickleBallWeb đạt chuẩn **Level 2 (HTTP Verbs & Status Codes)** — mức độ trưởng thành tối ưu và phổ biến nhất trong các hệ thống doanh nghiệp thực tế hiện nay, kết hợp tài liệu Service Contract rõ ràng thay cho overhead xử lý liên kết của HATEOAS.
 
-#### 1.2.2. Quy tắc định danh Resource và Endpoint
+#### 1.2.2. So sánh giao tiếp dịch vụ RESTful (JSON) và SOAP/WSDL (XML)
+Trong kỹ thuật phần mềm hướng dịch vụ (SOSE), hai phong cách giao tiếp dịch vụ phổ biến nhất là SOAP và RESTful API. Bảng dưới đây phân tích cơ sở lựa chọn kiến trúc cho dự án:
+
+| Tiêu chí so sánh | Web Service truyền thống (SOAP / WSDL) | Kiến trúc RESTful Web API (Lựa chọn của đề tài) |
+| :--- | :--- | :--- |
+| **Giao thức & Đóng gói** | Định dạng XML đóng gói trong phong bì SOAP Envelope | Dựa trên HTTP/HTTPS chuẩn, payload JSON gọn nhẹ |
+| **Đặc tả hợp đồng dịch vụ** | WSDL (Web Services Description Language) chặt chẽ nhưng phức tạp | OpenAPI 3.0 / Swagger UI trực quan, dễ tích hợp |
+| **Chi phí băng thông & CPU** | Cao do thẻ XML lồng nhau cồng kềnh, phân tích cú pháp tốn tài nguyên | Rất thấp, định dạng JSON tối ưu truyền tải mạng Internet |
+| **Khả năng tiêu thụ Client** | Khó tích hợp trực tiếp từ trình duyệt Web (JavaScript) | Tương thích tự nhiên 100% với các ứng dụng React SPA |
+| **Cơ chế xác thực** | WS-Security cấu hình nặng | Bearer Token JWT (RFC 7519) + Chữ ký số HMAC-SHA256 |
+
+> **Biện luận lựa chọn**: Đối với bài toán đặt sân thể thao có lưu lượng người dùng truy cập cao trên Web/Mobile, RESTful API kết hợp JSON và OpenAPI là giải pháp tối ưu vượt bậc so với SOAP/WSDL nhờ độ trễ thấp, tiết kiệm băng thông và tích hợp mượt mà với 2 ứng dụng React SPA.
+
+#### 1.2.3. Quy tắc định danh Resource và Endpoint
 * **Tài nguyên (Resource)**: Đại diện cho một đối tượng thực tế hoặc khái niệm dữ liệu trong hệ thống. Tên tài nguyên được đặt ở dạng **danh từ số nhiều** (ví dụ: `courts`, `products`, `orders`).
 * **Hành động qua HTTP Methods**:
 
@@ -358,7 +374,7 @@ REST (Representational State Transfer) là phong cách kiến trúc phần mềm
 | **PUT** | Cập nhật/thay thế toàn bộ tài nguyên | Có | `PUT /api/v1/admin/courts/{id}` (Cập nhật thông tin sân) |
 | **DELETE** | Xóa hoặc giải phóng một tài nguyên | Có | `DELETE /api/v1/booking/hold/{id}` (Hủy giữ chỗ ca sân) |
 
-#### 1.2.3. Chuẩn hóa cấu trúc Request và Response
+#### 1.2.4. Chuẩn hóa cấu trúc Request và Response
 Nhằm giúp các ứng dụng Client dễ dàng bắt lỗi và bóc tách dữ liệu một cách đồng bộ, toàn bộ API của hệ thống được quy định trả về theo định dạng chuẩn:
 
 * **Cấu trúc phản hồi thành công (HTTP 200, 201)**:
@@ -391,7 +407,7 @@ Nhằm giúp các ứng dụng Client dễ dàng bắt lỗi và bóc tách dữ
 }
 ```
 
-#### 1.2.4. Cơ chế bảo mật API và Xác thực Webhook
+#### 1.2.5. Cơ chế bảo mật API và Xác thực Webhook [6]
 * **Xác thực API bằng Bearer Token (Spring Security 6 & JWT - RFC 7519)**:
   Khách hàng và nhân viên đăng nhập thành công sẽ nhận được một chuỗi Token JWT gồm 3 phần phân tách bởi dấu chấm `Header.Payload.Signature` được mã hóa Base64URL và ký điện tử bằng khóa bí mật HMAC-SHA256:
   $$\text{JWT} = \text{Base64Url}(\text{Header}) \,.\, \text{Base64Url}(\text{Payload}) \,.\, \text{HMAC-SHA256}(\text{Header} \,.\, \text{Payload}, \text{SecretKey})$$
@@ -399,7 +415,7 @@ Nhằm giúp các ứng dụng Client dễ dàng bắt lỗi và bóc tách dữ
   * `Payload`: Chứa các claims gồm `sub` (userId), `email`, `role` (ADMIN, STAFF, CUSTOMER), `iat` (issuedAt) và `exp` (thời hạn hết hạn).
   * `Signature`: Chữ ký số đảm bảo token không bị chỉnh sửa trên đường truyền.
   Mỗi yêu cầu sau đó được truyền qua HTTP Header `Authorization: Bearer <token>`. Tầng `JwtAuthenticationFilter` trên Spring Boot giải mã claims và thiết lập quyền vào `SecurityContextHolder`. Vì JWT hoàn toàn **Stateless**, hành động đăng xuất (Logout) được thực hiện bằng cách xóa token tại Client (`localStorage.removeItem`), bảo đảm máy chủ không phải lưu trữ session state.
-* **Xác thực Webhook MoMo bằng chữ ký số HMAC-SHA256**:
+* **Xác thực Webhook MoMo bằng chữ ký số HMAC-SHA256 [6]**:
   Vì Webhook là cổng mở để MoMo gọi đến mà không kèm JWT người dùng, để chống giả mạo gói tin (Man-in-the-Middle hoặc giả mạo IPN), hệ thống sử dụng thuật toán HMAC-SHA256 kết hợp `SecretKey` của đối tác để tạo chữ ký số kiểm tra tính toàn vẹn dữ liệu:
   $$\text{Signature} = \text{HMAC-SHA256}(\text{RawHashData}, \text{SecretKey})$$
   Hệ thống trích xuất trường `signature` từ JSON Request Body mà MoMo gửi sang, so sánh với chữ ký tự tính toán. Chỉ khi chữ ký trùng khớp 100%, hệ thống mới mở Transaction để cập nhật trạng thái đơn hàng và chuyển ca sân sang `booked`.
@@ -408,21 +424,21 @@ Nhằm giúp các ứng dụng Client dễ dàng bắt lỗi và bóc tách dữ
 
 ### 1.3. Công nghệ và giải pháp lựa chọn
 
-#### 1.3.1. Lý do lựa chọn công nghệ Backend: Spring Boot 3 (Java 21)
-Spring Boot 3 chạy trên nền Java 21 LTS là giải pháp công nghệ máy chủ chuẩn doanh nghiệp hàng đầu hiện nay, đặc biệt phù hợp cho các bài toán kiến trúc hướng dịch vụ (SOA):
+#### 1.3.1. Lý do lựa chọn công nghệ Backend: Spring Boot 3 (Java 21) [4]
+Spring Boot 3 chạy trên nền Java 21 LTS là giải pháp công nghệ máy chủ chuẩn doanh nghiệp hàng đầu hiện nay, đặc biệt phù hợp cho các bài toán kiến trúc hướng dịch vụ (SOA) [4]:
 1. **Kiến trúc phân tầng chuẩn mực & IoC/DI**: Hệ thống tận dụng cơ chế Đảo ngược điều khiển (Inversion of Control) và Tiêm phụ thuộc (Dependency Injection) của Spring Container, giúp tách biệt hoàn toàn giữa Controller (tiếp nhận HTTP), Service (xử lý logic nghiệp vụ) và Repository (truy cập dữ liệu).
 2. **Spring Data JPA & Quản lý Khóa giao dịch (Pessimistic Lock)**: Hỗ trợ giao dịch `@Transactional` mạnh mẽ kết hợp annotation `@Lock(LockModeType.PESSIMISTIC_WRITE)`. Khi một ca sân được chọn, Spring Data JPA tự động sinh câu truy vấn `SELECT ... FOR UPDATE` ở mức dòng trong MySQL, ngăn chặn hoàn toàn nguy cơ tranh chấp lịch đặt đồng thời (Race Condition).
 3. **Tác vụ nền tự động hóa (@EnableScheduling)**: Cho phép cấu hình các tiến trình định kỳ (Cron task / Scheduled Task) quét và tự động nhả ca sân đã hết hạn giữ chỗ 10 phút về trạng thái khả dụng mà không cần thiết lập bên ngoài máy chủ.
 
-#### 1.3.2. Lý do lựa chọn công nghệ Frontend: React 18, Vite, TypeScript & Tailwind CSS
-* **React 18 & Virtual DOM**: Cung cấp cơ chế rendering hiệu năng cao, tối ưu cho việc biểu diễn lưới ma trận đặt sân gồm hàng chục ô trạng thái cập nhật liên tục mà không gây giật lag (re-render toàn trang).
+#### 1.3.2. Lý do lựa chọn công nghệ Frontend: React 18, Vite, TypeScript & Tailwind CSS [5]
+* **React 18 & Virtual DOM [5]**: Cung cấp cơ chế rendering hiệu năng cao, tối ưu cho việc biểu diễn lưới ma trận đặt sân gồm hàng chục ô trạng thái cập nhật liên tục mà không gây giật lag (re-render toàn trang).
 * **TypeScript**: Đảm bảo an toàn kiểu dữ liệu (Type-Safety) tuyệt đối từ giao diện tới cấu trúc DTO nhận từ Backend API, giảm thiểu lỗi runtime do sai lệch thuộc tính JSON.
 * **Vite**: Bộ đóng gói và khởi chạy siêu tốc với cơ chế Hot Module Replacement (HMR).
-* **TanStack Query (React Query)**: Giải pháp quản lý trạng thái máy chủ (Server-state Management) số một hiện nay, hỗ trợ tự động caching dữ liệu ca sân, xử lý trạng thái Loading/Error và tự động làm mới (refetch on window focus).
+* **TanStack Query (React Query) [8]**: Giải pháp quản lý trạng thái máy chủ (Server-state Management) số một hiện nay, hỗ trợ tự động caching dữ liệu ca sân, xử lý trạng thái Loading/Error và tự động làm mới (refetch on window focus).
 * **Tailwind CSS & Framer Motion**: Cung cấp giao diện hiện đại, chuẩn chỉnh cho trải nghiệm người dùng trên cả Client và thanh trượt Pill lướt dọc Raycast trên giao diện quản trị Admin.
 
-#### 1.3.3. Lý do lựa chọn Hệ quản trị cơ sở dữ liệu: MySQL 8.x
-* Đáp ứng đầy đủ tiêu chuẩn **ACID** (Atomicity, Consistency, Isolation, Durability), bảo đảm dữ liệu giao dịch tài chính và trạng thái đặt sân không bao giờ bị sai lệch.
+#### 1.3.3. Lý do lựa chọn Hệ quản trị cơ sở dữ liệu: MySQL 8.x [7]
+* Đáp ứng đầy đủ tiêu chuẩn **ACID** (Atomicity, Consistency, Isolation, Durability), bảo đảm dữ liệu giao dịch tài chính và trạng thái đặt sân không bao giờ bị sai lệch [7].
 * Tính năng `InnoDB Engine` với cơ chế khóa cấp dòng (Row-level Locking) cho phép hàng trăm người dùng có thể đồng thời xem và đặt các sân khác nhau mà không bị nghẽn toàn bộ bảng dữ liệu.
 
 #### 1.3.4. Bảng tổng hợp so sánh công nghệ lựa chọn
@@ -929,7 +945,7 @@ Hệ thống sử dụng cơ sở dữ liệu quan hệ **MySQL 8.x** với cơ 
 
 #### 2.5.1. Danh mục tổng thể các Endpoint hệ thống
 
-Hệ thống Backend Spring Boot 3.3.4 (chạy trên cổng `8080`) cung cấp danh mục dịch vụ API hoàn chỉnh, được phân chia theo các module nghiệp vụ và kiểm soát truy cập nghiêm ngặt theo mô hình RBAC:
+Hệ thống Backend Spring Boot 3.3.4 (chạy trên cổng `8080`) cung cấp danh mục dịch vụ API hoàn chỉnh tuân thủ đặc tả **OpenAPI 3.0 (OAS)**. Toàn bộ tài liệu hợp đồng dịch vụ được tự động xuất bản thông qua giao diện tương tác **Swagger UI** tại đường dẫn `http://localhost:8080/swagger-ui/index.html` và định dạng JSON máy đọc được tại `/v3/api-docs`. Danh mục 37 endpoints được phân chia theo các module nghiệp vụ và kiểm soát truy cập nghiêm ngặt theo mô hình RBAC:
 
 | STT | Phương thức | Đường dẫn Endpoint | Tác nhân / Quyền | Chức năng nghiệp vụ & Giao thức dữ liệu |
 | :---: | :---: | :--- | :--- | :--- |
@@ -1575,8 +1591,8 @@ Qua thực nghiệm vận hành mô phỏng, hệ thống chứng minh sự vư�
 3. **Tự động hóa 100% quy trình đối soát dòng tiền**: Việc tích hợp Webhook IPN của MoMo và VietQR loại bỏ hoàn toàn công đoạn chụp màn hình gửi biên lai ngân hàng và đối soát mắt thường, ngăn chặn triệt để gian lận biên lai giả.
 4. **Giảm 90% khiếu nại của khách hàng**: Tính minh bạch về giá theo khung giờ (Peak/Off-peak) cùng đồng hồ đếm ngược 10 phút giữ chỗ giúp khách hàng hoàn toàn chủ động trong quá trình thanh toán.
 
-#### 4.3.3. Đạo đức nghề nghiệp trong kỹ thuật phần mềm (Software Engineering Ethics)
-Nhóm phát triển cam kết tuân thủ nghiêm túc các nguyên tắc đạo đức nghề nghiệp theo chuẩn **ACM/IEEE-CS Software Engineering Code of Ethics and Professional Practice**:
+#### 4.3.3. Đạo đức nghề nghiệp trong kỹ thuật phần mềm (Software Engineering Ethics) [9]
+Nhóm phát triển cam kết tuân thủ nghiêm túc các nguyên tắc đạo đức nghề nghiệp theo chuẩn **ACM/IEEE-CS Software Engineering Code of Ethics and Professional Practice [9]**:
 1. **Bảo vệ quyền riêng tư và an toàn thông tin người dùng (Public Interest & Privacy)**: Toàn bộ mật khẩu của khách hàng và nhân viên đều được mã hóa một chiều bằng giải thuật băm an toàn **BCrypt** với chuỗi Salt ngẫu nhiên trước khi lưu vào CSDL. Hệ thống tuân thủ nguyên tắc tối thiểu hóa dữ liệu (Data Minimization), không thu thập thông tin đời tư không cần thiết và **tuyệt đối không lưu trữ thông tin thẻ ngân hàng hoặc mã số bảo mật CVV** của người dùng trên máy chủ (ủy quyền xử lý toàn bộ cho cổng thanh toán MoMo).
 2. **Tính trung thực và minh bạch trong thuật toán (Honesty & Transparency)**: Giải thuật giữ chỗ 10 phút và quy tắc Cut-off 30 phút được lập trình công khai, đối xử bình đẳng với mọi khách hàng, không cài cắm cơ chế ưu tiên ngầm hoặc thao túng giá ảo. Chính sách hoàn hủy ca sân và quy định sử dụng voucher khuyến mãi được hiển thị rõ ràng, tôn trọng quyền lợi của người tiêu dùng.
 3. **Độ tin cậy và chất lượng hệ thống (Quality & Professional Integrity)**: Đội ngũ phát triển ý thức sâu sắc rằng lỗi phần mềm trong giao dịch tài chính có thể gây thiệt hại kinh tế cho người dùng và chủ sân. Do đó, nhóm đã thực hiện kiểm thử nghiêm ngặt tính nguyên tử (`@Transactional` Rollback) và kiểm thử tranh chấp đồng thời (Concurrency Lock) nhằm đảm bảo không bao giờ phát sinh tình trạng tài khoản khách bị trừ tiền nhưng không nhận được sân hoặc hàng hóa.
