@@ -24,7 +24,6 @@ export const masterCatalog: CatalogProduct[] = [
 ];
 
 export const ONLINE_STATUS_TABS: OnlineStatusTab[] = [
-  { id: "ALL", label: "Tất cả đơn" },
   { id: "PENDING", label: "Chờ xử lý" },
   { id: "REFUND_PENDING", label: "Chờ hoàn tiền" },
   { id: "READY_TO_PICK", label: "Chờ lấy hàng" },

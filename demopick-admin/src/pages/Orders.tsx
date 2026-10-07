@@ -45,8 +45,8 @@ export default function Orders() {
     return "online";
   });
   const [posSubFilter, setPosSubFilter] = useState<PosCategory>("court_service");
-  const [statusFilter, setStatusFilter] = useState<string>("PENDING");
-  const [onlineStatusFilter, setOnlineStatusFilter] = useState<string>("ALL");
+  const [statusFilter, setStatusFilter] = useState<string>("PAID");
+  const [onlineStatusFilter, setOnlineStatusFilter] = useState<string>("PENDING");
   const [paymentFilter, setPaymentFilter] = useState<string>("ALL");
 
   // Sync state with URL params
@@ -61,7 +61,7 @@ export default function Orders() {
         setStatusFilter("PAID");
       } else {
         setViewMode("online");
-        setStatusFilter("PENDING");
+        setOnlineStatusFilter("PENDING");
       }
     }
   }, [searchParams, isStaffOnly]);
