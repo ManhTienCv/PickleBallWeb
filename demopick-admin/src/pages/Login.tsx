@@ -6,15 +6,15 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { 
-  AlertCircle, 
-  Mail, 
-  Lock, 
-  Eye, 
-  EyeOff, 
-  ShieldCheck, 
-  Loader2, 
-  Shield, 
+import {
+  AlertCircle,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  Loader2,
+  Shield,
   ArrowRight,
   Sparkles,
   Sun,
@@ -30,7 +30,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  
+
   const { login, isLoading } = useAuth()
   const { theme, setTheme } = useTheme()
   const navigate = useNavigate()
@@ -54,11 +54,10 @@ export default function Login() {
         <button
           type="button"
           onClick={() => setTheme('light')}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-            theme === 'light'
-              ? 'bg-emerald-600 text-white shadow-sm'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${theme === 'light'
+            ? 'bg-emerald-600 text-white shadow-sm'
+            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
           title="Giao diện Sáng"
         >
           <Sun className="h-3.5 w-3.5" />
@@ -68,11 +67,10 @@ export default function Login() {
         <button
           type="button"
           onClick={() => setTheme('dark')}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-            theme === 'dark'
-              ? 'bg-emerald-600 text-white shadow-sm'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${theme === 'dark'
+            ? 'bg-emerald-600 text-white shadow-sm'
+            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
           title="Giao diện Tối"
         >
           <Moon className="h-3.5 w-3.5" />
@@ -82,11 +80,10 @@ export default function Login() {
         <button
           type="button"
           onClick={() => setTheme('system')}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-            theme === 'system'
-              ? 'bg-emerald-600 text-white shadow-sm'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${theme === 'system'
+            ? 'bg-emerald-600 text-white shadow-sm'
+            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
           title="Tự động theo hệ điều hành/trình duyệt"
         >
           <Laptop className="h-3.5 w-3.5" />
@@ -124,7 +121,7 @@ export default function Login() {
             <CardTitle className="text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-b from-slate-900 via-slate-800 to-slate-700 dark:from-white dark:via-slate-100 dark:to-slate-400 bg-clip-text text-transparent">
               Pickleball Admin Portal
             </CardTitle>
-            
+
             <CardDescription className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm">
               Hệ thống Quản Trị Sân & Bán Hàng POS Pickleball
             </CardDescription>
@@ -239,14 +236,8 @@ export default function Login() {
 
             {/* Security disclaimer footer */}
             <div className="w-full pt-3 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500">
-              <div className="flex items-center gap-1.5">
-                <Shield className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-500/80" />
-                <span>Mã hóa TLS 1.3 & JWT Bearer</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Sparkles className="h-3 w-3 text-teal-600 dark:text-teal-400/80" />
-                <span>DemoPick Pro 2026</span>
-              </div>
+
+
             </div>
           </CardFooter>
         </form>
