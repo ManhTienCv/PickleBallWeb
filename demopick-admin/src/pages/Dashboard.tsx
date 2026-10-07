@@ -103,8 +103,8 @@ export default function Dashboard() {
             bOrder.payment_method === "momo"
               ? "MoMo"
               : bOrder.payment_method === "cod"
-              ? "COD"
-              : "VietQR";
+                ? "COD"
+                : "VietQR";
 
           const dateObj = bOrder.created_at ? new Date(bOrder.created_at) : new Date();
           const dateStr = dateObj.toISOString().split("T")[0];
@@ -126,11 +126,11 @@ export default function Dashboard() {
             shippingFee: bOrder.shipping_fee || 0,
             items: Array.isArray(bOrder.items)
               ? bOrder.items.map((it: BackendOrderItem, idx: number) => ({
-                  id: it.id || idx + 1,
-                  name: it.item_name || it.name || "Dịch vụ Pickleball",
-                  qty: it.quantity || it.qty || 1,
-                  price: it.price || 0,
-                }))
+                id: it.id || idx + 1,
+                name: it.item_name || it.name || "Dịch vụ Pickleball",
+                qty: it.quantity || it.qty || 1,
+                price: it.price || 0,
+              }))
               : [],
           };
         });
@@ -476,7 +476,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-slate-900 text-sm">Cảnh báo giao vận 3PL GHN</span>
+                  <span className="font-bold text-slate-900 text-sm">Cảnh báo giao vận GHN</span>
                   <Badge className="text-[11px] px-2 py-0.5 bg-amber-600 hover:bg-amber-600 text-white">
                     {metrics.pendingGhnCount} đơn chờ xử lý
                   </Badge>
@@ -719,15 +719,14 @@ export default function Dashboard() {
               {liveCourts.slice(0, 6).map((court) => (
                 <div
                   key={court.id}
-                  className={`p-3 rounded-xl border transition-all ${
-                    court.status === "in_use"
+                  className={`p-3 rounded-xl border transition-all ${court.status === "in_use"
                       ? "border-orange-200 bg-orange-50/40"
                       : court.status === "ending"
-                      ? "border-rose-200 bg-rose-50/40"
-                      : court.status === "booked"
-                      ? "border-purple-200 bg-purple-50/40"
-                      : "border-slate-200 bg-white hover:border-emerald-200"
-                  }`}
+                        ? "border-rose-200 bg-rose-50/40"
+                        : court.status === "booked"
+                          ? "border-purple-200 bg-purple-50/40"
+                          : "border-slate-200 bg-white hover:border-emerald-200"
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-xs text-slate-900">{court.name}</span>

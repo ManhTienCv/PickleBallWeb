@@ -41,7 +41,7 @@ export const OrderShippingDialog: React.FC<OrderShippingDialogProps> = ({
         <DialogHeader className="space-y-1">
           <div className="inline-flex items-center gap-2 text-emerald-700 bg-emerald-50 px-3 py-1 rounded-xl text-xs font-bold w-fit">
             <Truck className="w-4 h-4" />
-            <span>Xuất Kho & Đẩy Đơn Vận Chuyển 3PL</span>
+            <span>Xuất Kho & Đẩy Đơn Vận Chuyển</span>
           </div>
           <DialogTitle className="text-lg font-bold text-slate-900">
             Tạo Vận Đơn Giao Hàng — Đơn #{order.code}
@@ -94,11 +94,10 @@ export const OrderShippingDialog: React.FC<OrderShippingDialogProps> = ({
                   <div
                     key={c.id}
                     onClick={() => setSelectedCarrier(c.id)}
-                    className={`p-3 rounded-2xl border-2 transition-colors cursor-pointer space-y-1 relative ${
-                      isSelected
+                    className={`p-3 rounded-2xl border-2 transition-colors cursor-pointer space-y-1 relative ${isSelected
                         ? "border-emerald-600 bg-emerald-50/40 shadow-sm"
                         : "border-slate-200 hover:border-slate-300 bg-white"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-slate-900 text-xs">{c.name}</span>

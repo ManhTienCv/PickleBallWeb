@@ -149,8 +149,8 @@ export default function Orders() {
             bOrder.payment_method === "momo"
               ? "MoMo"
               : bOrder.payment_method === "cod"
-              ? "COD"
-              : "VietQR";
+                ? "COD"
+                : "VietQR";
 
           const dateObj = bOrder.created_at ? new Date(bOrder.created_at) : new Date();
           const dateStr = dateObj.toISOString().split("T")[0];
@@ -172,11 +172,11 @@ export default function Orders() {
             shippingFee: bOrder.shipping_fee || 0,
             items: Array.isArray(bOrder.items)
               ? bOrder.items.map((it: BackendOrderItem, idx: number) => ({
-                  id: it.id || idx + 1,
-                  name: it.item_name || it.name || "Sản phẩm",
-                  qty: it.quantity || it.qty || 1,
-                  price: it.price || 0,
-                }))
+                id: it.id || idx + 1,
+                name: it.item_name || it.name || "Sản phẩm",
+                qty: it.quantity || it.qty || 1,
+                price: it.price || 0,
+              }))
               : [],
           };
         });
@@ -260,13 +260,13 @@ export default function Orders() {
         prev.map((o) =>
           o.code === orderCode
             ? {
-                ...o,
-                status: "REFUNDED",
-                paymentStatus: "REFUNDED",
-                refundTransId: transIdInput,
-                refundNote: noteInput || "",
-                refundedAt: new Date().toISOString(),
-              }
+              ...o,
+              status: "REFUNDED",
+              paymentStatus: "REFUNDED",
+              refundTransId: transIdInput,
+              refundNote: noteInput || "",
+              refundedAt: new Date().toISOString(),
+            }
             : o
         )
       );
@@ -326,12 +326,12 @@ export default function Orders() {
     const updatedOrders = ordersList.map((o) =>
       o.code === createShippingModalOrder.code
         ? {
-            ...o,
-            status: "SHIPPED" as const,
-            shippingCarrier: selectedCarrier,
-            trackingNumber: shippingInfo.trackingNumber,
-            shippingFee: fee,
-          }
+          ...o,
+          status: "SHIPPED" as const,
+          shippingCarrier: selectedCarrier,
+          trackingNumber: shippingInfo.trackingNumber,
+          shippingFee: fee,
+        }
         : o
     );
     setOrdersList(updatedOrders);
@@ -377,12 +377,12 @@ export default function Orders() {
       const updatedOrders = ordersList.map((o) =>
         o.code === order.code
           ? {
-              ...o,
-              status: "SHIPPED" as const,
-              shippingCarrier: "GHN" as const,
-              trackingNumber: shippingInfo.trackingNumber,
-              shippingFee: fee,
-            }
+            ...o,
+            status: "SHIPPED" as const,
+            shippingCarrier: "GHN" as const,
+            trackingNumber: shippingInfo.trackingNumber,
+            shippingFee: fee,
+          }
           : o
       );
       setOrdersList(updatedOrders);
@@ -691,7 +691,7 @@ export default function Orders() {
 
   return (
     <AppLayout
-      title={viewMode === "online" ? "Quản Lý Đơn Hàng Online & Vận Chuyển 3PL" : "Quản Lý Hóa Đơn Bán Hàng POS Quầy"}
+      title={viewMode === "online" ? "Quản Lý Đơn Hàng Online & Vận Chuyển" : "Quản Lý Hóa Đơn Bán Hàng POS Quầy"}
     >
       <div className="space-y-6 font-sans">
         {/* ONLINE ORDERS VIEW */}
@@ -732,17 +732,15 @@ export default function Orders() {
                       setOnlineStatusFilter(tab.id);
                       setCurrentPage(1);
                     }}
-                    className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-150 flex items-center gap-2 cursor-pointer ${
-                      isActive
+                    className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-150 flex items-center gap-2 cursor-pointer ${isActive
                         ? "bg-slate-900 text-white shadow-sm border border-slate-900"
                         : "bg-white text-slate-700 hover:bg-slate-50 border border-slate-200/90 shadow-sm"
-                    }`}
+                      }`}
                   >
                     <span>{tab.label}</span>
                     <span
-                      className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                        isActive ? "bg-slate-700 text-slate-100" : "bg-slate-100 text-slate-600"
-                      }`}
+                      className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${isActive ? "bg-slate-700 text-slate-100" : "bg-slate-100 text-slate-600"
+                        }`}
                     >
                       {count}
                     </span>
@@ -816,11 +814,10 @@ export default function Orders() {
                       setDatePeriod(p.id);
                       setCurrentPage(1);
                     }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-150 border ${
-                      datePeriod === p.id
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-150 border ${datePeriod === p.id
                         ? "bg-slate-900 text-white border-slate-900 shadow-sm"
                         : "bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200"
-                    }`}
+                      }`}
                   >
                     {p.label}
                   </button>
@@ -865,11 +862,10 @@ export default function Orders() {
                     setPosSubFilter(sub.id);
                     setCurrentPage(1);
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-150 border ${
-                    posSubFilter === sub.id
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-150 border ${posSubFilter === sub.id
                       ? "bg-emerald-600 text-white border-emerald-600 shadow-sm shadow-emerald-600/20"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200 border-transparent"
-                  }`}
+                    }`}
                 >
                   {sub.label}
                 </button>
@@ -889,11 +885,10 @@ export default function Orders() {
                     setStatusFilter(st.id);
                     setCurrentPage(1);
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-150 border ${
-                    statusFilter === st.id
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-150 border ${statusFilter === st.id
                       ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
                       : "bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200"
-                  }`}
+                    }`}
                 >
                   {st.label}
                 </button>
