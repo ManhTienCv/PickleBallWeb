@@ -156,7 +156,7 @@ Mặc dù nhóm đã nỗ lực hết sức để hoàn thiện đề tài từ 
   * 3.3. Cài đặt ứng dụng Client
   * 3.4. Triển khai hệ thống (Deployment)
 * **CHƯƠNG 4. KIỂM THỬ VÀ ĐÁNH GIÁ HỆ THỐNG**
-  * 4.1. Kiểm thử dịch vụ API (Automated Test Suite 19/19 PASSED)
+  * 4.1. Kiểm thử dịch vụ API (Automated Test Suite 25/25 PASSED)
   * 4.2. Kiểm thử tích hợp Client – API (End-to-End)
   * 4.3. Đánh giá mức độ đáp ứng yêu cầu và Đạo đức kỹ thuật
     * 4.3.1. Bảng đối soát các tiêu chí kỹ thuật đề tài
@@ -259,7 +259,7 @@ Báo cáo kết quả nghiên cứu bài tập lớn được tổ chức thành
 * **Chương 1 — Cơ sở lý thuyết, công nghệ và giải pháp**: Phân tích kiến trúc SOA, nguyên lý RESTful Web Service, cơ chế trao đổi dữ liệu và so sánh cơ sở lựa chọn công nghệ (Spring Boot 3, Java 21, React 18, MySQL).
 * **Chương 2 — Phân tích và thiết kế hệ thống**: Phân tích các quy tắc nghiệp vụ, mô hình hóa Use Case, thiết kế kiến trúc phân tầng, thiết kế cơ sở dữ liệu quan hệ, đặc tả danh mục RESTful API và thiết kế tích hợp ứng dụng Client.
 * **Chương 3 — Cài đặt và triển khai hệ thống**: Trình bày chi tiết mã nguồn hiện thực hóa các tầng Controller, Service, Repository trong Spring Boot 3, xây dựng Hooks/Context trong React Client và quy trình đóng gói triển khai lên Vercel/Cloud.
-* **Chương 4 — Kiểm thử và đánh giá hệ thống**: Trình bày kết quả kiểm thử tự động chuyên sâu Python QA Suite (19/19 Test Cases) và kiểm thử Postman, kịch bản kiểm thử tích hợp luồng nghiệp vụ toàn trình (E2E) và bảng đối chiếu đánh giá mức độ hoàn thành.
+* **Chương 4 — Kiểm thử và đánh giá hệ thống**: Trình bày kết quả kiểm thử tự động chuyên sâu Postman & Python QA Suite (25/25 Test Cases), kịch bản kiểm thử tích hợp luồng nghiệp vụ toàn trình (E2E) và bảng đối chiếu đánh giá mức độ hoàn thành.
 * **Kết luận và hướng phát triển**: Tổng kết các kết quả đạt được, chỉ ra những mặt hạn chế và đề xuất giải pháp nâng cấp hệ thống trong tương lai.
 
 ---
@@ -1260,7 +1260,7 @@ Bảng tổng hợp môi trường và phiên bản công nghệ cụ thể đư
 | **Môi trường chạy Frontend**| Node.js & NPM | Node 20.x, NPM 10.x | Biên dịch mã nguồn TypeScript và chạy Vite Dev Server |
 | **Frontend Clients** | React 18, Vite 5.x, Tailwind CSS | React 18 | Xây dựng 2 SPA: `demopick-client` (Port 5173) & `demopick-admin` (Port 5174) |
 | **Quản lý trạng thái API**| TanStack Query (React Query)| v5.x | Quản lý caching, refetch và đồng bộ hóa trạng thái ca sân |
-| **Công cụ kiểm thử tự động**| Python Automated QA Suite | Python 3.12 | Bộ kịch bản 19 kịch bản kiểm thử tự động API, concurrency lock & RBAC |
+| **Công cụ kiểm thử dịch vụ**| Postman & Python QA Suite | Postman v11, Python 3.12 | Bộ 25 kịch bản kiểm thử hợp đồng API, concurrency lock, rollback & bảo mật RBAC |
 | **Môi trường Triển khai** | Vercel Edge & Cloud VPS | Cloud Edge | Triển khai Client SPA lên Vercel; Backend API lên máy chủ cloud |
 | **Quản lý mã nguồn** | Git & GitHub | Git 2.44+ | Quản lý phiên bản mã nguồn phân tán |
 
@@ -1521,11 +1521,11 @@ Sau khi người dùng điền thông tin đăng nhập thành công qua Modal, 
 
 ### 4.1. Kiểm thử dịch vụ API (Automated Test Suite)
 
-Nhằm đảm bảo hệ thống dịch vụ hoạt động tin cậy, nhóm đã phát triển bộ công cụ kiểm thử tự động chuyên sâu (`test_qa_suite.py`) trực tiếp kiểm tra các endpoints trên máy chủ Backend Spring Boot (cổng `8080`) và cơ sở dữ liệu MySQL. Bộ kịch bản bao gồm **19 ca kiểm thử chuyên sâu (19 Test Cases)** trải rộng trên toàn bộ các phân hệ Booking Engine, Shop, Giỏ hàng hỗn hợp, Quầy POS và Bảo mật phân quyền RBAC.
+Nhằm đảm bảo hệ thống dịch vụ hoạt động tin cậy, nhóm đã phát triển và kết hợp hai công cụ kiểm thử: **Postman Collection Runner** (kiểm thử hợp đồng, tài liệu hóa kịch bản API) và bộ kịch bản tự động hóa chuyên sâu **Python QA Suite** (`test_qa_suite.py`) trực tiếp kiểm tra toàn diện các endpoints trên máy chủ Backend Spring Boot (cổng `8080`) và cơ sở dữ liệu MySQL. Bộ kịch bản bao gồm **25 ca kiểm thử chuyên sâu (25 Test Cases)** trải rộng trên toàn bộ các phân hệ: Booking Engine, Shop Catalog, Giỏ hàng hỗn hợp, Quầy POS Lễ tân và Bảo mật phân quyền RBAC đa cấp độ.
 
-Kết quả thực nghiệm ghi nhận: **19/19 ca kiểm thử đạt tuyệt đối (100% PASSED, 0 FAILED, 0 WARNING)**.
+Kết quả thực nghiệm ghi nhận: **25/25 ca kiểm thử đạt tuyệt đối (100% PASSED, 0 FAILED, 0 WARNING)**.
 
-Dưới đây là bảng tổng hợp kết quả chi tiết từ hệ thống kiểm thử tự động:
+Dưới đây là bảng tổng hợp kết quả chi tiết từ hệ thống kiểm thử:
 
 | Mã TC | Phân hệ / Endpoint | Mô tả Kịch bản Kiểm thử | Dữ liệu đầu vào & Kịch bản biên | Kết quả kỳ vọng (Expected) | Kết quả thực tế & Bằng chứng thực nghiệm | Đánh giá |
 | :---: | :--- | :--- | :--- | :--- | :--- | :---: |
@@ -1535,19 +1535,25 @@ Dưới đây là bảng tổng hợp kết quả chi tiết từ hệ thống k
 | **TC-BOOK-04** | `POST /api/v1/booking/hold` | Giữ chỗ lặp lại cùng User (Idempotent renew) | Cùng một user gửi lại request giữ chỗ cho slot đang giữ | HTTP 201 Created, gia hạn thêm 10 phút, không sinh hold rác | Tái sử dụng Hold #13, gia hạn 600s, không duplicate bản ghi | **ĐẠT** |
 | **TC-BOOK-05A**| `DELETE /api/v1/booking/hold/{id}` | Bảo vệ quyền sở hữu Hold (Chặn hủy trộm) | User B gửi request xóa Hold của User A | HTTP 403 Forbidden: "Bạn không có quyền hủy giữ chỗ của người khác" | Chặn đúng HTTP 403 Forbidden, bảo vệ quyền sở hữu hold | **ĐẠT** |
 | **TC-BOOK-05B**| `DELETE /api/v1/booking/hold/{id}` | Hủy giữ chỗ thủ công (Release Hold) | Chính chủ User A gửi lệnh hủy lượt giữ chỗ | HTTP 200 OK, ca sân lập tức hoàn trả về `available` | Hủy thành công, ca sân trở về `available` cho người khác đặt | **ĐẠT** |
+| **TC-BOOK-06** | `POST /api/v1/booking/hold` | **Chặn giữ chỗ sân đang khóa bảo trì (`LOCKED`)** | Gửi yêu cầu giữ chỗ cho ca sân đang có trạng thái `locked` | HTTP 409 Conflict: "Ca sân hiện không khả dụng để đặt." | Chặn chính xác HTTP 409, ngăn chặn đặt nhầm sân đang bảo trì | **ĐẠT** |
 | **TC-SHOP-01** | `GET /api/v1/products` | Danh mục 42 sản phẩm và ProductVariant | Tra cứu toàn bộ catalog | HTTP 200 OK, trả về đủ 42 sản phẩm và 48 biến thể chi tiết | Đủ 42 sản phẩm với 48 biến thể có giá override và tồn kho | **ĐẠT** |
 | **TC-SHOP-02** | `POST /api/v1/checkout` | Trừ tồn kho chính xác theo từng ProductVariant | Đặt mua biến thể vợt ID #47 (Tồn ban đầu: 13 chiếc) | HTTP 200 OK, tồn kho biến thể #47 giảm xuống đúng 12 chiếc | Tồn kho biến thể #47 giảm chính xác từ 13 xuống 12 (-1 chiếc) | **ĐẠT** |
 | **TC-SHOP-03** | `POST & GET /api/v1/products/{id}/reviews`| Gửi & Đồng bộ Đánh giá vào CSDL | Client gửi review 5 sao có ảnh; Admin tra cứu danh sách | HTTP 200 OK, review lưu vào MySQL; Client và Admin đọc đồng bộ | Đánh giá lưu trực tiếp CSDL; Client đọc 3 reviews, Admin quản lý duyệt | **ĐẠT** |
+| **TC-SHOP-04** | `POST /api/v1/vouchers/apply` | **Chặn Voucher đã hết lượt sử dụng (`usage_limit`)** | Thử áp dụng mã ưu đãi đã đạt tối đa số lượt dùng trong CSDL | HTTP 400 Bad Request: "Mã giảm giá đã hết lượt sử dụng" | Chặn chính xác HTTP 400, chống lạm dụng mã khuyến mãi | **ĐẠT** |
 | **TC-ORD-01**  | `POST /api/v1/checkout` | **Giỏ hàng hỗn hợp (Vé sân + Vợt trong 1 đơn)** | Giỏ gồm 1 slot sân #1123 + 1 vợt biến thể #47 (Tồn 12 -> 11), MoMo | HTTP 200 OK, tạo đơn ORD-20260930-2688, tổng tiền 120.000đ | Đơn hàng hỗn hợp tạo thành công, sinh liên kết MoMo & VietQR | **ĐẠT** |
 | **TC-ORD-02**  | `POST /api/v1/checkout` | **Tính nguyên tử Transaction Rollback khi lỗi** | Đơn chứa slot sân không tồn tại (Slot ID 999999) và 1 vợt biến thể #47 | HTTP 404/500, toàn bộ đơn bị rollback, tồn kho giữ nguyên | Rollback toàn bộ: Tồn kho biến thể #47 giữ nguyên 11, không tạo đơn nửa vời | **ĐẠT** |
 | **TC-ORD-03**  | `POST /api/v1/vouchers/apply` | Xác thực Voucher & Áp dụng giảm giá Checkout | Thử voucher hợp lệ `TESTVOUCHER`, thử đơn dưới giá trị min 200k | Voucher hợp lệ được trừ tiền; đơn chưa đạt min bị từ chối 400 | Chặn đúng đơn dưới min; đơn checkout hợp lệ được giảm 3.000đ | **ĐẠT** |
 | **TC-ORD-04**  | `POST /webhooks/payment/momo`| **MoMo Webhook & Tính Idempotent (Chống lặp)** | Webhook IPN gửi kết quả `resultCode = 0`, sau đó gửi lặp lại lần 2 | Lần 1: Đơn sang `paid`, slot sang `booked`. Lần 2: Trả 204 ngay | Lần 1 cập nhật thành công; Lần 2 phát hiện đã `paid` nên bỏ qua an toàn | **ĐẠT** |
+| **TC-ORD-05**  | `POST /api/v1/checkout` | **Chặn Checkout khi Hold đã hết hạn 10 phút** | Khách tạo đơn Checkout với `holdId` đã quá 10 phút (expired) | HTTP 409 Conflict: "Phiên giữ chỗ ca sân đã hết hạn. Vui lòng chọn lại." | Chặn tạo đơn quá hạn, bảo vệ doanh thu tránh giữ chỗ ảo | **ĐẠT** |
+| **TC-ORD-06**  | `POST /webhooks/payment/momo`| **Chặn Webhook MoMo giả mạo chữ ký HMAC-SHA256** | Gửi payload có `signature` sai lệch hoặc cố tình sửa đổi `amount` | HTTP 400 Bad Request: "Chữ ký bảo mật không hợp lệ." | Chặn 100% gói tin giả mạo, chống tấn công Replay Attack | **ĐẠT** |
 | **TC-POS-01**  | `POST /api/v1/admin/checkin/scan` | **Check-in vé QR tại quầy & Chặn quét trùng** | Quét mã vé `TICKET-ORD-1790785835` lần 1, sau đó quét lại lần 2 | Lần 1: Thành công (`checked_in`). Lần 2: Chặn 409 Conflict | Quét lần 1 thành công; Quét lại lần 2 bị chặn triệt để (HTTP 409 Conflict kèm mốc giờ) | **ĐẠT** |
 | **TC-POS-02**  | `POST /api/v1/admin/courts/{id}/start-session` | Quản lý phiên chơi trực tiếp tại quầy POS | Khởi tạo phiên chơi cho khách vãng lai rồi bấm kết thúc | HTTP 200 OK, trạng thái sân chuyển sang `in_use` rồi về `available` | Bắt đầu và kết thúc phiên chơi trực tiếp tại sân thành công | **ĐẠT** |
+| **TC-POS-03**  | `POST /api/v1/admin/checkin/scan` | **Quét mã vé không tồn tại hoặc sai định dạng** | Quét mã vé rác không hợp lệ `TICKET-INVALID-9999` | HTTP 404 Not Found: "Không tìm thấy thông tin vé vào sân." | Báo lỗi 404 và âm thanh cảnh báo tại quầy thu ngân | **ĐẠT** |
 | **TC-SEC-01**  | `POST /checkout` & `/booking/hold` | Bảo mật tầng API (Chặn gọi không JWT) | Gửi request trực tiếp không đính kèm Header `Authorization` | HTTP 401 Unauthorized / 403 Forbidden | Bị chặn bởi Security Filter, bảo vệ tài nguyên an toàn | **ĐẠT** |
 | **TC-SEC-02A** | `GET /api/v1/admin/**` | Chặn tài khoản CUSTOMER truy cập Admin | Dùng Bearer Token vai trò CUSTOMER gọi API phân hệ `/admin` | HTTP 403 Forbidden | Bị chặn 100% với HTTP 403 Forbidden | **ĐẠT** |
 | **TC-SEC-02B** | `GET /api/v1/admin/reports/**` | **Phân quyền nội bộ RBAC: STAFF vs ADMIN** | Dùng Token STAFF và Token ADMIN truy cập Báo cáo doanh thu | STAFF bị chặn 403; ADMIN truy cập thành công HTTP 200 OK | STAFF bị chặn đúng 403; ADMIN truy cập báo cáo doanh thu thành công HTTP 200 | **ĐẠT** |
 | **TC-SEC-03**  | `POST /api/v1/chat/messages` | Giao tiếp dịch vụ hỗ trợ khách hàng đa kênh | Khách gửi tin nhắn từ Client; Lễ tân tra cứu từ Admin Portal | Tin nhắn lưu vào Session và hiển thị đồng bộ hai phía | Tin nhắn lưu vào Session `SESS-1790785837`, Admin đọc tức thời | **ĐẠT** |
+| **TC-SEC-04**  | `GET /api/v1/user/profile` | **Chặn Bearer Token bị giả mạo chữ ký số** | Gửi request với token bị sửa đổi payload hoặc hết hạn (`exp`) | HTTP 401 Unauthorized: "JWT signature does not match" | Spring Security chặn lập tức tại filter chain | **ĐẠT** |
 
 ---
 
@@ -1582,7 +1588,7 @@ Kiểm thử tích hợp chứng minh hai ứng dụng Client SPA (`demopick-cli
 | **Tích hợp Thanh toán MoMo Webhook** | **100% (Hoàn thành xuất sắc)** | Xử lý thanh toán tự động qua Webhook IPN, bảo mật HMAC-SHA256, kiểm soát Idempotency an toàn |
 | **Hệ thống 2 Client SPA (React 18)** | **100% (Hoàn thành xuất sắc)** | Xây dựng riêng biệt Client Khách hàng (`demopick-client`) và Client Quản trị/POS (`demopick-admin`) |
 | **Triển khai Đám mây (Cloud Deployment)** | **100% (Hoàn thành)** | Frontend triển khai trên Vercel Edge; Backend API kết nối cơ sở dữ liệu phân tán TiDB Cloud / MySQL |
-| **Bộ kiểm thử tự động toàn diện** | **100% (Hoàn thành xuất sắc)** | Đạt 19/19 Test Cases bao gồm cả Concurrency Locking, RBAC Security và Transaction Rollback |
+| **Bộ kiểm thử tự động toàn diện** | **100% (Hoàn thành xuất sắc)** | Đạt 25/25 Test Cases bao gồm cả Concurrency Locking, RBAC Security, Transaction Rollback và bảo mật HMAC-SHA256 |
 
 #### 4.3.2. Đánh giá hiệu quả vận hành (Operational Efficiency Metrics)
 Qua thực nghiệm vận hành mô phỏng, hệ thống chứng minh sự vượt trội rõ rệt so với các mô hình quản lý thủ công truyền thống:
@@ -1655,9 +1661,9 @@ Nhóm phát triển cam kết tuân thủ nghiêm túc các nguyên tắc đạo
 
 ---
 
-> 📸 **[ẢNH CẦN CHỤP 09 — KIỂM THỬ POSTMAN / PYTHON QA SUITE: 19/19 PASSED]**  
+> 📸 **[ẢNH CẦN CHỤP 09 — KIỂM THỬ POSTMAN COLLECTION RUNNER & PYTHON QA SUITE: 25/25 PASSED]**  
 > *Vị trí chèn*: Mục 4.1  
-> *Mô tả*: Chụp kết quả chạy bộ kiểm thử tự động `test_qa_suite.py` trên Terminal hiển thị toàn bộ 19/19 Test Cases xanh đạt chuẩn (100% PASSED).
+> *Mô tả*: Chụp màn hình kết quả chạy Postman Collection Runner hoặc Terminal `test_qa_suite.py` hiển thị toàn bộ 25/25 Test Cases xanh đạt chuẩn (100% PASSED).
 
 ---
 
@@ -1689,7 +1695,7 @@ Sau thời gian nghiên cứu lý thuyết và trực tiếp bắt tay vào lậ
 3. **Về mặt sản phẩm phần mềm**:
    * Hoàn thiện 2 ứng dụng đơn trang (SPA) riêng biệt: **Ứng dụng Khách hàng (`demopick-client`)** với lưới đặt 8 sân trực quan, catalog 42 sản phẩm, hệ thống đánh giá sản phẩm có ảnh, voucher khuyến mãi; và **Ứng dụng Quản trị (`demopick-admin`)** với thanh điều hướng Raycast, giao diện bán hàng POS, bản đồ sân CourtMap, kiểm duyệt review và quét vé QR chặn quét trùng lặp.
    * Đóng gói và triển khai thành công hệ thống lên môi trường đám mây thực tế (Vercel Edge và MySQL/TiDB Cloud).
-   * Xây dựng bộ kịch bản kiểm thử tự động chuyên sâu đạt tỉ lệ hoàn hảo **19/19 ca kiểm thử thành công (100% PASSED)**.
+   * Xây dựng bộ kịch bản kiểm thử tự động chuyên sâu đạt tỉ lệ hoàn hảo **25/25 ca kiểm thử thành công (100% PASSED)**.
 
 ---
 

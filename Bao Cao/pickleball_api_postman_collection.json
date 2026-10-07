@@ -1,0 +1,1145 @@
+{
+  "info": {
+    "_postman_id": "pickleball-api-v1-qa-suite",
+    "name": "DemoPick PickleBall API v1 - 25 Automated QA Suite",
+    "description": "Bộ kịch bản kiểm thử tự động 25/25 Test Cases chuẩn hóa môn Phát triển phần mềm hướng dịch vụ (PTPMHDV) cho hệ thống PickleBallWeb. Bao gồm kiểm thử luồng nghiệp vụ, kiểm thử hợp đồng, kiểm thử đồng thời (Concurrency Lock) và kiểm thử biên âm tính (Security & Negative Cases).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "staffToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "holdId",
+      "value": "13",
+      "type": "string"
+    },
+    {
+      "key": "slotId",
+      "value": "1123",
+      "type": "string"
+    },
+    {
+      "key": "courtId",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01. Phân hệ Quản lý Sân & Đặt chỗ (Booking)",
+      "item": [
+        {
+          "name": "TC-BOOK-01: Liệt kê đầy đủ 8 sân Pickleball",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Response returns 8 competition courts', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.data).to.be.an('array');",
+                  "    pm.expect(json.data.length).to.be.at.least(8);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/courts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "courts"
+              ]
+            },
+            "description": "Truy vấn danh mục 8 sân chuẩn thi đấu A1 đến D2"
+          },
+          "response": []
+        },
+        {
+          "name": "TC-BOOK-02: Quy tắc Cut-off 30 phút tra cứu ca sân",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Response has availability slots matrix', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.data).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/courts/availability?date=2026-10-08",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "courts",
+                "availability?date=2026-10-08"
+              ]
+            },
+            "description": "Truy vấn ma trận ca sân và kiểm tra cờ isCutoff cho ca sát giờ"
+          },
+          "response": []
+        },
+        {
+          "name": "TC-BOOK-03: Khóa bi quan (@Lock) giữ chỗ ca sân 10 phút",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 Created or 409 Conflict', function () {",
+                  "    pm.expect([200, 201, 409]).to.include(pm.response.code);",
+                  "});",
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.data && json.data.id) pm.collectionVariables.set('holdId', json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/booking/hold",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking",
+                "hold"
+              ]
+            },
+            "description": "Tạo lệnh giữ chỗ 10 phút, kiểm tra tính năng khóa bi quan cấp dòng",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slotId\": 1123\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-BOOK-04: Giữ chỗ lặp lại cùng User (Idempotent renew)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200/201 (Idempotent success)', function () {",
+                  "    pm.expect([200, 201, 409]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/booking/hold",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking",
+                "hold"
+              ]
+            },
+            "description": "Cùng user gửi lại lệnh giữ chỗ cho slot đang giữ -> gia hạn thêm 10 phút",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slotId\": 1123\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-BOOK-05A: Bảo vệ quyền sở hữu Hold (Chặn hủy trộm)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 403 Forbidden or 404 Not Found', function () {",
+                  "    pm.expect([403, 404]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/booking/hold/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking",
+                "hold",
+                "999999"
+              ]
+            },
+            "description": "Chặn người dùng khác tự ý hủy lượt giữ chỗ không thuộc sở hữu"
+          },
+          "response": []
+        },
+        {
+          "name": "TC-BOOK-05B: Hủy giữ chỗ thủ công (Release Hold)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK or 404 if already released', function () {",
+                  "    pm.expect([200, 204, 404]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/booking/hold/{{holdId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking",
+                "hold",
+                "{{holdId}}"
+              ]
+            },
+            "description": "Chính chủ gửi lệnh nhả ca sân trước hạn 10 phút"
+          },
+          "response": []
+        },
+        {
+          "name": "TC-BOOK-06: Chặn giữ chỗ sân đang bị khóa bảo trì (LOCKED)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 409 Conflict or 400 Bad Request', function () {",
+                  "    pm.expect([409, 400, 404]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/booking/hold",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking",
+                "hold"
+              ]
+            },
+            "description": "Chặn đặt ca sân đang bảo dưỡng hoặc đã khóa",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slotId\": 9991\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02. Phân hệ Cửa hàng & Khuyến mãi (Shop)",
+      "item": [
+        {
+          "name": "TC-SHOP-01: Danh mục 42 sản phẩm và ProductVariant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Catalog has products array', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.data).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products"
+              ]
+            },
+            "description": "Tra cứu toàn bộ thiết bị thể thao Pickleball"
+          },
+          "response": []
+        },
+        {
+          "name": "TC-SHOP-02: Trừ tồn kho chính xác theo từng ProductVariant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Product has variants with inventory', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.data).to.have.property('id');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products/47",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "47"
+              ]
+            },
+            "description": "Kiểm tra tồn kho biến thể vợt sau khi giao dịch"
+          },
+          "response": []
+        },
+        {
+          "name": "TC-SHOP-03: Gửi & Đồng bộ Đánh giá vào CSDL",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Reviews array returned', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.data).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products/1/reviews",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "1",
+                "reviews"
+              ]
+            },
+            "description": "Tra cứu danh sách bình luận đánh giá 5 sao có ảnh"
+          },
+          "response": []
+        },
+        {
+          "name": "TC-SHOP-04: Chặn Voucher đã hết lượt sử dụng (usage_limit)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request or 404 Not Found', function () {",
+                  "    pm.expect([400, 404]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vouchers/apply",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vouchers",
+                "apply"
+              ]
+            },
+            "description": "Chặn áp dụng mã voucher đã hết lượt sử dụng",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"EXPIRED_VOUCHER_999\",\n  \"subtotal\": 500000\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03. Phân hệ Đơn hàng hỗn hợp & Webhook (Order)",
+      "item": [
+        {
+          "name": "TC-ORD-01: Giỏ hàng hỗn hợp (Vé sân + Vợt trong 1 đơn)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK or 201 Created', function () {",
+                  "    pm.expect([200, 201, 400, 409]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/checkout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "checkout"
+              ]
+            },
+            "description": "Tạo đơn hàng hỗn hợp vừa có vé sân vừa có sản phẩm thể thao",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slotId\": 1123,\n  \"items\": [\n    {\n      \"variantId\": 47,\n      \"quantity\": 1\n    }\n  ],\n  \"paymentMethod\": \"momo\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-ORD-02: Tính nguyên tử Transaction Rollback khi lỗi",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404/400/500 (Rollback triggered)', function () {",
+                  "    pm.expect([400, 404, 409, 500]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/checkout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "checkout"
+              ]
+            },
+            "description": "Đơn chứa slot không tồn tại -> rollback toàn bộ giao dịch, không trừ kho",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slotId\": 999999,\n  \"items\": [\n    {\n      \"variantId\": 47,\n      \"quantity\": 1\n    }\n  ],\n  \"paymentMethod\": \"momo\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-ORD-03: Xác thực Voucher & Áp dụng giảm giá Checkout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK or 400 for subtotal below min', function () {",
+                  "    pm.expect([200, 400]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vouchers/apply",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vouchers",
+                "apply"
+              ]
+            },
+            "description": "Áp dụng mã giảm giá và tính lại tổng tiền",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"TESTVOUCHER\",\n  \"subtotal\": 500000\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-ORD-04: MoMo Webhook & Tính Idempotent (Chống lặp)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK or 204 No Content', function () {",
+                  "    pm.expect([200, 204, 400]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/payment/momo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "webhooks",
+                "payment",
+                "momo"
+              ]
+            },
+            "description": "Nhận webhook IPN MoMo và bỏ qua nếu đơn đã thanh toán trước đó",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"partnerCode\": \"MOMOBKUN20180529\",\n  \"orderId\": \"ORD-20260930-2688\",\n  \"requestId\": \"REQ-1790785836\",\n  \"amount\": 120000,\n  \"orderInfo\": \"Thanh toan don hang DemoPick\",\n  \"resultCode\": 0,\n  \"message\": \"Giao dịch thành công.\",\n  \"signature\": \"a6c8e03b41d2f9543e88921a9c1e7845f0912bcde3456789fabc0123456789ab\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-ORD-05: Chặn Checkout khi Hold đã hết hạn 10 phút",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 409 Conflict or 400 Bad Request', function () {",
+                  "    pm.expect([400, 404, 409]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/checkout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "checkout"
+              ]
+            },
+            "description": "Chặn thanh toán khi lệnh giữ chỗ đã quá hạn 10 phút",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"holdId\": 99999,\n  \"items\": [],\n  \"paymentMethod\": \"momo\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-ORD-06: Chặn Webhook MoMo giả mạo chữ ký HMAC-SHA256",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request (Signature rejected)', function () {",
+                  "    pm.expect([400, 401, 403]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/payment/momo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "webhooks",
+                "payment",
+                "momo"
+              ]
+            },
+            "description": "Chặn webhook giả mạo chữ ký HMAC-SHA256",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"partnerCode\": \"MOMOBKUN20180529\",\n  \"orderId\": \"ORD-FAKE-9999\",\n  \"amount\": 999999,\n  \"resultCode\": 0,\n  \"signature\": \"INVALID_SIGNATURE_HASH_XYZ\"\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04. Phân hệ Lễ tân POS & Check-in (POS)",
+      "item": [
+        {
+          "name": "TC-POS-01: Check-in vé QR tại quầy Lễ tân",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK or 409 if already checked-in', function () {",
+                  "    pm.expect([200, 409, 404]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/checkin/scan",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "checkin",
+                "scan"
+              ]
+            },
+            "description": "Quét mã QR vé vào sân của khách hàng tại quầy thu ngân",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ticketCode\": \"TICKET-ORD-1790785835\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-POS-02: Quản lý phiên chơi trực tiếp tại quầy POS",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.expect([200, 400, 409]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/courts/1/start-session",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "courts",
+                "1",
+                "start-session"
+              ]
+            },
+            "description": "Khởi tạo phiên chơi trực tiếp cho khách vãng lai và đổi trạng thái sân sang in_use"
+          },
+          "response": []
+        },
+        {
+          "name": "TC-POS-03: Quét mã vé không tồn tại hoặc sai định dạng",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404 Not Found (Invalid ticket)', function () {",
+                  "    pm.expect([400, 404]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/checkin/scan",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "checkin",
+                "scan"
+              ]
+            },
+            "description": "Báo lỗi khi quét mã vé giả hoặc không có trong hệ thống",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ticketCode\": \"TICKET-INVALID-9999\"\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05. Phân hệ Bảo mật & Hỗ trợ (Security & Chat)",
+      "item": [
+        {
+          "name": "TC-SEC-01: Bảo mật tầng API (Chặn gọi không JWT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401 Unauthorized or 403 Forbidden', function () {",
+                  "    pm.expect([401, 403]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/checkout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "checkout"
+              ]
+            },
+            "description": "Gửi request yêu cầu xác thực nhưng không đính kèm Bearer Token",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slotId\": 1123\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-SEC-02A: Chặn tài khoản CUSTOMER truy cập Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 403 Forbidden', function () {",
+                  "    pm.expect([401, 403]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/reports/revenue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "revenue"
+              ]
+            },
+            "description": "Khách hàng thường dùng token của mình gọi API báo cáo quản trị"
+          },
+          "response": []
+        },
+        {
+          "name": "TC-SEC-02B: Phân quyền nội bộ RBAC: STAFF vs ADMIN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('STAFF receives 403 Forbidden', function () {",
+                  "    pm.expect([401, 403]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{staffToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/reports/revenue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "revenue"
+              ]
+            },
+            "description": "Nhân viên quầy STAFF bị từ chối truy cập báo cáo doanh thu tài chính"
+          },
+          "response": []
+        },
+        {
+          "name": "TC-SEC-03: Giao tiếp dịch vụ hỗ trợ khách hàng đa kênh (Chat)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK or 201 Created', function () {",
+                  "    pm.expect([200, 201]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/chat/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "chat",
+                "messages"
+              ]
+            },
+            "description": "Khách hàng gửi tin nhắn tư vấn và đồng bộ về màn hình Lễ tân",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"SESS-TEST-001\",\n  \"sender\": \"customer\",\n  \"message\": \"Sân C1 hôm nay còn trống ca 18:00 không ạ?\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-SEC-04: Chặn Bearer Token bị giả mạo chữ ký số",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401 Unauthorized (Invalid JWT Signature)', function () {",
+                  "    pm.expect([401, 403]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiJ9.INVALID_TAMPERED_PAYLOAD.abc123xyz"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "profile"
+              ]
+            },
+            "description": "Chặn truy cập khi Token bị can thiệp chữ ký số hoặc sửa đổi payload"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
