@@ -231,7 +231,7 @@ export default function Orders() {
 
       toast.success(`Đã hủy thành công đơn hàng #${orderCode}!`);
       setOrdersList((prev) => {
-        const next = prev.map((o) => (o.code === orderCode ? { ...o, status: "CANCELLED" } : o));
+        const next = prev.map((o) => (o.code === orderCode ? { ...o, status: "CANCELLED" as OrderStatus } : o));
         try {
           localStorage.setItem('demopick_orders_admin', JSON.stringify(next));
         } catch {}

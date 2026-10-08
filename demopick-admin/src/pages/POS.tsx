@@ -9,10 +9,13 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Search, ShoppingCart, Trash2, Banknote, QrCode, Receipt, PlusCircle, User, ShieldCheck, Lock, CheckCircle2, Clock, ChevronLeft, ChevronRight, Printer, Flame, Timer, CheckSquare, ScanLine, Sparkles, Play, Square, RefreshCw } from "lucide-react";
+import { Search, ShoppingCart, Trash2, Banknote, QrCode, Receipt, PlusCircle, User, ShieldCheck, Lock, CheckCircle2, Clock, ChevronLeft, ChevronRight, Flame, Timer, CheckSquare, ScanLine, Sparkles, Play, Square, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import PosReceiptModal from "@/components/pos/PosReceiptModal";
+import PosShiftReportModal from "@/components/pos/PosShiftReportModal";
+import PosQuickRestockModal from "@/components/pos/PosQuickRestockModal";
+import PosStartSessionModal from "@/components/pos/PosStartSessionModal";
 
 interface CartItem {
   variantId: number;
@@ -1267,418 +1270,47 @@ export default function POS() {
       </div>
 
       {/* Modal Lễ Tân Nhập Nhanh Quầy (Nước) */}
-      <Dialog open={!!quickRestockProduct} onOpenChange={() => setQuickRestockProduct(null)}>
-        <DialogContent className="max-w-md bg-white">
-          {quickRestockProduct && (
-            <form onSubmit={handleQuickRestockSubmit} className="space-y-4 text-xs">
-              <DialogHeader>
-                <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <PlusCircle className="h-5 w-5 text-amber-500" />
-                  Lễ Tân Nhập Nhanh Nước / Đồ Ăn / Phụ Kiện Vào Quầy POS
-                </DialogTitle>
-                <DialogDescription>
-                  Bổ sung số lượng vừa nhận tại quầy cho: <strong>{quickRestockProduct.name}</strong>
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 space-y-1">
-                <p className="font-bold"> Ghi nhật ký tự động (Audit Trail):</p>
-                <p className="text-[11px]">
-                  Hệ thống ghi nhận: Lễ tân <strong>{user?.name || "Phạm Văn Đức"}</strong> nhập thêm +{quickRestockQty} sản phẩm vào lúc {new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}.
-                </p>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700">Số lượng vừa nhận thêm (*):</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={quickRestockQty}
-                  onChange={(e) => setQuickRestockQty(Number(e.target.value))}
-                  className="font-bold text-base text-emerald-600"
-                  required
-                />
-              </div>
-
-              <DialogFooter className="pt-2">
-                <Button type="submit" className="w-full font-bold bg-emerald-600 hover:bg-emerald-500">
-                  Cộng Vào Quầy POS Ngay
-                </Button>
-              </DialogFooter>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
+      <PosQuickRestockModal
+        product={quickRestockProduct}
+        onClose={() => setQuickRestockProduct(null)}
+        quickRestockQty={quickRestockQty}
+        setQuickRestockQty={setQuickRestockQty}
+        onSubmit={handleQuickRestockSubmit}
+        staffName={user?.name}
+      />
 
       {/* Modal Báo Cáo Bàn Giao Ca Trực */}
-      <Dialog open={shiftReportOpen} onOpenChange={setShiftReportOpen}>
-        <DialogContent className="max-w-md bg-white">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <Receipt className="h-5 w-5 text-emerald-600" />
-              Báo Cáo Bàn Giao Ca Trực Lễ Tân
-            </DialogTitle>
-            <DialogDescription>
-              Thống kê tổng tiền thu trong ca trực của nhân viên: <strong>{user?.name || "Nhân Viên Lễ Tân"}</strong>
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3 text-xs pt-2">
-            <div className="p-3 bg-slate-50 rounded-xl border space-y-2">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Nhân viên trực ca:</span>
-                <strong className="text-slate-900">{user?.name || "Phạm Văn Đức"}</strong>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Thời gian ca:</span>
-                <strong className="text-slate-900">Hôm nay ({new Date().toLocaleDateString("vi-VN")})</strong>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Tổng số hóa đơn xuất:</span>
-                <strong className="text-emerald-700 font-bold">{shiftOrdersCount} Hóa đơn</strong>
-              </div>
-            </div>
-
-            <div className="space-y-2 border-t pt-2">
-              <div className="flex justify-between items-center p-2.5 bg-emerald-50 rounded-lg border border-emerald-200">
-                <span className="font-bold text-emerald-900">Tiền mặt thu tại quầy:</span>
-                <strong className="text-emerald-700 text-sm">
-                  {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(shiftCashTotal)}
-                </strong>
-              </div>
-
-              <div className="flex justify-between items-center p-2.5 bg-blue-50 rounded-lg border border-blue-200">
-                <span className="font-bold text-blue-900">Chuyển khoản VietQR/MoMo:</span>
-                <strong className="text-blue-700 text-sm">
-                  {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(shiftTransferTotal)}
-                </strong>
-              </div>
-            </div>
-
-            <div className="p-3 bg-slate-900 text-white rounded-xl flex justify-between items-center">
-              <span className="font-bold">Tổng doanh thu ca:</span>
-              <strong className="text-lg font-black text-emerald-400">
-                {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(shiftTotalSum)}
-              </strong>
-            </div>
-          </div>
-
-          <DialogFooter className="pt-2">
-            <Button
-              onClick={() => {
-                toast.success("Đã gửi lệnh in Báo cáo bàn giao ca trực tới máy in quầy!");
-                setShiftReportOpen(false);
-              }}
-              className="w-full font-bold bg-emerald-600 hover:bg-emerald-500"
-            >
-              In Báo Cáo Bàn Giao Ca Trực
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <PosShiftReportModal
+        open={shiftReportOpen}
+        onOpenChange={setShiftReportOpen}
+        staffName={user?.name || "Nhân Viên Lễ Tân"}
+        shiftOrdersCount={shiftOrdersCount}
+        shiftCashTotal={shiftCashTotal}
+        shiftTransferTotal={shiftTransferTotal}
+        shiftTotalSum={shiftTotalSum}
+      />
 
       {/* MODAL IN PHIẾU THU & VÉ SÂN QR POS TỰ ĐỘNG */}
-      <Dialog open={posReceiptModalOpen} onOpenChange={setPosReceiptModalOpen}>
-        <DialogContent className="max-w-sm bg-white rounded-3xl p-6 font-sans shadow-2xl border border-slate-200">
-          {lastPOSReceipt && (
-            <div className="space-y-4">
-              <div className="p-4 bg-[#FAF8F5] rounded-2xl border border-slate-200/90 text-xs font-mono text-slate-800 space-y-3">
-                {/* STORE HEADER */}
-                <div className="text-center border-b border-dashed border-slate-300 pb-3 space-y-1">
-                  <div className="font-extrabold text-sm text-slate-900 tracking-wider">DEMOPICK PICKLEBALL CLUB</div>
-                  <div className="text-[10px] text-slate-500 font-sans">123 Đường Pickleball, Quận 7, TP.HCM</div>
-                  <div className="text-[10px] text-slate-500 font-sans">Hotline: 0909 123 456 • www.demopick.vn</div>
-                  <div className="pt-2 font-bold text-xs text-slate-900 uppercase">
-                    PHIẾU THU TIỀN TẠI QUẦY
-                  </div>
-                  <div className="text-[11px] font-bold text-emerald-800">Mã HĐ: #{lastPOSReceipt.code}</div>
-                  <div className="text-[10px] text-slate-500">{lastPOSReceipt.time}</div>
-                </div>
-
-                {/* CUSTOMER & CASHIER INFO */}
-                <div className="space-y-1 border-b border-dashed border-slate-300 pb-2.5 text-[11px]">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 font-sans">Khách hàng:</span>
-                    <strong className="text-slate-900">
-                      {lastPOSReceipt.customerName}
-                      {lastPOSReceipt.customerPhone ? ` (${lastPOSReceipt.customerPhone})` : ""}
-                    </strong>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 font-sans">Kênh bán:</span>
-                    <span className="font-sans font-medium text-emerald-700">
-                      {lastPOSReceipt.items.some((i) => i.isCourtFee) ? "POS Trả Sân & Dịch Vụ" : "POS Bán Lẻ Quầy"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 font-sans">Thu ngân:</span>
-                    <span>{lastPOSReceipt.staffName}</span>
-                  </div>
-                </div>
-
-                {/* ITEMS LIST */}
-                <div className="space-y-2 border-b border-dashed border-slate-300 pb-2.5">
-                  <div className="grid grid-cols-12 font-bold text-[10px] text-slate-500 uppercase pb-0.5">
-                    <div className="col-span-6 font-sans">Mặt hàng / Sân</div>
-                    <div className="col-span-2 text-center">SL</div>
-                    <div className="col-span-4 text-right">T.Tiền</div>
-                  </div>
-                  {lastPOSReceipt.items.map((item, idx) => (
-                    <div key={idx} className="grid grid-cols-12 text-[11px] items-start">
-                      <div className="col-span-6 font-sans text-slate-900 line-clamp-2">
-                        {item.productName}
-                        {item.isCourtFee && <span className="text-[10px] text-emerald-700 block font-bold">(Tiền Sân)</span>}
-                      </div>
-                      <div className="col-span-2 text-center font-bold">x{item.quantity}</div>
-                      <div className="col-span-4 text-right font-bold text-slate-900">
-                        {new Intl.NumberFormat("vi-VN").format(item.price * item.quantity)}đ
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* TOTALS */}
-                <div className="space-y-1 border-b border-dashed border-slate-300 pb-2.5 text-xs">
-                  <div className="flex justify-between items-center text-slate-600 font-sans">
-                    <span>Tạm tính:</span>
-                    <span>{new Intl.NumberFormat("vi-VN").format(lastPOSReceipt.subtotal)}đ</span>
-                  </div>
-                  <div className="flex justify-between items-center text-slate-600 font-sans">
-                    <span>Phương thức:</span>
-                    <strong className="font-mono font-bold text-slate-800">{lastPOSReceipt.paymentMethod}</strong>
-                  </div>
-                  <div className="flex justify-between items-center font-extrabold text-sm pt-1 text-slate-900">
-                    <span className="font-sans">TỔNG THU:</span>
-                    <span className="text-emerald-700">
-                      {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(lastPOSReceipt.total)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* QR CHECK-IN TICKET */}
-                <div className="pt-2 text-center space-y-2">
-                  <div className="inline-block p-2 bg-white rounded-xl border border-slate-300 shadow-sm">
-                    <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=POS-${lastPOSReceipt.code}`}
-                      alt="QR Checkin"
-                      className="w-24 h-24 mx-auto"
-                    />
-                  </div>
-                  <div className="text-[10px] text-slate-500 font-sans leading-tight">
-                    Quét mã QR tại cổng kiểm soát hoặc lễ tân để check-in vào sân.
-                  </div>
-                  <div className="text-[10px] text-slate-400 font-sans italic">
-                    Cảm ơn quý khách và chúc quý khách thi đấu tuyệt vời!
-                  </div>
-                </div>
-              </div>
-
-              <DialogFooter className="gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setPosReceiptModalOpen(false)}
-                  className="flex-1 rounded-xl text-xs font-normal border-slate-300"
-                >
-                  Đóng
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    window.print();
-                    toast.success(`Đã gửi lệnh in Phiếu Thu #${lastPOSReceipt.code} tới máy in nhiệt!`);
-                    setPosReceiptModalOpen(false);
-                  }}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold gap-1.5 shadow-md"
-                >
-                  <Printer className="w-4 h-4" />
-                  <span>In Hóa Đơn (80mm)</span>
-                </Button>
-              </DialogFooter>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <PosReceiptModal
+        open={posReceiptModalOpen}
+        onOpenChange={setPosReceiptModalOpen}
+        receipt={lastPOSReceipt}
+      />
 
       {/* MODAL BẬT GIỜ VÀO SÂN / CHECK-IN QUẦY THU NGÂN */}
-      <Dialog open={startSessionDialogOpen} onOpenChange={setStartSessionDialogOpen}>
-        <DialogContent className="max-w-md bg-white rounded-3xl p-6 font-sans shadow-2xl border border-slate-200">
-          <DialogHeader className="space-y-1">
-            <div className="flex items-center gap-2 text-emerald-700">
-              <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center">
-                <Clock className="h-4 w-4 text-emerald-700" />
-              </div>
-              <DialogTitle className="text-base font-extrabold text-slate-900">
-                Bật Giờ Vào Sân — {targetCourtForSession?.name}
-              </DialogTitle>
-            </div>
-            <DialogDescription className="text-xs text-slate-500">
-              Kích hoạt phiên chơi trực tiếp tại quầy. Lưới Web sẽ tự động khóa slot tương ứng.
-            </DialogDescription>
-          </DialogHeader>
-
-          {targetCourtForSession && (
-            <div className="space-y-4 pt-2">
-              {/* COURT INFO BANNER */}
-              <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-2xl">
-                <div>
-                  <span className="font-bold text-xs text-slate-900 block">{targetCourtForSession.name}</span>
-                  <span className="text-[11px] text-slate-500">Pickleball Tiêu Chuẩn Indoor/Outdoor</span>
-                </div>
-                <div className="text-right">
-                  <span className="text-xs font-black text-emerald-700 block">
-                    {new Intl.NumberFormat("vi-VN").format(targetCourtForSession.rate || 140000)}đ/h
-                  </span>
-                  <span className="text-[10px] text-slate-400">Block 15 phút</span>
-                </div>
-              </div>
-
-              {/* CUSTOMER INPUT */}
-              <div className="space-y-2.5">
-                <div className="space-y-1">
-                  <Label className="text-xs font-bold text-slate-700">Tên khách hàng:</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      value={sessionCustomerName}
-                      onChange={(e) => setSessionCustomerName(e.target.value)}
-                      placeholder="Nhập tên khách..."
-                      className="text-xs h-9 bg-white"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSessionCustomerName("Khách vãng lai")}
-                      className="h-9 px-2 text-[11px] font-normal border-slate-300 shrink-0"
-                    >
-                      Vãng lai
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs font-bold text-slate-700">Số điện thoại (tùy chọn):</Label>
-                  <Input
-                    value={sessionCustomerPhone}
-                    onChange={(e) => setSessionCustomerPhone(e.target.value)}
-                    placeholder="VD: 0909 123 456..."
-                    className="text-xs h-9 bg-white"
-                  />
-                </div>
-              </div>
-
-              {/* DURATION PRESET CHIPS */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-bold text-slate-700">Thời lượng dự kiến:</Label>
-                  {selectedDurationOption ? (
-                    <span className="text-[11px] font-bold text-emerald-700">
-                      Dự kiến: {new Intl.NumberFormat("vi-VN").format(Math.round((selectedDurationOption / 60) * (targetCourtForSession.rate || 140000)))}đ
-                    </span>
-                  ) : (
-                    <span className="text-[11px] font-medium text-slate-500">Chơi mở (tính theo phút ra về)</span>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedDurationOption(null)}
-                    className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedDurationOption === null
-                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                      : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-                      }`}
-                  >
-                    Chơi mở (Tự do)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedDurationOption(30)}
-                    className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedDurationOption === 30
-                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                      : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-                      }`}
-                  >
-                    30 phút
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedDurationOption(45)}
-                    className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedDurationOption === 45
-                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                      : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-                      }`}
-                  >
-                    45 phút
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedDurationOption(60)}
-                    className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedDurationOption === 60
-                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                      : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-                      }`}
-                  >
-                    60 phút (1h)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedDurationOption(90)}
-                    className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedDurationOption === 90
-                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                      : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-                      }`}
-                  >
-                    90 phút (1.5h)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedDurationOption(120)}
-                    className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedDurationOption === 120
-                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                      : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-                      }`}
-                  >
-                    120 phút (2h)
-                  </button>
-                </div>
-
-                {targetCourtForSession.available_minutes_until_next && (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedDurationOption(targetCourtForSession.available_minutes_until_next)}
-                    className={`w-full mt-1 p-2 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all ${selectedDurationOption === targetCourtForSession.available_minutes_until_next
-                      ? "bg-blue-600 text-white border-blue-600"
-                      : "bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100"
-                      }`}
-                  >
-                    <span>Lấp khoảng trống: {targetCourtForSession.available_minutes_until_next} phút (đến {targetCourtForSession.next_booking_time})</span>
-                  </button>
-                )}
-              </div>
-
-              <DialogFooter className="gap-2 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setStartSessionDialogOpen(false)}
-                  className="flex-1 rounded-xl text-xs font-normal border-slate-300"
-                >
-                  Hủy
-                </Button>
-                <Button
-                  type="button"
-                  disabled={isStartingSession}
-                  onClick={handleConfirmStartSession}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md transition-colors"
-                >
-                  {isStartingSession ? "Đang xử lý..." : "Bắt Đầu Tính Giờ"}
-                </Button>
-              </DialogFooter>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <PosStartSessionModal
+        open={startSessionDialogOpen}
+        onOpenChange={setStartSessionDialogOpen}
+        targetCourt={targetCourtForSession}
+        customerName={sessionCustomerName}
+        onCustomerNameChange={setSessionCustomerName}
+        customerPhone={sessionCustomerPhone}
+        onCustomerPhoneChange={setSessionCustomerPhone}
+        selectedDurationOption={selectedDurationOption}
+        onSelectDurationOption={setSelectedDurationOption}
+        isStartingSession={isStartingSession}
+        onConfirm={handleConfirmStartSession}
+      />
     </AppLayout>
   );
 }
