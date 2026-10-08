@@ -6,13 +6,9 @@ import {
   Phone,
   Mail,
   Clock,
-  ShieldCheck,
-  Truck,
-  RotateCcw,
   Calendar,
   ShoppingBag,
   ChevronRight,
-  Layers,
 } from 'lucide-react'
 
 export default function Footer() {
@@ -22,54 +18,7 @@ export default function Footer() {
 
   return (
     <footer className="border-t border-border bg-card text-card-foreground mt-16 transition-colors duration-300">
-      {/* 1. THANH LỢI ÍCH & CAM KẾT (VALUE PROPOSITIONS BAR) */}
-      <div className="border-b border-border/70 bg-muted/30">
-        <div className="container mx-auto max-w-7xl px-5 sm:px-7 lg:px-9 py-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="flex items-center gap-4 p-4 rounded-2xl bg-card border border-border/60 shadow-sm hover:border-emerald-500/40 transition-colors">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/15 dark:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                <ShieldCheck className="w-6 h-6" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-foreground">100% Chính Hãng</h4>
-                <p className="text-xs text-muted-foreground mt-0.5">Selkirk, Joola, CRBN, Franklin chuẩn USAPA</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4 p-4 rounded-2xl bg-card border border-border/60 shadow-sm hover:border-emerald-500/40 transition-colors">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/15 dark:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                <Calendar className="w-6 h-6" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-foreground">Đặt Sân Tức Thì</h4>
-                <p className="text-xs text-muted-foreground mt-0.5">Khóa giữ chỗ 10 phút, check-in QR 2 giây</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4 p-4 rounded-2xl bg-card border border-border/60 shadow-sm hover:border-emerald-500/40 transition-colors">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/15 dark:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                <Truck className="w-6 h-6" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-foreground">Giao Hàng Hỏa Tốc</h4>
-                <p className="text-xs text-muted-foreground mt-0.5">Ship nhanh 2h nội thành, toàn quốc 24-48h</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4 p-4 rounded-2xl bg-card border border-border/60 shadow-sm hover:border-emerald-500/40 transition-colors">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/15 dark:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                <RotateCcw className="w-6 h-6" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-foreground">Đổi Trả Uy Tín</h4>
-                <p className="text-xs text-muted-foreground mt-0.5">Đổi mới trong 7 ngày, bảo hành đến 12 tháng</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. NỘI DUNG FOOTER CHÍNH (3 CỘT THÔNG TIN CHUẨN XÁC) */}
+      {/* NỘI DUNG FOOTER CHÍNH (3 CỘT THÔNG TIN CHUẨN XÁC) */}
       <div className="container mx-auto max-w-7xl px-5 sm:px-7 lg:px-9 py-12 lg:py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-12">
 
@@ -202,7 +151,7 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* 3. DÒNG BẢN QUYỀN DƯỚI CÙNG (SUB-FOOTER) */}
+      {/* DÒNG BẢN QUYỀN DƯỚI CÙNG (SUB-FOOTER) */}
       <div className="border-t border-border bg-muted/40 py-5">
         <div className="container mx-auto max-w-7xl px-5 sm:px-7 lg:px-9 text-center text-xs text-muted-foreground">
           <p>
