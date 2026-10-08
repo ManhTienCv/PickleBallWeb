@@ -25,8 +25,13 @@ import {
   TrendingUp,
   ChevronLeft,
   ChevronRight,
+  Settings,
+  Sliders,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { adminService } from "@/services/admin.service";
 import {
   Dialog,
   DialogContent,
@@ -61,8 +66,66 @@ const initialTransactions: PaymentTransaction[] = [];
 
 const initialBankStatements: BankStatementLog[] = [];
 
+const BANK_OPTIONS = [
+  { id: "ICB", name: "VietinBank (Ngân Hàng Công Thương)" },
+  { id: "MB", name: "MBBank (Ngân Hàng Quân Đội)" },
+  { id: "VCB", name: "Vietcombank (Ngoại Thương Việt Nam)" },
+  { id: "TCB", name: "Techcombank (Kỹ Thương Việt Nam)" },
+  { id: "ACB", name: "ACB (Á Châu)" },
+  { id: "VPB", name: "VPBank (Việt Nam Thịnh Vượng)" },
+  { id: "TPB", name: "TPBank (Tiên Phong)" },
+  { id: "BIDV", name: "BIDV (Đầu Tư & Phát Triển)" },
+];
+
 export default function Payments() {
   const [search, setSearch] = useState("");
+  const [vietQrSetting, setVietQrSetting] = useState({
+    bankId: "ICB",
+    bankName: "VietinBank (Ngân Hàng Công Thương)",
+    accountNo: "102888888888",
+    accountName: "NGUYEN MANH TIEN",
+    enabled: true,
+  });
+  const [isEditingSettings, setIsEditingSettings] = useState(false);
+  const [editForm, setEditForm] = useState({
+    bankId: "ICB",
+    bankName: "VietinBank (Ngân Hàng Công Thương)",
+    accountNo: "102888888888",
+    accountName: "NGUYEN MANH TIEN",
+    enabled: true,
+  });
+  const [isSavingSetting, setIsSavingSetting] = useState(false);
+
+  // Tải cấu hình VietQR từ Backend & LocalStorage
+  useEffect(() => {
+    adminService.getVietQrSetting().then((s) => {
+      if (s) {
+        setVietQrSetting(s);
+        setEditForm(s);
+      }
+    });
+
+    adminService.getPaymentTransactions().then((txs) => {
+      if (txs && txs.length > 0) {
+        setTransactions((prev) => {
+          const existingCodes = new Set(prev.map((p) => p.orderCode));
+          const mapped: PaymentTransaction[] = txs.map((t: any) => ({
+            id: t.id ? String(t.id) : (t.transactionId || "TX-" + Date.now()),
+            orderCode: t.orderCode || t.order_code,
+            customerName: t.accountName || t.account_name || "Khách Hàng Online",
+            amount: Number(t.amount) || 0,
+            bankName: t.bankName || t.bank_name || "VietinBank",
+            transferContent: t.transferContent || t.transfer_content || t.orderCode,
+            status: t.status === "COMPLETED" ? "CONFIRMED_AUTO" : "PENDING",
+            createdAt: t.createdAt ? new Date(t.createdAt).toLocaleString("vi-VN") : new Date().toLocaleString("vi-VN"),
+          }));
+          const extra = mapped.filter((m) => !existingCodes.has(m.orderCode));
+          return [...extra, ...prev];
+        });
+      }
+    });
+  }, []);
+
   const [transactions, setTransactions] = useState<PaymentTransaction[]>(() => {
     const saved = localStorage.getItem("demopick_payment_transactions");
     if (saved) {
@@ -126,6 +189,27 @@ export default function Payments() {
     (statementPage - 1) * statementsPerPage,
     statementPage * statementsPerPage
   );
+
+  // Lưu cấu hình cổng thanh toán VietQR Napas 24/7
+  const handleSaveSettings = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsSavingSetting(true);
+    try {
+      const selectedBank = BANK_OPTIONS.find((b) => b.id === editForm.bankId);
+      const updated = {
+        ...editForm,
+        bankName: selectedBank ? selectedBank.name : editForm.bankName,
+      };
+      await adminService.updateVietQrSetting(updated);
+      setVietQrSetting(updated);
+      setIsEditingSettings(false);
+      toast.success("Cập nhật cấu hình cổng thanh toán VietQR thành công!");
+    } catch (err: any) {
+      toast.error(err.message || "Không thể lưu cấu hình VietQR");
+    } finally {
+      setIsSavingSetting(false);
+    }
+  };
 
   // Xác nhận đã nhận tiền (Duyệt thu tiền thủ công cho nhân viên quầy)
   const handleConfirmPayment = (tx: PaymentTransaction) => {
@@ -396,7 +480,7 @@ export default function Payments() {
 
         {/* 🟢 KHUNG THÔNG TIN NGÂN HÀNG & NHẬT KÝ ĐỐI SOÁT */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* CỘT TRÁI (5 COLS): THÔNG TIN TÀI KHOẢN NGÂN HÀNG CLB */}
+          {/* CỘT TRÁI (5 COLS): THÔNG TIN TÀI KHOẢN NGÂN HÀNG CLB & CÀI ĐẶT VIETQR */}
           <Card className="lg:col-span-5 p-5 bg-white border-slate-200 shadow-sm rounded-3xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
@@ -405,15 +489,31 @@ export default function Payments() {
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-900 text-sm">Tài Khoản Ngân Hàng Nhận Tiền</h3>
-                  <p className="text-[11px] text-slate-500">Tài khoản thụ hưởng chính thức của DemoPick Club</p>
+                  <p className="text-[11px] text-slate-500">Tài khoản thụ hưởng cổng VietQR Napas 24/7</p>
                 </div>
               </div>
-              <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-[10px]">Đang Sử Dụng</Badge>
+              <div className="flex items-center gap-2">
+                <Badge className={vietQrSetting.enabled ? "bg-emerald-100 text-emerald-800 border-emerald-200 text-[10px]" : "bg-rose-100 text-rose-800 border-rose-200 text-[10px]"}>
+                  {vietQrSetting.enabled ? "VietQR Đang Bật" : "VietQR Đang Tắt"}
+                </Badge>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setEditForm(vietQrSetting);
+                    setIsEditingSettings(true);
+                  }}
+                  className="h-8 px-2.5 rounded-xl text-xs font-semibold gap-1.5 border-slate-200 hover:bg-slate-50 text-slate-700"
+                >
+                  <Settings className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Cài Đặt</span>
+                </Button>
+              </div>
             </div>
 
             <div className="p-4 bg-gradient-to-br from-emerald-800 via-emerald-900 to-slate-900 text-white rounded-2xl shadow-md space-y-3 relative overflow-hidden">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-bold tracking-wider text-emerald-300 uppercase">VietinBank (Ngân Hàng Công Thương)</span>
+                <span className="font-bold tracking-wider text-emerald-300 uppercase">{vietQrSetting.bankName}</span>
                 <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full font-mono">VietQR 24/7</span>
               </div>
 
@@ -421,11 +521,11 @@ export default function Payments() {
                 <span className="text-[10px] text-slate-300 block">Số tài khoản:</span>
                 <div className="flex items-center justify-between">
                   <strong className="text-xl font-mono tracking-widest text-emerald-400">
-                    102888888888
+                    {vietQrSetting.accountNo}
                   </strong>
                   <button
                     type="button"
-                    onClick={() => copyToClipboard("102888888888", "Số tài khoản")}
+                    onClick={() => copyToClipboard(vietQrSetting.accountNo, "Số tài khoản")}
                     className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
                     title="Sao chép STK"
                   >
@@ -437,16 +537,16 @@ export default function Payments() {
               <div className="flex justify-between items-end text-xs pt-1 border-t border-white/10">
                 <div>
                   <span className="text-[10px] text-slate-300 block">Chủ tài khoản:</span>
-                  <strong className="font-bold text-slate-100 uppercase">NGUYEN MANH TIEN</strong>
+                  <strong className="font-bold text-slate-100 uppercase">{vietQrSetting.accountName}</strong>
                 </div>
-                <span className="text-[10px] text-slate-300">CN Hà Nội</span>
+                <span className="text-[10px] text-emerald-300 font-semibold">{vietQrSetting.bankId}</span>
               </div>
             </div>
 
             <div className="p-3 bg-[#FAF8F5] rounded-2xl border border-slate-200/80 text-xs space-y-1.5 text-slate-600">
               <strong className="text-slate-900 font-bold block">💡 Hướng dẫn thu ngân / nhân viên quầy:</strong>
               <p className="text-[11px] leading-relaxed">
-                Khách chuyển khoản đúng cú pháp <code className="font-bold text-amber-900 bg-amber-100 px-1 py-0.5 rounded">DP-[MÃ ĐƠN]</code> hệ thống sẽ tự khớp lệnh trong 3 - 5 giây. Nếu khách chuyển sai cú pháp hoặc tiền về chậm, thu ngân có thể bấm nút <strong>"Xác Nhận Đã Nhận Tiền"</strong> ở bảng trên để duyệt đơn.
+                Khách chuyển khoản đúng cú pháp <code className="font-bold text-amber-900 bg-amber-100 px-1 py-0.5 rounded">ORD-[MÃ ĐƠN]</code> hoặc <code className="font-bold text-amber-900 bg-amber-100 px-1 py-0.5 rounded">DP-[MÃ ĐƠN]</code> hệ thống sẽ tự khớp lệnh trong 3 - 5 giây. Nếu khách chuyển sai cú pháp hoặc tiền về chậm, thu ngân có thể bấm nút <strong>"Xác Nhận Đã Nhận Tiền"</strong> ở bảng trên để duyệt đơn.
               </p>
             </div>
           </Card>
@@ -593,6 +693,137 @@ export default function Payments() {
               </DialogFooter>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* DIALOG CÀI ĐẶT CỔNG THANH TOÁN VIETQR NAPAS 24/7 */}
+      <Dialog open={isEditingSettings} onOpenChange={setIsEditingSettings}>
+        <DialogContent className="max-w-lg bg-white rounded-3xl p-6 border border-slate-200 font-sans shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-emerald-600" />
+              Cài Đặt Cổng Thanh Toán VietQR Napas 24/7
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500 font-normal">
+              Cấu hình tài khoản ngân hàng thụ hưởng nhận tiền chuyển khoản tự động từ khách hàng
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveSettings} className="space-y-4 pt-2">
+            {/* Toggle Bật/Tắt Cổng VietQR */}
+            <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+              <div className="space-y-0.5">
+                <Label htmlFor="toggle-vietqr" className="text-xs font-bold text-slate-900 cursor-pointer">
+                  Kích Hoạt Thanh Toán VietQR
+                </Label>
+                <p className="text-[11px] text-slate-500">
+                  Cho phép khách hàng lựa chọn chuyển khoản quét mã VietQR khi checkout
+                </p>
+              </div>
+              <Switch
+                id="toggle-vietqr"
+                checked={editForm.enabled}
+                onCheckedChange={(checked) => setEditForm((prev) => ({ ...prev, enabled: checked }))}
+              />
+            </div>
+
+            {/* Chọn Ngân Hàng */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-slate-700">
+                1. Ngân hàng thụ hưởng <span className="text-rose-500">*</span>
+              </Label>
+              <select
+                value={editForm.bankId}
+                onChange={(e) => {
+                  const bId = e.target.value;
+                  const bObj = BANK_OPTIONS.find((b) => b.id === bId);
+                  setEditForm((prev) => ({
+                    ...prev,
+                    bankId: bId,
+                    bankName: bObj ? bObj.name : prev.bankName,
+                  }));
+                }}
+                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                {BANK_OPTIONS.map((bank) => (
+                  <option key={bank.id} value={bank.id}>
+                    {bank.name} ({bank.id})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Số Tài Khoản */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-slate-700">
+                2. Số tài khoản ngân hàng <span className="text-rose-500">*</span>
+              </Label>
+              <Input
+                value={editForm.accountNo}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, accountNo: e.target.value }))}
+                placeholder="Ví dụ: 102888888888"
+                className="h-10 text-xs font-mono font-bold rounded-xl border-slate-200"
+                required
+              />
+            </div>
+
+            {/* Tên Chủ Tài Khoản */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-slate-700">
+                3. Tên chủ tài khoản (Viết in hoa không dấu) <span className="text-rose-500">*</span>
+              </Label>
+              <Input
+                value={editForm.accountName}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, accountName: e.target.value.toUpperCase() }))}
+                placeholder="Ví dụ: NGUYEN MANH TIEN"
+                className="h-10 text-xs font-bold uppercase rounded-xl border-slate-200"
+                required
+              />
+            </div>
+
+            {/* Preview Mã QR Test */}
+            <div className="p-3 bg-emerald-50/50 rounded-2xl border border-emerald-200/80 flex items-center gap-3">
+              <div className="w-16 h-16 bg-white p-1 rounded-xl border border-emerald-300 shrink-0">
+                <img
+                  src={`https://img.vietqr.io/image/${editForm.bankId}-${editForm.accountNo}-compact2.png?amount=100000&addInfo=TEST-PICKLE&accountName=${encodeURIComponent(editForm.accountName)}`}
+                  alt="QR Preview"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <div className="text-[11px] text-slate-600">
+                <strong className="text-emerald-800 block font-bold">Xem trước mã QR động VietQR:</strong>
+                <p>Khách hàng quét mã này sẽ tự động điền STK, tên chủ tài khoản và số tiền.</p>
+              </div>
+            </div>
+
+            <DialogFooter className="pt-2 flex items-center justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsEditingSettings(false)}
+                className="h-10 rounded-xl text-xs font-semibold px-4"
+              >
+                Hủy bỏ
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSavingSetting}
+                className="h-10 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-5 gap-2"
+              >
+                {isSavingSetting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Đang lưu...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Lưu Cấu Hình</span>
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </AppLayout>

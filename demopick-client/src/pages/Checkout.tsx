@@ -27,6 +27,7 @@ import {
 import {
   CreditCard,
   Banknote,
+  QrCode,
   ShieldCheck,
   ArrowRight,
   ArrowLeft,
@@ -75,7 +76,7 @@ export default function CheckoutPage() {
   }, [isExpired, holdId])
 
   const currentUser = authHelpers.getUser()
-  const [paymentMethod, setPaymentMethod] = useState<'momo' | 'cod'>('momo')
+  const [paymentMethod, setPaymentMethod] = useState<'momo' | 'cod' | 'vietqr'>('vietqr')
 
   // Saved addresses
   const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([])
@@ -329,6 +330,7 @@ export default function CheckoutPage() {
         ghnDistrictId: selectedDistrictId,
         ghnWardCode: selectedWardCode,
         paymentMethod,
+        redirectUrl: `${window.location.origin}/payment/momo/callback`,
         voucherCode: appliedVoucher?.code,
         discount: voucherDiscount,
         holdId: holdId ? Number(holdId) : undefined,
@@ -405,6 +407,24 @@ export default function CheckoutPage() {
       })
 
       // 4. ĐIỀU HƯỚNG BẢO MẬT: Hosted Payment Gateway
+      if (paymentMethod === 'vietqr') {
+        resetTimer()
+        toast.success('Đang tạo mã VietQR thanh toán...')
+        setTimeout(() => {
+          navigate(`/payment/vietqr?orderId=${orderCode}&amount=${grandTotal}`, {
+            state: {
+              orderCode,
+              amount: grandTotal,
+              customerName,
+              customerPhone,
+              shippingAddress: fullShippingAddress,
+              items: orderItems,
+            },
+          })
+        }, 500)
+        return
+      }
+
       if (paymentMethod === 'momo') {
         resetTimer()
         let targetUrl = result.payUrl || `/payment/momo/gateway?orderId=${orderCode}&amount=${grandTotal}`
@@ -799,7 +819,36 @@ export default function CheckoutPage() {
               onValueChange={(val: any) => setPaymentMethod(val)}
               className="space-y-3"
             >
-              {/* Option 1: MoMo AIO Hosted Gateway (QR Code & ATM Napas Card) */}
+              {/* Option 1: VietQR Napas 24/7 (Khuyên dùng) */}
+              <div
+                className={`rounded-2xl border p-4 transition-all cursor-pointer ${paymentMethod === 'vietqr'
+                    ? 'border-emerald-600 bg-emerald-50/30 dark:bg-emerald-950/20 shadow-xs ring-1 ring-emerald-600/30'
+                    : 'border-slate-200 dark:border-border hover:border-slate-300 dark:hover:border-slate-600'
+                  }`}
+                onClick={() => setPaymentMethod('vietqr')}
+              >
+                <div className="flex items-center space-x-3">
+                  <RadioGroupItem value="vietqr" id="vietqr-method" />
+                  <Label htmlFor="vietqr-method" className="flex items-center gap-3 cursor-pointer flex-1">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/50 flex items-center justify-center shrink-0 border border-emerald-200">
+                      <QrCode className="h-5 w-5 text-emerald-700 dark:text-emerald-400" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-2">
+                        <span>Chuyển khoản VietQR (Napas 24/7)</span>
+                        <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200 border-none text-[10px] font-bold">
+                          Khuyên Dùng
+                        </Badge>
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                        Quét mã QR liên ngân hàng 24/7 miễn phí. Tự động điền 100% số tiền và mã đơn hàng.
+                      </div>
+                    </div>
+                  </Label>
+                </div>
+              </div>
+
+              {/* Option 2: MoMo AIO Hosted Gateway (QR Code & ATM Napas Card) */}
               <div
                 className={`rounded-2xl border p-4 transition-all cursor-pointer ${paymentMethod === 'momo'
                     ? 'border-[#a50064] bg-pink-50/20 dark:bg-pink-950/20 shadow-xs ring-1 ring-[#a50064]/20'

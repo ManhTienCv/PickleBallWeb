@@ -16,6 +16,7 @@ import OrderSuccess from '@/pages/OrderSuccess'
 import OrdersPage from '@/pages/Orders'
 import MomoGatewayPage from '@/pages/MomoGateway'
 import MomoCallbackPage from '@/pages/MomoCallback'
+import VietQrPaymentPage from '@/pages/VietQrPayment'
 import WishlistPage from '@/pages/Wishlist'
 import NotFound from '@/pages/NotFound'
 import { AuthModal } from '@/components/AuthModal'
@@ -51,6 +52,7 @@ function App() {
                   <Route path="/order-success/:code" element={<OrderSuccess />} />
                   <Route path="/payment/momo/gateway" element={<MomoGatewayPage />} />
                   <Route path="/payment/momo/callback" element={<MomoCallbackPage />} />
+                  <Route path="/payment/vietqr" element={<VietQrPaymentPage />} />
                   <Route path="/orders" element={<OrdersPage />} />
                   <Route path="/wishlist" element={<WishlistPage />} />
                 </Route>

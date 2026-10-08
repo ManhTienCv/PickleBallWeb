@@ -13,7 +13,7 @@ import java.util.Collections;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/orders")
+@RequestMapping({"/api/v1/orders", "/api/orders"})
 public class OrderController {
 
     private final OrderService orderService;
@@ -49,6 +49,12 @@ public class OrderController {
     public ResponseEntity<ApiResponse<Order>> getOrderByCode(@PathVariable String code) {
         Order order = orderService.getOrderByCode(code);
         return ResponseEntity.ok(ApiResponse.success(order, "Lấy chi tiết đơn hàng thành công."));
+    }
+
+    @PostMapping("/{code}/confirm-payment")
+    public ResponseEntity<ApiResponse<Order>> confirmPayment(@PathVariable String code) {
+        Order order = orderService.confirmPayment(code);
+        return ResponseEntity.ok(ApiResponse.success(order, "Xác nhận thanh toán VietQR và phát hành vận đơn GHN thành công!"));
     }
 
     @PostMapping("/{code}/cancel")

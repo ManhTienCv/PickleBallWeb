@@ -71,6 +71,9 @@ public class Order {
     @Column(name = "shipping_fee", precision = 15, scale = 2)
     private BigDecimal shippingFee = BigDecimal.ZERO;
 
+    @Column(name = "tracking_code", length = 50)
+    private String trackingCode;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<OrderItem> items = new ArrayList<>();
 
@@ -170,6 +173,12 @@ public class Order {
 
     @JsonProperty("shipping_fee")
     public BigDecimal getShippingFeeSnake() { return shippingFee; }
+
+    public String getTrackingCode() { return trackingCode; }
+    public void setTrackingCode(String trackingCode) { this.trackingCode = trackingCode; }
+
+    @JsonProperty("tracking_code")
+    public String getTrackingCodeSnake() { return trackingCode; }
 
     @JsonProperty("order_code")
     public String getOrderCodeSnake() { return orderCode; }

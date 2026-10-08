@@ -45,10 +45,16 @@ public class CreateOrderRequest {
     @JsonProperty("shippingFee")
     private BigDecimal shippingFee;
 
+    @JsonProperty("redirectUrl")
+    private String redirectUrl;
+
     @JsonProperty("items")
     private List<CreateOrderItemDto> items;
 
     public CreateOrderRequest() {}
+
+    public String getRedirectUrl() { return redirectUrl; }
+    public void setRedirectUrl(String redirectUrl) { this.redirectUrl = redirectUrl; }
 
     public String getShippingName() { return shippingName; }
     public void setShippingName(String shippingName) { this.shippingName = shippingName; }

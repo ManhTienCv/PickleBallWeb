@@ -521,4 +521,61 @@ export const adminService = {
       }
     }
   },
+
+  getVietQrSetting: async (): Promise<{
+    bankId: string
+    bankName: string
+    accountNo: string
+    accountName: string
+    enabled: boolean
+  }> => {
+    try {
+      const res = await api.get<ApiResponse<any>>('/admin/settings/vietqr')
+      const d = res.data.data
+      return {
+        bankId: d?.bankId || d?.bank_id || 'ICB',
+        bankName: d?.bankName || d?.bank_name || 'VietinBank (Ngân Hàng Công Thương)',
+        accountNo: d?.accountNo || d?.account_no || '102888888888',
+        accountName: d?.accountName || d?.account_name || 'NGUYEN MANH TIEN',
+        enabled: d?.enabled ?? d?.is_enabled ?? true,
+      }
+    } catch {
+      const saved = localStorage.getItem('demopick_vietqr_setting')
+      if (saved) {
+        try { return JSON.parse(saved) } catch {}
+      }
+      return {
+        bankId: 'ICB',
+        bankName: 'VietinBank (Ngân Hàng Công Thương)',
+        accountNo: '102888888888',
+        accountName: 'NGUYEN MANH TIEN',
+        enabled: true,
+      }
+    }
+  },
+
+  updateVietQrSetting: async (setting: {
+    bankId: string
+    bankName: string
+    accountNo: string
+    accountName: string
+    enabled: boolean
+  }): Promise<any> => {
+    localStorage.setItem('demopick_vietqr_setting', JSON.stringify(setting))
+    try {
+      const res = await api.put<ApiResponse<any>>('/admin/settings/vietqr', setting)
+      return res.data.data
+    } catch {
+      return setting
+    }
+  },
+
+  getPaymentTransactions: async (): Promise<any[]> => {
+    try {
+      const res = await api.get<ApiResponse<any[]>>('/admin/payments/transactions')
+      return res.data.data || []
+    } catch {
+      return []
+    }
+  },
 }

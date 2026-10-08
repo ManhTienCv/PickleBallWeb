@@ -11,8 +11,12 @@ import com.demopick.pickleball.modules.order.dto.CreateOrderRequest;
 import com.demopick.pickleball.modules.order.dto.CreateOrderResponse;
 import com.demopick.pickleball.modules.order.entity.Order;
 import com.demopick.pickleball.modules.order.entity.OrderItem;
+import com.demopick.pickleball.modules.order.entity.PaymentTransaction;
+import com.demopick.pickleball.modules.order.entity.VietQrSetting;
 import com.demopick.pickleball.modules.order.repository.OrderItemRepository;
 import com.demopick.pickleball.modules.order.repository.OrderRepository;
+import com.demopick.pickleball.modules.order.repository.PaymentTransactionRepository;
+import com.demopick.pickleball.modules.order.service.VietQrSettingService;
 import com.demopick.pickleball.modules.shop.entity.ProductVariant;
 import com.demopick.pickleball.modules.shop.entity.Voucher;
 import com.demopick.pickleball.modules.shop.repository.ProductVariantRepository;
@@ -43,11 +47,14 @@ public class OrderService {
     private final ProductVariantRepository productVariantRepository;
     private final VoucherRepository voucherRepository;
     private final EmailService emailService;
+    private final PaymentTransactionRepository paymentTransactionRepository;
+    private final VietQrSettingService vietQrSettingService;
+    private final MoMoPaymentService momoPaymentService;
 
     @Value("${momo.secret-key}")
     private String momoSecretKey;
 
-    @Value("${momo.gateway-url:/payment/momo/gateway}")
+    @Value("${momo.gateway-url:}")
     private String momoGatewayUrl;
 
     @Value("${momo.redirect-url}")
@@ -59,7 +66,10 @@ public class OrderService {
                         HoldRepository holdRepository,
                         ProductVariantRepository productVariantRepository,
                         VoucherRepository voucherRepository,
-                        EmailService emailService) {
+                        EmailService emailService,
+                        PaymentTransactionRepository paymentTransactionRepository,
+                        VietQrSettingService vietQrSettingService,
+                        MoMoPaymentService momoPaymentService) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.timeSlotRepository = timeSlotRepository;
@@ -67,6 +77,9 @@ public class OrderService {
         this.productVariantRepository = productVariantRepository;
         this.voucherRepository = voucherRepository;
         this.emailService = emailService;
+        this.paymentTransactionRepository = paymentTransactionRepository;
+        this.vietQrSettingService = vietQrSettingService;
+        this.momoPaymentService = momoPaymentService;
     }
 
     @Transactional
@@ -235,8 +248,13 @@ public class OrderService {
         }
 
         // 4. Generate MoMo Sandbox Pay URL or VietQR URL
-        String baseUrl = (momoGatewayUrl != null && !momoGatewayUrl.isBlank()) ? momoGatewayUrl : momoRedirectUrl;
-        String payUrl = baseUrl + "?orderId=" + orderCode + "&amount=" + finalTotal;
+        String payUrl = null;
+        if ("momo".equalsIgnoreCase(request.getPaymentMethod())) {
+            payUrl = momoPaymentService.createPaymentUrl(orderCode, finalTotal, null);
+        } else {
+            String baseUrl = (momoGatewayUrl != null && !momoGatewayUrl.isBlank()) ? momoGatewayUrl : momoRedirectUrl;
+            payUrl = baseUrl + "?orderId=" + orderCode + "&amount=" + finalTotal;
+        }
         String qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=DEMOPICK-" + orderCode;
 
         return new CheckoutResponse(
@@ -395,10 +413,23 @@ public class OrderService {
         // 5. Generate URLs
         String payUrl = null;
         if ("momo".equalsIgnoreCase(request.getPaymentMethod())) {
-            String baseUrl = (momoGatewayUrl != null && !momoGatewayUrl.isBlank()) ? momoGatewayUrl : momoRedirectUrl;
-            payUrl = baseUrl + "?orderId=" + orderCode + "&amount=" + finalTotal;
+            payUrl = momoPaymentService.createPaymentUrl(orderCode, finalTotal, request.getRedirectUrl());
+        } else if ("vietqr".equalsIgnoreCase(request.getPaymentMethod())) {
+            payUrl = "/payment/vietqr?orderId=" + orderCode + "&amount=" + finalTotal;
         }
-        String qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=DEMOPICK-" + orderCode;
+
+        String qrCodeUrl;
+        if ("vietqr".equalsIgnoreCase(request.getPaymentMethod())) {
+            VietQrSetting setting = vietQrSettingService.getSetting();
+            String encodedAccountName = "";
+            try {
+                encodedAccountName = java.net.URLEncoder.encode(setting.getAccountName(), java.nio.charset.StandardCharsets.UTF_8);
+            } catch (Exception ignored) {}
+            qrCodeUrl = String.format("https://img.vietqr.io/image/%s-%s-compact2.png?amount=%s&addInfo=%s&accountName=%s",
+                    setting.getBankId(), setting.getAccountNo(), finalTotal, orderCode, encodedAccountName);
+        } else {
+            qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=DEMOPICK-" + orderCode;
+        }
 
         // If COD order, send confirmation email immediately
         if ("cod".equalsIgnoreCase(order.getPaymentMethod())) {
@@ -670,6 +701,88 @@ public class OrderService {
                 log.error("Failed to auto cancel expired order {}", order.getOrderCode(), ex);
             }
         }
+    }
+
+    @Transactional
+    public Order confirmPayment(String orderIdOrCode) {
+        Order order = null;
+        try {
+            Long id = Long.parseLong(orderIdOrCode);
+            order = orderRepository.findById(id).orElse(null);
+        } catch (NumberFormatException ignored) {}
+
+        if (order == null) {
+            order = orderRepository.findByOrderCode(orderIdOrCode)
+                    .orElseThrow(() -> new ApiException("Không tìm thấy đơn hàng: " + orderIdOrCode, HttpStatus.NOT_FOUND));
+        }
+
+        // Chặn đơn đã bị hủy hoặc hết hạn bảo lưu
+        if ("cancelled".equalsIgnoreCase(order.getStatus()) || "refunded".equalsIgnoreCase(order.getPaymentStatus())) {
+            throw new ApiException("Đơn hàng #" + order.getOrderCode() + " đã bị hủy hoặc hết hạn thời gian giữ chỗ.", HttpStatus.BAD_REQUEST);
+        }
+
+        // Idempotency check: Tránh gọi lặp lại (double-submit) tạo trùng giao dịch tài chính & gửi trùng email
+        if ("completed".equalsIgnoreCase(order.getPaymentStatus())) {
+            log.info("Order #{} is already completed, returning existing order safely", order.getOrderCode());
+            return order;
+        }
+
+        // Cập nhật trạng thái payment_status = 'completed' và order_status = 'shipping'
+        order.setPaymentStatus("completed");
+        order.setStatus("shipping");
+
+        // Tự động tạo mã vận đơn với đối tác giao hàng GHN Express
+        if (order.getTrackingCode() == null || order.getTrackingCode().isBlank()) {
+            String digits = order.getOrderCode().replaceAll("[^0-9]", "");
+            if (digits.length() < 4) {
+                digits = String.valueOf(System.currentTimeMillis() % 1000000);
+            }
+            int randomSuffix = (int) (100 + Math.random() * 900);
+            order.setTrackingCode("GHN-" + digits + randomSuffix);
+        }
+        order.setShippingCarrier("GHN Express");
+
+        order = orderRepository.save(order);
+
+        // Chuyển các ca sân liên quan sang 'booked'
+        List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
+        for (OrderItem item : items) {
+            if ("booking_slot".equalsIgnoreCase(item.getItemType()) && item.getReferenceId() != null) {
+                TimeSlot slot = timeSlotRepository.findById(item.getReferenceId()).orElse(null);
+                if (slot != null) {
+                    slot.setStatus("booked");
+                    timeSlotRepository.save(slot);
+                    log.info("VietQR payment confirmed: slot #{} set to BOOKED", slot.getId());
+                }
+            }
+        }
+
+        // Ghi nhận giao dịch vào bảng lịch sử tài chính (PaymentTransaction)
+        VietQrSetting setting = vietQrSettingService.getSetting();
+        PaymentTransaction tx = new PaymentTransaction();
+        tx.setOrderCode(order.getOrderCode());
+        tx.setOrderId(order.getId());
+        tx.setPaymentMethod(order.getPaymentMethod() != null ? order.getPaymentMethod() : "vietqr");
+        tx.setBankId(setting.getBankId());
+        tx.setBankName(setting.getBankName());
+        tx.setAccountNo(setting.getAccountNo());
+        tx.setAccountName(setting.getAccountName());
+        tx.setAmount(order.getTotalAmount());
+        tx.setTransferContent(order.getOrderCode());
+        tx.setStatus("COMPLETED");
+        tx.setTransactionId("TX-" + System.currentTimeMillis());
+        tx.setCreatedAt(LocalDateTime.now());
+        paymentTransactionRepository.save(tx);
+
+        // Tự động gửi Email xác nhận thanh toán thành công kèm hóa đơn chi tiết cho khách hàng
+        try {
+            emailService.sendPaymentSuccessEmail(order, items);
+            log.info("Sent payment success email to {} for confirmed order #{}", order.getCustomerEmail(), order.getOrderCode());
+        } catch (Exception ex) {
+            log.warn("Could not send payment success email for order #{}: {}", order.getOrderCode(), ex.getMessage());
+        }
+
+        return order;
     }
 
     @Transactional
