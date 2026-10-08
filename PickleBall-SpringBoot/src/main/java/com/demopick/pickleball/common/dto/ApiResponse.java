@@ -44,4 +44,9 @@ public class ApiResponse<T> {
 
     public Map<String, Object> getMeta() { return meta; }
     public void setMeta(Map<String, Object> meta) { this.meta = meta; }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("success")
+    public boolean isSuccess() {
+        return error == null;
+    }
 }

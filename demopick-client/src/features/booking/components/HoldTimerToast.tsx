@@ -2,12 +2,15 @@ import React, { useEffect, useState } from 'react'
 import { HoldTimerToastProps } from '../types/booking.types'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Clock, ArrowRight } from 'lucide-react'
+import { Clock, ArrowRight, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { bookingService } from '../services/booking.service'
+import { toast } from 'sonner'
 
 export function HoldTimerToast({ hold, onExpired }: HoldTimerToastProps) {
   const navigate = useNavigate()
   const [secondsLeft, setSecondsLeft] = useState<number>(0)
+  const [isReleasing, setIsReleasing] = useState(false)
 
   useEffect(() => {
     if (!hold) return
@@ -34,6 +37,20 @@ export function HoldTimerToast({ hold, onExpired }: HoldTimerToastProps) {
   const seconds = secondsLeft % 60
   const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 
+  const handleCancelHold = async () => {
+    setIsReleasing(true)
+    try {
+      await bookingService.releaseHold(hold.id)
+      localStorage.removeItem('demopick_current_hold')
+      toast.info('Đã hủy giữ chỗ ca sân. Ca sân đã được mở lại cho mọi người.')
+      onExpired()
+    } catch {
+      onExpired()
+    } finally {
+      setIsReleasing(false)
+    }
+  }
+
   return (
     <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5">
       <Card className="flex items-center gap-4 bg-white/95 dark:bg-card/95 backdrop-blur-md text-slate-900 dark:text-slate-100 p-4 shadow-2xl border-2 border-emerald-500/30 ring-1 ring-emerald-500/10 rounded-2xl">
@@ -51,14 +68,28 @@ export function HoldTimerToast({ hold, onExpired }: HoldTimerToastProps) {
           </p>
         </div>
 
-        <Button
-          size="sm"
-          onClick={() => navigate('/checkout', { state: { holdId: hold.id } })}
-          className="ml-2 gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/20"
-        >
-          <span>Thanh toán</span>
-          <ArrowRight className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2 ml-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={isReleasing}
+            onClick={handleCancelHold}
+            className="text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl px-2.5 h-8 font-semibold cursor-pointer"
+            title="Hủy giữ sân ngay lập tức"
+          >
+            <X className="h-3.5 w-3.5 mr-1" />
+            <span>{isReleasing ? '...' : 'Hủy giữ'}</span>
+          </Button>
+
+          <Button
+            size="sm"
+            onClick={() => navigate('/checkout', { state: { holdId: hold.id } })}
+            className="gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/20 cursor-pointer"
+          >
+            <span>Thanh toán</span>
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </div>
       </Card>
     </div>
   )

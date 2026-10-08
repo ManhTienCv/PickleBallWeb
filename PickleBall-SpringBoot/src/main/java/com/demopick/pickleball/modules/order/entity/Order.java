@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 @Entity
@@ -48,6 +49,27 @@ public class Order {
 
     @Column(name = "pickup_notes", columnDefinition = "TEXT")
     private String pickupNotes;
+
+    @Column(name = "customer_name", length = 100)
+    private String customerName;
+
+    @Column(name = "customer_phone", length = 20)
+    private String customerPhone;
+
+    @Column(name = "customer_email", length = 100)
+    private String customerEmail;
+
+    @Column(name = "shipping_address", columnDefinition = "TEXT")
+    private String shippingAddress;
+
+    @Column(name = "payment_method", length = 50)
+    private String paymentMethod = "momo";
+
+    @Column(name = "shipping_carrier", length = 50)
+    private String shippingCarrier = "GHN Express";
+
+    @Column(name = "shipping_fee", precision = 15, scale = 2)
+    private BigDecimal shippingFee = BigDecimal.ZERO;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<OrderItem> items = new ArrayList<>();
@@ -106,6 +128,60 @@ public class Order {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    public String getCustomerName() { return customerName; }
+    public void setCustomerName(String customerName) { this.customerName = customerName; }
+
+    @JsonProperty("customer_name")
+    public String getCustomerNameSnake() { return customerName; }
+
+    public String getCustomerPhone() { return customerPhone; }
+    public void setCustomerPhone(String customerPhone) { this.customerPhone = customerPhone; }
+
+    @JsonProperty("customer_phone")
+    public String getCustomerPhoneSnake() { return customerPhone; }
+
+    public String getCustomerEmail() { return customerEmail; }
+    public void setCustomerEmail(String customerEmail) { this.customerEmail = customerEmail; }
+
+    @JsonProperty("customer_email")
+    public String getCustomerEmailSnake() { return customerEmail; }
+
+    public String getShippingAddress() { return shippingAddress; }
+    public void setShippingAddress(String shippingAddress) { this.shippingAddress = shippingAddress; }
+
+    @JsonProperty("shipping_address")
+    public String getShippingAddressSnake() { return shippingAddress; }
+
+    public String getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+
+    @JsonProperty("payment_method")
+    public String getPaymentMethodSnake() { return paymentMethod; }
+
+    public String getShippingCarrier() { return shippingCarrier; }
+    public void setShippingCarrier(String shippingCarrier) { this.shippingCarrier = shippingCarrier; }
+
+    @JsonProperty("shipping_carrier")
+    public String getShippingCarrierSnake() { return shippingCarrier; }
+
+    public BigDecimal getShippingFee() { return shippingFee; }
+    public void setShippingFee(BigDecimal shippingFee) { this.shippingFee = shippingFee; }
+
+    @JsonProperty("shipping_fee")
+    public BigDecimal getShippingFeeSnake() { return shippingFee; }
+
+    @JsonProperty("order_code")
+    public String getOrderCodeSnake() { return orderCode; }
+
+    @JsonProperty("total_amount")
+    public BigDecimal getTotalAmountSnake() { return totalAmount; }
+
+    @JsonProperty("payment_status")
+    public String getPaymentStatusSnake() { return paymentStatus; }
+
+    @JsonProperty("created_at")
+    public String getCreatedAtSnake() { return createdAt != null ? createdAt.toString() : null; }
 
     public LocalDateTime getDeletedAt() { return deletedAt; }
     public void setDeletedAt(LocalDateTime deletedAt) { this.deletedAt = deletedAt; }

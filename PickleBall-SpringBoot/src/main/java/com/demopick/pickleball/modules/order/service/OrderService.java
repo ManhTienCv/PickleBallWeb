@@ -7,6 +7,8 @@ import com.demopick.pickleball.modules.booking.repository.HoldRepository;
 import com.demopick.pickleball.modules.booking.repository.TimeSlotRepository;
 import com.demopick.pickleball.modules.order.dto.CheckoutRequest;
 import com.demopick.pickleball.modules.order.dto.CheckoutResponse;
+import com.demopick.pickleball.modules.order.dto.CreateOrderRequest;
+import com.demopick.pickleball.modules.order.dto.CreateOrderResponse;
 import com.demopick.pickleball.modules.order.entity.Order;
 import com.demopick.pickleball.modules.order.entity.OrderItem;
 import com.demopick.pickleball.modules.order.repository.OrderItemRepository;
@@ -232,6 +234,167 @@ public class OrderService {
                 orderCode,
                 finalTotal,
                 request.getPaymentMethod() != null ? request.getPaymentMethod() : "momo",
+                payUrl,
+                qrCodeUrl
+        );
+    }
+
+    @Transactional
+    public CreateOrderResponse createOrder(CreateOrderRequest request, Long userId) {
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        List<OrderItem> itemsToSave = new ArrayList<>();
+        String orderType = "shop";
+
+        // 1. Process Order Items
+        if (request.getItems() != null && !request.getItems().isEmpty()) {
+            for (CreateOrderRequest.CreateOrderItemDto item : request.getItems()) {
+                int qty = (item.getQuantity() != null && item.getQuantity() > 0) ? item.getQuantity() : 1;
+                BigDecimal price = item.getPrice() != null ? item.getPrice() : BigDecimal.ZERO;
+                BigDecimal itemTotal = price.multiply(BigDecimal.valueOf(qty));
+                totalAmount = totalAmount.add(itemTotal);
+
+                OrderItem prodItem = new OrderItem();
+                prodItem.setItemType("product");
+                prodItem.setReferenceId(item.getProductId() != null ? item.getProductId() : item.getId());
+                prodItem.setItemName(item.getName() != null && !item.getName().trim().isEmpty() ? item.getName() : "Sản phẩm Pickleball");
+                prodItem.setQuantity(qty);
+                prodItem.setUnitPrice(price);
+                prodItem.setTotalPrice(itemTotal);
+                itemsToSave.add(prodItem);
+
+                // Try to decrease stock if a matching variant exists
+                Long variantId = item.getProductId() != null ? item.getProductId() : item.getId();
+                if (variantId != null) {
+                    try {
+                        ProductVariant variant = productVariantRepository.findById(variantId).orElse(null);
+                        if (variant != null && variant.getStockQty() != null && variant.getStockQty() >= qty) {
+                            variant.setStockQty(variant.getStockQty() - qty);
+                            productVariantRepository.save(variant);
+                        }
+                    } catch (Exception ex) {
+                        log.warn("Could not decrement stock for variant ID {}: {}", variantId, ex.getMessage());
+                    }
+                }
+            }
+        }
+
+        // 2. Process Booking Hold if provided
+        Hold holdToConvert = null;
+        if (request.getHoldId() != null || request.getSlotId() != null) {
+            orderType = itemsToSave.isEmpty() ? "booking" : "mixed";
+            Long holdId = request.getHoldId();
+            Long slotId = request.getSlotId();
+
+            Hold hold = null;
+            if (holdId != null) {
+                hold = holdRepository.findById(holdId).orElse(null);
+            }
+            if (hold == null && slotId != null) {
+                hold = holdRepository.findBySlotIdAndStatusAndExpiresAtAfter(slotId, "active", LocalDateTime.now()).orElse(null);
+            }
+
+            if (hold != null) {
+                holdToConvert = hold;
+                if (slotId == null) {
+                    slotId = hold.getSlotId();
+                }
+            }
+
+            if (slotId != null) {
+                TimeSlot slot = timeSlotRepository.findById(slotId).orElse(null);
+                if (slot != null) {
+                    BigDecimal slotPrice = slot.getPrice() != null ? slot.getPrice() : BigDecimal.valueOf(150000);
+                    totalAmount = totalAmount.add(slotPrice);
+
+                    OrderItem slotItem = new OrderItem();
+                    slotItem.setItemType("booking_slot");
+                    slotItem.setReferenceId(slot.getId());
+                    slotItem.setItemName("Thuê ca sân Pickleball (" + slot.getStartTime() + " - " + slot.getEndTime() + ")");
+                    slotItem.setQuantity(1);
+                    slotItem.setUnitPrice(slotPrice);
+                    slotItem.setTotalPrice(slotPrice);
+                    itemsToSave.add(slotItem);
+                }
+            }
+        }
+
+        BigDecimal subtotal = totalAmount;
+        BigDecimal discountAmount = BigDecimal.ZERO;
+
+        // 3. Process Voucher if provided
+        if (request.getVoucherCode() != null && !request.getVoucherCode().trim().isEmpty()) {
+            String vCode = request.getVoucherCode().trim();
+            Voucher voucher = voucherRepository.findByCode(vCode).orElse(null);
+            if (voucher != null && Boolean.TRUE.equals(voucher.getIsActive())) {
+                if ("percentage".equalsIgnoreCase(voucher.getDiscountType())) {
+                    BigDecimal pct = BigDecimal.valueOf(voucher.getDiscountValue() != null ? voucher.getDiscountValue() : 0);
+                    BigDecimal calc = subtotal.multiply(pct).divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+                    if (voucher.getMaxDiscount() != null && voucher.getMaxDiscount() > 0) {
+                        calc = calc.min(BigDecimal.valueOf(voucher.getMaxDiscount()));
+                    }
+                    discountAmount = calc;
+                } else {
+                    discountAmount = BigDecimal.valueOf(voucher.getDiscountValue() != null ? voucher.getDiscountValue() : 0);
+                }
+                if (discountAmount.compareTo(subtotal) > 0) {
+                    discountAmount = subtotal;
+                }
+                voucher.setUsedCount((voucher.getUsedCount() != null ? voucher.getUsedCount() : 0) + 1);
+                voucherRepository.save(voucher);
+            }
+        } else if (request.getDiscount() != null && request.getDiscount().compareTo(BigDecimal.ZERO) > 0) {
+            discountAmount = request.getDiscount();
+        }
+
+        BigDecimal shippingFee = request.getShippingFee() != null ? request.getShippingFee() : BigDecimal.ZERO;
+        BigDecimal finalTotal = subtotal.subtract(discountAmount).add(shippingFee).max(BigDecimal.ZERO);
+
+        // 4. Create Order
+        String datePrefix = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String orderCode = "ORD-" + datePrefix + "-" + (int) (1000 + Math.random() * 9000);
+
+        Order order = new Order();
+        order.setOrderCode(orderCode);
+        order.setUserId(userId);
+        order.setCustomerName(request.getShippingName());
+        order.setCustomerPhone(request.getShippingPhone());
+        order.setCustomerEmail(request.getCustomerEmail());
+        order.setShippingAddress(request.getShippingAddress());
+        order.setPaymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod() : "momo");
+        order.setOrderType(orderType);
+        order.setSubtotal(subtotal);
+        order.setDiscount(discountAmount);
+        order.setShippingFee(shippingFee);
+        order.setTotalAmount(finalTotal);
+        order.setStatus("pending");
+        order.setPaymentStatus("unpaid");
+
+        order = orderRepository.save(order);
+
+        for (OrderItem item : itemsToSave) {
+            item.setOrder(order);
+            item.setOrderId(order.getId());
+            orderItemRepository.save(item);
+        }
+
+        // Convert hold so auto-release cronjob does not expire it
+        if (holdToConvert != null) {
+            holdToConvert.setStatus("converted");
+            holdRepository.save(holdToConvert);
+        }
+
+        // 5. Generate URLs
+        String payUrl = null;
+        if ("momo".equalsIgnoreCase(request.getPaymentMethod())) {
+            payUrl = momoRedirectUrl + "?orderId=" + orderCode + "&amount=" + finalTotal;
+        }
+        String qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=DEMOPICK-" + orderCode;
+
+        return new CreateOrderResponse(
+                orderCode,
+                finalTotal,
+                request.getPaymentMethod() != null ? request.getPaymentMethod() : "momo",
+                "unpaid",
                 payUrl,
                 qrCodeUrl
         );

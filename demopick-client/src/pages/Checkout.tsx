@@ -43,11 +43,19 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { voucherService, Voucher, AppliedVoucherResult } from '@/services/voucher.service'
+import { bookingService } from '@/features/booking/services/booking.service'
 
 export default function CheckoutPage() {
   const location = useLocation()
   const navigate = useNavigate()
-  const holdId = location.state?.holdId
+  const holdId = location.state?.holdId || (() => {
+    try {
+      const raw = localStorage.getItem('demopick_current_hold')
+      return raw ? JSON.parse(raw)?.id : null
+    } catch {
+      return null
+    }
+  })()
 
   const { formattedTime, startTimer, resetTimer, extendTimer, isExpired, secondsLeft } = useCheckoutTimer()
 
@@ -58,6 +66,13 @@ export default function CheckoutPage() {
       toast.info('Vui lòng đăng nhập để tiến hành thanh toán đơn hàng.')
     }
   }, [navigate])
+
+  useEffect(() => {
+    if (isExpired && holdId) {
+      bookingService.releaseHold(Number(holdId)).catch(() => {})
+      localStorage.removeItem('demopick_current_hold')
+    }
+  }, [isExpired, holdId])
 
   const currentUser = authHelpers.getUser()
   const [paymentMethod, setPaymentMethod] = useState<'momo' | 'cod'>('momo')
@@ -279,8 +294,15 @@ export default function CheckoutPage() {
         paymentMethod,
         voucherCode: appliedVoucher?.code,
         discount: voucherDiscount,
+        holdId: holdId ? Number(holdId) : undefined,
+        shippingFee: effectiveShippingFee,
         items: orderItems,
       })
+
+      // Dọn dẹp giỏ hàng & giữ chỗ sau khi tạo đơn thành công
+      cartService.clearCart()
+      localStorage.removeItem('demopick_current_hold')
+      localStorage.removeItem('checkout_timer_expiry')
 
       const orderCode = result.orderCode || `HD-${Math.floor(10000 + Math.random() * 90000)}`
 
@@ -1053,10 +1075,23 @@ export default function CheckoutPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex flex-row gap-3 justify-end pt-4 border-t border-slate-100 dark:border-border">
-            <Button variant="outline" onClick={() => setShowExitModal(false)} className="rounded-xl font-bold border-slate-300 dark:border-border">
+            <Button variant="outline" onClick={() => setShowExitModal(false)} className="rounded-xl font-bold border-slate-300 dark:border-border cursor-pointer">
               Ở Lại Tiếp Tục
             </Button>
-            <Button onClick={() => { resetTimer(); navigate('/cart') }} variant="destructive" className="rounded-xl font-bold">
+            <Button
+              onClick={async () => {
+                if (holdId) {
+                  try {
+                    await bookingService.releaseHold(Number(holdId))
+                  } catch { }
+                  localStorage.removeItem('demopick_current_hold')
+                }
+                resetTimer()
+                navigate('/cart')
+              }}
+              variant="destructive"
+              className="rounded-xl font-bold cursor-pointer"
+            >
               Rời Khỏi
             </Button>
           </DialogFooter>

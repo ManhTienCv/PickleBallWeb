@@ -11,6 +11,9 @@ export interface CreateOrderParams {
   paymentMethod: 'momo' | 'cod'
   voucherCode?: string
   discount?: number
+  holdId?: number
+  slotId?: number
+  shippingFee?: number
   items: Array<{
     id: number
     product_id?: number
@@ -88,8 +91,15 @@ export const orderService = {
    * Tạo đơn hàng mới qua Server Backend (Server-Side Price Protection)
    */
   async createOrder(params: CreateOrderParams): Promise<CreateOrderResult> {
-    const response = await api.post<{ success: boolean; data: CreateOrderResult }>('/orders', params)
-    return response.data.data
+    const response = await api.post<any>('/orders', params)
+    const rawData = response.data?.data || response.data
+    return {
+      orderCode: rawData?.orderCode || rawData?.order_code || '',
+      totalAmount: rawData?.totalAmount ?? rawData?.total_amount ?? 0,
+      paymentMethod: rawData?.paymentMethod || rawData?.payment_method || params.paymentMethod,
+      paymentStatus: rawData?.paymentStatus || rawData?.payment_status || 'unpaid',
+      payUrl: rawData?.payUrl || rawData?.pay_url,
+    }
   },
 
   async checkout(params: CheckoutParams): Promise<CheckoutResult> {
@@ -108,8 +118,8 @@ export const orderService = {
 
   async getOrderByCode(code: string): Promise<Order | null> {
     try {
-      const response = await api.get<{ success: boolean; data: { order: Order } }>(`/orders/${code}`)
-      return response.data.data.order
+      const response = await api.get<any>(`/orders/${code}`)
+      return response.data?.data?.order || response.data?.data || null
     } catch {
       return null
     }

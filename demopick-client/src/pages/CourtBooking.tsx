@@ -18,7 +18,20 @@ export default function CourtBooking() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [selectedSlotIds, setSelectedSlotIds] = useState<number[]>([])
   const [selectedCluster, setSelectedCluster] = useState<'all' | 'a' | 'b' | 'c' | 'd' | 'indoor' | 'outdoor' | 'vip'>('all')
-  const [currentHold, setCurrentHold] = useState<Hold | null>(null)
+  const [currentHold, setCurrentHold] = useState<Hold | null>(() => {
+    try {
+      const raw = localStorage.getItem('demopick_current_hold')
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (new Date(parsed.expires_at).getTime() > Date.now()) {
+          return parsed
+        } else {
+          localStorage.removeItem('demopick_current_hold')
+        }
+      }
+    } catch { }
+    return null
+  })
   const [isHolding, setIsHolding] = useState(false)
   const [policyOpen, setPolicyOpen] = useState(false)
 
@@ -92,6 +105,9 @@ export default function CourtBooking() {
     try {
       const hold = await bookingService.createHold(selectedSlotIds, slots)
       setCurrentHold(hold)
+      try {
+        localStorage.setItem('demopick_current_hold', JSON.stringify(hold))
+      } catch { }
       toast.success(`Đã tạm giữ ${selectedSlotIds.length} khung giờ thành công trong 10 phút!`)
       refetch()
     } catch (err: any) {
@@ -413,6 +429,7 @@ export default function CourtBooking() {
         onExpired={() => {
           setCurrentHold(null)
           setSelectedSlotIds([])
+          localStorage.removeItem('demopick_current_hold')
           toast.error('Hết thời gian giữ sân! Vui lòng chọn lại.')
           refetch()
         }}
