@@ -60,7 +60,7 @@ public class MoMoPaymentService {
             String requestId = "REQ_" + timestamp;
             String orderInfo = "Thanh toan don hang #" + orderCode;
             String extraData = "";
-            String requestType = "captureWallet";
+            String requestType = "payWithMethod";
 
             String redirectUrl = (clientRedirectUrl != null && !clientRedirectUrl.isBlank())
                     ? clientRedirectUrl

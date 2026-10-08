@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     const numAmount = Math.round(Math.max(1000, Number(amount) || 50000))
     const orderInfo = `Thanh toan don hang #${orderCode}`
     const extraData = ''
-    const requestType = 'captureWallet'
+    const requestType = 'payWithMethod'
 
     // Tự động xác định redirect URL nếu client không gửi lên
     const host = req.headers.host || 'demopick-client.vercel.app'
