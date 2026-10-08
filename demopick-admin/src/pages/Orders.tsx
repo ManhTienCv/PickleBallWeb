@@ -378,6 +378,18 @@ export default function Orders() {
   // 1-CLICK DISPATCH: GHN EXPRESS
   const handleOneClickGHNDispatch = (order: Order) => {
     try {
+      const isOnlinePayment =
+        order.paymentMethod === "MoMo" ||
+        order.paymentMethod === "MOMO" ||
+        order.paymentMethod === "VietQR" ||
+        order.paymentMethod === "Cổng Online";
+      if (isOnlinePayment && !isOrderPaid(order)) {
+        toast.error(
+          `🔒 CẢNH BÁO AN TOÀN: Đơn hàng #${order.code} chưa thanh toán qua ${order.paymentMethod}! Hệ thống chặn xuất kho bàn giao GHN để tránh mất trắng ${new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(order.totalAmount)}.`
+        );
+        return;
+      }
+
       toast.info(`Đang kích hoạt 1-Click GHN Express cho đơn #${order.code}...`);
       const itemsText = order.items.map((i) => `${i.qty}x ${i.name}`).join(", ");
       const { fee } = shippingService.calculateShippingFee(
@@ -606,6 +618,22 @@ export default function Orders() {
         return;
       }
       handleAdminCancelOrder(orderCode);
+      return;
+    }
+
+    const isOnlinePayment =
+      target.paymentMethod === "MoMo" ||
+      target.paymentMethod === "MOMO" ||
+      target.paymentMethod === "VietQR" ||
+      target.paymentMethod === "Cổng Online";
+    if (
+      isOnlinePayment &&
+      !isOrderPaid(target) &&
+      (newStatus === "SHIPPED" || newStatus === "SHIPPING" || newStatus === "READY_TO_PICK")
+    ) {
+      toast.error(
+        `🔒 CẢNH BÁO: Đơn hàng chưa thanh toán ${target.paymentMethod}! Vui lòng chờ khách hoàn tất thanh toán trước khi chuyển sang "${getStatusLabel(newStatus)}".`
+      );
       return;
     }
 

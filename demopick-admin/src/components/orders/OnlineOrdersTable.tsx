@@ -1,7 +1,7 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Truck, Zap, Navigation, Printer, Eye, RotateCcw, ArrowRight, CheckCircle2, XCircle, PackageCheck } from "lucide-react";
+import { Truck, Zap, Navigation, Printer, Eye, RotateCcw, ArrowRight, CheckCircle2, XCircle, PackageCheck, AlertTriangle } from "lucide-react";
 import { Order, OrderStatus } from "@/types/order.types";
 
 interface OnlineOrdersTableProps {
@@ -60,7 +60,14 @@ export const OnlineOrdersTable: React.FC<OnlineOrdersTableProps> = ({
                 const isShipped = order.status === "SHIPPED" || order.status === "SHIPPING";
                 const isCompleted = order.status === "COMPLETED";
                 const isCancelled = order.status === "CANCELLED" || isRefunded;
-                const canDispatchGHN = !order.trackingNumber && !isCancelled && !isCompleted && !isShipped && !isRefundPending;
+                const isPaid = isOrderPaid(order);
+                const isOnlinePayment =
+                  order.paymentMethod === "MoMo" ||
+                  order.paymentMethod === "MOMO" ||
+                  order.paymentMethod === "VietQR" ||
+                  order.paymentMethod === "Cổng Online";
+                const isUnpaidOnline = isOnlinePayment && !isPaid;
+                const canDispatchGHN = !order.trackingNumber && !isCancelled && !isCompleted && !isShipped && !isRefundPending && !isUnpaidOnline;
 
                 return (
                   <tr key={order.code} className="hover:bg-slate-50/80 transition-colors">
@@ -216,15 +223,25 @@ export const OnlineOrdersTable: React.FC<OnlineOrdersTableProps> = ({
                         {/* 1. ĐƠN MỚI: PENDING / CONFIRMED -> Bấm [Duyệt đơn →] & [Hủy] */}
                         {isPending && (
                           <>
-                            <Button
-                              size="sm"
-                              onClick={() => onUpdateStatus(order.code, "READY_TO_PICK")}
-                              className="h-8 px-2.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-sm gap-1.5 cursor-pointer"
-                              title="Duyệt đơn và chuyển kho chuẩn bị hàng"
-                            >
-                              <span>Duyệt đơn</span>
-                              <ArrowRight className="w-3.5 h-3.5" />
-                            </Button>
+                            {isUnpaidOnline ? (
+                              <span
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-300 shadow-2xs"
+                                title={`Khách chọn thanh toán qua ${order.paymentMethod} nhưng chưa thanh toán. Hệ thống khóa duyệt đơn để tránh mất hàng!`}
+                              >
+                                <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                                <span>Chờ TT {order.paymentMethod}</span>
+                              </span>
+                            ) : (
+                              <Button
+                                size="sm"
+                                onClick={() => onUpdateStatus(order.code, "READY_TO_PICK")}
+                                className="h-8 px-2.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-sm gap-1.5 cursor-pointer"
+                                title="Duyệt đơn và chuyển kho chuẩn bị hàng"
+                              >
+                                <span>Duyệt đơn</span>
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
 
                             <Button
                               size="sm"
@@ -242,7 +259,15 @@ export const OnlineOrdersTable: React.FC<OnlineOrdersTableProps> = ({
                         {/* 2. KHO CHUẨN BỊ XONG: READY_TO_PICK / PICKING -> Bấm [1-Click GHN] / [Giao hàng →] & [Hủy] */}
                         {(order.status === "READY_TO_PICK" || order.status === "PICKING") && (
                           <>
-                            {canDispatchGHN ? (
+                            {isUnpaidOnline ? (
+                              <span
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-rose-50 text-rose-800 border border-rose-300 shadow-2xs"
+                                title={`Đơn hàng chưa thanh toán ${order.paymentMethod}! Hệ thống khóa xuất kho bàn giao GHN để tránh mất trắng hàng hóa.`}
+                              >
+                                <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                                <span>Khóa GHN (Chưa TT)</span>
+                              </span>
+                            ) : canDispatchGHN ? (
                               <Button
                                 size="sm"
                                 onClick={() => onDispatchGHN(order)}
