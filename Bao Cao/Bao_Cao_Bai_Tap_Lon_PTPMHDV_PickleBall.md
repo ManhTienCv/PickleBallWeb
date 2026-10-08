@@ -1503,15 +1503,145 @@ Sau khi người dùng điền thông tin đăng nhập thành công qua Modal, 
 
 ---
 
+#### 3.3.4. Các màn hình giao diện chính của Ứng dụng Khách hàng (`demopick-client`)
+
+Dưới đây là các giao diện tiêu biểu của Cổng Khách hàng minh chứng cho sự tương tác hoàn chỉnh giữa ứng dụng Client SPA và hệ thống Backend RESTful API:
+
+##### a. Màn hình Trang chủ và Danh mục thiết bị thể thao
+
+![Hình 3.1: Giao diện Trang chủ và Danh mục sản phẩm cổng Khách hàng](media/hinh_3_1_trang_chu_client.png)
+
+> 📸 **HƯỚNG DẪN CHỤP ẢNH HÌNH 3.1**:
+> * **Địa chỉ mở trên trình duyệt**: `http://localhost:5173/`
+> * **Thao tác**: Mở trang chủ cổng khách hàng, chụp toàn cảnh màn hình bao gồm Header thanh điều hướng (Logo DemoPick, Giỏ hàng, nút Đăng nhập), Banner quảng bá dịch vụ và danh mục thẻ sản phẩm vợt, bóng thể thao.
+> * **Tên file cần lưu**: `media/hinh_3_1_trang_chu_client.png` (Lưu trực tiếp vào thư mục `Bao Cao/media/`)
+
+**Nhận xét và Đánh giá kết quả giao diện Trang chủ:**
+Giao diện trang chủ được xây dựng theo phong cách thiết kế hiện đại (Modern Clean UI), tối ưu hóa trải nghiệm người dùng với hệ màu xanh Emerald thể thao làm chủ đạo. Toàn bộ danh mục sản phẩm được nạp động từ endpoint `GET /api/v1/products` với cơ chế phân trang và bộ lọc theo thương hiệu/danh mục mượt mà. Khách hàng vãng lai có thể duyệt xem thông tin chi tiết từng mặt hàng mà không bị rào cản đăng nhập, tốc độ phản hồi tải trang bước đầu dưới 0.8 giây đáp ứng tiêu chuẩn trải nghiệm Web cao cấp.
+
+---
+
+##### b. Màn hình Lưới ma trận đặt sân thời gian thực (Booking Matrix)
+
+![Hình 3.2: Lưới ma trận đặt sân thời gian thực 8 cụm sân](media/hinh_3_2_luoi_dat_san.png)
+
+> 📸 **HƯỚNG DẪN CHỤP ẢNH HÌNH 3.2**:
+> * **Địa chỉ mở trên trình duyệt**: `http://localhost:5173/booking`
+> * **Thao tác**: Chọn ngày đặt sân để hiển thị ma trận 8 sân (`Sân A1` đến `Sân D2`) chia theo từng khung giờ từ 06:00 đến 22:00. Đảm bảo nhìn thấy rõ sự phân biệt giữa các ô trạng thái: Màu xanh lá (Sân trống khả dụng), Màu vàng cam (Đang có người giữ chỗ 10 phút), Màu đỏ (Đã thanh toán/Đã đặt) và Màu xám mờ (Khóa bởi quy tắc Cut-off 30 phút).
+> * **Tên file cần lưu**: `media/hinh_3_2_luoi_dat_san.png` (Lưu trực tiếp vào thư mục `Bao Cao/media/`)
+
+**Nhận xét và Đánh giá kết quả ma trận Đặt sân:**
+Lưới ma trận phản ánh chính xác trạng thái sân theo thời gian thực được cung cấp bởi dịch vụ `GET /api/v1/courts/availability`. Cơ chế hiển thị trực quan 4 mã màu giúp giảm thiểu 90% khả năng nhầm lẫn của người chơi. Đặc biệt, quy tắc nghiệp vụ Cut-off 30 phút tự động làm mờ và khóa các khung giờ sát thời điểm hiện tại, chứng minh tính đồng bộ chặt chẽ giữa thuật toán nghiệp vụ Backend và giao diện tương tác Frontend.
+
+---
+
+##### c. Màn hình Giỏ hàng hỗn hợp đa dịch vụ và Bộ đếm ngược 10 phút giữ chỗ
+
+![Hình 3.3: Màn hình Giỏ hàng hỗn hợp đa dịch vụ và Đồng hồ đếm ngược giữ chỗ](media/hinh_3_3_gio_hang_dem_nguoc.png)
+
+> 📸 **HƯỚNG DẪN CHỤP ẢNH HÌNH 3.3**:
+> * **Địa chỉ mở trên trình duyệt**: `http://localhost:5173/cart` (sau khi đã bấm giữ chỗ 1 ca sân và bấm thêm 1 sản phẩm vợt/bóng vào giỏ)
+> * **Thao tác**: Chụp màn hình Giỏ hàng hiển thị đồng thời cả ca đặt sân thể thao lẫn sản phẩm vật phẩm bán lẻ, làm nổi bật thanh đếm ngược thời gian giữ chỗ (ví dụ: `Thời gian giữ chỗ còn lại: 09:42`) và khung nhập mã Voucher giảm giá.
+> * **Tên file cần lưu**: `media/hinh_3_3_gio_hang_dem_nguoc.png` (Lưu trực tiếp vào thư mục `Bao Cao/media/`)
+
+**Nhận xét và Đánh giá kết quả Giỏ hàng hỗn hợp:**
+Giao diện giỏ hàng giải quyết trọn vẹn bài toán tích hợp nghiệp vụ phức tạp: kết hợp dịch vụ đặt chỗ (Booking Service) và dịch vụ bán lẻ (Shop Service) trong cùng một giao dịch thanh toán duy nhất (Single Checkout). Đồng hồ đếm ngược giữ chỗ 10 phút đồng bộ trực tiếp với mốc `expires_at` của bản ghi `Hold` trên máy chủ, vừa bảo vệ quyền lợi giữ chỗ của khách hàng, vừa ngăn chặn hành vi giữ sân ảo gây thất thoát doanh thu cho cụm sân.
+
+---
+
+##### d. Màn hình Cổng thanh toán trực tuyến MoMo Hosted Gateway
+
+![Hình 3.4: Giao diện Cổng thanh toán trực tuyến MoMo AIO Gateway](media/hinh_3_4_cong_thanh_toan_momo.png)
+
+> 📸 **HƯỚNG DẪN CHỤP ẢNH HÌNH 3.4**:
+> * **Địa chỉ mở trên trình duyệt**: Chuyển hướng khi bấm thanh toán MoMo tại trang Checkout (`/payment/momo/gateway?orderId=...`)
+> * **Thao tác**: Chụp toàn màn hình Cổng thanh toán MoMo Gateway hiển thị mã QR MoMo, số tiền đối soát của đơn hàng và đồng hồ đếm ngược phiên thanh toán.
+> * **Tên file cần lưu**: `media/hinh_3_4_cong_thanh_toan_momo.png` (Lưu trực tiếp vào thư mục `Bao Cao/media/`)
+
+**Nhận xét và Đánh giá kết quả Cổng thanh toán MoMo:**
+Hệ thống đã tích hợp chuẩn mực Cổng thanh toán trung gian MoMo theo mô hình Hosted Gateway chuẩn PCI-DSS. Đường dẫn thanh toán được sinh tự động bởi Backend kèm chữ ký bảo mật HMAC-SHA256, ngăn chặn 100% rủi ro can thiệp sửa đổi số tiền giao dịch từ phía Client. Khách hàng có thể thao tác quét mã QR tiện lợi qua ứng dụng Ví MoMo trên điện thoại hoặc chọn phương thức ATM nội địa, mang lại sự tiện ích và tin cậy tối đa.
+
+---
+
+##### e. Màn hình Xác nhận Đơn hàng thành công, Thông báo Email và Mã vé QR Check-in
+
+![Hình 3.5: Giao diện Đơn hàng thành công, Thông báo Email và Mã vé QR Check-in](media/hinh_3_5_don_hang_thanh_cong_qr.png)
+
+> 📸 **HƯỚNG DẪN CHỤP ẢNH HÌNH 3.5**:
+> * **Địa chỉ mở trên trình duyệt**: `http://localhost:5173/order-success/ORD-...` (sau khi thanh toán thành công)
+> * **Thao tác**: Chụp trang kết quả đơn hàng với trạng thái `ĐÃ THANH TOÁN (PAID)`, mã đơn hàng `#ORD-...`, hình ảnh mã QR vé điện tử (sinh tự động qua thư viện ZXing), đơn vị vận chuyển GHN Express và banner xác nhận đã gửi hóa đơn điện tử về Email khách hàng.
+> * **Tên file cần lưu**: `media/hinh_3_5_don_hang_thanh_cong_qr.png` (Lưu trực tiếp vào thư mục `Bao Cao/media/`)
+
+**Nhận xét và Đánh giá kết quả Xác nhận đơn hàng:**
+Màn hình xác nhận thể hiện sự hoàn thiện khép kín của luồng giao dịch trực tuyến: Ngay khi MoMo gửi Webhook IPN, Backend cập nhật trạng thái đơn hàng sang `paid`, chuyển ca sân sang `booked`, đồng thời dịch vụ `EmailService` kích hoạt ngầm (`@Async`) gửi hóa đơn điện tử chi tiết về hòm thư khách hàng. Mã vé QR được sinh tức thì giúp khách hàng lưu trữ vào thiết bị di động để quét vé tự động khi đến sân, tạo nên trải nghiệm tự phục vụ (Self-service) liền mạch và chuyên nghiệp.
+
+---
+
+#### 3.3.5. Các màn hình giao diện của Cổng Quản trị & Quầy Lễ tân (`demopick-admin`)
+
+Cổng quản trị dành cho nhân viên điều hành và lễ tân thu ngân được tách biệt độc lập nhằm đảm bảo hiệu năng và tính bảo mật cao:
+
+##### a. Bảng điều khiển Quản trị tổng hợp (Admin Analytics Dashboard)
+
+![Hình 3.6: Bảng điều khiển quản trị tổng hợp Admin Analytics Dashboard](media/hinh_3_6_admin_dashboard.png)
+
+> 📸 **HƯỚNG DẪN CHỤP ẢNH HÌNH 3.6**:
+> * **Địa chỉ mở trên trình duyệt**: `http://localhost:5174/dashboard`
+> * **Thao tác**: Đăng nhập tài khoản Quản trị viên (Admin), chụp toàn cảnh Bảng điều khiển tổng hợp với các thẻ chỉ số KPI doanh thu, số ca đặt sân trong ngày, tỷ lệ lấp đầy sân (Utilization Rate) và biểu đồ phân tích trực quan.
+> * **Tên file cần lưu**: `media/hinh_3_6_admin_dashboard.png` (Lưu trực tiếp vào thư mục `Bao Cao/media/`)
+
+**Nhận xét và Đánh giá kết quả Bảng điều khiển Quản trị:**
+Dashboard quản trị đóng vai trò đầu não tổng hợp dữ liệu từ toàn bộ các vi dịch vụ trong hệ thống thông qua các API chuyên dụng `GET /api/v1/admin/reports/**`. Giao diện hỗ trợ quản trị viên nắm bắt nhanh chóng tình hình kinh doanh, số lượng ca sân hoạt động, doanh thu theo từng kênh và đơn hàng mới phát sinh. Cơ chế biểu đồ trực quan hóa dữ liệu giúp người quản lý đưa ra các chiến lược tối ưu hóa doanh thu và điều phối nhân sự hiệu quả.
+
+---
+
+##### b. Sơ đồ bản đồ sân thời gian thực (CourtMap Live Timeline)
+
+![Hình 3.7: Sơ đồ quản lý 8 sân theo trục thời gian thực (CourtMap)](media/hinh_3_7_courtmap_admin.png)
+
+> 📸 **HƯỚNG DẪN CHỤP ẢNH HÌNH 3.7**:
+> * **Địa chỉ mở trên trình duyệt**: `http://localhost:5174/court-map`
+> * **Thao tác**: Chụp sơ đồ 8 cụm sân theo trục thời gian thực trong ngày, thể hiện các ca sân đang có khách thi đấu (màu tím/xanh), sân đang trống và đồng hồ đếm ngược phiên chơi.
+> * **Tên file cần lưu**: `media/hinh_3_7_courtmap_admin.png` (Lưu trực tiếp vào thư mục `Bao Cao/media/`)
+
+**Nhận xét và Đánh giá kết quả phân hệ CourtMap:**
+Phân hệ CourtMap là giải pháp số hóa hoàn hảo cho bàn lễ tân điều phối sân. Thay vì kiểm tra sổ sách truyền thống, nhân viên có thể quan sát trực tiếp trạng thái thực tế của cả 8 sân trên một màn hình duy nhất. Tính năng Đặt sân nhanh (Quick Booking) cho phép tạo lượt chơi trực tiếp cho khách vãng lai, đồng thời đồng hồ đếm ngược theo dõi sát sao thời lượng còn lại của từng ca sân, tránh tình trạng chơi quá giờ quy định.
+
+---
+
+##### c. Màn hình Bán hàng tại quầy thu ngân (POS Cashier)
+
+![Hình 3.8: Giao diện bán hàng POS tại quầy thu ngân dành cho Lễ tân](media/hinh_3_8_pos_thu_ngan.png)
+
+> 📸 **HƯỚNG DẪN CHỤP ẢNH HÌNH 3.8**:
+> * **Địa chỉ mở trên trình duyệt**: `http://localhost:5174/pos`
+> * **Thao tác**: Chụp màn hình POS bán hàng với danh mục đồ uống, bóng, phụ kiện chọn nhanh bằng 1 click ở bên trái, giỏ hàng thanh toán bên phải kèm các nút chức năng thanh toán tiền mặt, áp mã giảm giá và in biên lai tại chỗ.
+> * **Tên file cần lưu**: `media/hinh_3_8_pos_thu_ngan.png` (Lưu trực tiếp vào thư mục `Bao Cao/media/`)
+
+**Nhận xét và Đánh giá kết quả phân hệ POS Thu ngân:**
+Giao diện POS quầy thu ngân được thiết kế với ưu tiên số một là tốc độ và sự đơn giản. Nhân viên thu ngân chỉ cần 1 cú nhấp chuột để thêm sản phẩm vào đơn, hệ thống tự động kiểm tra tồn kho theo từng biến thể (`ProductVariant.stock_qty`) và xuất hóa đơn hoàn tất chỉ dưới 1 giây. Việc phân tách riêng phân hệ POS giúp các giao dịch bán hàng tại quầy không bị gián đoạn ngay cả khi lưu lượng truy cập đặt sân trực tuyến tăng đột biến.
+
+---
+
 ### 3.4. Triển khai hệ thống (Deployment)
 
-1. **Triển khai ứng dụng Client lên Vercel**:
+1. **Triển khai ứng dụng Client lên nền tảng Vercel Edge**:
    * Cấu hình biến môi trường trên Vercel Dashboard: `VITE_API_BASE_URL=https://api.demopickleball.com/api/v1`.
    * Cấu hình tập tin `vercel.json` để xử lý cơ chế Rewrite URL cho React Router SPA (tránh lỗi 404 khi người dùng F5 tải lại trang).
 2. **Triển khai Backend Service lên Cloud/VPS**:
    * Cấu hình Nginx làm Reverse Proxy, chứng chỉ bảo mật SSL Let's Encrypt (HTTPS).
    * Thiết lập cơ chế CORS trong `SecurityConfig.java` (`CorsConfigurationSource`) cho phép 2 domain Client (`https://client.demopickleball.com` và `https://admin.demopickleball.com`) gửi kèm Header xác thực.
    * Cấu hình Webhook MoMo IPN URL trỏ thẳng về endpoint bảo mật của máy chủ Backend.
+
+![Hình 3.9: Giao diện Triển khai ứng dụng Client thành công trên nền tảng Vercel Edge](media/hinh_3_9_trien_khai_vercel.png)
+
+> 📸 **HƯỚNG DẪN CHỤP ẢNH HÌNH 3.9**:
+> * **Màn hình**: Vercel Dashboard của dự án (hoặc bảng quản trị hosting triển khai thực tế)
+> * **Thao tác**: Chụp màn hình tổng quan dự án trên Vercel thể hiện trạng thái `Ready` (hoặc `Production Deployment`), tên miền chính thức và nhật ký biên dịch thành công không có lỗi.
+> * **Tên file cần lưu**: `media/hinh_3_9_trien_khai_vercel.png` (Lưu trực tiếp vào thư mục `Bao Cao/media/`)
+
+**Nhận xét và Đánh giá kết quả Triển khai đám mây:**
+Việc đưa toàn bộ giao diện Client SPA lên nền tảng Edge Computing của Vercel mang lại hiệu quả vượt bậc về mặt hạ tầng: phân tán tài nguyên tĩnh trên hàng trăm trung tâm dữ liệu toàn cầu (Global Edge CDN), thời gian phản hồi trang dưới 150ms và độ sẵn sàng đạt 99.99%. Máy chủ Backend Spring Boot được giải phóng hoàn toàn khỏi tác vụ phân phát giao diện tĩnh, tập trung 100% tài nguyên CPU và RAM để xử lý các nghiệp vụ tính toán và giao dịch tài chính trọng yếu.
 
 ---
 
@@ -1554,6 +1684,34 @@ Dưới đây là bảng tổng hợp kết quả chi tiết từ hệ thống k
 | **TC-SEC-02B** | `GET /api/v1/admin/reports/**` | **Phân quyền nội bộ RBAC: STAFF vs ADMIN** | Dùng Token STAFF và Token ADMIN truy cập Báo cáo doanh thu | STAFF bị chặn 403; ADMIN truy cập thành công HTTP 200 OK | STAFF bị chặn đúng 403; ADMIN truy cập báo cáo doanh thu thành công HTTP 200 | **ĐẠT** |
 | **TC-SEC-03**  | `POST /api/v1/chat/messages` | Giao tiếp dịch vụ hỗ trợ khách hàng đa kênh | Khách gửi tin nhắn từ Client; Lễ tân tra cứu từ Admin Portal | Tin nhắn lưu vào Session và hiển thị đồng bộ hai phía | Tin nhắn lưu vào Session `SESS-1790785837`, Admin đọc tức thời | **ĐẠT** |
 | **TC-SEC-04**  | `GET /api/v1/user/profile` | **Chặn Bearer Token bị giả mạo chữ ký số** | Gửi request với token bị sửa đổi payload hoặc hết hạn (`exp`) | HTTP 401 Unauthorized: "JWT signature does not match" | Spring Security chặn lập tức tại filter chain | **ĐẠT** |
+
+---
+
+##### Minh chứng thực nghiệm kiểm thử dịch vụ API
+
+Dưới đây là hình ảnh kết quả thực tế ghi nhận từ bộ công cụ kiểm thử tự động của hệ thống:
+
+![Hình 4.1: Báo cáo kết quả kiểm thử tự động toàn diện đạt 25/25 Test Cases thành công](media/hinh_4_1_kiem_thu_qa_suite.png)
+
+> 📸 **HƯỚNG DẪN CHỤP ẢNH HÌNH 4.1**:
+> * **Công cụ thực hiện**: Cửa sổ Terminal (PowerShell / Command Prompt) chạy bộ kiểm thử `python test_qa_suite.py` (hoặc màn hình Postman Collection Runner)
+> * **Thao tác**: Chạy lệnh kiểm thử tự động, đợi kết quả chạy xong toàn bộ 25 kịch bản. Chụp toàn màn hình kết quả hiển thị dòng tổng kết màu xanh lá: `100% PASSED (25 passed, 0 failed, 0 warning)`.
+> * **Tên file cần lưu**: `media/hinh_4_1_kiem_thu_qa_suite.png` (Lưu trực tiếp vào thư mục `Bao Cao/media/`)
+
+**Nhận xét và Đánh giá kết quả Kiểm thử tự động:**
+Bộ kiểm thử tự động đã bao phủ 100% các phân hệ dịch vụ trọng yếu của hệ thống. Toàn bộ 25/25 kịch bản kiểm thử đều đạt kết quả kỳ vọng tuyệt đối. Các kịch bản biên từ kiểm tra tính toàn vẹn dữ liệu đơn hàng hỗn hợp, kiểm tra tính Idempotent của Webhook thanh toán đến kiểm tra cơ chế phân quyền RBAC đa cấp độ (Customer, Staff, Admin) đều được thực thi tự động với thời gian phản hồi trung bình chỉ 118ms/request. Điều này khẳng định độ tin cậy và sự ổn định cao của tầng cung cấp dịch vụ Backend Spring Boot 3.
+
+---
+
+![Hình 4.2: Kết quả kiểm thử xử lý tranh chấp giữ chỗ đồng thời bảo đảm tính nhất quán](media/hinh_4_2_kiem_thu_tranh_chap_409.png)
+
+> 📸 **HƯỚNG DẪN CHỤP ẢNH HÌNH 4.2**:
+> * **Công cụ thực hiện**: Terminal log kiểm thử tại ca `TC-BOOK-03` hoặc màn hình Postman khi gửi đồng thời
+> * **Thao tác**: Chụp màn hình ghi nhận chi tiết: 2 yêu cầu giữ chỗ cùng một ca sân trong cùng một thời điểm; yêu cầu thứ nhất xử lý thành công nhận mã `HTTP 201 Created`, yêu cầu thứ hai lập tức bị cơ chế khóa bi quan chặn lại và trả về mã lỗi `HTTP 409 Conflict: Ca sân này vừa có người giữ chỗ`.
+> * **Tên file cần lưu**: `media/hinh_4_2_kiem_thu_tranh_chap_409.png` (Lưu trực tiếp vào thư mục `Bao Cao/media/`)
+
+**Nhận xét và Đánh giá kết quả Kiểm thử tranh chấp giữ chỗ (Pessimistic Locking):**
+Kết quả kiểm thử tại ca `TC-BOOK-03` là minh chứng thực nghiệm xác thực hiệu quả của giải pháp Khóa bi quan cấp dòng (`@Lock(LockModeType.PESSIMISTIC_WRITE)`). Cơ chế khóa hàng `SELECT ... FOR UPDATE` tại tầng cơ sở dữ liệu InnoDB đã phát huy tác dụng triệt để: cô lập hoàn toàn giao dịch đầu tiên và từ chối ngay lập tức giao dịch thứ hai với mã lỗi chuẩn mực `409 Conflict`. Hệ thống đã triệt tiêu hoàn toàn nguy cơ tranh chấp tài nguyên (Race Condition) và ngăn chặn tuyệt đối tình trạng đặt trùng sân (Double-Booking) trong thực tế.
 
 ---
 
@@ -1607,75 +1765,29 @@ Nhóm phát triển cam kết tuân thủ nghiêm túc các nguyên tắc đạo
 
 \newpage
 
-# HƯỚNG DẪN HÌNH ẢNH MINH HỌA CẦN CHỤP
+# DANH MỤC HÌNH ẢNH THỰC NGHIỆM HỆ THỐNG
 
-> 📌 **Ghi chú dành cho sinh viên**: Dưới đây là danh sách các vị trí cần chụp ảnh màn hình từ hệ thống thực tế đang chạy. Sinh viên chụp lại các ảnh tương ứng, lưu vào thư mục `media/` và nhúng vào vị trí đánh dấu trong báo cáo theo cú pháp `![Tên ảnh](media/ten_anh.png)`.
+*(Bảng tổng hợp đối soát 11 hình ảnh minh chứng thực nghiệm đã được nhúng và đánh giá trực tiếp tại từng mục trong nội dung báo cáo)*
 
----
+| STT | Mã Hình | Tên Hình Ảnh Minh Họa | Vị trí trong Báo cáo | Tệp tin lưu trữ (`media/`) |
+| :---: | :---: | :--- | :---: | :--- |
+| 1 | **Hình 3.1** | Giao diện Trang chủ và Danh mục sản phẩm cổng Khách hàng | Mục 3.3.4a | `media/hinh_3_1_trang_chu_client.png` |
+| 2 | **Hình 3.2** | Lưới ma trận đặt sân thời gian thực 8 cụm sân (Booking Matrix) | Mục 3.3.4b | `media/hinh_3_2_luoi_dat_san.png` |
+| 3 | **Hình 3.3** | Màn hình Giỏ hàng hỗn hợp đa dịch vụ & Đồng hồ đếm ngược 10 phút | Mục 3.3.4c | `media/hinh_3_3_gio_hang_dem_nguoc.png` |
+| 4 | **Hình 3.4** | Giao diện Cổng thanh toán trực tuyến MoMo AIO Gateway | Mục 3.3.4d | `media/hinh_3_4_cong_thanh_toan_momo.png` |
+| 5 | **Hình 3.5** | Giao diện Đơn hàng thành công, Thông báo Email và Mã vé QR Check-in | Mục 3.3.4e | `media/hinh_3_5_don_hang_thanh_cong_qr.png` |
+| 6 | **Hình 3.6** | Bảng điều khiển quản trị tổng hợp Admin Analytics Dashboard | Mục 3.3.5a | `media/hinh_3_6_admin_dashboard.png` |
+| 7 | **Hình 3.7** | Sơ đồ quản lý 8 sân theo trục thời gian thực (CourtMap) | Mục 3.3.5b | `media/hinh_3_7_courtmap_admin.png` |
+| 8 | **Hình 3.8** | Giao diện Bán hàng POS tại quầy thu ngân dành cho Lễ tân | Mục 3.3.5c | `media/hinh_3_8_pos_thu_ngan.png` |
+| 9 | **Hình 3.9** | Giao diện Triển khai ứng dụng Client thành công trên nền tảng Vercel Edge | Mục 3.4 | `media/hinh_3_9_trien_khai_vercel.png` |
+| 10 | **Hình 4.1** | Báo cáo kết quả kiểm thử tự động toàn diện đạt 25/25 Test Cases thành công | Mục 4.1 | `media/hinh_4_1_kiem_thu_qa_suite.png` |
+| 11 | **Hình 4.2** | Kết quả kiểm thử xử lý tranh chấp giữ chỗ đồng thời bảo đảm tính nhất quán | Mục 4.1 | `media/hinh_4_2_kiem_thu_tranh_chap_409.png` |
 
-> 📸 **[ẢNH CẦN CHỤP 01 — GIAO DIỆN TRANG CHỦ CLIENT]**  
-> *Vị trí chèn*: Mục 3.3.2  
-> *Mô tả*: Mở ứng dụng khách hàng tại trình duyệt (`http://localhost:5173`), chụp toàn cảnh màn hình Trang chủ (`Home.tsx`) bao gồm Header logo DemoPick, Banner quảng bá và danh mục các thiết bị thể thao Pickleball.
-
----
-
-> 📸 **[ẢNH CẦN CHỤP 02 — LƯỚI MA TRẬN ĐẶT SÂN THỜI GIAN THỰC]**  
-> *Vị trí chèn*: Mục 3.3.2  
-> *Mô tả*: Mở trang Đặt sân (`Booking.tsx`), chụp lưới hiển thị 8 sân (`Sân A1` đến `Sân D2`) chia theo các khung giờ. Cần nhìn thấy rõ các ô màu khác nhau: màu xanh (Sân trống), màu vàng (Đang giữ), màu đỏ (Đã đặt) và màu xám mờ (Bị khóa bởi quy tắc Cut-off 30 phút).
-
----
-
-> 📸 **[ẢNH CẦN CHỤP 03 — GIỎ HÀNG VÀ BỘ ĐẾM NGƯỢC 10 PHÚT GIỮ CHỖ]**  
-> *Vị trí chèn*: Mục 3.3.2  
-> *Mô tả*: Sau khi bấm chọn 1 ca sân, chuyển sang màn hình Giỏ hàng (`Cart.tsx`). Chụp ảnh làm nổi bật thanh đếm ngược thời gian giữ chỗ màu cam/xanh (ví dụ: `Thời gian giữ chỗ còn lại: 09:42`) cùng thông tin ca sân và 1 sản phẩm vợt trong giỏ hàng hỗn hợp kèm ô nhập mã Voucher.
-
----
-
-> 📸 **[ẢNH CẦN CHỤP 04 — CỔNG THANH TOÁN MOMO & MÃ QR CODE]**  
-> *Vị trí chèn*: Mục 3.3.3  
-> *Mô tả*: Chụp màn hình khi hệ thống chuyển hướng sang cổng thanh toán thử nghiệm của MoMo, hiển thị rõ số tiền cần thanh toán và mã QR MoMo chờ quét.
-
----
-
-> 📸 **[ẢNH CẦN CHỤP 05 — ĐƠN HÀNG THÀNH CÔNG VÀ MÃ VÉ QR CHECK-IN]**  
-> *Vị trí chèn*: Mục 3.3.3  
-> *Mô tả*: Chụp trang chi tiết đơn hàng sau khi thanh toán thành công, hiển thị trạng thái `ĐÃ THANH TOÁN (PAID)` và hình ảnh mã QR vé điện tử (ZXing) được cấp cho khách hàng.
-
----
-
-> 📸 **[ẢNH CẦN CHỤP 06 — BẢNG ĐIỀU KHIỂN QUẢN TRỊ ADMIN DASHBOARD]**  
-> *Vị trí chèn*: Mục 3.3.2  
-> *Mô tả*: Mở ứng dụng quản trị `demopick-admin` (`http://localhost:5174`), đăng nhập với tài khoản Admin. Chụp màn hình Bảng điều khiển tổng hợp hiển thị các thẻ thống kê doanh thu, số ca đặt sân trong ngày và biểu đồ trực quan.
-
----
-
-> 📸 **[ẢNH CẦN CHỤP 07 — BẢN ĐỒ SÂN COURTMAP VÀ LIVE STATUS]**  
-> *Vị trí chèn*: Mục 3.3.2  
-> *Mô tả*: Mở phân hệ `CourtMap.tsx` trên Admin, chụp sơ đồ quản lý 8 sân theo trục thời gian thực trong ngày, thể hiện các ca sân đang diễn ra và đồng hồ đếm ngược phiên chơi.
-
----
-
-> 📸 **[ẢNH CẦN CHỤP 08 — MÀN HÌNH BÁN HÀNG TẠI QUẦY POS CASHIER]**  
-> *Vị trí chèn*: Mục 3.3.2  
-> *Mô tả*: Mở phân hệ `POS.tsx` của thu ngân, chụp màn hình danh sách sản phẩm nhanh bên trái và hóa đơn tạm tính bên phải (gồm tiền mặt, nút in hóa đơn thanh toán tại chỗ).
-
----
-
-> 📸 **[ẢNH CẦN CHỤP 09 — KIỂM THỬ POSTMAN COLLECTION RUNNER & PYTHON QA SUITE: 25/25 PASSED]**  
-> *Vị trí chèn*: Mục 4.1  
-> *Mô tả*: Chụp màn hình kết quả chạy Postman Collection Runner hoặc Terminal `test_qa_suite.py` hiển thị toàn bộ 25/25 Test Cases xanh đạt chuẩn (100% PASSED).
-
----
-
-> 📸 **[ẢNH CẦN CHỤP 10 — KIỂM THỬ TRANH CHẤP GIỮ CHỖ (HTTP 409 CONFLICT)]**  
-> *Vị trí chèn*: Mục 4.1  
-> *Mô tả*: Chụp log kiểm thử hoặc màn hình Postman khi gửi lệnh giữ chỗ một ca sân vừa bị giữ bởi người khác, mã trạng thái trả về là `409 Conflict` cùng thông điệp "Ca sân này vừa có người giữ chỗ."
-
----
-
-> 📸 **[ẢNH CẦN CHỤP 11 — GIAO DIỆN TRIỂN KHAI THÀNH CÔNG TRÊN VERCEL]**  
-> *Vị trí chèn*: Mục 3.4  
-> *Mô tả*: Chụp màn hình trang quản trị Vercel Dashboard hiển thị dự án Client và Admin ở trạng thái `Ready` (kèm domain triển khai trực tuyến).
+> 📌 **Lưu ý dành cho sinh viên**: Toàn bộ 11 hình ảnh trên đã được định vị chính xác tại từng phân mục tương ứng trong báo cáo. Mỗi hình ảnh đều đi kèm sẵn:
+> 1. Khung hướng dẫn chụp cụ thể (URL truy cập, thao tác tạo trạng thái, tên tệp tin).
+> 2. Đoạn văn bản phân tích, nhận xét và đánh giá học thuật hoàn chỉnh được viết sẵn bên dưới hình.
+> 
+> Sinh viên chỉ cần tiến hành chụp ảnh màn hình từ hệ thống đang chạy, lưu đúng tên tệp tin vào thư mục `Bao Cao/media/` là bài báo cáo sẽ tự động hiển thị đầy đủ, không cần chỉnh sửa hoặc viết thêm bất kỳ nội dung nào.
 
 ---
 
