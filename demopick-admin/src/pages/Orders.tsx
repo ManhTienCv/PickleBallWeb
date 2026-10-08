@@ -182,8 +182,9 @@ export default function Orders() {
         });
 
         setOrdersList((prevList) => {
-          const localPosOrders = (prevList || []).filter((o) => o.type === "POS Quầy");
-          const merged = [...mappedList, ...localPosOrders];
+          const serverCodes = new Set(mappedList.map((m) => m.code));
+          const localOnlyOrders = (prevList || []).filter((o) => !serverCodes.has(o.code));
+          const merged = [...mappedList, ...localOnlyOrders];
           localStorage.setItem("demopick_orders_admin", JSON.stringify(merged));
           return merged;
         });
@@ -218,12 +219,20 @@ export default function Orders() {
 
     try {
       toast.info(`Đang xử lý hủy đơn hàng #${orderCode}...`);
+      let serverUpdated = false;
       try {
         await api.post(`/admin/orders/${orderCode}/cancel`, { reason });
+        serverUpdated = true;
       } catch (adminErr: any) {
-        if (adminErr?.response?.status === 404 || adminErr?.response?.status === 500) {
+        const status = adminErr?.response?.status;
+        if (status === 404 || status === 500) {
           // Fallback to general order cancel endpoint
-          await api.post(`/orders/${orderCode}/cancel`, { reason });
+          try {
+            await api.post(`/orders/${orderCode}/cancel`, { reason });
+            serverUpdated = true;
+          } catch (generalErr: any) {
+            console.warn("Server cancel failed or order is local-only:", generalErr);
+          }
         } else {
           throw adminErr;
         }
@@ -238,7 +247,9 @@ export default function Orders() {
         return next;
       });
       // Refresh to ensure full synchronization with server
-      setTimeout(() => fetchBackendOrders(true), 500);
+      if (serverUpdated) {
+        setTimeout(() => fetchBackendOrders(false), 500);
+      }
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         toast.error(err.response?.data?.message || "Không thể hủy đơn hàng.");
@@ -585,7 +596,7 @@ export default function Orders() {
     }
   };
 
-  const handleUpdateOrderStatus = (orderCode: string, newStatus: OrderStatus) => {
+  const handleUpdateOrderStatus = async (orderCode: string, newStatus: OrderStatus) => {
     const target = ordersList.find((o) => o.code === orderCode);
     if (!target) return;
 
@@ -596,6 +607,12 @@ export default function Orders() {
       }
       handleAdminCancelOrder(orderCode);
       return;
+    }
+
+    try {
+      await api.put(`/admin/orders/${orderCode}/status`, { status: newStatus });
+    } catch (err) {
+      console.warn("Failed to update status on server (order might be local-only):", err);
     }
 
     setOrdersList((prev) =>

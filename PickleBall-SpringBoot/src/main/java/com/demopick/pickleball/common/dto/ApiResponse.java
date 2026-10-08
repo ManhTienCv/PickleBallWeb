@@ -11,6 +11,7 @@ public class ApiResponse<T> {
     private Object error;
     private String message;
     private Map<String, Object> meta;
+    private Boolean success;
 
     public ApiResponse() {}
 
@@ -19,18 +20,27 @@ public class ApiResponse<T> {
         this.error = error;
         this.message = message;
         this.meta = meta;
+        this.success = (error == null);
+    }
+
+    public ApiResponse(T data, Object error, String message, Map<String, Object> meta, boolean success) {
+        this.data = data;
+        this.error = error;
+        this.message = message;
+        this.meta = meta;
+        this.success = success;
     }
 
     public static <T> ApiResponse<T> success(T data, String message) {
-        return new ApiResponse<>(data, null, message, null);
+        return new ApiResponse<>(data, null, message, null, true);
     }
 
     public static <T> ApiResponse<T> success(T data, String message, Map<String, Object> meta) {
-        return new ApiResponse<>(data, null, message, meta);
+        return new ApiResponse<>(data, null, message, meta, true);
     }
 
     public static <T> ApiResponse<T> error(String message, Object errorDetails) {
-        return new ApiResponse<>(null, errorDetails, message, null);
+        return new ApiResponse<>(null, errorDetails != null ? errorDetails : "ERROR", message, null, false);
     }
 
     public T getData() { return data; }
@@ -47,6 +57,11 @@ public class ApiResponse<T> {
 
     @com.fasterxml.jackson.annotation.JsonProperty("success")
     public boolean isSuccess() {
+        if (success != null) return success;
         return error == null;
+    }
+
+    public void setSuccess(boolean success) {
+        this.success = success;
     }
 }

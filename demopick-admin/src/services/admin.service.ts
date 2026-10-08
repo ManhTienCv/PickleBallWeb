@@ -1,4 +1,4 @@
-﻿import api, { ApiResponse } from '@/lib/api'
+import api, { ApiResponse } from '@/lib/api'
 
 export interface Court {
   id: number
@@ -361,12 +361,30 @@ export const adminService = {
     }
   },
 
-  updateOrderStatus: async (orderId: number, status: string): Promise<any> => {
+  updateOrderStatus: async (orderId: number | string, status: string): Promise<any> => {
     try {
       const res = await api.put<ApiResponse<any>>(`/admin/orders/${orderId}/status`, { status })
       return res.data.data
     } catch {
       return { id: orderId, status }
+    }
+  },
+
+  cancelOrder: async (orderCode: string, reason?: string): Promise<any> => {
+    try {
+      const res = await api.post<ApiResponse<any>>(`/admin/orders/${orderCode}/cancel`, { reason })
+      return res.data?.data || res.data
+    } catch (err: any) {
+      const status = err?.response?.status
+      if (status === 404 || status === 500) {
+        try {
+          const fallbackRes = await api.post<ApiResponse<any>>(`/orders/${orderCode}/cancel`, { reason })
+          return fallbackRes.data?.data || fallbackRes.data
+        } catch (fbErr: any) {
+          throw fbErr
+        }
+      }
+      throw err
     }
   },
 

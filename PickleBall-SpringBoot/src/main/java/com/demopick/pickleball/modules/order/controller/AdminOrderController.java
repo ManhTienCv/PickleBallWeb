@@ -32,7 +32,7 @@ public class AdminOrderController {
         return ResponseEntity.ok(ApiResponse.success(order, "Lấy chi tiết đơn hàng thành công."));
     }
 
-    @PutMapping({"/{idOrCode}/status", "/{idOrCode}"})
+    @RequestMapping(value = {"/{idOrCode}/status", "/{idOrCode}"}, method = {RequestMethod.PUT, RequestMethod.POST})
     public ResponseEntity<ApiResponse<Order>> updateStatus(
             @PathVariable String idOrCode,
             @RequestBody Map<String, String> payload
