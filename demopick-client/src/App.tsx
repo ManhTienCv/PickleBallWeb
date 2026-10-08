@@ -14,6 +14,7 @@ import CartPage from '@/pages/Cart'
 import CheckoutPage from '@/pages/Checkout'
 import OrderSuccess from '@/pages/OrderSuccess'
 import OrdersPage from '@/pages/Orders'
+import MomoGatewayPage from '@/pages/MomoGateway'
 import MomoCallbackPage from '@/pages/MomoCallback'
 import WishlistPage from '@/pages/Wishlist'
 import NotFound from '@/pages/NotFound'
@@ -48,6 +49,7 @@ function App() {
                   <Route path="/cart" element={<CartPage />} />
                   <Route path="/checkout" element={<CheckoutPage />} />
                   <Route path="/order-success/:code" element={<OrderSuccess />} />
+                  <Route path="/payment/momo/gateway" element={<MomoGatewayPage />} />
                   <Route path="/payment/momo/callback" element={<MomoCallbackPage />} />
                   <Route path="/orders" element={<OrdersPage />} />
                   <Route path="/wishlist" element={<WishlistPage />} />

@@ -795,9 +795,8 @@ export default function OrdersPage() {
                                   price: it.subtotal / (it.quantity || 1),
                                 })) || [{ id: 1, name: 'Đơn hàng Pickleball', quantity: 1, price: order.total_amount }],
                               })
-                              if (res.payUrl) {
-                                window.location.href = res.payUrl
-                              }
+                              const targetPayUrl = res.payUrl || `/payment/momo/gateway?orderId=${order.order_code}&amount=${order.total_amount}`
+                              window.location.href = targetPayUrl
                             } catch {
                               toast.error('Không thể mở cổng thanh toán. Vui lòng thử lại sau.')
                             }

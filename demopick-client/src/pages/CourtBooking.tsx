@@ -47,7 +47,9 @@ export default function CourtBooking() {
   const { data: slots = [], isLoading, refetch } = useQuery({
     queryKey: ['slots', dateStr],
     queryFn: () => bookingService.getSlots(dateStr),
-    staleTime: 1000 * 30,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchInterval: 15000,
   })
 
   // Filter courts by cluster safely

@@ -44,6 +44,9 @@ public class OrderService {
     @Value("${momo.secret-key}")
     private String momoSecretKey;
 
+    @Value("${momo.gateway-url:http://localhost:5173/payment/momo/gateway}")
+    private String momoGatewayUrl;
+
     @Value("${momo.redirect-url}")
     private String momoRedirectUrl;
 
@@ -227,7 +230,8 @@ public class OrderService {
         }
 
         // 4. Generate MoMo Sandbox Pay URL or VietQR URL
-        String payUrl = momoRedirectUrl + "?orderId=" + orderCode + "&amount=" + finalTotal;
+        String baseUrl = (momoGatewayUrl != null && !momoGatewayUrl.isBlank()) ? momoGatewayUrl : momoRedirectUrl;
+        String payUrl = baseUrl + "?orderId=" + orderCode + "&amount=" + finalTotal;
         String qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=DEMOPICK-" + orderCode;
 
         return new CheckoutResponse(
@@ -386,7 +390,8 @@ public class OrderService {
         // 5. Generate URLs
         String payUrl = null;
         if ("momo".equalsIgnoreCase(request.getPaymentMethod())) {
-            payUrl = momoRedirectUrl + "?orderId=" + orderCode + "&amount=" + finalTotal;
+            String baseUrl = (momoGatewayUrl != null && !momoGatewayUrl.isBlank()) ? momoGatewayUrl : momoRedirectUrl;
+            payUrl = baseUrl + "?orderId=" + orderCode + "&amount=" + finalTotal;
         }
         String qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=DEMOPICK-" + orderCode;
 
@@ -414,33 +419,44 @@ public class OrderService {
     }
 
     @Transactional
-    public boolean handleMoMoWebhook(Map<String, Object> payload) {
+    public boolean verifyMomoPayment(Map<String, Object> payload) {
         try {
-            String orderCode = (String) payload.get("orderId");
-            Integer resultCode = (Integer) payload.get("resultCode");
+            if (payload == null) return false;
 
-            log.info("Received MoMo Webhook for order: {}, resultCode: {}", orderCode, resultCode);
+            Object rawOrderId = payload.get("orderId");
+            if (rawOrderId == null) rawOrderId = payload.get("orderCode");
+            if (rawOrderId == null) return false;
 
-            if (orderCode == null) return false;
+            String fullOrderId = String.valueOf(rawOrderId);
+            String orderCode = fullOrderId.split("_")[0];
 
-            Order order = orderRepository.findByOrderCode(orderCode).orElse(null);
+            Object rawResultCode = payload.get("resultCode");
+            String resultCodeStr = rawResultCode != null ? String.valueOf(rawResultCode) : "-1";
+            boolean isSuccess = "0".equals(resultCodeStr);
+
+            log.info("Verifying MoMo Payment for order: {} (raw: {}), resultCode: {}", orderCode, fullOrderId, resultCodeStr);
+
+            Order order = orderRepository.findByOrderCode(orderCode)
+                    .or(() -> orderRepository.findByOrderCode(fullOrderId))
+                    .orElse(null);
+
             if (order == null) {
-                log.warn("Order not found for MoMo Webhook: {}", orderCode);
+                log.warn("Order not found during MoMo verification: {}", orderCode);
                 return false;
             }
 
-            // Idempotency: if already marked paid, return true immediately
+            // If already marked as paid, return true immediately
             if ("paid".equalsIgnoreCase(order.getPaymentStatus())) {
-                log.info("Order {} is already marked as PAID. Skipping duplicate processing.", orderCode);
+                log.info("Order {} is already marked as PAID.", orderCode);
                 return true;
             }
 
-            if (resultCode != null && resultCode == 0) {
+            if (isSuccess) {
                 order.setPaymentStatus("paid");
                 order.setStatus("confirmed");
                 orderRepository.save(order);
 
-                // Convert any booking slots in this order to 'booked'
+                // Convert associated booking slots to 'booked'
                 List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
                 for (OrderItem item : items) {
                     if ("booking_slot".equalsIgnoreCase(item.getItemType()) && item.getReferenceId() != null) {
@@ -448,7 +464,7 @@ public class OrderService {
                         if (slot != null) {
                             slot.setStatus("booked");
                             timeSlotRepository.save(slot);
-                            log.info("Updated slot {} to BOOKED from MoMo Webhook", slot.getId());
+                            log.info("Updated slot {} to BOOKED from MoMo payment verify", slot.getId());
                         }
                     }
                 }
@@ -456,11 +472,99 @@ public class OrderService {
             } else {
                 order.setPaymentStatus("unpaid");
                 orderRepository.save(order);
+
+                // Release any held court slots back to 'available' immediately
+                List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
+                for (OrderItem item : items) {
+                    if ("booking_slot".equalsIgnoreCase(item.getItemType()) && item.getReferenceId() != null) {
+                        TimeSlot slot = timeSlotRepository.findById(item.getReferenceId()).orElse(null);
+                        if (slot != null && !"booked".equalsIgnoreCase(slot.getStatus())) {
+                            slot.setStatus("available");
+                            timeSlotRepository.save(slot);
+                            log.info("Released slot {} back to AVAILABLE because MoMo payment failed/cancelled", slot.getId());
+                        }
+                        List<Hold> holds = holdRepository.findBySlotId(item.getReferenceId());
+                        for (Hold h : holds) {
+                            h.setStatus("expired");
+                            holdRepository.save(h);
+                        }
+                    }
+                }
                 return false;
             }
         } catch (Exception ex) {
-            log.error("Error processing MoMo Webhook", ex);
+            log.error("Error verifying MoMo payment", ex);
             return false;
         }
+    }
+
+    @Transactional
+    public Order cancelOrder(String orderCode, String reason, Long userId) {
+        Order order = orderRepository.findByOrderCode(orderCode)
+                .orElseThrow(() -> new ApiException("Không tìm thấy đơn hàng.", HttpStatus.NOT_FOUND));
+
+        if ("cancelled".equalsIgnoreCase(order.getStatus())) {
+            return order;
+        }
+
+        order.setStatus("cancelled");
+        if (reason != null && !reason.isBlank()) {
+            order.setPickupNotes(order.getPickupNotes() != null ? order.getPickupNotes() + " | Lý do: " + reason : "Lý do hủy: " + reason);
+        }
+        order = orderRepository.save(order);
+
+        // 1. Release court slots back to 'available'
+        List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
+        for (OrderItem item : items) {
+            if ("booking_slot".equalsIgnoreCase(item.getItemType()) && item.getReferenceId() != null) {
+                TimeSlot slot = timeSlotRepository.findById(item.getReferenceId()).orElse(null);
+                if (slot != null && !"booked".equalsIgnoreCase(slot.getStatus())) {
+                    slot.setStatus("available");
+                    timeSlotRepository.save(slot);
+                    log.info("Released slot {} back to AVAILABLE upon order cancellation {}", slot.getId(), orderCode);
+                }
+                List<Hold> holds = holdRepository.findBySlotId(item.getReferenceId());
+                for (Hold h : holds) {
+                    h.setStatus("expired");
+                    holdRepository.save(h);
+                }
+            } else if ("product".equalsIgnoreCase(item.getItemType()) && item.getReferenceId() != null) {
+                // Restock product variant
+                ProductVariant variant = productVariantRepository.findById(item.getReferenceId()).orElse(null);
+                if (variant != null && item.getQuantity() != null) {
+                    variant.setStockQty(variant.getStockQty() + item.getQuantity());
+                    productVariantRepository.save(variant);
+                }
+            }
+        }
+
+        return order;
+    }
+
+    @Scheduled(fixedRate = 60000)
+    @Transactional
+    public void autoReleaseUnpaidOrderSlots() {
+        LocalDateTime cutoff = LocalDateTime.now().minusMinutes(15);
+        List<Order> expiredOrders = orderRepository.findAll().stream()
+                .filter(o -> "pending".equalsIgnoreCase(o.getStatus())
+                        && "unpaid".equalsIgnoreCase(o.getPaymentStatus())
+                        && o.getCreatedAt() != null
+                        && o.getCreatedAt().isBefore(cutoff))
+                .toList();
+
+        for (Order order : expiredOrders) {
+            log.info("Auto cancelling timed-out unpaid order: {}", order.getOrderCode());
+            try {
+                cancelOrder(order.getOrderCode(), "Hết thời gian chờ thanh toán (15 phút)", null);
+            } catch (Exception ex) {
+                log.error("Failed to auto cancel expired order {}", order.getOrderCode(), ex);
+            }
+        }
+    }
+
+    @Transactional
+    public boolean handleMoMoWebhook(Map<String, Object> payload) {
+        log.info("Received MoMo Webhook payload: {}", payload);
+        return verifyMomoPayment(payload);
     }
 }

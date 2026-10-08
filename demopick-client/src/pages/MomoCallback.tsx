@@ -14,6 +14,7 @@ import {
   ShoppingBag,
   ExternalLink,
   ShieldCheck,
+  Calendar,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -40,7 +41,7 @@ export default function MomoCallbackPage() {
     })
 
     const rawOrderId = params.orderId || ''
-    const rawResultCode = params.resultCode ?? '-1'
+    const rawResultCode = params.resultCode
     const rawTransId = params.transId || ''
     const rawAmount = Number(params.amount) || 0
     const rawMessage = params.message || ''
@@ -51,6 +52,15 @@ export default function MomoCallbackPage() {
         const decoded = JSON.parse(atob(params.extraData))
         extractedOrderCode = decoded.orderCode || ''
       } catch {}
+    }
+
+    // Nếu KHÔNG CÓ resultCode trong URL (chưa qua bước thanh toán trên MoMo Gateway),
+    // chuyển hướng ngay sang Cổng MoMo Gateway để người dùng thao tác, TUYỆT ĐỐI KHÔNG báo lỗi hủy giao dịch!
+    if (rawResultCode === undefined || rawResultCode === null) {
+      if (extractedOrderCode) {
+        navigate(`/payment/momo/gateway?${searchParams.toString()}`, { replace: true })
+        return
+      }
     }
 
     setOrderCode(extractedOrderCode)
@@ -101,6 +111,13 @@ export default function MomoCallbackPage() {
           msg = 'Giao dịch thanh toán chưa hoàn tất hoặc bị từ chối.'
         }
         setErrorMessage(msg)
+
+        // Hủy đơn hàng và giải phóng ca sân ngay lập tức trên máy chủ
+        if (extractedOrderCode) {
+          orderService.cancelOrder(extractedOrderCode, msg).catch(() => {})
+        }
+        localStorage.removeItem('demopick_current_hold')
+        localStorage.removeItem('checkout_timer_expiry')
       }
     }
 
@@ -258,19 +275,33 @@ export default function MomoCallbackPage() {
 
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <Button
-              onClick={() => navigate('/checkout')}
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl h-11 gap-2 shadow-md"
+              onClick={() => {
+                if (orderCode && amount > 0) {
+                  navigate(`/payment/momo/gateway?orderId=${orderCode}&amount=${amount}`)
+                } else {
+                  navigate('/checkout')
+                }
+              }}
+              className="flex-1 bg-gradient-to-r from-[#a50064] to-[#d82d8b] hover:from-[#8b0054] hover:to-[#be257a] text-white font-bold rounded-xl h-11 gap-2 shadow-md cursor-pointer"
             >
               <RefreshCw className="w-4 h-4" />
-              <span>Thử Thanh Toán Lại</span>
+              <span>Quay Lại Cổng MoMo Thanh Toán</span>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate('/booking')}
+              className="rounded-xl border-slate-300 dark:border-border font-bold h-11 gap-1.5 cursor-pointer"
+            >
+              <Calendar className="w-4 h-4 text-emerald-600" />
+              <span>Về Lịch Đặt Sân</span>
             </Button>
             <Button
               variant="outline"
               onClick={() => navigate('/cart')}
-              className="rounded-xl border-slate-300 dark:border-border font-bold h-11 gap-1.5"
+              className="rounded-xl border-slate-300 dark:border-border font-bold h-11 gap-1.5 cursor-pointer"
             >
               <ShoppingBag className="w-4 h-4" />
-              <span>Xem Lại Giỏ Hàng</span>
+              <span>Xem Giỏ Hàng</span>
             </Button>
           </div>
         </Card>

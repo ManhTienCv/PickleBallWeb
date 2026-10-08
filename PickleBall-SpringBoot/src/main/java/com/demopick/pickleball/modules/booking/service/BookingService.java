@@ -49,14 +49,30 @@ public class BookingService {
                 .orElseThrow(() -> new ApiException("Không tìm thấy sân.", HttpStatus.NOT_FOUND));
     }
 
+    @Transactional
     public List<TimeSlot> getSlots(LocalDate date, Long courtId) {
         if (date == null) date = LocalDate.now(VN_ZONE);
-        if (courtId != null) {
-            return timeSlotRepository.findByCourtIdAndDateOrderByStartTimeAsc(courtId, date);
+        List<TimeSlot> slots = (courtId != null)
+                ? timeSlotRepository.findByCourtIdAndDateOrderByStartTimeAsc(courtId, date)
+                : timeSlotRepository.findByDateOrderByStartTimeAsc(date);
+
+        LocalDateTime now = LocalDateTime.now(VN_ZONE);
+        for (TimeSlot slot : slots) {
+            if ("held".equalsIgnoreCase(slot.getStatus())) {
+                Optional<Hold> activeHold = holdRepository.findBySlotIdAndStatusAndExpiresAtAfter(
+                        slot.getId(), "active", now
+                );
+                if (activeHold.isEmpty()) {
+                    slot.setStatus("available");
+                    timeSlotRepository.save(slot);
+                    log.info("Auto reverted stale held slot {} back to available in getSlots()", slot.getId());
+                }
+            }
         }
-        return timeSlotRepository.findByDateOrderByStartTimeAsc(date);
+        return slots;
     }
 
+    @Transactional
     public List<CourtAvailabilityResponse> getCourtAvailability(LocalDate date) {
         if (date == null) date = LocalDate.now(VN_ZONE);
 
@@ -87,6 +103,8 @@ public class BookingService {
                         );
                         if (activeHold.isEmpty()) {
                             status = "available";
+                            slot.setStatus("available");
+                            timeSlotRepository.save(slot);
                         }
                     }
 

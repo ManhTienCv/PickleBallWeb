@@ -367,12 +367,17 @@ export default function CheckoutPage() {
       })
 
       // 4. ĐIỀU HƯỚNG BẢO MẬT: Hosted Payment Gateway
-      if (paymentMethod === 'momo' && result.payUrl) {
+      if (paymentMethod === 'momo') {
         resetTimer()
-        toast.success('Đang chuyển hướng sang Cổng thanh toán chính thức...')
+        const targetUrl = result.payUrl || `/payment/momo/gateway?orderId=${orderCode}&amount=${grandTotal}`
+        toast.success('Đang chuyển hướng sang Cổng thanh toán MoMo...')
         setTimeout(() => {
-          window.location.href = result.payUrl!
-        }, 1200)
+          if (targetUrl.startsWith('http')) {
+            window.location.href = targetUrl
+          } else {
+            navigate(targetUrl)
+          }
+        }, 1000)
         return
       }
 

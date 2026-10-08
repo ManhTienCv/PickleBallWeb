@@ -24,4 +24,6 @@ public interface HoldRepository extends JpaRepository<Hold, Long> {
     boolean existsBySlotIdAndStatusAndExpiresAtAfter(Long slotId, String status, LocalDateTime now);
 
     List<Hold> findAllBySlotIdAndStatusAndExpiresAtAfter(Long slotId, String status, LocalDateTime now);
+
+    List<Hold> findBySlotId(Long slotId);
 }

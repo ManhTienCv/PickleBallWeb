@@ -50,4 +50,19 @@ public class OrderController {
         Order order = orderService.getOrderByCode(code);
         return ResponseEntity.ok(ApiResponse.success(order, "Lấy chi tiết đơn hàng thành công."));
     }
+
+    @PostMapping("/{code}/cancel")
+    public ResponseEntity<ApiResponse<Order>> cancelOrder(
+            @PathVariable String code,
+            @RequestBody(required = false) java.util.Map<String, String> body,
+            Authentication authentication
+    ) {
+        Long userId = null;
+        if (authentication != null && authentication.getPrincipal() instanceof Long) {
+            userId = (Long) authentication.getPrincipal();
+        }
+        String reason = (body != null && body.containsKey("reason")) ? body.get("reason") : "Người dùng hủy đơn hàng";
+        Order order = orderService.cancelOrder(code, reason, userId);
+        return ResponseEntity.ok(ApiResponse.success(order, "Hủy đơn hàng và giải phóng ca sân thành công."));
+    }
 }
