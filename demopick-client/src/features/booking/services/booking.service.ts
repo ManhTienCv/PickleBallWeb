@@ -5,7 +5,7 @@ import { MOCK_COURTS, generateMockSlots, mockCreateHold } from '../data/mockBook
 export const bookingService = {
   async getCourts(): Promise<Court[]> {
     try {
-      const res = await api.get<ApiResponse<Court[]>>('/courts', { timeout: 3500 })
+      const res = await api.get<ApiResponse<Court[]>>('/courts', { timeout: 15000 })
       if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
         return res.data.data
       }
@@ -19,7 +19,7 @@ export const bookingService = {
     try {
       const res = await api.get<ApiResponse<TimeSlot[]>>('/slots', {
         params: { date, ...(courtId ? { court_id: courtId } : {}) },
-        timeout: 3500,
+        timeout: 15000,
       })
       if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
         return res.data.data
@@ -39,17 +39,17 @@ export const bookingService = {
       }
       throw new Error(res.data?.message || 'Không thể giữ chỗ khung giờ này.')
     } catch (err: any) {
+      // Nếu slot là ID mock (backend báo 404) hoặc mất kết nối mạng -> fallback chế độ demo
+      if (err.response?.status === 404 || !err.response) {
+        console.warn('Backend slot not found or server unavailable, using local mock hold for demo:', err)
+        const slots = currentSlots.length > 0 ? currentSlots : generateMockSlots(new Date().toISOString().split('T')[0])
+        return mockCreateHold(slotIds, slots)
+      }
       if (err.response?.data?.message) {
         throw new Error(err.response.data.message)
       }
       if (err.response?.data?.error?.message) {
         throw new Error(err.response.data.error.message)
-      }
-      // Chỉ fallback chế độ demo khi hoàn toàn không có kết nối mạng tới server
-      if (!err.response) {
-        console.warn('Backend unavailable, using local mock hold for demo:', err)
-        const slots = currentSlots.length > 0 ? currentSlots : generateMockSlots(new Date().toISOString().split('T')[0])
-        return mockCreateHold(slotIds, slots)
       }
       throw new Error(err.message || 'Không thể tạo giữ chỗ khung giờ này.')
     }

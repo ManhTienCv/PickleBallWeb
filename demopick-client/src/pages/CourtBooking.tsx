@@ -34,7 +34,6 @@ export default function CourtBooking() {
   const { data: slots = [], isLoading, refetch } = useQuery({
     queryKey: ['slots', dateStr],
     queryFn: () => bookingService.getSlots(dateStr),
-    placeholderData: () => generateMockSlots(dateStr),
     staleTime: 1000 * 30,
   })
 

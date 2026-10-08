@@ -28,6 +28,7 @@ import java.util.Optional;
 public class BookingService {
 
     private static final Logger log = LoggerFactory.getLogger(BookingService.class);
+    private static final java.time.ZoneId VN_ZONE = java.time.ZoneId.of("Asia/Ho_Chi_Minh");
 
     private final CourtRepository courtRepository;
     private final TimeSlotRepository timeSlotRepository;
@@ -49,7 +50,7 @@ public class BookingService {
     }
 
     public List<TimeSlot> getSlots(LocalDate date, Long courtId) {
-        if (date == null) date = LocalDate.now();
+        if (date == null) date = LocalDate.now(VN_ZONE);
         if (courtId != null) {
             return timeSlotRepository.findByCourtIdAndDateOrderByStartTimeAsc(courtId, date);
         }
@@ -57,12 +58,12 @@ public class BookingService {
     }
 
     public List<CourtAvailabilityResponse> getCourtAvailability(LocalDate date) {
-        if (date == null) date = LocalDate.now();
+        if (date == null) date = LocalDate.now(VN_ZONE);
 
         List<Court> courts = getAllCourts();
         List<TimeSlot> slots = timeSlotRepository.findByDateOrderByStartTimeAsc(date);
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(VN_ZONE);
         List<CourtAvailabilityResponse> result = new ArrayList<>();
 
         for (Court court : courts) {
@@ -73,7 +74,7 @@ public class BookingService {
                     boolean isCutoff = false;
 
                     // 30-min cut-off rule for today
-                    if (slot.getDate().equals(LocalDate.now())) {
+                    if (slot.getDate().equals(LocalDate.now(VN_ZONE))) {
                         if (slotStart.isBefore(now.plusMinutes(30))) {
                             isCutoff = true;
                         }
@@ -125,11 +126,11 @@ public class BookingService {
         TimeSlot slot = timeSlotRepository.findByIdWithLock(slotId)
                 .orElseThrow(() -> new ApiException("Không tìm thấy ca sân.", HttpStatus.NOT_FOUND));
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(VN_ZONE);
         LocalDateTime slotStart = LocalDateTime.of(slot.getDate(), slot.getStartTime());
 
         // 1. Cut-off 30 min check
-        if (slot.getDate().equals(LocalDate.now()) && slotStart.isBefore(now.plusMinutes(30))) {
+        if (slot.getDate().equals(LocalDate.now(VN_ZONE)) && slotStart.isBefore(now.plusMinutes(30))) {
             throw new ApiException("Không thể đặt trực tuyến ca sân sắp diễn ra dưới 30 phút. Vui lòng liên hệ quầy.", HttpStatus.BAD_REQUEST);
         }
 
@@ -207,7 +208,7 @@ public class BookingService {
             actualSlotId = hold.getSlotId();
         } else {
             // Fallback if caller passed slotId instead of holdId
-            hold = holdRepository.findBySlotIdAndStatusAndExpiresAtAfter(id, "active", LocalDateTime.now()).orElse(null);
+            hold = holdRepository.findBySlotIdAndStatusAndExpiresAtAfter(id, "active", LocalDateTime.now(VN_ZONE)).orElse(null);
             actualSlotId = id;
         }
 
@@ -227,7 +228,7 @@ public class BookingService {
         if (actualSlotId != null) {
             // Only revert slot to 'available' if NO other active hold exists for this slot
             boolean hasOtherActiveHolds = holdRepository.existsBySlotIdAndStatusAndExpiresAtAfter(
-                    actualSlotId, "active", LocalDateTime.now()
+                    actualSlotId, "active", LocalDateTime.now(VN_ZONE)
             );
             if (!hasOtherActiveHolds) {
                 TimeSlot slot = timeSlotRepository.findById(actualSlotId).orElse(null);
@@ -242,7 +243,7 @@ public class BookingService {
     @Scheduled(fixedRate = 60000)
     @Transactional
     public void autoReleaseExpiredHolds() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(VN_ZONE);
         List<Hold> expiredHolds = holdRepository.findByStatusAndExpiresAtBefore("active", now);
 
         for (Hold hold : expiredHolds) {
