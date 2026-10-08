@@ -17,6 +17,7 @@ import com.demopick.pickleball.modules.shop.entity.ProductVariant;
 import com.demopick.pickleball.modules.shop.entity.Voucher;
 import com.demopick.pickleball.modules.shop.repository.ProductVariantRepository;
 import com.demopick.pickleball.modules.shop.repository.VoucherRepository;
+import com.demopick.pickleball.common.service.EmailService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,6 +42,7 @@ public class OrderService {
     private final HoldRepository holdRepository;
     private final ProductVariantRepository productVariantRepository;
     private final VoucherRepository voucherRepository;
+    private final EmailService emailService;
 
     @Value("${momo.secret-key}")
     private String momoSecretKey;
@@ -56,13 +58,15 @@ public class OrderService {
                         TimeSlotRepository timeSlotRepository,
                         HoldRepository holdRepository,
                         ProductVariantRepository productVariantRepository,
-                        VoucherRepository voucherRepository) {
+                        VoucherRepository voucherRepository,
+                        EmailService emailService) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.timeSlotRepository = timeSlotRepository;
         this.holdRepository = holdRepository;
         this.productVariantRepository = productVariantRepository;
         this.voucherRepository = voucherRepository;
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -396,6 +400,15 @@ public class OrderService {
         }
         String qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=DEMOPICK-" + orderCode;
 
+        // If COD order, send confirmation email immediately
+        if ("cod".equalsIgnoreCase(order.getPaymentMethod())) {
+            try {
+                emailService.sendPaymentSuccessEmail(order, itemsToSave);
+            } catch (Exception ex) {
+                log.warn("Could not send confirmation email for COD order #{}: {}", order.getOrderCode(), ex.getMessage());
+            }
+        }
+
         return new CreateOrderResponse(
                 orderCode,
                 finalTotal,
@@ -475,6 +488,14 @@ public class OrderService {
                         }
                     }
                 }
+
+                // Gửi email xác nhận thanh toán thành công
+                try {
+                    emailService.sendPaymentSuccessEmail(order, items);
+                } catch (Exception ex) {
+                    log.warn("Could not send confirmation email for order #{}: {}", order.getOrderCode(), ex.getMessage());
+                }
+
                 return true;
             } else {
                 order.setPaymentStatus("unpaid");

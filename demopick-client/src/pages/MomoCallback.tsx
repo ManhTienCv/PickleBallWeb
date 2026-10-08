@@ -15,6 +15,7 @@ import {
   ExternalLink,
   ShieldCheck,
   Calendar,
+  Mail,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -220,6 +221,13 @@ export default function MomoCallbackPage() {
             <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
             <span>
               Đơn hàng đang được tự động chuyển sang bộ phận đóng gói và giao cho GHN Express. Tự động chuyển hướng sau <strong>{countdown}s</strong>.
+            </span>
+          </div>
+
+          <div className="bg-blue-50/70 dark:bg-blue-950/40 p-4 rounded-2xl border border-blue-200/80 dark:border-blue-800/60 flex items-center gap-3 text-xs text-blue-900 dark:text-blue-200">
+            <Mail className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" />
+            <span>
+              📧 <strong>Hóa đơn & Xác nhận thanh toán</strong> đã được gửi tới email của bạn. Vui lòng kiểm tra hộp thư đến để lưu trữ biên lai.
             </span>
           </div>
 

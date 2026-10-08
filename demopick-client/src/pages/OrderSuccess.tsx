@@ -3,7 +3,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { CheckCircle2, ShoppingBag, CalendarDays, Truck, MapPin, ShieldCheck, ArrowRight, Receipt } from 'lucide-react'
+import { CheckCircle2, ShoppingBag, CalendarDays, Truck, MapPin, ShieldCheck, ArrowRight, Receipt, Mail } from 'lucide-react'
 import OrderReceiptModal from '@/components/OrderReceiptModal'
 
 export default function OrderSuccess() {
@@ -85,6 +85,13 @@ export default function OrderSuccess() {
           <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <span>
             Đơn hàng đã được ghi nhận trên hệ thống vận chuyển GHN. Bạn có thể tra cứu hành trình theo thời gian thực bất cứ lúc nào trong mục <strong>Đơn hàng của tôi</strong>.
+          </span>
+        </div>
+
+        <div className="p-3.5 bg-blue-50/70 dark:bg-blue-950/40 rounded-2xl border border-blue-200/80 dark:border-blue-800/60 flex items-center gap-2.5 text-xs text-blue-900 dark:text-blue-300">
+          <Mail className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+          <span>
+            📧 Hóa đơn điện tử và thông báo xác nhận đơn hàng đã được gửi tới email của bạn. Vui lòng kiểm tra hòm thư để lưu trữ chi tiết giao dịch.
           </span>
         </div>
       </Card>
