@@ -47,7 +47,7 @@ public class OrderService {
     @Value("${momo.secret-key}")
     private String momoSecretKey;
 
-    @Value("${momo.gateway-url:http://localhost:5173/payment/momo/gateway}")
+    @Value("${momo.gateway-url:/payment/momo/gateway}")
     private String momoGatewayUrl;
 
     @Value("${momo.redirect-url}")

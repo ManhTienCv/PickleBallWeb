@@ -407,10 +407,19 @@ export default function CheckoutPage() {
       // 4. ĐIỀU HƯỚNG BẢO MẬT: Hosted Payment Gateway
       if (paymentMethod === 'momo') {
         resetTimer()
-        const targetUrl = result.payUrl || `/payment/momo/gateway?orderId=${orderCode}&amount=${grandTotal}`
+        let targetUrl = result.payUrl || `/payment/momo/gateway?orderId=${orderCode}&amount=${grandTotal}`
+
+        // Nếu là Cổng MoMo nội bộ (/payment/momo/gateway), luôn chuyển về relative URL
+        // để ở lại đúng domain hiện tại (dù đang ở Vercel, localhost hay custom domain)
+        if (targetUrl.includes('/payment/momo/gateway')) {
+          const queryIndex = targetUrl.indexOf('?')
+          const queryString = queryIndex !== -1 ? targetUrl.substring(queryIndex) : `?orderId=${orderCode}&amount=${grandTotal}`
+          targetUrl = `/payment/momo/gateway${queryString}`
+        }
+
         toast.success('Đang chuyển hướng sang Cổng thanh toán MoMo...')
         setTimeout(() => {
-          if (targetUrl.startsWith('http')) {
+          if (targetUrl.startsWith('http://') || targetUrl.startsWith('https://')) {
             window.location.href = targetUrl
           } else {
             navigate(targetUrl)
