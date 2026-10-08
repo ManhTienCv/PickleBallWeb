@@ -207,11 +207,22 @@ export default function CheckoutPage() {
     })
   }, [])
 
-  const cartTotal = cart?.total_amount || 0
-  const isFreeship = cartTotal >= 1000000
-  const effectiveShippingFee = isFreeship ? 0 : ghnShippingFee
+  const currentHoldData = useMemo(() => {
+    try {
+      const raw = localStorage.getItem('demopick_current_hold')
+      return raw ? JSON.parse(raw) : null
+    } catch {
+      return null
+    }
+  }, [holdId])
+
+  const productsTotal = cart?.total_amount || 0
+  const courtFee = currentHoldData?.total_price || 0
+  const combinedSubtotal = productsTotal + courtFee
+  const isFreeship = combinedSubtotal >= 1000000 || (productsTotal === 0 && courtFee > 0)
+  const effectiveShippingFee = (productsTotal === 0 && courtFee > 0) ? 0 : (isFreeship ? 0 : ghnShippingFee)
   const voucherDiscount = appliedVoucher?.discount_amount || 0
-  const grandTotal = Math.max(0, cartTotal + effectiveShippingFee - voucherDiscount)
+  const grandTotal = Math.max(0, combinedSubtotal + effectiveShippingFee - voucherDiscount)
 
   const handleApplyVoucher = async (codeToApply?: string) => {
     const code = (codeToApply || voucherCodeInput).trim()
@@ -221,7 +232,7 @@ export default function CheckoutPage() {
     }
     setIsApplyingVoucher(true)
     try {
-      const res = await voucherService.applyVoucher(code, cartTotal)
+      const res = await voucherService.applyVoucher(code, combinedSubtotal)
       setAppliedVoucher(res)
       setVoucherCodeInput('')
       setShowVoucherModal(false)
@@ -273,14 +284,40 @@ export default function CheckoutPage() {
   const executeCheckoutSubmit = async () => {
     setIsSubmitting(true)
     try {
-      const orderItems =
-        cart?.items?.map((it) => ({
-          id: it.id,
-          product_id: it.product?.id || it.id,
-          name: it.product?.name || 'Sản phẩm Pickleball',
-          quantity: it.quantity,
-          price: it.unit_price || it.product?.price || (it.quantity > 0 ? Math.round(it.subtotal / it.quantity) : it.subtotal),
-        })) || [{ id: 1, name: 'Thiết bị Pickleball DemoPick', quantity: 1, price: cartTotal || 550000 }]
+      const productItems =
+        cart?.items && cart.items.length > 0
+          ? cart.items.map((it) => ({
+              id: it.id,
+              product_id: it.product?.id || it.id,
+              name: it.product?.name || 'Sản phẩm Pickleball',
+              quantity: it.quantity,
+              price: it.unit_price || it.product?.price || (it.quantity > 0 ? Math.round(it.subtotal / it.quantity) : it.subtotal),
+            }))
+          : []
+
+      const holdItems =
+        holdId && courtFee > 0
+          ? [
+              {
+                id: Number(holdId),
+                name: 'Thuê ca sân Pickleball',
+                quantity: 1,
+                price: courtFee,
+              },
+            ]
+          : []
+
+      let orderItems = [...productItems, ...holdItems]
+      if (orderItems.length === 0) {
+        orderItems = [
+          {
+            id: 1,
+            name: 'Thiết bị Pickleball DemoPick',
+            quantity: 1,
+            price: grandTotal || 550000,
+          },
+        ]
+      }
 
       // 1. Gửi request tạo đơn hàng lên Fullstack Server
       const result = await orderService.createOrder({
@@ -295,6 +332,7 @@ export default function CheckoutPage() {
         voucherCode: appliedVoucher?.code,
         discount: voucherDiscount,
         holdId: holdId ? Number(holdId) : undefined,
+        slotId: currentHoldData?.slot_ids?.[0],
         shippingFee: effectiveShippingFee,
         items: orderItems,
       })
@@ -848,12 +886,22 @@ export default function CheckoutPage() {
 
             {/* Shipping fee breakdown */}
             <div className="space-y-2.5 pt-3 border-t border-slate-100 dark:border-border text-xs">
-              <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
-                <span className="whitespace-nowrap">Tiền hàng:</span>
-                <span className="font-semibold text-slate-900 dark:text-slate-100">
-                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(cartTotal)}
-                </span>
-              </div>
+              {productsTotal > 0 && (
+                <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
+                  <span className="whitespace-nowrap">Tiền hàng:</span>
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(productsTotal)}
+                  </span>
+                </div>
+              )}
+              {courtFee > 0 && (
+                <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
+                  <span className="whitespace-nowrap">Tiền giữ sân:</span>
+                  <span className="font-bold text-amber-600 dark:text-amber-400">
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(courtFee)}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
                 <span className="whitespace-nowrap">Phí ship (GHN Express):</span>
                 <span className="font-bold text-emerald-700 dark:text-emerald-400">
@@ -1154,7 +1202,7 @@ export default function CheckoutPage() {
 
           <div className="space-y-3 max-h-[60vh] overflow-y-auto py-2 pr-1">
             {availableVouchers.map((v) => {
-              const isEligible = cartTotal >= v.min_order_amount
+              const isEligible = combinedSubtotal >= v.min_order_amount
               const isCurrent = appliedVoucher?.code === v.code
 
               return (

@@ -260,7 +260,7 @@ public class OrderService {
 
                 OrderItem prodItem = new OrderItem();
                 prodItem.setItemType("product");
-                prodItem.setReferenceId(item.getProductId() != null ? item.getProductId() : item.getId());
+                prodItem.setReferenceId(item.getProductId() != null ? item.getProductId() : (item.getId() != null ? item.getId() : 0L));
                 prodItem.setItemName(item.getName() != null && !item.getName().trim().isEmpty() ? item.getName() : "Sản phẩm Pickleball");
                 prodItem.setQuantity(qty);
                 prodItem.setUnitPrice(price);
