@@ -164,24 +164,24 @@ export default function ReviewsPage() {
       <div className="space-y-6">
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-border/60 shadow-sm bg-card">
+          <Card className="border-slate-200/90 shadow-sm bg-white">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-xs uppercase tracking-wider font-semibold">
+              <CardDescription className="text-xs uppercase tracking-wider font-semibold text-slate-500">
                 Tổng đánh giá
               </CardDescription>
-              <CardTitle className="text-2xl font-bold flex items-center justify-between">
+              <CardTitle className="text-2xl font-bold flex items-center justify-between text-slate-900">
                 <span>{totalCount}</span>
-                <MessageSquare className="w-5 h-5 text-muted-foreground" />
+                <MessageSquare className="w-5 h-5 text-slate-400" />
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0">
-              <p className="text-xs text-muted-foreground">Lưu trữ trên cơ sở dữ liệu MySQL</p>
+              <p className="text-xs text-slate-500">Lưu trữ trên cơ sở dữ liệu MySQL</p>
             </CardContent>
           </Card>
 
-          <Card className="border-border/60 shadow-sm bg-card">
+          <Card className="border-slate-200/90 shadow-sm bg-white">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-xs uppercase tracking-wider font-semibold">
+              <CardDescription className="text-xs uppercase tracking-wider font-semibold text-slate-500">
                 Điểm đánh giá TB
               </CardDescription>
               <CardTitle className="text-2xl font-bold flex items-center justify-between text-amber-500">
@@ -190,13 +190,13 @@ export default function ReviewsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0">
-              <p className="text-xs text-muted-foreground">{fiveStarCount} đánh giá 5 sao tuyệt đối</p>
+              <p className="text-xs text-slate-500">{fiveStarCount} đánh giá 5 sao tuyệt đối</p>
             </CardContent>
           </Card>
 
-          <Card className="border-border/60 shadow-sm bg-card">
+          <Card className="border-slate-200/90 shadow-sm bg-white">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-xs uppercase tracking-wider font-semibold">
+              <CardDescription className="text-xs uppercase tracking-wider font-semibold text-slate-500">
                 Đang hiển thị
               </CardDescription>
               <CardTitle className="text-2xl font-bold flex items-center justify-between text-emerald-600">
@@ -205,13 +205,13 @@ export default function ReviewsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0">
-              <p className="text-xs text-muted-foreground">Công khai trên trang chi tiết sản phẩm</p>
+              <p className="text-xs text-slate-500">Công khai trên trang chi tiết sản phẩm</p>
             </CardContent>
           </Card>
 
-          <Card className="border-border/60 shadow-sm bg-card">
+          <Card className="border-slate-200/90 shadow-sm bg-white">
             <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-xs uppercase tracking-wider font-semibold">
+              <CardDescription className="text-xs uppercase tracking-wider font-semibold text-slate-500">
                 Đã ẩn / Vi phạm
               </CardDescription>
               <CardTitle className="text-2xl font-bold flex items-center justify-between text-rose-500">
@@ -220,22 +220,22 @@ export default function ReviewsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0">
-              <p className="text-xs text-muted-foreground">Bị ẩn khỏi trang thương mại điện tử</p>
+              <p className="text-xs text-slate-500">Bị ẩn khỏi trang thương mại điện tử</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Filter Bar */}
-        <Card className="border-border/60 shadow-sm p-4">
+        <Card className="border-slate-200/90 shadow-sm p-4 bg-white">
           <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
             {/* Search */}
             <form onSubmit={handleSearch} className="relative w-full md:w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
                 placeholder="Tìm người gửi, nội dung..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 text-sm"
+                className="pl-9 text-sm bg-white border-slate-200 text-slate-900"
               />
             </form>
 
@@ -290,10 +290,10 @@ export default function ReviewsPage() {
             <p className="text-sm">Đang tải danh sách đánh giá...</p>
           </div>
         ) : reviews.length === 0 ? (
-          <div className="py-20 text-center border border-dashed rounded-xl bg-card/50">
-            <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
-            <h3 className="text-base font-semibold">Chưa có đánh giá nào từ khách hàng</h3>
-            <p className="text-sm text-muted-foreground mt-1">
+          <div className="py-20 text-center border border-dashed border-slate-200 rounded-xl bg-white shadow-2xs">
+            <MessageSquare className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+            <h3 className="text-base font-semibold text-slate-800">Chưa có đánh giá nào từ khách hàng</h3>
+            <p className="text-sm text-slate-500 mt-1">
               Đánh giá thực tế từ khách hàng sau khi mua sản phẩm hoặc đặt sân sẽ hiển thị tại đây
             </p>
           </div>
@@ -302,10 +302,10 @@ export default function ReviewsPage() {
             {reviews.map((rev) => (
               <Card
                 key={rev.id}
-                className={`border transition-all ${
+                className={`border bg-white transition-all ${
                   rev.status === "hidden"
-                    ? "border-rose-300 dark:border-rose-900/50 bg-rose-50/20 dark:bg-rose-950/10 opacity-75"
-                    : "border-border/60 hover:shadow-md"
+                    ? "border-rose-300 bg-rose-50/30 opacity-75"
+                    : "border-slate-200/90 hover:shadow-md"
                 }`}
               >
                 <CardContent className="p-5">

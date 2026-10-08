@@ -23,7 +23,7 @@ export const PosOrdersTable: React.FC<PosOrdersTableProps> = ({
     <Card className="p-6 border-slate-200/90 bg-white shadow-sm space-y-4 rounded-2xl">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h3 className="font-bold text-slate-900 text-base">Lịch Sử Hóa Đơn Bán Hàng & Thu Lễ Tân Tại Quầy</h3>
-        <Badge variant="secondary" className="px-3 py-1 font-bold text-xs">
+        <Badge className="px-3 py-1 font-bold text-xs bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-100">
           {totalCount} Hóa Đơn POS
         </Badge>
       </div>
@@ -92,7 +92,7 @@ export const PosOrdersTable: React.FC<PosOrdersTableProps> = ({
                         size="sm"
                         variant="outline"
                         onClick={() => onViewOrder(order)}
-                        className="h-7 px-2.5 text-[11px] font-bold rounded-lg border-slate-300"
+                        className="h-7 px-2.5 text-[11px] font-bold rounded-lg border-slate-300 bg-white hover:bg-slate-50 text-slate-700"
                       >
                         Xem
                       </Button>
@@ -100,7 +100,7 @@ export const PosOrdersTable: React.FC<PosOrdersTableProps> = ({
                         size="sm"
                         variant="outline"
                         onClick={() => onEditOrder(order)}
-                        className="h-7 px-2.5 text-[11px] text-amber-700 border-amber-300 hover:bg-amber-50 font-bold rounded-lg"
+                        className="h-7 px-2.5 text-[11px] text-amber-700 border-amber-300 bg-amber-50 hover:bg-amber-100 font-bold rounded-lg"
                       >
                         Sửa Đơn
                       </Button>
@@ -108,7 +108,7 @@ export const PosOrdersTable: React.FC<PosOrdersTableProps> = ({
                         size="sm"
                         variant="outline"
                         onClick={() => onPrintReceipt(order)}
-                        className="h-7 px-2.5 text-[11px] font-bold rounded-lg border-slate-300"
+                        className="h-7 px-2.5 text-[11px] font-bold rounded-lg border-slate-300 bg-white hover:bg-slate-50 text-slate-700"
                       >
                         In Bill
                       </Button>

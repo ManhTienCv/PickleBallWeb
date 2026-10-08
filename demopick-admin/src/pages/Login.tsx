@@ -18,8 +18,7 @@ import {
   ArrowRight,
   Sparkles,
   Sun,
-  Moon,
-  Laptop
+  Moon
 } from 'lucide-react'
 import PickleballLogo from '@/components/PickleballLogo'
 import { toast } from 'sonner'
@@ -75,19 +74,6 @@ export default function Login() {
         >
           <Moon className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Tối</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setTheme('system')}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${theme === 'system'
-            ? 'bg-emerald-600 text-white shadow-sm'
-            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          title="Tự động theo hệ điều hành/trình duyệt"
-        >
-          <Laptop className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Hệ thống</span>
         </button>
       </div>
 

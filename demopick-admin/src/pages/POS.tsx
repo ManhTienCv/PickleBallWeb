@@ -947,7 +947,7 @@ export default function POS() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleSelectCourtFromSidebar(court)}
-                          className="h-7 px-2 text-[10px] font-medium border-slate-300 text-slate-600 hover:bg-slate-100 rounded-lg"
+                          className="h-7 px-2 text-[10px] font-bold bg-white hover:bg-emerald-50 border-slate-300 text-slate-700 hover:text-emerald-700 rounded-lg shadow-xs"
                         >
                           + 1h Bill
                         </Button>
@@ -1072,7 +1072,7 @@ export default function POS() {
                 variant="outline"
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                className="h-7 px-2.5 border-slate-300 text-xs font-bold gap-1"
+                className="h-7 px-2.5 bg-white hover:bg-slate-50 border-slate-300 text-slate-700 text-xs font-bold gap-1 shadow-2xs"
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
                 <span>Trang trước</span>
@@ -1087,7 +1087,7 @@ export default function POS() {
                 variant="outline"
                 disabled={currentPage >= totalPages}
                 onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                className="h-7 px-2.5 border-slate-300 text-xs font-bold gap-1"
+                className="h-7 px-2.5 bg-white hover:bg-slate-50 border-slate-300 text-slate-700 text-xs font-bold gap-1 shadow-2xs"
               >
                 <span>Trang sau</span>
                 <ChevronRight className="h-3.5 w-3.5" />

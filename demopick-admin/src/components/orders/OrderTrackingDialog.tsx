@@ -45,28 +45,28 @@ export const OrderTrackingDialog: React.FC<OrderTrackingDialogProps> = ({
           </DialogHeader>
 
           {/* SHIPPER INFO CARD */}
-          <div className="p-3.5 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl space-y-2 shadow-md">
+          <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-2xl space-y-2.5 shadow-sm">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center font-bold text-slate-900 text-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center justify-center font-bold text-sm shadow-xs">
                   {trackingInfo.shipperName.charAt(0)}
                 </div>
                 <div>
-                  <div className="font-bold text-sm">{trackingInfo.shipperName}</div>
-                  <div className="text-[11px] text-slate-300">Tài xế giao hàng ({trackingInfo.carrier})</div>
+                  <div className="font-bold text-sm text-slate-900">{trackingInfo.shipperName}</div>
+                  <div className="text-[11px] text-slate-500 font-medium">Tài xế giao hàng ({trackingInfo.carrier})</div>
                 </div>
               </div>
               <a
                 href={`tel:${trackingInfo.shipperPhone}`}
-                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold inline-flex items-center gap-1 transition-colors"
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition-colors"
               >
                 <Phone className="w-3.5 h-3.5" />
                 <span>Gọi Shipper</span>
               </a>
             </div>
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-700/80 text-[11px] text-slate-300">
-              <div>SĐT: <b className="text-white">{trackingInfo.shipperPhone}</b></div>
-              <div>Biển số xe: <b className="text-white">{trackingInfo.shipperPlate}</b></div>
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200 text-[12px] text-slate-600">
+              <div>SĐT: <b className="text-slate-900 font-semibold">{trackingInfo.shipperPhone}</b></div>
+              <div>Biển số xe: <b className="text-slate-900 font-semibold">{trackingInfo.shipperPlate}</b></div>
             </div>
           </div>
 
