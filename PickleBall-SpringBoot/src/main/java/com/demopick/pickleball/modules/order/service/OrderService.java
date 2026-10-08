@@ -250,7 +250,7 @@ public class OrderService {
         // 4. Generate MoMo Sandbox Pay URL or VietQR URL
         String payUrl = null;
         if ("momo".equalsIgnoreCase(request.getPaymentMethod())) {
-            payUrl = momoPaymentService.createPaymentUrl(orderCode, finalTotal, null);
+            payUrl = momoPaymentService.createPaymentUrl(orderCode, finalTotal, request.getRedirectUrl());
         } else {
             String baseUrl = (momoGatewayUrl != null && !momoGatewayUrl.isBlank()) ? momoGatewayUrl : momoRedirectUrl;
             payUrl = baseUrl + "?orderId=" + orderCode + "&amount=" + finalTotal;

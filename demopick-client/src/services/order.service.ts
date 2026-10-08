@@ -96,11 +96,22 @@ export const orderService = {
    * Có cơ chế fallback tự động nếu kết nối mạng/máy chủ backend gặp sự cố.
    */
   async createOrder(params: CreateOrderParams): Promise<CreateOrderResult> {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://pickleball-manhtien.vercel.app'
+    const effectiveRedirectUrl = params.redirectUrl || `${origin}/payment/momo/callback`
+    const orderPayload = {
+      ...params,
+      redirectUrl: effectiveRedirectUrl,
+    }
+
     try {
-      const response = await api.post<any>('/orders', params)
+      const response = await api.post<any>('/orders', orderPayload)
       const rawData = response.data?.data || response.data
       const orderCode = rawData?.orderCode || rawData?.order_code || ''
       const totalAmount = rawData?.totalAmount ?? rawData?.total_amount ?? 0
+      let serverPayUrl = rawData?.payUrl || rawData?.pay_url
+      if (serverPayUrl && serverPayUrl.includes('demopick-client.vercel.app')) {
+        serverPayUrl = serverPayUrl.replace('demopick-client.vercel.app', window.location.host || 'pickleball-manhtien.vercel.app')
+      }
 
       // Lưu trữ đồng bộ local để đảm bảo xem được lịch sử đơn
       try {
@@ -136,7 +147,7 @@ export const orderService = {
         totalAmount,
         paymentMethod: rawData?.paymentMethod || rawData?.payment_method || params.paymentMethod,
         paymentStatus: rawData?.paymentStatus || rawData?.payment_status || 'unpaid',
-        payUrl: rawData?.payUrl || rawData?.pay_url,
+        payUrl: serverPayUrl,
       }
     } catch (err: any) {
       // Nếu server trả về lỗi nghiệp vụ 400 cụ thể (như voucher không hợp lệ), ném lỗi cho UI hiển thị
@@ -159,13 +170,16 @@ export const orderService = {
             body: JSON.stringify({
               orderCode: fallbackCode,
               amount: calculatedTotal,
-              redirectUrl: params.redirectUrl || `${window.location.origin}/payment/momo/callback`,
+              redirectUrl: effectiveRedirectUrl,
             }),
           })
           if (momoRes.ok) {
             const momoData = await momoRes.json()
             if (momoData?.payUrl) {
               momoPayUrl = momoData.payUrl
+              if (momoPayUrl && momoPayUrl.includes('demopick-client.vercel.app')) {
+                momoPayUrl = momoPayUrl.replace('demopick-client.vercel.app', window.location.host || 'pickleball-manhtien.vercel.app')
+              }
             }
           }
         } catch (e) {

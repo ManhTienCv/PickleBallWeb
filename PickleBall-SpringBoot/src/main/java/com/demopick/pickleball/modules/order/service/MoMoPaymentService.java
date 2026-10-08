@@ -36,7 +36,7 @@ public class MoMoPaymentService {
     @Value("${momo.endpoint:https://test-payment.momo.vn/v2/gateway/api/create}")
     private String endpoint;
 
-    @Value("${momo.redirect-url:https://demopick-client.vercel.app/payment/momo/callback}")
+    @Value("${momo.redirect-url:https://pickleball-manhtien.vercel.app/payment/momo/callback}")
     private String defaultRedirectUrl;
 
     @Value("${momo.ipn-url:https://pickleball-spring-boot.onrender.com/api/v1/webhooks/payment/momo}")
@@ -65,6 +65,10 @@ public class MoMoPaymentService {
             String redirectUrl = (clientRedirectUrl != null && !clientRedirectUrl.isBlank())
                     ? clientRedirectUrl
                     : defaultRedirectUrl;
+
+            if (redirectUrl != null && redirectUrl.contains("demopick-client.vercel.app")) {
+                redirectUrl = redirectUrl.replace("demopick-client.vercel.app", "pickleball-manhtien.vercel.app");
+            }
 
             // Đảm bảo secretKey hợp lệ nếu config rỗng
             String effectiveSecretKey = (secretKey != null && !secretKey.isBlank())
@@ -131,9 +135,13 @@ public class MoMoPaymentService {
         }
 
         // Fallback sang URL callback giả lập nếu mạng bên ngoài bị lỗi
-        return (clientRedirectUrl != null && !clientRedirectUrl.isBlank())
-                ? clientRedirectUrl + "?orderId=" + orderCode + "&amount=" + amount + "&resultCode=0&message=Successful"
-                : defaultRedirectUrl + "?orderId=" + orderCode + "&amount=" + amount + "&resultCode=0&message=Successful";
+        String fallbackUrl = (clientRedirectUrl != null && !clientRedirectUrl.isBlank())
+                ? clientRedirectUrl
+                : defaultRedirectUrl;
+        if (fallbackUrl != null && fallbackUrl.contains("demopick-client.vercel.app")) {
+            fallbackUrl = fallbackUrl.replace("demopick-client.vercel.app", "pickleball-manhtien.vercel.app");
+        }
+        return fallbackUrl + "?orderId=" + orderCode + "&amount=" + amount + "&resultCode=0&message=Successful";
     }
 
     private String hmacSha256(String data, String key) {

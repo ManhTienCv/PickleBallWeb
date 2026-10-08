@@ -907,6 +907,7 @@ export default function OrdersPage() {
                                 shippingPhone: order.customer_phone || '0867015044',
                                 shippingAddress: order.shipping_address || 'Hà Nội',
                                 paymentMethod: 'momo',
+                                redirectUrl: `${window.location.origin}/payment/momo/callback`,
                                 items: order.items?.map((it: any) => ({
                                   id: it.id,
                                   name: it.item_name,
@@ -914,8 +915,16 @@ export default function OrdersPage() {
                                   price: it.subtotal / (it.quantity || 1),
                                 })) || [{ id: 1, name: 'Đơn hàng Pickleball', quantity: 1, price: order.total_amount }],
                               })
-                              const targetPayUrl = res.payUrl || `/payment/momo/gateway?orderId=${order.order_code}&amount=${order.total_amount}`
-                              window.location.href = targetPayUrl
+                              let targetPayUrl = res.payUrl || `/payment/momo/gateway?orderId=${order.order_code}&amount=${order.total_amount}`
+                              if (targetPayUrl.includes('/payment/momo/gateway')) {
+                                const qIdx = targetPayUrl.indexOf('?')
+                                targetPayUrl = `/payment/momo/gateway${qIdx !== -1 ? targetPayUrl.substring(qIdx) : `?orderId=${order.order_code}&amount=${order.total_amount}`}`
+                              }
+                              if (targetPayUrl.startsWith('http://') || targetPayUrl.startsWith('https://')) {
+                                window.location.href = targetPayUrl
+                              } else {
+                                navigate(targetPayUrl)
+                              }
                             } catch {
                               toast.error('Không thể mở cổng thanh toán. Vui lòng thử lại sau.')
                             }

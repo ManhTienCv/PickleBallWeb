@@ -20,7 +20,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { orderCode = `ORD-${Date.now()}`, amount = 50000, redirectUrl: clientRedirect } = req.body || {}
+    let body = req.body
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body)
+      } catch {
+        body = {}
+      }
+    } else if (!body || typeof body !== 'object') {
+      body = {}
+    }
+
+    const { orderCode = `ORD-${Date.now()}`, amount = 50000, redirectUrl: clientRedirect } = body
 
     const partnerCode = process.env.MOMO_PARTNER_CODE || 'MOMOBKUN20180529'
     const accessKey = process.env.MOMO_ACCESS_KEY || 'klm05TvNBzhg7h7j'
@@ -35,11 +46,40 @@ export default async function handler(req, res) {
     const extraData = ''
     const requestType = 'payWithMethod'
 
-    // Tự động xác định redirect URL nếu client không gửi lên
-    const host = req.headers.host || 'demopick-client.vercel.app'
-    const proto = req.headers['x-forwarded-proto'] || 'https'
-    const defaultRedirect = `${proto}://${host}/payment/momo/callback`
-    const redirectUrl = clientRedirect || defaultRedirect
+    // Xác định dynamic client origin từ request
+    let clientOrigin = ''
+    if (req.headers.origin && typeof req.headers.origin === 'string') {
+      clientOrigin = req.headers.origin
+    } else if (req.headers.referer && typeof req.headers.referer === 'string') {
+      try {
+        clientOrigin = new URL(req.headers.referer).origin
+      } catch {}
+    }
+
+    if (!clientOrigin) {
+      const host = req.headers['x-forwarded-host'] || req.headers.host || 'pickleball-manhtien.vercel.app'
+      const proto = req.headers['x-forwarded-proto'] || 'https'
+      clientOrigin = `${proto}://${host}`
+    }
+
+    // Luôn thay thế domain cũ nếu còn sót lại
+    if (clientOrigin.includes('demopick-client.vercel.app')) {
+      clientOrigin = clientOrigin.replace('demopick-client.vercel.app', 'pickleball-manhtien.vercel.app')
+    }
+
+    const defaultRedirect = `${clientOrigin}/payment/momo/callback`
+
+    let redirectUrl = (clientRedirect && typeof clientRedirect === 'string' && clientRedirect.trim() !== '')
+      ? clientRedirect.trim()
+      : defaultRedirect
+
+    if (redirectUrl.startsWith('/')) {
+      redirectUrl = `${clientOrigin}${redirectUrl}`
+    }
+    if (redirectUrl.includes('demopick-client.vercel.app')) {
+      redirectUrl = redirectUrl.replace('demopick-client.vercel.app', 'pickleball-manhtien.vercel.app')
+    }
+
     const ipnUrl = defaultRedirect
 
     const rawSignature =

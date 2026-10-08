@@ -24,7 +24,13 @@ public class CheckoutRequest {
     @JsonProperty("cart_items")
     private List<CartItemDto> cartItems;
 
+    @JsonProperty("redirectUrl")
+    private String redirectUrl;
+
     public CheckoutRequest() {}
+
+    public String getRedirectUrl() { return redirectUrl; }
+    public void setRedirectUrl(String redirectUrl) { this.redirectUrl = redirectUrl; }
 
     public String getVoucherCode() { return voucherCode; }
     public void setVoucherCode(String voucherCode) { this.voucherCode = voucherCode; }
