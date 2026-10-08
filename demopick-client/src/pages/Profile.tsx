@@ -87,13 +87,20 @@ export default function Profile() {
                 payment_status: (o.paymentStatus || o.payment_status || 'unpaid').toLowerCase(),
                 payment_method: o.paymentMethod || o.payment_method || 'momo',
                 created_at: o.createdAt || o.created_at || new Date().toISOString().replace('T', ' ').substring(0, 19),
-                items: Array.isArray(o.items) ? o.items.map((it: any, idx: number) => ({
-                  id: it.id || idx + 1,
-                  item_name: it.name || it.item_name || it.itemName || 'Sản phẩm',
-                  quantity: it.quantity || 1,
-                  unit_price: it.price || it.unit_price || 0,
-                  subtotal: (it.price || it.unit_price || 0) * (it.quantity || 1),
-                })) : [],
+                items: Array.isArray(o.items) ? o.items.map((it: any, idx: number) => {
+                  const qty = Math.max(1, Number(it.quantity || it.qty || 1))
+                  const price = Math.max(0, Number(it.price || it.unit_price || 0))
+                  const sub = it.subtotal != null && !isNaN(Number(it.subtotal)) && Number(it.subtotal) > 0
+                    ? Number(it.subtotal)
+                    : price * qty
+                  return {
+                    id: it.id || idx + 1,
+                    item_name: it.name || it.item_name || it.itemName || 'Sản phẩm Pickleball',
+                    quantity: qty,
+                    unit_price: price,
+                    subtotal: sub > 0 ? sub : Number(o.totalAmount || o.total_amount || 0),
+                  }
+                }) : [],
               }))
               setOrders(userOrders)
             }
@@ -104,7 +111,7 @@ export default function Profile() {
       }
     } catch {
       // Fallback local storage
-      const localOrdersRaw = localStorage.getItem('demopick_client_orders')
+      const localOrdersRaw = localStorage.getItem('demopick_orders_client') || localStorage.getItem('demopick_client_orders')
       if (localOrdersRaw) {
         try {
           setOrders(JSON.parse(localOrdersRaw))

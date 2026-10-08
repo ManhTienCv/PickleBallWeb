@@ -231,7 +231,67 @@ export default function OrdersPage() {
     const list: any[] = []
     const seenCodes = new Set<string>()
 
-    // 1. Nạp từ localStorage (demopick_orders_admin)
+    // 1. Nạp từ localStorage của Khách hàng (demopick_orders_client) - Ưu tiên hàng đầu
+    try {
+      const savedClient = localStorage.getItem('demopick_orders_client') || localStorage.getItem('demopick_client_orders')
+      if (savedClient) {
+        const clientOrders = JSON.parse(savedClient)
+        if (Array.isArray(clientOrders)) {
+          clientOrders.forEach((co: any) => {
+            const code = co.order_code || co.code
+            if (!code || seenCodes.has(code)) return
+            seenCodes.add(code)
+
+            const isBooking =
+              co.order_type === 'booking' ||
+              co.type === 'booking' ||
+              Boolean(co.court_name && co.court_name.length > 0) ||
+              co.items?.some((it: any) => it.item_type === 'booking' || it.item_name?.toLowerCase().includes('sân'))
+
+            const items = (co.items || []).map((it: any, idx: number) => {
+              const qty = Math.max(1, Number(it.quantity || it.qty || 1))
+              const price = Math.max(0, Number(it.price || it.unit_price || 0))
+              const sub = it.subtotal != null && !isNaN(Number(it.subtotal))
+                ? Number(it.subtotal)
+                : price * qty
+              return {
+                id: it.id || idx + 1,
+                item_type: it.item_type || (isBooking ? 'booking' : 'product'),
+                item_name: it.item_name || it.name || 'Sản phẩm Pickleball',
+                quantity: qty,
+                price: price,
+                subtotal: sub,
+              }
+            })
+
+            list.push({
+              id: co.id || code,
+              order_code: code,
+              order_type: isBooking ? 'booking' : 'product',
+              created_at: co.created_at || co.createdAt || new Date().toISOString(),
+              status: (co.status || 'pending').toLowerCase(),
+              payment_status: (co.payment_status || co.paymentStatus || 'unpaid').toLowerCase(),
+              payment_method: co.payment_method || co.paymentMethod || 'momo',
+              total_amount: Number(co.total_amount || co.totalAmount || 0),
+              shipping_address: co.shipping_address || co.shippingAddress || 'Số 10 Đường Pickleball, Q. Cầu Giấy, Hà Nội',
+              shipping_carrier: co.shipping_carrier || co.shippingCarrier || 'GHN Express',
+              tracking_number: co.tracking_code || co.tracking_number || co.trackingNumber || co.ghn_order_code,
+              customer_name: co.customer_name || co.customerName || co.shippingName || 'Khách hàng',
+              customer_phone: co.customer_phone || co.customerPhone || co.shippingPhone || '',
+              court_name: co.court_name,
+              court_address: co.court_address,
+              play_time: co.play_time,
+              qr_checkin_code: co.qr_checkin_code,
+              items,
+            })
+          })
+        }
+      }
+    } catch (err) {
+      console.error('Failed to parse client orders in Orders.tsx:', err)
+    }
+
+    // 2. Nạp từ localStorage (demopick_orders_admin) - Bổ sung nếu có
     try {
       const savedAdmin = localStorage.getItem('demopick_orders_admin')
       if (savedAdmin) {
@@ -247,12 +307,29 @@ export default function OrdersPage() {
               o.type === 'booking' ||
               o.items?.some((it: any) => it.item_type === 'booking')
 
+            const items = (o.items || []).map((it: any, idx: number) => {
+              const qty = Math.max(1, Number(it.qty || it.quantity || 1))
+              const price = Math.max(0, Number(it.price || it.unit_price || 0))
+              const sub = it.subtotal != null && !isNaN(Number(it.subtotal))
+                ? Number(it.subtotal)
+                : price * qty
+              return {
+                id: it.id || idx + 1,
+                item_type: isBooking ? 'booking' : 'product',
+                item_name: it.name || it.item_name || 'Thiết bị Pickleball',
+                quantity: qty,
+                price: price,
+                subtotal: sub,
+              }
+            })
+
             list.push({
               id: code,
               order_code: code,
               order_type: isBooking ? 'booking' : 'product',
               created_at: o.createdAt || new Date().toISOString(),
               status: (o.status || 'pending').toLowerCase(),
+              payment_status: (o.paymentStatus || o.payment_status || 'unpaid').toLowerCase(),
               payment_method:
                 o.paymentMethod === 'COD' || o.paymentMethod === 'Tiền mặt' || o.payment_method === 'cod'
                   ? 'cod'
@@ -265,14 +342,7 @@ export default function OrdersPage() {
               tracking_number: o.trackingNumber || o.tracking_number,
               customer_name: o.customerName || o.customer_name || 'Nguyễn Mạnh Tiến',
               customer_phone: o.customerPhone || o.customer_phone || '0867015044',
-              items: (o.items || []).map((it: any, idx: number) => ({
-                id: it.id || idx + 1,
-                item_type: isBooking ? 'booking' : 'product',
-                item_name: it.name || it.item_name || 'Thiết bị Pickleball',
-                quantity: it.qty || it.quantity || 1,
-                price: it.price || it.unit_price || 0,
-                subtotal: (it.price || it.unit_price || 0) * (it.qty || it.quantity || 1),
-              })),
+              items,
             })
           })
         }
@@ -281,7 +351,7 @@ export default function OrdersPage() {
       console.error('Failed to parse admin orders in client:', err)
     }
 
-    // 2. Hợp nhất từ API backend (apiOrders)
+    // 3. Hợp nhất từ API backend (apiOrders)
     if (Array.isArray(apiOrders)) {
       apiOrders.forEach((ao: any) => {
         const code = ao.order_code || ao.code
@@ -290,11 +360,55 @@ export default function OrdersPage() {
           const existing = list.find((item) => item.order_code === code)
           if (existing) {
             existing.status = (ao.status || existing.status).toLowerCase()
-            existing.payment_status = ao.payment_status || existing.payment_status
+            existing.payment_status = (ao.payment_status || existing.payment_status).toLowerCase()
+            if (ao.tracking_code || ao.tracking_number) {
+              existing.tracking_number = ao.tracking_code || ao.tracking_number
+            }
           }
         } else {
           seenCodes.add(code)
-          list.push(ao)
+          const isBooking =
+            ao.order_type === 'booking' ||
+            ao.type === 'booking' ||
+            Boolean(ao.court_name && ao.court_name.length > 0) ||
+            ao.items?.some((it: any) => it.item_type === 'booking' || it.item_name?.toLowerCase().includes('sân'))
+
+          const items = (ao.items || []).map((it: any, idx: number) => {
+            const qty = Math.max(1, Number(it.quantity || it.qty || 1))
+            const price = Math.max(0, Number(it.price || it.unit_price || 0))
+            const sub = it.subtotal != null && !isNaN(Number(it.subtotal))
+              ? Number(it.subtotal)
+              : price * qty
+            return {
+              id: it.id || idx + 1,
+              item_type: it.item_type || (isBooking ? 'booking' : 'product'),
+              item_name: it.item_name || it.name || 'Sản phẩm Pickleball',
+              quantity: qty,
+              price: price,
+              subtotal: sub,
+            }
+          })
+
+          list.push({
+            id: ao.id || code,
+            order_code: code,
+            order_type: isBooking ? 'booking' : 'product',
+            created_at: ao.created_at || ao.createdAt || new Date().toISOString(),
+            status: (ao.status || 'pending').toLowerCase(),
+            payment_status: (ao.payment_status || ao.paymentStatus || 'unpaid').toLowerCase(),
+            payment_method: ao.payment_method || ao.paymentMethod || 'momo',
+            total_amount: Number(ao.total_amount || ao.totalAmount || 0),
+            shipping_address: ao.shipping_address || ao.shippingAddress || 'Số 10 Đường Pickleball, Q. Cầu Giấy, Hà Nội',
+            shipping_carrier: ao.shipping_carrier || ao.shippingCarrier || 'GHN Express',
+            tracking_number: ao.tracking_code || ao.tracking_number || ao.trackingNumber || ao.ghn_order_code,
+            customer_name: ao.customer_name || ao.customerName || ao.shippingName || 'Khách hàng',
+            customer_phone: ao.customer_phone || ao.customerPhone || ao.shippingPhone || '',
+            court_name: ao.court_name,
+            court_address: ao.court_address,
+            play_time: ao.play_time,
+            qr_checkin_code: ao.qr_checkin_code,
+            items,
+          })
         }
       })
     }
@@ -304,6 +418,11 @@ export default function OrdersPage() {
 
   useEffect(() => {
     loadOrdersData()
+    orderService.getOrders().then((ords) => {
+      if (ords && ords.length > 0) {
+        loadOrdersData()
+      }
+    })
     const handleStorageChange = () => {
       loadOrdersData()
     }

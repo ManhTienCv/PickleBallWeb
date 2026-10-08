@@ -105,7 +105,13 @@ export default function OrderHistoryTab({
                         </span>
                       </div>
                       <span className="font-bold text-slate-700 dark:text-slate-300">
-                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(it.subtotal)}
+                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
+                          it.subtotal != null && !isNaN(Number(it.subtotal)) && Number(it.subtotal) > 0
+                            ? Number(it.subtotal)
+                            : it.price != null && !isNaN(Number(it.price))
+                            ? Number(it.price) * (it.quantity || 1)
+                            : (ord.total_amount || 0)
+                        )}
                       </span>
                     </div>
                   ))}
