@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -406,8 +407,14 @@ public class OrderService {
     }
 
     public Order getOrderByCode(String orderCode) {
+        try {
+            Long orderId = Long.parseLong(orderCode);
+            Optional<Order> byId = orderRepository.findById(orderId);
+            if (byId.isPresent()) return byId.get();
+        } catch (NumberFormatException ignored) {}
+
         return orderRepository.findByOrderCode(orderCode)
-                .orElseThrow(() -> new ApiException("Không tìm thấy đơn hàng.", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new ApiException("Không tìm thấy đơn hàng: " + orderCode, HttpStatus.NOT_FOUND));
     }
 
     public List<Order> getUserOrders(Long userId) {
@@ -500,8 +507,16 @@ public class OrderService {
 
     @Transactional
     public Order cancelOrder(String orderCode, String reason, Long userId) {
-        Order order = orderRepository.findByOrderCode(orderCode)
-                .orElseThrow(() -> new ApiException("Không tìm thấy đơn hàng.", HttpStatus.NOT_FOUND));
+        Order order = null;
+        try {
+            Long orderId = Long.parseLong(orderCode);
+            order = orderRepository.findById(orderId).orElse(null);
+        } catch (NumberFormatException ignored) {}
+
+        if (order == null) {
+            order = orderRepository.findByOrderCode(orderCode)
+                    .orElseThrow(() -> new ApiException("Không tìm thấy đơn hàng: " + orderCode, HttpStatus.NOT_FOUND));
+        }
 
         if ("cancelled".equalsIgnoreCase(order.getStatus())) {
             return order;
@@ -521,7 +536,7 @@ public class OrderService {
                 if (slot != null && !"booked".equalsIgnoreCase(slot.getStatus())) {
                     slot.setStatus("available");
                     timeSlotRepository.save(slot);
-                    log.info("Released slot {} back to AVAILABLE upon order cancellation {}", slot.getId(), orderCode);
+                    log.info("Released slot {} back to AVAILABLE upon order cancellation {}", slot.getId(), order.getOrderCode());
                 }
                 List<Hold> holds = holdRepository.findBySlotId(item.getReferenceId());
                 for (Hold h : holds) {
@@ -539,6 +554,80 @@ public class OrderService {
         }
 
         return order;
+    }
+
+    @Transactional
+    public Order updateOrderStatus(String idOrCode, String newStatus) {
+        if (newStatus == null || newStatus.isBlank()) {
+            throw new ApiException("Trạng thái đơn hàng không hợp lệ.", HttpStatus.BAD_REQUEST);
+        }
+
+        Order order = null;
+        try {
+            Long orderId = Long.parseLong(idOrCode);
+            order = orderRepository.findById(orderId).orElse(null);
+        } catch (NumberFormatException ignored) {}
+
+        if (order == null) {
+            order = orderRepository.findByOrderCode(idOrCode)
+                    .orElseThrow(() -> new ApiException("Không tìm thấy đơn hàng: " + idOrCode, HttpStatus.NOT_FOUND));
+        }
+
+        String normalizedStatus = newStatus.trim().toLowerCase();
+        if (normalizedStatus.contains("hủy") || normalizedStatus.contains("cancel")) {
+            return cancelOrder(order.getOrderCode(), "Quản trị viên cập nhật trạng thái hủy", null);
+        }
+
+        if (normalizedStatus.contains("hoàn") || normalizedStatus.contains("refund")) {
+            order.setStatus("refunded");
+            order.setPaymentStatus("refunded");
+        } else if (normalizedStatus.contains("xác nhận") || normalizedStatus.contains("confirm")) {
+            order.setStatus("confirmed");
+        } else if (normalizedStatus.contains("giao") || normalizedStatus.contains("ship")) {
+            order.setStatus("shipping");
+        } else if (normalizedStatus.contains("hoàn tất") || normalizedStatus.contains("complete")) {
+            order.setStatus("completed");
+        } else {
+            order.setStatus(normalizedStatus);
+        }
+
+        return orderRepository.save(order);
+    }
+
+    @Transactional
+    public Order confirmRefund(String orderCode, String refundTransId, String refundNote) {
+        Order order = null;
+        try {
+            Long orderId = Long.parseLong(orderCode);
+            order = orderRepository.findById(orderId).orElse(null);
+        } catch (NumberFormatException ignored) {}
+
+        if (order == null) {
+            order = orderRepository.findByOrderCode(orderCode)
+                    .orElseThrow(() -> new ApiException("Không tìm thấy đơn hàng: " + orderCode, HttpStatus.NOT_FOUND));
+        }
+
+        order.setStatus("refunded");
+        order.setPaymentStatus("refunded");
+        String note = "Hoàn tiền thành công.";
+        if (refundTransId != null && !refundTransId.isBlank()) note += " Mã GD hoàn: " + refundTransId;
+        if (refundNote != null && !refundNote.isBlank()) note += " (" + refundNote + ")";
+        order.setPickupNotes(order.getPickupNotes() != null ? order.getPickupNotes() + " | " + note : note);
+
+        // Also release any court slots
+        List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
+        for (OrderItem item : items) {
+            if ("booking_slot".equalsIgnoreCase(item.getItemType()) && item.getReferenceId() != null) {
+                TimeSlot slot = timeSlotRepository.findById(item.getReferenceId()).orElse(null);
+                if (slot != null && !"available".equalsIgnoreCase(slot.getStatus())) {
+                    slot.setStatus("available");
+                    timeSlotRepository.save(slot);
+                    log.info("Released slot {} back to AVAILABLE upon refund for order {}", slot.getId(), order.getOrderCode());
+                }
+            }
+        }
+
+        return orderRepository.save(order);
     }
 
     @Scheduled(fixedRate = 60000)

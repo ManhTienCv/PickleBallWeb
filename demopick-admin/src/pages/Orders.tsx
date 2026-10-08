@@ -218,11 +218,27 @@ export default function Orders() {
 
     try {
       toast.info(`Đang xử lý hủy đơn hàng #${orderCode}...`);
-      await api.post(`/admin/orders/${orderCode}/cancel`, { reason });
+      try {
+        await api.post(`/admin/orders/${orderCode}/cancel`, { reason });
+      } catch (adminErr: any) {
+        if (adminErr?.response?.status === 404 || adminErr?.response?.status === 500) {
+          // Fallback to general order cancel endpoint
+          await api.post(`/orders/${orderCode}/cancel`, { reason });
+        } else {
+          throw adminErr;
+        }
+      }
+
       toast.success(`Đã hủy thành công đơn hàng #${orderCode}!`);
-      setOrdersList((prev) =>
-        prev.map((o) => (o.code === orderCode ? { ...o, status: "CANCELLED" } : o))
-      );
+      setOrdersList((prev) => {
+        const next = prev.map((o) => (o.code === orderCode ? { ...o, status: "CANCELLED" } : o));
+        try {
+          localStorage.setItem('demopick_orders_admin', JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+      // Refresh to ensure full synchronization with server
+      setTimeout(() => fetchBackendOrders(true), 500);
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         toast.error(err.response?.data?.message || "Không thể hủy đơn hàng.");
