@@ -9,9 +9,6 @@ public class CheckoutRequest {
     @JsonProperty("hold_id")
     private Long holdId;
 
-    @JsonProperty("slot_id")
-    private Long slotId;
-
     @JsonProperty("payment_method")
     private String paymentMethod; // momo, vietqr, cash
 
@@ -38,8 +35,23 @@ public class CheckoutRequest {
     public Long getHoldId() { return holdId; }
     public void setHoldId(Long holdId) { this.holdId = holdId; }
 
+    @JsonProperty("slot_id")
+    private Long slotId;
+
+    @JsonProperty("slot_ids")
+    private List<Long> slotIds;
+
     public Long getSlotId() { return slotId; }
     public void setSlotId(Long slotId) { this.slotId = slotId; }
+
+    public List<Long> getSlotIds() { return slotIds; }
+    public void setSlotIds(List<Long> slotIds) { this.slotIds = slotIds; }
+
+    public List<Long> getEffectiveSlotIds() {
+        if (slotIds != null && !slotIds.isEmpty()) return slotIds;
+        if (slotId != null) return List.of(slotId);
+        return java.util.Collections.emptyList();
+    }
 
     public String getPaymentMethod() { return paymentMethod; }
     public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }

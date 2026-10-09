@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Order } from "@/types/order.types";
+import { Printer, Eye, Edit3 } from "lucide-react";
 
 interface PosOrdersTableProps {
   orders: Order[];
@@ -92,25 +93,27 @@ export const PosOrdersTable: React.FC<PosOrdersTableProps> = ({
                         size="sm"
                         variant="outline"
                         onClick={() => onViewOrder(order)}
-                        className="h-7 px-2.5 text-[11px] font-bold rounded-lg border-slate-300 bg-white hover:bg-slate-50 text-slate-700"
+                        className="h-7 px-2 text-[11px] font-bold rounded-lg border-slate-300 bg-white hover:bg-slate-50 text-slate-700 gap-1 shadow-2xs"
                       >
-                        Xem
+                        <Eye className="h-3 w-3 text-slate-500" />
+                        <span>Xem</span>
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => onEditOrder(order)}
-                        className="h-7 px-2.5 text-[11px] text-amber-700 border-amber-300 bg-amber-50 hover:bg-amber-100 font-bold rounded-lg"
+                        className="h-7 px-2 text-[11px] text-amber-700 border-amber-300 bg-amber-50 hover:bg-amber-100 font-bold rounded-lg gap-1 shadow-2xs"
                       >
-                        Sửa Đơn
+                        <Edit3 className="h-3 w-3 text-amber-600" />
+                        <span>Sửa</span>
                       </Button>
                       <Button
                         size="sm"
-                        variant="outline"
                         onClick={() => onPrintReceipt(order)}
-                        className="h-7 px-2.5 text-[11px] font-bold rounded-lg border-slate-300 bg-white hover:bg-slate-50 text-slate-700"
+                        className="h-7 px-2.5 text-[11px] font-bold rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white gap-1 shadow-xs"
                       >
-                        In Bill
+                        <Printer className="h-3 w-3" />
+                        <span>In Lại Bill</span>
                       </Button>
                     </div>
                   </td>

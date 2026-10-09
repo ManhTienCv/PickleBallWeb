@@ -29,6 +29,23 @@ export default function MomoCallbackPage() {
   const [amount, setAmount] = useState<number>(0)
   const [errorMessage, setErrorMessage] = useState<string>('')
   const [countdown, setCountdown] = useState<number>(4)
+  const [isCourtBooking, setIsCourtBooking] = useState<boolean>(() => {
+    try {
+      if (localStorage.getItem('demopick_current_hold')) return true
+      const rawOrderId = searchParams.get('orderId') || ''
+      const code = rawOrderId.split('_')[0]
+      const savedClientOrders = localStorage.getItem('demopick_orders_client')
+      if (savedClientOrders && code) {
+        const clientOrders = JSON.parse(savedClientOrders)
+        const found = clientOrders.find((o: any) => o.order_code === code || o.code === code)
+        if (found) {
+          if (found.slot_ids?.length > 0) return true
+          if (found.items?.some((it: any) => it.item_type === 'booking' || it.item_type === 'booking_slot')) return true
+        }
+      }
+    } catch {}
+    return false
+  })
 
   const hasProcessedRef = useRef(false)
 
@@ -68,6 +85,14 @@ export default function MomoCallbackPage() {
     setTransId(rawTransId)
     setAmount(rawAmount)
 
+    if (extractedOrderCode) {
+      orderService.getOrderByCode(extractedOrderCode).then((ord) => {
+        if (ord && ((ord as any).slot_ids?.length > 0 || (ord.items as any[])?.some((it: any) => it.itemType === 'booking_slot' || it.item_type === 'booking_slot' || it.item_type === 'booking'))) {
+          setIsCourtBooking(true)
+        }
+      }).catch(() => {})
+    }
+
     const handleVerification = async () => {
       // Nếu MoMo báo thành công (resultCode == 0)
       if (rawResultCode === '0') {
@@ -79,7 +104,7 @@ export default function MomoCallbackPage() {
             setStatus('success')
             toast.success('Xác nhận thanh toán MoMo thành công!')
 
-            // Đồng bộ trạng thái vào admin orders trong localStorage nếu có
+            // Đồng bộ trạng thái vào admin orders và client orders trong localStorage nếu có
             try {
               const savedAdminOrders = localStorage.getItem('demopick_orders_admin')
               if (savedAdminOrders && extractedOrderCode) {
@@ -90,8 +115,37 @@ export default function MomoCallbackPage() {
                     : o
                 )
                 localStorage.setItem('demopick_orders_admin', JSON.stringify(updated))
-                window.dispatchEvent(new Event('storage'))
               }
+
+              const savedClientOrders = localStorage.getItem('demopick_orders_client')
+              if (savedClientOrders && extractedOrderCode) {
+                const clientOrders = JSON.parse(savedClientOrders)
+                const foundSlots: number[] = []
+                const updatedClient = clientOrders.map((o: any) => {
+                  if (o.order_code === extractedOrderCode || o.code === extractedOrderCode) {
+                    if (Array.isArray(o.slot_ids)) foundSlots.push(...o.slot_ids)
+                    if (Array.isArray(o.items)) {
+                      o.items.forEach((it: any) => {
+                        if (it.slot_ids && Array.isArray(it.slot_ids)) foundSlots.push(...it.slot_ids)
+                        if (it.item_type === 'booking' && it.id) foundSlots.push(it.id)
+                      })
+                    }
+                    return { ...o, status: 'confirmed', payment_status: 'paid' }
+                  }
+                  return o
+                })
+                localStorage.setItem('demopick_orders_client', JSON.stringify(updatedClient))
+
+                if (foundSlots.length > 0) {
+                  const rawBooked = localStorage.getItem('demopick_booked_slots')
+                  const currentBooked: string[] = rawBooked ? JSON.parse(rawBooked) : []
+                  foundSlots.forEach((sid) => {
+                    if (!currentBooked.includes(String(sid))) currentBooked.push(String(sid))
+                  })
+                  localStorage.setItem('demopick_booked_slots', JSON.stringify(currentBooked))
+                }
+              }
+              window.dispatchEvent(new Event('storage'))
             } catch {}
           } else {
             setStatus('failed')
@@ -246,10 +300,17 @@ export default function MomoCallbackPage() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => navigate('/products')}
-              className="rounded-xl border-slate-300 dark:border-border font-bold h-11"
+              onClick={() => navigate(isCourtBooking ? '/booking' : '/products')}
+              className="rounded-xl border-slate-300 dark:border-border font-bold h-11 gap-2 cursor-pointer"
             >
-              Tiếp Tục Mua Sắm
+              {isCourtBooking ? (
+                <>
+                  <Calendar className="w-4 h-4 text-emerald-600" />
+                  <span>Về Lịch Đặt Sân</span>
+                </>
+              ) : (
+                <span>Tiếp Tục Mua Sắm</span>
+              )}
             </Button>
           </div>
         </Card>
@@ -287,7 +348,7 @@ export default function MomoCallbackPage() {
                 if (orderCode && amount > 0) {
                   navigate(`/payment/momo/gateway?orderId=${orderCode}&amount=${amount}`)
                 } else {
-                  navigate('/checkout')
+                  navigate(isCourtBooking ? '/booking' : '/checkout')
                 }
               }}
               className="flex-1 bg-gradient-to-r from-[#a50064] to-[#d82d8b] hover:from-[#8b0054] hover:to-[#be257a] text-white font-bold rounded-xl h-11 gap-2 shadow-md cursor-pointer"
@@ -295,22 +356,25 @@ export default function MomoCallbackPage() {
               <RefreshCw className="w-4 h-4" />
               <span>Quay Lại Cổng MoMo Thanh Toán</span>
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate('/booking')}
-              className="rounded-xl border-slate-300 dark:border-border font-bold h-11 gap-1.5 cursor-pointer"
-            >
-              <Calendar className="w-4 h-4 text-emerald-600" />
-              <span>Về Lịch Đặt Sân</span>
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate('/cart')}
-              className="rounded-xl border-slate-300 dark:border-border font-bold h-11 gap-1.5 cursor-pointer"
-            >
-              <ShoppingBag className="w-4 h-4" />
-              <span>Xem Giỏ Hàng</span>
-            </Button>
+            {isCourtBooking ? (
+              <Button
+                variant="outline"
+                onClick={() => navigate('/booking')}
+                className="flex-1 rounded-xl border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 font-bold h-11 gap-2 cursor-pointer shadow-sm"
+              >
+                <Calendar className="w-4 h-4 text-emerald-600" />
+                <span>Quay Về Lịch Đặt Sân</span>
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={() => navigate('/cart')}
+                className="rounded-xl border-slate-300 dark:border-border font-bold h-11 gap-1.5 cursor-pointer"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                <span>Xem Giỏ Hàng</span>
+              </Button>
+            )}
           </div>
         </Card>
       )}

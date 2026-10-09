@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Truck, Zap } from "lucide-react";
 import { Order } from "@/types/order.types";
 import { shippingService, AVAILABLE_CARRIERS, ShippingCarrier } from "@/services/shipping.service";
+import { formatNumberWithDots } from "@/lib/utils";
 
 interface OrderShippingDialogProps {
   order: Order | null;
@@ -121,9 +122,13 @@ export const OrderShippingDialog: React.FC<OrderShippingDialogProps> = ({
             <div className="space-y-1">
               <Label className="font-semibold text-slate-700 text-xs">Cân nặng gói hàng (gram):</Label>
               <Input
-                type="number"
-                value={shippingWeightGram}
-                onChange={(e) => setShippingWeightGram(Number(e.target.value) || 500)}
+                type="text"
+                inputMode="numeric"
+                value={formatNumberWithDots(shippingWeightGram)}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, "");
+                  setShippingWeightGram(val === "" ? 0 : Number(val));
+                }}
                 className="text-xs h-8 font-bold rounded-xl"
               />
             </div>

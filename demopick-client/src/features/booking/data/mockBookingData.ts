@@ -102,19 +102,59 @@ export const TIME_SLOTS_RANGE = [
 export function generateMockSlots(dateStr: string): TimeSlot[] {
   const slots: TimeSlot[] = []
 
-  // Check real bookings in demopick_orders_admin
+  // Check real bookings in demopick_booked_slots, demopick_orders_client, and demopick_orders_admin
   const bookedKeys = new Set<string>()
+  try {
+    const rawBooked = localStorage.getItem('demopick_booked_slots')
+    if (rawBooked) {
+      const arr = JSON.parse(rawBooked)
+      if (Array.isArray(arr)) arr.forEach((k: any) => bookedKeys.add(String(k)))
+    }
+  } catch {}
+
+  try {
+    const rawClient = localStorage.getItem('demopick_orders_client')
+    if (rawClient) {
+      const orders = JSON.parse(rawClient)
+      orders.forEach((o: any) => {
+        if (o.status !== 'cancelled') {
+          if (Array.isArray(o.slot_ids)) {
+            o.slot_ids.forEach((sid: any) => bookedKeys.add(String(sid)))
+          }
+          if (Array.isArray(o.items)) {
+            o.items.forEach((it: any) => {
+              if (it.slot_ids && Array.isArray(it.slot_ids)) {
+                it.slot_ids.forEach((sid: any) => bookedKeys.add(String(sid)))
+              }
+              if (it.item_type === 'booking' && it.id) {
+                bookedKeys.add(String(it.id))
+              }
+            })
+          }
+        }
+      })
+    }
+  } catch {}
+
   try {
     const raw = localStorage.getItem('demopick_orders_admin')
     if (raw) {
       const orders = JSON.parse(raw)
       orders.forEach((o: any) => {
-        if (o.status !== 'cancelled' && Array.isArray(o.items)) {
-          o.items.forEach((it: any) => {
-            if (it.item_type === 'booking' && it.slot_ids) {
-              it.slot_ids.forEach((sid: number) => bookedKeys.add(String(sid)))
-            }
-          })
+        if (o.status !== 'cancelled') {
+          if (Array.isArray(o.slot_ids)) {
+            o.slot_ids.forEach((sid: any) => bookedKeys.add(String(sid)))
+          }
+          if (Array.isArray(o.items)) {
+            o.items.forEach((it: any) => {
+              if (it.slot_ids && Array.isArray(it.slot_ids)) {
+                it.slot_ids.forEach((sid: any) => bookedKeys.add(String(sid)))
+              }
+              if (it.item_type === 'booking' && it.id) {
+                bookedKeys.add(String(it.id))
+              }
+            })
+          }
         }
       })
     }

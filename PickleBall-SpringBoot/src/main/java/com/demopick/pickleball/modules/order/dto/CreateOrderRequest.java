@@ -42,6 +42,12 @@ public class CreateOrderRequest {
     @JsonProperty("slotId")
     private Long slotId;
 
+    @JsonProperty("slotIds")
+    private List<Long> slotIds;
+
+    @JsonProperty("slot_ids")
+    private List<Long> slotIdsSnake;
+
     @JsonProperty("shippingFee")
     private BigDecimal shippingFee;
 
@@ -91,6 +97,19 @@ public class CreateOrderRequest {
 
     public Long getSlotId() { return slotId; }
     public void setSlotId(Long slotId) { this.slotId = slotId; }
+
+    public List<Long> getSlotIds() { return slotIds; }
+    public void setSlotIds(List<Long> slotIds) { this.slotIds = slotIds; }
+
+    public List<Long> getSlotIdsSnake() { return slotIdsSnake; }
+    public void setSlotIdsSnake(List<Long> slotIdsSnake) { this.slotIdsSnake = slotIdsSnake; }
+
+    public List<Long> getEffectiveSlotIds() {
+        if (slotIds != null && !slotIds.isEmpty()) return slotIds;
+        if (slotIdsSnake != null && !slotIdsSnake.isEmpty()) return slotIdsSnake;
+        if (slotId != null) return List.of(slotId);
+        return java.util.Collections.emptyList();
+    }
 
     public BigDecimal getShippingFee() { return shippingFee; }
     public void setShippingFee(BigDecimal shippingFee) { this.shippingFee = shippingFee; }

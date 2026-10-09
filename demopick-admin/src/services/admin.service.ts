@@ -130,14 +130,69 @@ export function generateDefaultAdminSlots(date: string): TimeSlot[] {
     { start: "21:00", end: "22:00", peak: true },
   ]
 
+  const bookedSlotIds = new Set<string>()
+  try {
+    const rawBooked = localStorage.getItem('demopick_booked_slots')
+    if (rawBooked) {
+      const arr = JSON.parse(rawBooked)
+      if (Array.isArray(arr)) arr.forEach((id) => bookedSlotIds.add(String(id)))
+    }
+  } catch {}
+
+  try {
+    const rawOrders = localStorage.getItem('demopick_orders_admin')
+    if (rawOrders) {
+      const orders = JSON.parse(rawOrders)
+      if (Array.isArray(orders)) {
+        orders.forEach((o: any) => {
+          if (o.status !== 'cancelled' && o.status !== 'HỦY_ĐƠN') {
+            if (Array.isArray(o.slot_ids)) {
+              o.slot_ids.forEach((id: any) => bookedSlotIds.add(String(id)))
+            }
+          }
+        })
+      }
+    }
+  } catch {}
+
+  try {
+    const rawClientOrders = localStorage.getItem('demopick_orders_client')
+    if (rawClientOrders) {
+      const orders = JSON.parse(rawClientOrders)
+      if (Array.isArray(orders)) {
+        orders.forEach((o: any) => {
+          if (o.status !== 'cancelled' && o.payment_status !== 'failed') {
+            if (Array.isArray(o.slot_ids)) {
+              o.slot_ids.forEach((id: any) => bookedSlotIds.add(String(id)))
+            }
+            if (Array.isArray(o.items)) {
+              o.items.forEach((it: any) => {
+                if (it.slot_ids && Array.isArray(it.slot_ids)) {
+                  it.slot_ids.forEach((id: any) => bookedSlotIds.add(String(id)))
+                }
+                if (it.item_type === 'booking' && it.id) {
+                  bookedSlotIds.add(String(it.id))
+                }
+              })
+            }
+          }
+        })
+      }
+    }
+  } catch {}
+
   let idCounter = 1
   DEFAULT_ADMIN_COURTS.forEach((court) => {
     times.forEach((t) => {
+      const slotId = idCounter++
       const price = t.peak ? court.peak_hourly_rate : court.hourly_rate
-      const status: 'available' | 'held' | 'booked' | 'locked' | 'in_use' = 'available'
+      let status: 'available' | 'held' | 'booked' | 'locked' | 'in_use' = 'available'
+      if (bookedSlotIds.has(String(slotId))) {
+        status = 'booked'
+      }
 
       timeSlots.push({
-        id: idCounter++,
+        id: slotId,
         court_id: court.id,
         date,
         start_time: t.start,

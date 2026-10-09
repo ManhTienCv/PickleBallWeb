@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PlusCircle } from "lucide-react";
+import { formatNumberWithDots } from "@/lib/utils";
 
 interface PosQuickRestockModalProps {
   product: { name: string } | null;
@@ -55,10 +56,13 @@ export default function PosQuickRestockModal({
           <div className="space-y-1.5">
             <Label className="font-bold text-slate-700">Số lượng vừa nhận thêm (*):</Label>
             <Input
-              type="number"
-              min={1}
-              value={quickRestockQty}
-              onChange={(e) => setQuickRestockQty(Number(e.target.value))}
+              type="text"
+              inputMode="numeric"
+              value={formatNumberWithDots(quickRestockQty)}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, "");
+                setQuickRestockQty(val === "" ? 0 : Number(val));
+              }}
               className="font-bold text-base text-emerald-600"
               required
             />

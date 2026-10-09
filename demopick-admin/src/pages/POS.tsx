@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { adminService, Product, LiveCourtItem, DEFAULT_ADMIN_COURTS, DEFAULT_ADMIN_LIVE_COURTS } from "@/services/admin.service";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Search, ShoppingCart, Trash2, Banknote, QrCode, Receipt, PlusCircle, User, ShieldCheck, Lock, CheckCircle2, Clock, ChevronLeft, ChevronRight, Flame, Timer, CheckSquare, ScanLine, Sparkles, Play, Square, RefreshCw } from "lucide-react";
+import { Search, ShoppingCart, Trash2, Banknote, QrCode, Receipt, PlusCircle, User, ShieldCheck, Lock, CheckCircle2, Clock, ChevronLeft, ChevronRight, Flame, Timer, CheckSquare, ScanLine, Sparkles, Play, Square, RefreshCw, Coffee, AlertTriangle, Plus, Minus } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import PosReceiptModal from "@/components/pos/PosReceiptModal";
@@ -45,6 +45,7 @@ interface CourtStatusItem {
 
 export default function POS() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const isStaffOnly = user?.roles?.includes("staff") && !user?.roles?.includes("admin") && !user?.roles?.includes("super_admin");
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState("");
@@ -65,7 +66,14 @@ export default function POS() {
     total: number;
     paymentMethod: string;
     time: string;
-  } | null>(null);
+  } | null>(() => {
+    try {
+      const saved = localStorage.getItem("demopick_last_pos_receipt");
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
 
   // Pagination for Product Grid
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -125,6 +133,19 @@ export default function POS() {
 
   // Local session state overrides to provide immediate, zero-latency reactive UI
   const [localCourtOverrides, setLocalCourtOverrides] = useState<Record<number, Partial<CourtStatusItem>>>({});
+
+  // Court Tab Orders (Ghi nợ nước/đồ ăn vào từng sân đang chơi)
+  const [courtTabOrders, setCourtTabOrders] = useState<Record<number, CartItem[]>>(() => {
+    const saved = localStorage.getItem("demopick_pos_court_tab_orders");
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  // Active serving court (Sân đang được chọn để nạp đồ uống/đồ ăn)
+  const [activeServingCourtId, setActiveServingCourtId] = useState<number | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem("demopick_pos_court_tab_orders", JSON.stringify(courtTabOrders));
+  }, [courtTabOrders]);
 
   // Dynamic fallback courts matching real database courts
   const defaultCourtStatusList = useMemo((): CourtStatusItem[] => {
@@ -328,16 +349,29 @@ export default function POS() {
         exactMinutes: 0,
         roundedMinutes: 0,
         currentEstimatedPrice: court.rate || 140000,
+        expectedMinutes: null as number | null,
+        remainingMinutes: null as number | null,
+        isNearEnding: false,
+        isOvertime: false,
+        overtimeMinutes: 0,
       };
     }
 
     if (!court.start_time) {
       const fallbackHours = court.hours || 1;
+      const exactMinutes = Math.round(fallbackHours * 60);
+      const expectedMinutes = court.expected_duration_minutes || exactMinutes;
+      const remainingMinutes = expectedMinutes - exactMinutes;
       return {
         elapsedTimeStr: court.time || "00:00:00",
-        exactMinutes: Math.round(fallbackHours * 60),
-        roundedMinutes: Math.round(fallbackHours * 60),
+        exactMinutes,
+        roundedMinutes: exactMinutes,
         currentEstimatedPrice: (court.rate || 140000) * fallbackHours,
+        expectedMinutes,
+        remainingMinutes,
+        isNearEnding: false,
+        isOvertime: false,
+        overtimeMinutes: 0,
       };
     }
 
@@ -356,12 +390,76 @@ export default function POS() {
     const hourlyRate = court.rate || 140000;
     const estPrice = Math.round((roundedMins / 60) * hourlyRate);
 
+    // Duration limit calculation:
+    const expectedMinutes: number | null = court.expected_duration_minutes || (court.hours ? Math.round(court.hours * 60) : 60);
+    const remainingMinutes = expectedMinutes ? expectedMinutes - exactMins : null;
+    const isNearEnding = remainingMinutes !== null && remainingMinutes <= 10 && remainingMinutes > 0;
+    const isOvertime = remainingMinutes !== null && remainingMinutes <= 0;
+    const overtimeMinutes = isOvertime && remainingMinutes !== null ? Math.abs(remainingMinutes) : 0;
+
     return {
       elapsedTimeStr: timeFormatted,
       exactMinutes: exactMins,
       roundedMinutes: roundedMins,
       currentEstimatedPrice: estPrice,
+      expectedMinutes,
+      remainingMinutes,
+      isNearEnding,
+      isOvertime,
+      overtimeMinutes,
     };
+  };
+
+  const handleExtendCourtDuration = (court: any, extraMinutes: number, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const live = calculateLiveCourtDetails(court);
+    const currentBase = court.expected_duration_minutes || live.exactMinutes || (court.hours ? Math.round(court.hours * 60) : 60);
+    const newExpected = currentBase + extraMinutes;
+
+    setLocalCourtOverrides((prev) => ({
+      ...prev,
+      [court.id]: {
+        ...court,
+        status: "in_use",
+        statusLabel: "ĐANG CHƠI",
+        statusColor: "bg-emerald-50 text-emerald-700 border-emerald-300",
+        expected_duration_minutes: newExpected,
+        hours: newExpected / 60,
+      },
+    }));
+
+    toast.success(`⏱️ Đã gia hạn thêm +${extraMinutes} phút cho "${court.name}"! Tổng thời lượng: ${newExpected} phút.`);
+  };
+
+  const handleToggleServeCourt = (courtId: number, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (activeServingCourtId === courtId) {
+      setActiveServingCourtId(null);
+      toast.info("Đã thoát chế độ gọi đồ cho sân, quay về bán lẻ quầy.");
+    } else {
+      setActiveServingCourtId(courtId);
+      const court = courtStatusList.find((c) => c.id === courtId);
+      toast.success(`👉 Đang chọn đồ uống/thực phẩm nạp vào "${court?.name || 'Sân'}". Bấm vào bất kỳ món nào ở giữa để thêm.`);
+    }
+  };
+
+  const handleCourtTabItemQuantity = (courtId: number, variantId: number, delta: number) => {
+    setCourtTabOrders((prev) => {
+      const currentCourtTab = prev[courtId] || [];
+      const updated = currentCourtTab
+        .map((item) => {
+          if (item.variantId === variantId) {
+            const newQty = item.quantity + delta;
+            return newQty > 0 ? { ...item, quantity: newQty } : null;
+          }
+          return item;
+        })
+        .filter(Boolean) as CartItem[];
+      return {
+        ...prev,
+        [courtId]: updated,
+      };
+    });
   };
 
   const handleOpenStartSessionModal = (court: any, e?: React.MouseEvent) => {
@@ -450,10 +548,24 @@ export default function POS() {
       isCourtFee: true,
     };
 
+    // LẤY TẤT CẢ MÓN NƯỚC/BÁNH MÀ SÂN NÀY ĐÃ GỌI TRONG LÚC CHƠI
+    const tabItems = courtTabOrders[court.id] || [];
+
     setCartItems((prev) => {
       const filteredOut = prev.filter((i) => !i.isCourtFee);
-      return [newCourtCartItem, ...filteredOut];
+      return [newCourtCartItem, ...tabItems, ...filteredOut];
     });
+
+    // Xóa tab nợ của sân này sau khi đã gom vào giỏ thanh toán
+    setCourtTabOrders((prev) => {
+      const copy = { ...prev };
+      delete copy[court.id];
+      return copy;
+    });
+
+    if (activeServingCourtId === court.id) {
+      setActiveServingCourtId(null);
+    }
 
     if (court.customerName || court.customer_name) {
       setCourtCustomer({
@@ -476,10 +588,13 @@ export default function POS() {
         customer_phone: null,
         customerPhone: null,
         time: "Sẵn sàng thi đấu",
+        expected_duration_minutes: null,
       },
     }));
 
-    toast.success(`🏁 Đã trả sân ${sessionRes.court_name}! Phí sân ${sessionRes.formatted_price} (${sessionRes.duration_minutes} phút) đã đẩy vào Hóa Đơn POS.`);
+    const tabCount = tabItems.reduce((acc, it) => acc + it.quantity, 0);
+    const tabSummary = tabCount > 0 ? ` + ${tabCount} món nước/dịch vụ` : "";
+    toast.success(`🏁 Đã trả sân ${sessionRes.court_name}! Phí sân ${sessionRes.formatted_price}${tabSummary} đã đẩy vào Hóa Đơn POS.`);
   };
 
   const handleQuickCheckIn = async (e: React.FormEvent) => {
@@ -575,6 +690,41 @@ export default function POS() {
       } else {
         toast.error(`Sản phẩm cao cấp "${product.name}" đã hết kho. Vui lòng liên hệ Admin cộng kho tổng.`);
       }
+      return;
+    }
+
+    // Nạp vào Tab món của Sân nếu đang kích hoạt chế độ nạp đồ cho sân
+    if (activeServingCourtId !== null) {
+      const targetCourt = courtStatusList.find((c) => c.id === activeServingCourtId);
+      const courtName = targetCourt?.name || `Sân #${activeServingCourtId}`;
+
+      setCourtTabOrders((prev) => {
+        const currentCourtTab = prev[activeServingCourtId] || [];
+        const existing = currentCourtTab.find((item) => item.variantId === variant.id);
+        let updated: CartItem[];
+        if (existing) {
+          updated = currentCourtTab.map((item) =>
+            item.variantId === variant.id ? { ...item, quantity: item.quantity + 1 } : item
+          );
+        } else {
+          updated = [
+            ...currentCourtTab,
+            {
+              variantId: variant.id,
+              productName: product.name,
+              variantName: `${variant.option_name}: ${variant.option_value}`,
+              price: variant.price,
+              quantity: 1,
+            },
+          ];
+        }
+        return {
+          ...prev,
+          [activeServingCourtId]: updated,
+        };
+      });
+
+      toast.success(`🥤 Đã thêm 1x "${product.name}" vào tab phục vụ của ${courtName}!`);
       return;
     }
 
@@ -683,12 +833,14 @@ export default function POS() {
         time: `${new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })} ${new Date().toLocaleDateString("vi-VN")}`,
       };
       setLastPOSReceipt(receiptData);
+      localStorage.setItem("demopick_last_pos_receipt", JSON.stringify(receiptData));
       setPosReceiptModalOpen(true);
 
       // Persist POS order to system orders list
       try {
         const todayStr = new Date().toISOString().split("T")[0];
         const timeStr = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+        const courtFeeItem = cartItems.find((i) => i.isCourtFee);
         const newPosOrder = {
           code: newOrderCode,
           customerName: finalCustomerName,
@@ -702,6 +854,10 @@ export default function POS() {
           createdAt: `${todayStr} ${timeStr}`,
           dateStr: todayStr,
           shippingAddress: hasCourt ? "Sân thi đấu tại chỗ" : "Mua hàng trực tiếp tại quầy",
+          courtInfo: hasCourt ? {
+            courtName: courtCustomer?.courtName || courtFeeItem?.productName?.replace("Tiền Sân: ", "") || "Sân Pickleball",
+            timeRange: courtFeeItem?.variantName || "Giờ thi đấu",
+          } : undefined,
           items: cartItems.map((c, idx) => ({
             id: c.variantId || idx + 1,
             name: c.productName + (c.variantName ? ` (${c.variantName})` : ""),
@@ -713,6 +869,7 @@ export default function POS() {
         const existingOrders = savedOrdersRaw ? JSON.parse(savedOrdersRaw) : [];
         const updatedOrders = [newPosOrder, ...(Array.isArray(existingOrders) ? existingOrders : [])];
         localStorage.setItem("demopick_orders_admin", JSON.stringify(updatedOrders));
+        window.dispatchEvent(new Event("storage"));
       } catch {}
 
       toast.success(`Thanh toán hóa đơn #${newOrderCode} (${new Intl.NumberFormat("vi-VN").format(finalTotalAmount)}đ) thành công! Tồn kho POS & Web đã đồng bộ tự động.`, {
@@ -758,6 +915,38 @@ export default function POS() {
     <AppLayout
       noScroll
       title="Bán Hàng POS Quầy Lễ Tân"
+      actions={
+        <div className="flex items-center gap-2">
+          {lastPOSReceipt && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setPosReceiptModalOpen(true)}
+              className="h-8 text-xs font-bold bg-white text-emerald-800 border-emerald-300 hover:bg-emerald-50 rounded-xl gap-1.5 shadow-2xs"
+            >
+              <Receipt className="h-3.5 w-3.5 text-emerald-600" />
+              <span>In Lại Bill Vừa Thu (#{lastPOSReceipt.code})</span>
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => navigate("/orders?tab=pos")}
+            className="h-8 text-xs font-bold bg-white text-slate-700 border-slate-300 hover:bg-slate-50 rounded-xl gap-1.5 shadow-2xs"
+          >
+            <Clock className="h-3.5 w-3.5 text-slate-500" />
+            <span>Lịch Sử Hóa Đơn POS</span>
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => setShiftReportOpen(true)}
+            className="h-8 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-1.5 shadow-xs"
+          >
+            <Banknote className="h-3.5 w-3.5" />
+            <span>Báo Cáo Ca</span>
+          </Button>
+        </div>
+      }
     >
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 flex-1 min-h-0 h-full overflow-hidden">
         {/* CỘT 1 (BÊN TRÁI PHÍA NGOÀI - 3 COLS): DANH SÁCH SÂN TRẠNG THÁI THỜI GIAN THỰC (CUỘN RIÊNG TẠI ĐÂY) */}
@@ -801,77 +990,166 @@ export default function POS() {
             </Button>
           </form>
 
+          {/* Cảnh báo thời gian sân sắp hết giờ / quá giờ */}
+          {(() => {
+            const alertCourts = courtStatusList
+              .map((c) => ({ court: c, live: calculateLiveCourtDetails(c) }))
+              .filter(({ court, live }) => (court.status === "in_use" || court.status === "ending") && (live.isNearEnding || live.isOvertime));
+
+            if (alertCourts.length === 0) return null;
+
+            return (
+              <div className="bg-amber-500/15 border border-amber-400 text-amber-950 rounded-xl p-2.5 text-[11px] space-y-1.5 shrink-0 shadow-xs">
+                <div className="font-bold flex items-center justify-between text-amber-900">
+                  <div className="flex items-center gap-1.5">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 animate-bounce" />
+                    <span>Cảnh báo thời gian ca ({alertCourts.length} sân)</span>
+                  </div>
+                  <Badge variant="outline" className="text-[9px] bg-white border-amber-300 text-amber-800">
+                    Cần chú ý
+                  </Badge>
+                </div>
+                <div className="space-y-1">
+                  {alertCourts.map(({ court, live }) => (
+                    <div key={court.id} className="flex items-center justify-between text-[11px] bg-white/90 p-1.5 rounded-lg border border-amber-200">
+                      <span className="truncate pr-1">
+                        <strong>{court.name}</strong>: {live.isOvertime ? (
+                          <span className="text-rose-600 font-bold">Quá giờ +{live.overtimeMinutes}p!</span>
+                        ) : (
+                          <span className="text-amber-700 font-bold">Còn {live.remainingMinutes}p</span>
+                        )}
+                      </span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => handleExtendCourtDuration(court, 15, e)}
+                          className="px-1.5 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200 text-[10px] font-bold"
+                          title="Gia hạn nhanh 15 phút"
+                        >
+                          +15p
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleExtendCourtDuration(court, 30, e)}
+                          className="px-1.5 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200 text-[10px] font-bold"
+                          title="Gia hạn nhanh 30 phút"
+                        >
+                          +30p
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Dedicated Scrollable Court List */}
           <div className="space-y-2 flex-1 min-h-0 overflow-y-auto pr-1.5">
             {courtStatusList.map((court: any) => {
               const live = calculateLiveCourtDetails(court);
               const isInUse = court.status === "in_use";
-              const isEnding = court.status === "ending";
+              const isEnding = court.status === "ending" || live.isNearEnding;
+              const isOvertime = live.isOvertime;
               const isAvailable = court.status === "available";
               const isBooked = court.status === "booked";
+              const isSessionRunning = isInUse || isEnding || isOvertime;
+
+              const cardBorder = isOvertime
+                ? "border-rose-400 bg-rose-50/40 shadow-xs ring-1 ring-rose-300"
+                : isEnding
+                  ? "border-amber-400 bg-amber-50/40 shadow-xs ring-1 ring-amber-300"
+                  : isInUse
+                    ? "border-emerald-400 bg-emerald-50/20 shadow-xs"
+                    : isBooked
+                      ? "border-blue-300 bg-blue-50/20"
+                      : "border-slate-200 hover:border-slate-300";
+
+              let displayStatusLabel = court.statusLabel;
+              let displayStatusColor = court.statusColor;
+
+              if (isOvertime) {
+                displayStatusLabel = `QUÁ GIỜ (+${live.overtimeMinutes}p)`;
+                displayStatusColor = "bg-rose-50 text-rose-700 border-rose-300 animate-pulse";
+              } else if (isEnding) {
+                displayStatusLabel = `SẮP HẾT GIỜ (Còn ${live.remainingMinutes}p)`;
+                displayStatusColor = "bg-amber-50 text-amber-700 border-amber-300 animate-pulse";
+              } else if (isInUse && live.remainingMinutes !== null) {
+                displayStatusLabel = `ĐANG CHƠI (Còn ${live.remainingMinutes}p)`;
+                displayStatusColor = "bg-emerald-50 text-emerald-700 border-emerald-300";
+              }
 
               return (
                 <Card
                   key={court.id}
-                  className={`p-3 bg-white border transition-all duration-150 space-y-2 ${isEnding
-                    ? "border-amber-400 bg-amber-50/40 shadow-xs ring-1 ring-amber-300"
-                    : isInUse
-                      ? "border-emerald-400 bg-emerald-50/20 shadow-xs"
-                      : isBooked
-                        ? "border-blue-300 bg-blue-50/20"
-                        : "border-slate-200 hover:border-slate-300"
-                    }`}
+                  className={`p-3 bg-white border transition-all duration-150 space-y-2 ${cardBorder}`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <span className="font-extrabold text-xs text-slate-900">{court.name}</span>
-                      {(isInUse || isEnding) && (
+                      {isSessionRunning && (
                         <span className="flex h-2 w-2 relative">
-                          <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isEnding ? "bg-amber-400" : "bg-emerald-400"}`}></span>
-                          <span className={`relative inline-flex rounded-full h-2 w-2 ${isEnding ? "bg-amber-500" : "bg-emerald-500"}`}></span>
+                          <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                            isOvertime ? "bg-rose-400" : isEnding ? "bg-amber-400" : "bg-emerald-400"
+                          }`}></span>
+                          <span className={`relative inline-flex rounded-full h-2 w-2 ${
+                            isOvertime ? "bg-rose-500" : isEnding ? "bg-amber-500" : "bg-emerald-500"
+                          }`}></span>
                         </span>
                       )}
                     </div>
-                    <Badge className={`text-[9px] font-bold border ${court.statusColor}`}>
-                      {court.statusLabel}
+                    <Badge className={`text-[9px] font-bold border ${displayStatusColor}`}>
+                      {displayStatusLabel}
                     </Badge>
                   </div>
 
                   {/* Body Info */}
-                  <div className="text-[11px] space-y-1">
-                    {(isInUse || isEnding) ? (
-                      <div className="space-y-1">
+                  <div className="text-[11px] space-y-1.5">
+                    {isSessionRunning ? (
+                      <div className="space-y-1.5">
                         <div
-                          className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg font-mono border transition-all ${isEnding
-                            ? "bg-amber-500/10 dark:bg-amber-950/40 border-amber-300/80 dark:border-amber-800/60 text-amber-950 dark:text-amber-200"
-                            : "bg-emerald-500/10 dark:bg-emerald-950/40 border-emerald-300/80 dark:border-emerald-800/60 text-emerald-950 dark:text-emerald-200"
-                            }`}
+                          className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg font-mono border transition-all ${
+                            isOvertime
+                              ? "bg-rose-500/10 dark:bg-rose-950/40 border-rose-300/80 dark:border-rose-800/60 text-rose-950 dark:text-rose-200"
+                              : isEnding
+                                ? "bg-amber-500/10 dark:bg-amber-950/40 border-amber-300/80 dark:border-amber-800/60 text-amber-950 dark:text-amber-200"
+                                : "bg-emerald-500/10 dark:bg-emerald-950/40 border-emerald-300/80 dark:border-emerald-800/60 text-emerald-950 dark:text-emerald-200"
+                          }`}
                         >
                           <div
-                            className={`flex items-center gap-1.5 text-[11px] font-semibold ${isEnding
-                              ? "text-amber-800 dark:text-amber-300"
-                              : "text-emerald-800 dark:text-emerald-300"
-                              }`}
+                            className={`flex items-center gap-1.5 text-[11px] font-semibold ${
+                              isOvertime
+                                ? "text-rose-800 dark:text-rose-300"
+                                : isEnding
+                                  ? "text-amber-800 dark:text-amber-300"
+                                  : "text-emerald-800 dark:text-emerald-300"
+                            }`}
                           >
                             <Timer
-                              className={`h-3.5 w-3.5 animate-pulse ${isEnding
-                                ? "text-amber-600 dark:text-amber-400"
-                                : "text-emerald-600 dark:text-emerald-400"
-                                }`}
+                              className={`h-3.5 w-3.5 animate-pulse ${
+                                isOvertime
+                                  ? "text-rose-600 dark:text-rose-400"
+                                  : isEnding
+                                    ? "text-amber-600 dark:text-amber-400"
+                                    : "text-emerald-600 dark:text-emerald-400"
+                              }`}
                             />
-                            <span>Giờ chơi:</span>
+                            <span>{isOvertime ? "Quá giờ:" : isEnding ? "Sắp hết:" : "Giờ chơi:"}</span>
                           </div>
                           <span
-                            className={`font-black text-xs tracking-wider ${isEnding
-                              ? "text-amber-700 dark:text-amber-400"
-                              : "text-emerald-700 dark:text-emerald-400"
-                              }`}
+                            className={`font-black text-xs tracking-wider ${
+                              isOvertime
+                                ? "text-rose-700 dark:text-rose-400"
+                                : isEnding
+                                  ? "text-amber-700 dark:text-amber-400"
+                                  : "text-emerald-700 dark:text-emerald-400"
+                            }`}
                           >
                             {live.elapsedTimeStr}
                           </span>
                         </div>
                         <div className="flex items-center justify-between text-slate-600 px-0.5 pt-0.5">
-                          <span>Tạm tính:</span>
+                          <span>Tạm tính tiền sân:</span>
                           <span className="font-bold text-slate-900">
                             {new Intl.NumberFormat("vi-VN").format(live.currentEstimatedPrice)}đ ({live.roundedMinutes}p)
                           </span>
@@ -881,6 +1159,57 @@ export default function POS() {
                             <User className="h-3 w-3 text-slate-400" />
                             <span className="font-medium text-slate-700 truncate">{court.customerName}</span>
                             {court.customerPhone && <span>• {court.customerPhone}</span>}
+                          </div>
+                        )}
+
+                        {/* Court Tab Items (Nước/Món đã gọi trong lúc chơi) */}
+                        {courtTabOrders[court.id] && courtTabOrders[court.id].length > 0 && (
+                          <div className="bg-amber-50/90 border border-amber-200 rounded-lg p-2 text-[10px] space-y-1">
+                            <div className="flex items-center justify-between font-bold text-amber-900">
+                              <span className="flex items-center gap-1">
+                                <Coffee className="h-3.5 w-3.5 text-amber-600" />
+                                Đã gọi {courtTabOrders[court.id].reduce((a, b) => a + b.quantity, 0)} món:
+                              </span>
+                              <span>
+                                {new Intl.NumberFormat("vi-VN").format(
+                                  courtTabOrders[court.id].reduce((sum, item) => sum + item.price * item.quantity, 0)
+                                )}đ
+                              </span>
+                            </div>
+                            <div className="text-slate-600 space-y-1 max-h-20 overflow-y-auto pr-0.5">
+                              {courtTabOrders[court.id].map((tabItem) => (
+                                <div key={tabItem.variantId} className="flex items-center justify-between bg-white/70 px-1.5 py-0.5 rounded border border-amber-100">
+                                  <span className="truncate pr-1">• {tabItem.quantity}x {tabItem.productName}</span>
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <span className="text-slate-500 font-medium">
+                                      {new Intl.NumberFormat("vi-VN").format(tabItem.price * tabItem.quantity)}đ
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCourtTabItemQuantity(court.id, tabItem.variantId, -1);
+                                      }}
+                                      className="text-rose-500 hover:text-rose-700 font-bold px-1 rounded hover:bg-rose-50"
+                                      title="Giảm 1 món"
+                                    >
+                                      -
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCourtTabItemQuantity(court.id, tabItem.variantId, 1);
+                                      }}
+                                      className="text-emerald-600 hover:text-emerald-800 font-bold px-1 rounded hover:bg-emerald-50"
+                                      title="Thêm 1 món"
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -915,16 +1244,68 @@ export default function POS() {
                   </div>
 
                   {/* Actions Hub */}
-                  <div className="pt-1 border-t border-slate-100 flex items-center gap-1.5">
-                    {(isInUse || isEnding) ? (
-                      <Button
-                        size="sm"
-                        onClick={(e) => handleStopCourtSession(court, e)}
-                        className="w-full h-7 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg gap-1 shadow-xs"
-                      >
-                        <Square className="h-3 w-3 fill-current" />
-                        <span>Trả Sân & Chốt Bill</span>
-                      </Button>
+                  <div className="pt-1.5 border-t border-slate-100 space-y-1.5">
+                    {isSessionRunning ? (
+                      <>
+                        <div className="flex items-center gap-1.5 w-full">
+                          <Button
+                            size="sm"
+                            onClick={(e) => handleStopCourtSession(court, e)}
+                            className="flex-1 h-7 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg gap-1 shadow-xs"
+                          >
+                            <Square className="h-3 w-3 fill-current" />
+                            <span>Trả Sân & Chốt Bill</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={activeServingCourtId === court.id ? "default" : "outline"}
+                            onClick={(e) => handleToggleServeCourt(court.id, e)}
+                            className={`h-7 px-2 text-[10px] font-bold rounded-lg shadow-xs transition-colors ${
+                              activeServingCourtId === court.id
+                                ? "bg-amber-600 hover:bg-amber-700 text-white border-amber-600 animate-pulse"
+                                : "bg-white hover:bg-amber-50 border-amber-300 text-amber-800"
+                            }`}
+                            title="Chọn đồ uống/thực phẩm nạp vào sân này"
+                          >
+                            <Coffee className="h-3 w-3 mr-0.5" />
+                            <span>{activeServingCourtId === court.id ? "Đang nạp" : "+ Nước"}</span>
+                          </Button>
+                        </div>
+
+                        {/* Thanh gia hạn giờ chơi */}
+                        <div className="flex items-center justify-between text-[10px] text-slate-500 bg-slate-50 px-1.5 py-1 rounded-md border border-slate-200">
+                          <span className="font-semibold text-slate-600 flex items-center gap-1">
+                            <Clock className="h-3 w-3 text-slate-400" />
+                            Gia hạn:
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={(e) => handleExtendCourtDuration(court, 15, e)}
+                              className="px-1.5 py-0.5 bg-white hover:bg-blue-100 text-slate-700 hover:text-blue-700 rounded border border-slate-200 font-bold transition-colors"
+                              title="Thêm 15 phút"
+                            >
+                              +15p
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => handleExtendCourtDuration(court, 30, e)}
+                              className="px-1.5 py-0.5 bg-white hover:bg-blue-100 text-slate-700 hover:text-blue-700 rounded border border-slate-200 font-bold transition-colors"
+                              title="Thêm 30 phút"
+                            >
+                              +30p
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => handleExtendCourtDuration(court, 60, e)}
+                              className="px-1.5 py-0.5 bg-white hover:bg-blue-100 text-slate-700 hover:text-blue-700 rounded border border-slate-200 font-bold transition-colors"
+                              title="Thêm 1 tiếng"
+                            >
+                              +1h
+                            </button>
+                          </div>
+                        </div>
+                      </>
                     ) : isBooked ? (
                       <Button
                         size="sm"
@@ -962,6 +1343,36 @@ export default function POS() {
 
         {/* CỘT 2 (Ở GIỮA - 6 COLS): KHOẢNG GIỮA CÓ PHÂN TRANG VÀ LƯỚI SẢN PHẨM */}
         <div className="lg:col-span-6 flex flex-col min-h-0 h-full space-y-2.5">
+          {/* Active Serving Court Banner */}
+          {activeServingCourtId !== null && (
+            <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-3.5 py-2 rounded-xl shadow-xs flex items-center justify-between shrink-0 animate-in fade-in duration-200">
+              <div className="flex items-center gap-2 text-xs">
+                <Coffee className="h-4 w-4 shrink-0 animate-bounce" />
+                <div>
+                  <span className="font-semibold text-amber-100">Đang nạp đồ cho: </span>
+                  <span className="font-extrabold text-white underline underline-offset-2">
+                    {courtStatusList.find((c) => c.id === activeServingCourtId)?.name || `Sân #${activeServingCourtId}`}
+                  </span>
+                  {courtTabOrders[activeServingCourtId]?.length ? (
+                    <span className="ml-2 text-amber-100 font-medium text-[11px]">
+                      (Đã nạp {courtTabOrders[activeServingCourtId].reduce((a, b) => a + b.quantity, 0)} món • {new Intl.NumberFormat("vi-VN").format(courtTabOrders[activeServingCourtId].reduce((a, b) => a + b.price * b.quantity, 0))}đ)
+                    </span>
+                  ) : (
+                    <span className="ml-2 text-amber-100 text-[11px] italic">(Chưa có món nào)</span>
+                  )}
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setActiveServingCourtId(null)}
+                className="h-6 px-2.5 text-[10px] font-bold bg-white text-amber-900 hover:bg-amber-50 rounded-lg shadow-xs"
+              >
+                X Về bán lẻ
+              </Button>
+            </div>
+          )}
+
           {/* Category Tabs */}
           <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm shrink-0">
             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
@@ -1033,9 +1444,13 @@ export default function POS() {
                           size="sm"
                           disabled={stock <= 0}
                           onClick={() => handleAddToCart(p, 0)}
-                          className="h-6 px-2 font-bold text-[11px] bg-emerald-600 hover:bg-emerald-500"
+                          className={`h-6 px-2 font-bold text-[11px] ${
+                            activeServingCourtId !== null
+                              ? "bg-amber-600 hover:bg-amber-500 text-white"
+                              : "bg-emerald-600 hover:bg-emerald-500"
+                          }`}
                         >
-                          + Chọn
+                          {activeServingCourtId !== null ? "+ Nạp Sân" : "+ Chọn"}
                         </Button>
                       </div>
 
@@ -1174,9 +1589,41 @@ export default function POS() {
               {/* Cart Items List - Scrollable */}
               <div className="divide-y divide-slate-100 flex-1 min-h-0 overflow-y-auto pr-1 text-xs">
                 {cartItems.length === 0 ? (
-                  <div className="py-8 text-center text-slate-400 space-y-2">
-                    <ShoppingCart className="h-8 w-8 mx-auto text-slate-200" />
-                    <p className="text-[11px] font-medium">Chưa chọn sản phẩm/tiền sân nào</p>
+                  <div className="py-6 text-center space-y-3">
+                    <div className="space-y-1">
+                      <ShoppingCart className="h-7 w-7 mx-auto text-slate-200" />
+                      <p className="text-[11px] font-medium text-slate-400">Chưa chọn sản phẩm / tiền sân nào</p>
+                    </div>
+
+                    {lastPOSReceipt && (
+                      <div className="bg-emerald-50/90 border border-emerald-200 rounded-xl p-2.5 text-left space-y-2 shadow-2xs">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-emerald-800 uppercase flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                            Vừa thanh toán thành công
+                          </span>
+                          <span className="text-[10px] font-mono text-emerald-700 font-bold">#{lastPOSReceipt.code}</span>
+                        </div>
+                        <div className="text-[11px] text-slate-700 space-y-0.5">
+                          <div className="font-bold truncate">{lastPOSReceipt.customerName}</div>
+                          <div className="flex justify-between font-medium">
+                            <span className="text-slate-500">{lastPOSReceipt.items.length} mục hàng</span>
+                            <span className="text-emerald-700 font-bold">
+                              {new Intl.NumberFormat("vi-VN").format(lastPOSReceipt.total)}đ
+                            </span>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          type="button"
+                          onClick={() => setPosReceiptModalOpen(true)}
+                          className="w-full h-7 text-[11px] font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-lg gap-1.5 shadow-xs"
+                        >
+                          <Receipt className="h-3.5 w-3.5" />
+                          <span>In Lại Hóa Đơn Cho Khách</span>
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   cartItems.map((item) => (

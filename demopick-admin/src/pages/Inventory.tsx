@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import { adminService } from "@/services/admin.service";
@@ -41,8 +41,10 @@ import {
   Globe,
   Sparkles,
   Building2,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
+import { formatNumberWithDots } from "@/lib/utils";
 
 export interface InventoryProduct {
   id: number;
@@ -249,7 +251,9 @@ export default function Inventory() {
   const [formStock, setFormStock] = useState<number | "">(15);
   const [formImage, setFormImage] = useState("");
   const [formGallery, setFormGallery] = useState<string[]>([]);
-  const [newGalleryInput, setNewGalleryInput] = useState("");
+  const coverInputRef = useRef<HTMLInputElement | null>(null);
+  const posCoverInputRef = useRef<HTMLInputElement | null>(null);
+  const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const [formHighlights, setFormHighlights] = useState<string[]>([]);
   const [formSpecs, setFormSpecs] = useState<{ label: string; value: string }[]>([]);
   const [formDescription, setFormDescription] = useState("");
@@ -351,11 +355,8 @@ export default function Inventory() {
     setFormPrice("");
     setFormOriginalPrice("");
     setFormStock("");
-    setFormImage("/images/pickleball_paddle_joola.jpg");
-    setFormGallery([
-      "/images/pickleball_paddle_joola.jpg",
-      "/images/pickleball_paddle_balls.jpg",
-    ]);
+    setFormImage("");
+    setFormGallery([]);
     setFormHighlights([
       "Cảm biến Carbon T700 3S tối ưu xoáy bóng 33.0%",
       "Bộ xử lý cân bằng trợ lực đỉnh cao cho VĐV Chuyên nghiệp",
@@ -544,6 +545,11 @@ export default function Inventory() {
       return;
     }
 
+    if (formProductType === "online" && !formImage.trim()) {
+      toast.error("Vui lòng tải lên ảnh đại diện chính (Cover Image) cho sản phẩm!");
+      return;
+    }
+
     const priceNum = Number(formPrice) || 0;
     const origPriceNum = Number(formOriginalPrice) || priceNum;
     const stockNum = Number(formStock) || 0;
@@ -585,8 +591,12 @@ export default function Inventory() {
         stock: stockNum,
         channel: resolvedChannel,
         status: stockNum > 0 ? "active" : "out_of_stock",
-        image: formImage || "/images/pickleball_paddle_joola.jpg",
-        gallery: formGallery.length > 0 ? formGallery : [formImage],
+        image:
+          formImage ||
+          (formProductType === "pos"
+            ? (formCategory === "Đồ uống & Đồ ăn" ? "/images/pocari_sweat_500ml.jpg" : "/images/pickleball_balls_yellow.jpg")
+            : "/images/pickleball_paddle_joola.jpg"),
+        gallery: formGallery.length > 0 ? formGallery : (formImage ? [formImage] : []),
         highlights: formProductType === "online" ? formHighlights.filter((h) => h.trim() !== "") : [],
         specs: formProductType === "online" ? formSpecs.filter((s) => s.label.trim() !== "") : [],
         description: formDescription,
@@ -744,15 +754,109 @@ export default function Inventory() {
   };
   const handleRemoveSpec = (idx: number) => setFormSpecs(formSpecs.filter((_, i) => i !== idx));
 
-  const handleAddGalleryUrl = () => {
-    if (newGalleryInput.trim()) {
-      setFormGallery([...formGallery, newGalleryInput.trim()]);
-      setNewGalleryInput("");
-      toast.success("Đã thêm hình ảnh vào Album!");
+  const handleCoverFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Kích thước ảnh tối đa 5MB!");
+      return;
     }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      setFormImage(dataUrl);
+      toast.success("Đã tải ảnh đại diện lên thành công!");
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
   };
+
+  const handleCoverDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Vui lòng tải tệp hình ảnh!");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Kích thước ảnh tối đa 5MB!");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      setFormImage(dataUrl);
+      toast.success("Đã tải ảnh đại diện lên thành công!");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleGalleryFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const validFiles = Array.from(files).filter((file) => {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(`Ảnh "${file.name}" vượt quá kích thước 5MB!`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length === 0) return;
+
+    let loadedCount = 0;
+    validFiles.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        setFormGallery((prev) => [...prev, dataUrl]);
+        loadedCount++;
+        if (loadedCount === validFiles.length) {
+          toast.success(`Đã thêm ${loadedCount} ảnh vào bộ sưu tập!`);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    e.target.value = "";
+  };
+
+  const handleGalleryDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) return;
+
+    const validFiles = Array.from(files).filter((file) => {
+      if (!file.type.startsWith("image/")) {
+        toast.error(`Tệp "${file.name}" không phải hình ảnh!`);
+        return false;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(`Ảnh "${file.name}" vượt quá kích thước 5MB!`);
+        return false;
+      }
+      return true;
+    });
+
+    let loadedCount = 0;
+    validFiles.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        setFormGallery((prev) => [...prev, dataUrl]);
+        loadedCount++;
+        if (loadedCount === validFiles.length) {
+          toast.success(`Đã thêm ${loadedCount} ảnh vào bộ sưu tập!`);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleRemoveGalleryImage = (idx: number) =>
-    setFormGallery(formGallery.filter((_, i) => i !== idx));
+    setFormGallery((prev) => prev.filter((_, i) => i !== idx));
 
   return (
     <AppLayout
@@ -1543,10 +1647,13 @@ export default function Inventory() {
               <div className="space-y-2">
                 <Label className="font-semibold text-slate-800 text-xs">Số Lượng Nhập Thêm Vào Kho (*):</Label>
                 <Input
-                  type="number"
-                  min={1}
-                  value={staffRestockQty}
-                  onChange={(e) => setStaffRestockQty(e.target.value === "" ? "" : Number(e.target.value))}
+                  type="text"
+                  inputMode="numeric"
+                  value={formatNumberWithDots(staffRestockQty)}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/\D/g, "");
+                    setStaffRestockQty(raw === "" ? "" : Number(raw));
+                  }}
                   className="font-bold text-base text-emerald-700 h-10 rounded-xl border-slate-200"
                   required
                 />
@@ -1628,11 +1735,13 @@ export default function Inventory() {
                 <div className="space-y-1.5">
                   <Label className="font-semibold text-slate-800 text-xs">Giá Bán Tại Quầy (đ):</Label>
                   <Input
-                    type="number"
-                    min={0}
-                    step={1000}
-                    value={newStaffItemPrice}
-                    onChange={(e) => setNewStaffItemPrice(e.target.value === "" ? "" : Number(e.target.value))}
+                    type="text"
+                    inputMode="numeric"
+                    value={formatNumberWithDots(newStaffItemPrice)}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\D/g, "");
+                      setNewStaffItemPrice(raw === "" ? "" : Number(raw));
+                    }}
                     className="h-10 text-xs font-bold text-slate-900 rounded-xl border-slate-200"
                     required
                   />
@@ -1641,10 +1750,13 @@ export default function Inventory() {
                 <div className="space-y-1.5">
                   <Label className="font-semibold text-slate-800 text-xs">Số Lượng Nhập Ban Đầu:</Label>
                   <Input
-                    type="number"
-                    min={1}
-                    value={newStaffItemStock}
-                    onChange={(e) => setNewStaffItemStock(e.target.value === "" ? "" : Number(e.target.value))}
+                    type="text"
+                    inputMode="numeric"
+                    value={formatNumberWithDots(newStaffItemStock)}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\D/g, "");
+                      setNewStaffItemStock(raw === "" ? "" : Number(raw));
+                    }}
                     className="h-10 text-xs font-bold text-emerald-700 rounded-xl border-slate-200"
                     required
                   />
@@ -1694,12 +1806,12 @@ export default function Inventory() {
               <div className="p-3 bg-emerald-50/80 rounded-2xl border border-emerald-200/80 text-emerald-900 space-y-1">
                 <div className="flex justify-between items-center text-xs">
                   <span>Tồn kho hiện tại:</span>
-                  <strong className="text-sm font-bold text-emerald-700">{restockProduct.stock} đơn vị</strong>
+                  <strong className="text-sm font-bold text-emerald-700">{formatNumberWithDots(restockProduct.stock)} đơn vị</strong>
                 </div>
                 <div className="flex justify-between items-center text-xs pt-1 border-t border-emerald-200/50">
                   <span>Tồn sau khi nhập:</span>
                   <strong className="text-sm font-bold text-slate-900">
-                    {restockProduct.stock + (Number(restockQty) || 0)} đơn vị
+                    {formatNumberWithDots(restockProduct.stock + (Number(restockQty) || 0))} đơn vị
                   </strong>
                 </div>
               </div>
@@ -1707,10 +1819,13 @@ export default function Inventory() {
               <div className="space-y-2">
                 <Label className="font-semibold text-slate-800 text-xs">Số Lượng Nhập Thêm Vào Kho (*):</Label>
                 <Input
-                  type="number"
-                  min={1}
-                  value={restockQty}
-                  onChange={(e) => setRestockQty(e.target.value === "" ? "" : Number(e.target.value))}
+                  type="text"
+                  inputMode="numeric"
+                  value={formatNumberWithDots(restockQty)}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "");
+                    setRestockQty(val === "" ? "" : Number(val));
+                  }}
                   className="font-bold text-base text-emerald-700 h-10 rounded-xl border-slate-200"
                   required
                 />
@@ -1777,7 +1892,13 @@ export default function Inventory() {
               <div className="flex items-center gap-2 pt-3">
                 <button
                   type="button"
-                  onClick={() => setFormProductType("online")}
+                  onClick={() => {
+                    setFormProductType("online");
+                    if (!editingProduct && formCategory === "Đồ uống & Đồ ăn") {
+                      setFormCategory(categories[0]?.name || "Vợt Pickleball");
+                      setFormPrice("");
+                    }
+                  }}
                   className={`px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-2 ${formProductType === "online"
                     ? "bg-emerald-600 text-white font-semibold shadow-md shadow-emerald-500/20"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200 font-normal"
@@ -1789,7 +1910,15 @@ export default function Inventory() {
 
                 <button
                   type="button"
-                  onClick={() => setFormProductType("pos")}
+                  onClick={() => {
+                    setFormProductType("pos");
+                    if (!editingProduct && (formCategory === "Vợt Pickleball" || !formCategory)) {
+                      setFormCategory("Đồ uống & Đồ ăn");
+                      setFormPrice(20000);
+                      setFormStock(24);
+                      setFormImage("/images/pocari_sweat_500ml.jpg");
+                    }
+                  }}
                   className={`px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-2 ${formProductType === "pos"
                     ? "bg-blue-600 text-white font-semibold shadow-md shadow-blue-500/20"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200 font-normal"
@@ -1851,10 +1980,14 @@ export default function Inventory() {
                   <div className="space-y-1.5">
                     <Label className="font-semibold text-slate-800">Giá Bán Niêm Yết (VNĐ) (*):</Label>
                     <Input
-                      type="number"
-                      value={formPrice}
-                      onChange={(e) => setFormPrice(e.target.value === "" ? "" : Number(e.target.value))}
-                      placeholder="5490000"
+                      type="text"
+                      inputMode="numeric"
+                      value={formatNumberWithDots(formPrice)}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/\D/g, "");
+                        setFormPrice(raw === "" ? "" : Number(raw));
+                      }}
+                      placeholder="5.490.000"
                       className="font-normal text-xs h-10 border-slate-200 rounded-xl"
                       required
                     />
@@ -1863,10 +1996,14 @@ export default function Inventory() {
                   <div className="space-y-1.5">
                     <Label className="font-semibold text-slate-800">Giá Gốc / Giá Gạch (VNĐ):</Label>
                     <Input
-                      type="number"
-                      value={formOriginalPrice}
-                      onChange={(e) => setFormOriginalPrice(e.target.value === "" ? "" : Number(e.target.value))}
-                      placeholder="5990000"
+                      type="text"
+                      inputMode="numeric"
+                      value={formatNumberWithDots(formOriginalPrice)}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/\D/g, "");
+                        setFormOriginalPrice(raw === "" ? "" : Number(raw));
+                      }}
+                      placeholder="5.990.000"
                       className="font-normal text-xs h-10 border-slate-200 rounded-xl"
                     />
                   </div>
@@ -1874,62 +2011,176 @@ export default function Inventory() {
                   <div className="space-y-1.5">
                     <Label className="font-semibold text-slate-800">Số Lượng Tồn Kho Ban Đầu (*):</Label>
                     <Input
-                      type="number"
-                      value={formStock}
-                      onChange={(e) => setFormStock(e.target.value === "" ? "" : Number(e.target.value))}
+                      type="text"
+                      inputMode="numeric"
+                      value={formatNumberWithDots(formStock)}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/\D/g, "");
+                        setFormStock(raw === "" ? "" : Number(raw));
+                      }}
                       placeholder="15"
                       className="font-normal text-xs h-10 border-slate-200 rounded-xl"
                       required
                     />
                   </div>
 
-                  <div className="space-y-1.5 sm:col-span-2">
-                    <Label className="font-semibold text-slate-800">Link Ảnh Đại Diện Chính (URL):</Label>
-                    <Input
-                      value={formImage}
-                      onChange={(e) => setFormImage(e.target.value)}
-                      placeholder="https://..."
-                      className="font-normal text-xs h-10 border-slate-200 rounded-xl"
-                      required
-                    />
-                  </div>
                 </div>
 
-                {/* GALLERY URLS */}
-                <div className="space-y-2 pt-2 border-t border-slate-100">
-                  <Label className="font-semibold text-slate-800">Album Ảnh Chi Tiết Sản Phẩm:</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={newGalleryInput}
-                      onChange={(e) => setNewGalleryInput(e.target.value)}
-                      placeholder="Nhập link ảnh phụ và bấm Thêm..."
-                      className="text-xs h-9 border-slate-200 rounded-xl"
+                {/* 3. HÌNH ẢNH SẢN PHẨM (TẢI LÊN) */}
+                <div className="space-y-4 pt-3 border-t border-slate-100">
+                  <h4 className="text-orange-600 font-bold text-xs uppercase tracking-wider">
+                    3. HÌNH ẢNH SẢN PHẨM (TẢI LÊN)
+                  </h4>
+
+                  {/* ẢNH ĐẠI DIỆN CHÍNH (COVER IMAGE) */}
+                  <div className="space-y-2">
+                    <Label className="font-bold text-slate-800 text-xs uppercase tracking-wide">
+                      ẢNH ĐẠI DIỆN CHÍNH (COVER IMAGE) *
+                    </Label>
+
+                    <input
+                      ref={coverInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg,image/webp"
+                      onChange={handleCoverFileChange}
+                      className="hidden"
                     />
-                    <Button
-                      type="button"
-                      onClick={handleAddGalleryUrl}
-                      className="bg-slate-800 hover:bg-slate-700 text-white text-xs h-9 px-3 rounded-xl"
+
+                    <div
+                      onClick={() => coverInputRef.current?.click()}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={handleCoverDrop}
+                      className="border-2 border-dashed border-amber-200/90 hover:border-orange-400 bg-amber-50/10 hover:bg-amber-50/30 rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center cursor-pointer transition-all text-center relative group"
                     >
-                      + Thêm Ảnh
-                    </Button>
+                      {formImage ? (
+                        <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4">
+                          <div className="flex items-center gap-4 text-left">
+                            <img
+                              src={formImage}
+                              alt="Ảnh đại diện"
+                              className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-xl border border-orange-200 shadow-sm"
+                            />
+                            <div>
+                              <span className="text-xs font-bold text-slate-800 block">
+                                Ảnh đại diện đã được tải lên
+                              </span>
+                              <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1 mt-0.5">
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Sẵn sàng hiển thị trực quan
+                              </span>
+                              <p className="text-[11px] text-slate-400 mt-1">
+                                Nhấp chuột vào đây hoặc nút bên phải để đổi ảnh khác
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                coverInputRef.current?.click();
+                              }}
+                              className="text-xs h-8 rounded-xl border-orange-200 hover:bg-orange-50 text-orange-600 font-semibold"
+                            >
+                              <Upload className="w-3.5 h-3.5 mr-1.5" />
+                              Tải ảnh khác
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setFormImage("");
+                              }}
+                              className="text-xs h-8 rounded-xl text-rose-500 hover:bg-rose-50 hover:text-rose-600"
+                            >
+                              <X className="w-3.5 h-3.5 mr-1" />
+                              Xóa
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="w-12 h-12 rounded-2xl border border-orange-200/80 bg-white flex items-center justify-center text-orange-500 shadow-sm mb-2 group-hover:scale-105 transition-transform">
+                            <Upload className="w-5 h-5 text-orange-500" />
+                          </div>
+                          <p className="font-bold text-slate-800 text-xs sm:text-sm">
+                            Bấm vào đây để tải ảnh đại diện lên *
+                          </p>
+                          <p className="text-[11px] text-slate-400 mt-0.5">
+                            Hỗ trợ PNG, JPG, JPEG, WEBP (Tối đa 5MB)
+                          </p>
+                        </>
+                      )}
+                    </div>
                   </div>
 
-                  {formGallery.length > 0 && (
-                    <div className="flex flex-wrap gap-2 pt-1">
+                  {/* BỘ SƯU TẬP ẢNH CHI TIẾT (GALLERY) */}
+                  <div className="space-y-2 pt-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="font-bold text-slate-800 text-xs uppercase tracking-wide">
+                        BỘ SƯU TẬP ẢNH CHI TIẾT (GALLERY)
+                      </Label>
+                      <button
+                        type="button"
+                        onClick={() => galleryInputRef.current?.click()}
+                        className="text-orange-600 hover:text-orange-700 font-bold text-xs flex items-center gap-1.5 transition-colors"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        + Tải thêm ảnh chi tiết
+                      </button>
+                    </div>
+
+                    <input
+                      ref={galleryInputRef}
+                      type="file"
+                      multiple
+                      accept="image/png,image/jpeg,image/jpg,image/webp"
+                      onChange={handleGalleryFilesChange}
+                      className="hidden"
+                    />
+
+                    <div
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={handleGalleryDrop}
+                      className="flex flex-wrap items-center gap-3 pt-1"
+                    >
+                      {/* Box + Thêm ảnh */}
+                      <div
+                        onClick={() => galleryInputRef.current?.click()}
+                        className="w-24 h-24 border-2 border-dashed border-amber-200/90 hover:border-orange-400 bg-amber-50/10 hover:bg-amber-50/40 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all shrink-0 group"
+                      >
+                        <Upload className="w-5 h-5 text-slate-400 group-hover:text-orange-500 mb-1 transition-colors" />
+                        <span className="text-[11px] font-medium text-slate-600 group-hover:text-orange-600 transition-colors">
+                          + Thêm ảnh
+                        </span>
+                      </div>
+
+                      {/* Danh sách ảnh trong Gallery */}
                       {formGallery.map((g, idx) => (
-                        <div key={idx} className="relative group">
-                          <img src={g} alt="" className="w-14 h-14 rounded-lg object-cover border" />
+                        <div
+                          key={idx}
+                          className="relative w-24 h-24 rounded-2xl overflow-hidden border border-slate-200 shadow-sm group shrink-0"
+                        >
+                          <img
+                            src={g}
+                            alt={`Ảnh chi tiết ${idx + 1}`}
+                            className="w-full h-full object-cover"
+                          />
                           <button
                             type="button"
                             onClick={() => handleRemoveGalleryImage(idx)}
-                            className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white rounded-full p-0.5 shadow hover:bg-rose-600"
+                            className="absolute top-1.5 right-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-full p-1 shadow-md transition-all hover:scale-110"
+                            title="Xóa ảnh này"
                           >
                             <X className="w-3 h-3" />
                           </button>
                         </div>
                       ))}
                     </div>
-                  )}
+                  </div>
                 </div>
 
                 {/* HIGHLIGHTS */}
@@ -2049,10 +2300,14 @@ export default function Inventory() {
                   <div className="space-y-1.5">
                     <Label className="font-semibold text-slate-800">Giá Bán Lễ Tân (VNĐ) (*):</Label>
                     <Input
-                      type="number"
-                      value={formPrice}
-                      onChange={(e) => setFormPrice(e.target.value === "" ? "" : Number(e.target.value))}
-                      placeholder="20000"
+                      type="text"
+                      inputMode="numeric"
+                      value={formatNumberWithDots(formPrice)}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/\D/g, "");
+                        setFormPrice(raw === "" ? "" : Number(raw));
+                      }}
+                      placeholder="20.000"
                       className="font-normal text-xs h-10 border-slate-200 rounded-xl"
                       required
                     />
@@ -2061,9 +2316,13 @@ export default function Inventory() {
                   <div className="space-y-1.5">
                     <Label className="font-semibold text-slate-800">Số Lượng Tồn Sẵn Tại Quầy (*):</Label>
                     <Input
-                      type="number"
-                      value={formStock}
-                      onChange={(e) => setFormStock(e.target.value === "" ? "" : Number(e.target.value))}
+                      type="text"
+                      inputMode="numeric"
+                      value={formatNumberWithDots(formStock)}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/\D/g, "");
+                        setFormStock(raw === "" ? "" : Number(raw));
+                      }}
                       placeholder="100"
                       className="font-normal text-xs h-10 border-slate-200 rounded-xl"
                       required
@@ -2079,6 +2338,136 @@ export default function Inventory() {
                     placeholder="Ghi chú quy cách đóng gói (Lốc 6 chai, chai 500ml...)"
                     className="w-full h-20 p-3 border border-slate-200 rounded-xl text-xs font-normal focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
+                </div>
+
+                {/* HÌNH ẢNH MẶT HÀNG / ĐỒ UỐNG / DỊCH VỤ QUẦY (TẢI LÊN) */}
+                <div className="space-y-3 pt-3 border-t border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <Label className="font-bold text-slate-800 text-xs uppercase tracking-wide">
+                      HÌNH ẢNH MÓN / ĐỒ UỐNG / DỊCH VỤ QUẦY (TẢI LÊN) *
+                    </Label>
+                    <span className="text-[11px] text-blue-600 font-medium">
+                      Hiển thị trực quan tại máy bán hàng POS
+                    </span>
+                  </div>
+
+                  <input
+                    ref={posCoverInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    onChange={handleCoverFileChange}
+                    className="hidden"
+                  />
+
+                  <div
+                    onClick={() => posCoverInputRef.current?.click()}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={handleCoverDrop}
+                    className="border-2 border-dashed border-blue-200/90 hover:border-blue-400 bg-blue-50/10 hover:bg-blue-50/30 rounded-2xl p-5 sm:p-6 flex flex-col items-center justify-center cursor-pointer transition-all text-center relative group"
+                  >
+                    {formImage ? (
+                      <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 text-left">
+                          <img
+                            src={formImage}
+                            alt="Ảnh quầy POS"
+                            className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-xl border border-blue-200 shadow-sm"
+                          />
+                          <div>
+                            <span className="text-xs font-bold text-slate-800 block">
+                              Ảnh mặt hàng quầy đã được chọn
+                            </span>
+                            <span className="text-[11px] text-blue-600 font-medium flex items-center gap-1 mt-0.5">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Sẵn sàng bán tại quầy POS
+                            </span>
+                            <p className="text-[11px] text-slate-400 mt-1">
+                              Bấm chuột vào đây hoặc nút bên phải để đổi ảnh
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              posCoverInputRef.current?.click();
+                            }}
+                            className="text-xs h-8 rounded-xl border-blue-200 hover:bg-blue-50 text-blue-600 font-semibold"
+                          >
+                            <Upload className="w-3.5 h-3.5 mr-1.5" />
+                            Tải ảnh khác
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFormImage("");
+                            }}
+                            className="text-xs h-8 rounded-xl text-rose-500 hover:bg-rose-50 hover:text-rose-600"
+                          >
+                            <X className="w-3.5 h-3.5 mr-1" />
+                            Xóa
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="w-11 h-11 rounded-2xl border border-blue-200/80 bg-white flex items-center justify-center text-blue-500 shadow-sm mb-2 group-hover:scale-105 transition-transform">
+                          <Upload className="w-5 h-5 text-blue-500" />
+                        </div>
+                        <p className="font-bold text-slate-800 text-xs sm:text-sm">
+                          Bấm vào đây để tải ảnh đồ uống / món ăn lên *
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          Hỗ trợ PNG, JPG, JPEG, WEBP (Tối đa 5MB)
+                        </p>
+                      </>
+                    )}
+                  </div>
+
+                  {/* GỢI Ý CHỌN NHANH ẢNH MẪU ĐỒ UỐNG / ĐỒ ĂN CÓ SẴN */}
+                  <div className="space-y-1.5 pt-1">
+                    <span className="text-[11px] font-semibold text-slate-500">
+                      Hoặc chọn nhanh ảnh mẫu đồ uống / đồ ăn phổ biến:
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { name: "Pocari Sweat", url: "/images/pocari_sweat_500ml.jpg", icon: "🥤" },
+                        { name: "Revive chanh", url: "/images/revive_lemon_drink.jpg", icon: "⚡" },
+                        { name: "Bò húc", url: "/images/red_bull_can.jpg", icon: "🐂" },
+                        { name: "Nước LaVie", url: "/images/water_bottle_lavie.jpg", icon: "💧" },
+                        { name: "Cà phê Cold Brew", url: "/images/cold_brew_coffee.jpg", icon: "☕" },
+                        { name: "Trà chanh đá", url: "/images/iced_lemon_tea.jpg", icon: "🍋" },
+                        { name: "Dừa tươi", url: "/images/fresh_coconut.jpg", icon: "🥥" },
+                        { name: "Bánh Snickers", url: "/images/snickers_bar.jpg", icon: "🍫" },
+                        { name: "Thanh Granola", url: "/images/protein_granola_bar.jpg", icon: "🌾" },
+                        { name: "Chuối Dole", url: "/images/dole_banana.jpg", icon: "🍌" },
+                        { name: "Bóng Pickleball", url: "/images/pickleball_balls_yellow.jpg", icon: "🎾" },
+                        { name: "Băng quấn cán", url: "/images/pickleball_overgrip_tape.jpg", icon: "🎗️" },
+                      ].map((item) => (
+                        <button
+                          key={item.url}
+                          type="button"
+                          onClick={() => {
+                            setFormImage(item.url);
+                            toast.success(`Đã áp dụng ảnh mẫu "${item.name}"!`);
+                          }}
+                          className={`px-2.5 py-1 rounded-xl text-[11px] font-medium border flex items-center gap-1.5 transition-all ${
+                            formImage === item.url
+                              ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                              : "bg-white text-slate-700 border-slate-200 hover:border-blue-300 hover:bg-blue-50/50"
+                          }`}
+                        >
+                          <span>{item.icon}</span>
+                          <span>{item.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

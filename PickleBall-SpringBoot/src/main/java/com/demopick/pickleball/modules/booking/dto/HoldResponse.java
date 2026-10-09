@@ -47,6 +47,18 @@ public class HoldResponse {
         this.totalPrice = totalPrice != null ? totalPrice : BigDecimal.ZERO;
     }
 
+    public HoldResponse(Long holdId, List<Long> slotIds, Long courtId, String expiresAt, Integer remainingSeconds, BigDecimal totalPrice) {
+        this.id = holdId;
+        this.holdId = holdId;
+        this.slotId = (slotIds != null && !slotIds.isEmpty()) ? slotIds.get(0) : null;
+        this.slotIds = slotIds != null ? slotIds : Collections.emptyList();
+        this.courtId = courtId;
+        this.expiresAt = expiresAt;
+        this.remainingSeconds = remainingSeconds;
+        this.secondsRemaining = remainingSeconds;
+        this.totalPrice = totalPrice != null ? totalPrice : BigDecimal.ZERO;
+    }
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

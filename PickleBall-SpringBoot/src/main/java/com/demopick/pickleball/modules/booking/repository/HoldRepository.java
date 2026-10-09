@@ -26,4 +26,6 @@ public interface HoldRepository extends JpaRepository<Hold, Long> {
     List<Hold> findAllBySlotIdAndStatusAndExpiresAtAfter(Long slotId, String status, LocalDateTime now);
 
     List<Hold> findBySlotId(Long slotId);
+    List<Hold> findByUserIdAndStatus(Long userId, String status);
+    List<Hold> findBySessionIdAndStatus(String sessionId, String status);
 }

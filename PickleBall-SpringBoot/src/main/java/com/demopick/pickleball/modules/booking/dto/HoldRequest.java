@@ -29,4 +29,14 @@ public class HoldRequest {
 
     public String getDate() { return date; }
     public void setDate(String date) { this.date = date; }
+
+    public List<Long> getAllSlotIds() {
+        if (slotIds != null && !slotIds.isEmpty()) {
+            return slotIds;
+        }
+        if (slotId != null) {
+            return List.of(slotId);
+        }
+        return java.util.Collections.emptyList();
+    }
 }

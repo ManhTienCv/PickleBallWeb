@@ -87,62 +87,62 @@ public class OrderService {
         BigDecimal totalAmount = BigDecimal.ZERO;
         List<OrderItem> itemsToSave = new ArrayList<>();
 
+        List<Long> bookingSlotIds = request.getEffectiveSlotIds();
         String orderType = "mixed";
-        if (request.getSlotId() != null && (request.getCartItems() == null || request.getCartItems().isEmpty())) {
+        if (!bookingSlotIds.isEmpty() && (request.getCartItems() == null || request.getCartItems().isEmpty())) {
             orderType = "booking";
-        } else if (request.getSlotId() == null && request.getCartItems() != null && !request.getCartItems().isEmpty()) {
+        } else if (bookingSlotIds.isEmpty() && request.getCartItems() != null && !request.getCartItems().isEmpty()) {
             orderType = "shop";
         }
 
-        // 1. Process Booking Slot if requested
-        Hold holdToConvert = null;
-        if (request.getSlotId() != null) {
-            Long slotId = request.getSlotId();
-            TimeSlot slot = timeSlotRepository.findByIdWithLock(slotId)
-                    .orElseThrow(() -> new ApiException("Không tìm thấy ca sân.", HttpStatus.NOT_FOUND));
-
-            if ("booked".equalsIgnoreCase(slot.getStatus())) {
-                throw new ApiException("Ca sân này đã được đặt và thanh toán.", HttpStatus.CONFLICT);
-            }
-
-            // Strictly validate hold
+        // 1. Process Booking Slots if requested
+        List<Hold> holdsToConvert = new ArrayList<>();
+        if (!bookingSlotIds.isEmpty()) {
             LocalDateTime now = LocalDateTime.now();
-            Long holdId = request.getHoldId();
-            Hold hold = null;
+            for (Long slotId : bookingSlotIds) {
+                TimeSlot slot = timeSlotRepository.findByIdWithLock(slotId)
+                        .orElseThrow(() -> new ApiException("Không tìm thấy ca sân ID: " + slotId, HttpStatus.NOT_FOUND));
 
-            if (holdId != null) {
-                hold = holdRepository.findById(holdId).orElse(null);
-            } else {
-                // Fallback lookup active hold by slot
-                hold = holdRepository.findBySlotIdAndStatusAndExpiresAtAfter(slotId, "active", now).orElse(null);
+                if ("booked".equalsIgnoreCase(slot.getStatus())) {
+                    throw new ApiException("Ca sân (" + slot.getStartTime() + " - " + slot.getEndTime() + ") đã được đặt và thanh toán.", HttpStatus.CONFLICT);
+                }
+
+                // Strictly validate hold
+                Long holdId = request.getHoldId();
+                Hold hold = null;
+                if (holdId != null) {
+                    Hold candidate = holdRepository.findById(holdId).orElse(null);
+                    if (candidate != null && slotId.equals(candidate.getSlotId())) {
+                        hold = candidate;
+                    }
+                }
+                if (hold == null) {
+                    hold = holdRepository.findBySlotIdAndStatusAndExpiresAtAfter(slotId, "active", now).orElse(null);
+                }
+
+                if (hold == null || !"active".equalsIgnoreCase(hold.getStatus()) || hold.getExpiresAt().isBefore(now)) {
+                    throw new ApiException("Thời gian giữ chỗ ca sân đã hết hạn hoặc không tồn tại. Vui lòng chọn lại ca sân.", HttpStatus.GONE);
+                }
+
+                if (userId != null && hold.getUserId() != null && !userId.equals(hold.getUserId())) {
+                    throw new ApiException("Lượt giữ chỗ này thuộc về tài khoản khác.", HttpStatus.FORBIDDEN);
+                }
+
+                holdsToConvert.add(hold);
+
+                BigDecimal slotPrice = slot.getPrice() != null ? slot.getPrice() : BigDecimal.valueOf(150000);
+                totalAmount = totalAmount.add(slotPrice);
+
+                String courtTitle = slot.getCourtId() != null ? "Sân #" + slot.getCourtId() : "Pickleball";
+                OrderItem slotItem = new OrderItem();
+                slotItem.setItemType("booking_slot");
+                slotItem.setReferenceId(slot.getId());
+                slotItem.setItemName("Thuê ca " + courtTitle + " (" + slot.getStartTime() + " - " + slot.getEndTime() + ")");
+                slotItem.setQuantity(1);
+                slotItem.setUnitPrice(slotPrice);
+                slotItem.setTotalPrice(slotPrice);
+                itemsToSave.add(slotItem);
             }
-
-            if (hold == null || !"active".equalsIgnoreCase(hold.getStatus()) || hold.getExpiresAt().isBefore(now)) {
-                throw new ApiException("Thời gian giữ chỗ ca sân đã hết hạn hoặc không tồn tại. Vui lòng chọn lại ca sân.", HttpStatus.GONE);
-            }
-
-            if (!slotId.equals(hold.getSlotId())) {
-                throw new ApiException("Mã giữ chỗ không khớp với ca sân được chọn.", HttpStatus.BAD_REQUEST);
-            }
-
-            // Verify hold ownership if userId is present
-            if (userId != null && hold.getUserId() != null && !userId.equals(hold.getUserId())) {
-                throw new ApiException("Lượt giữ chỗ này thuộc về tài khoản khác.", HttpStatus.FORBIDDEN);
-            }
-
-            holdToConvert = hold;
-
-            BigDecimal slotPrice = slot.getPrice() != null ? slot.getPrice() : BigDecimal.valueOf(150000);
-            totalAmount = totalAmount.add(slotPrice);
-
-            OrderItem slotItem = new OrderItem();
-            slotItem.setItemType("booking_slot");
-            slotItem.setReferenceId(slot.getId());
-            slotItem.setItemName("Thuê ca sân Pickleball (" + slot.getStartTime() + " - " + slot.getEndTime() + ")");
-            slotItem.setQuantity(1);
-            slotItem.setUnitPrice(slotPrice);
-            slotItem.setTotalPrice(slotPrice);
-            itemsToSave.add(slotItem);
         }
 
         // 2. Process Cart Items if any
@@ -241,10 +241,16 @@ public class OrderService {
             orderItemRepository.save(item);
         }
 
-        // Convert hold to 'converted' so auto-release cronjob does not expire it
-        if (holdToConvert != null) {
-            holdToConvert.setStatus("converted");
-            holdRepository.save(holdToConvert);
+        // Convert holds to 'converted' so auto-release cronjob does not expire them
+        for (Hold h : holdsToConvert) {
+            h.setStatus("converted");
+            holdRepository.save(h);
+        }
+        if (request.getHoldId() != null) {
+            holdRepository.findById(request.getHoldId()).ifPresent(h -> {
+                h.setStatus("converted");
+                holdRepository.save(h);
+            });
         }
 
         // 4. Generate MoMo Sandbox Pay URL or VietQR URL
@@ -272,9 +278,45 @@ public class OrderService {
         List<OrderItem> itemsToSave = new ArrayList<>();
         String orderType = "shop";
 
-        // 1. Process Order Items
+        // Extract all requested booking slot IDs
+        List<Long> bookingSlotIds = new ArrayList<>(request.getEffectiveSlotIds());
+        if (bookingSlotIds.isEmpty() && request.getHoldId() != null) {
+            Hold primaryHold = holdRepository.findById(request.getHoldId()).orElse(null);
+            if (primaryHold != null) {
+                if (primaryHold.getUserId() != null) {
+                    List<Hold> userHolds = holdRepository.findByUserIdAndStatus(primaryHold.getUserId(), "active");
+                    for (Hold uh : userHolds) {
+                        if (uh.getSlotId() != null && !bookingSlotIds.contains(uh.getSlotId())) {
+                            bookingSlotIds.add(uh.getSlotId());
+                        }
+                    }
+                } else if (primaryHold.getSessionId() != null) {
+                    List<Hold> sessHolds = holdRepository.findBySessionIdAndStatus(primaryHold.getSessionId(), "active");
+                    for (Hold sh : sessHolds) {
+                        if (sh.getSlotId() != null && !bookingSlotIds.contains(sh.getSlotId())) {
+                            bookingSlotIds.add(sh.getSlotId());
+                        }
+                    }
+                } else if (primaryHold.getSlotId() != null) {
+                    bookingSlotIds.add(primaryHold.getSlotId());
+                }
+            }
+        }
+
+        // 1. Process Order Items (Merchandise products)
         if (request.getItems() != null && !request.getItems().isEmpty()) {
             for (CreateOrderRequest.CreateOrderItemDto item : request.getItems()) {
+                // Skip if this item represents a booking / hold slot
+                boolean isBookingItem = (item.getName() != null && (
+                        item.getName().toLowerCase().contains("thuê ca") ||
+                        item.getName().toLowerCase().contains("ca sân") ||
+                        item.getName().toLowerCase().contains("suất sân")
+                )) || (item.getProductId() == null && bookingSlotIds.contains(item.getId()));
+
+                if (isBookingItem) {
+                    continue;
+                }
+
                 int qty = (item.getQuantity() != null && item.getQuantity() > 0) ? item.getQuantity() : 1;
                 BigDecimal price = item.getPrice() != null ? item.getPrice() : BigDecimal.ZERO;
                 BigDecimal itemTotal = price.multiply(BigDecimal.valueOf(qty));
@@ -305,42 +347,30 @@ public class OrderService {
             }
         }
 
-        // 2. Process Booking Hold if provided
-        Hold holdToConvert = null;
-        if (request.getHoldId() != null || request.getSlotId() != null) {
+        // 2. Process Booking Slots if provided
+        List<Hold> holdsToConvert = new ArrayList<>();
+        if (!bookingSlotIds.isEmpty()) {
             orderType = itemsToSave.isEmpty() ? "booking" : "mixed";
-            Long holdId = request.getHoldId();
-            Long slotId = request.getSlotId();
+            LocalDateTime now = LocalDateTime.now();
 
-            Hold hold = null;
-            if (holdId != null) {
-                hold = holdRepository.findById(holdId).orElse(null);
-            }
-            if (hold == null && slotId != null) {
-                hold = holdRepository.findBySlotIdAndStatusAndExpiresAtAfter(slotId, "active", LocalDateTime.now()).orElse(null);
-            }
-
-            if (hold != null) {
-                holdToConvert = hold;
-                if (slotId == null) {
-                    slotId = hold.getSlotId();
-                }
-            }
-
-            if (slotId != null) {
+            for (Long slotId : bookingSlotIds) {
                 TimeSlot slot = timeSlotRepository.findById(slotId).orElse(null);
                 if (slot != null) {
                     BigDecimal slotPrice = slot.getPrice() != null ? slot.getPrice() : BigDecimal.valueOf(150000);
                     totalAmount = totalAmount.add(slotPrice);
 
+                    String courtTitle = slot.getCourtId() != null ? "Sân #" + slot.getCourtId() : "Pickleball";
                     OrderItem slotItem = new OrderItem();
                     slotItem.setItemType("booking_slot");
                     slotItem.setReferenceId(slot.getId());
-                    slotItem.setItemName("Thuê ca sân Pickleball (" + slot.getStartTime() + " - " + slot.getEndTime() + ")");
+                    slotItem.setItemName("Thuê ca " + courtTitle + " (" + slot.getStartTime() + " - " + slot.getEndTime() + ")");
                     slotItem.setQuantity(1);
                     slotItem.setUnitPrice(slotPrice);
                     slotItem.setTotalPrice(slotPrice);
                     itemsToSave.add(slotItem);
+
+                    List<Hold> activeHolds = holdRepository.findAllBySlotIdAndStatusAndExpiresAtAfter(slot.getId(), "active", now);
+                    holdsToConvert.addAll(activeHolds);
                 }
             }
         }
@@ -404,10 +434,16 @@ public class OrderService {
             orderItemRepository.save(item);
         }
 
-        // Convert hold so auto-release cronjob does not expire it
-        if (holdToConvert != null) {
-            holdToConvert.setStatus("converted");
-            holdRepository.save(holdToConvert);
+        // Convert all associated holds so auto-release cronjob does not expire them
+        for (Hold h : holdsToConvert) {
+            h.setStatus("converted");
+            holdRepository.save(h);
+        }
+        if (request.getHoldId() != null) {
+            holdRepository.findById(request.getHoldId()).ifPresent(h -> {
+                h.setStatus("converted");
+                holdRepository.save(h);
+            });
         }
 
         // 5. Generate URLs

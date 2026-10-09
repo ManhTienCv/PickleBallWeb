@@ -75,10 +75,104 @@ export default function Orders() {
   }, [isStaffOnly, viewMode]);
 
   const [search, setSearch] = useState("");
-  const [datePeriod, setDatePeriod] = useState("today");
-  const [customDate, setCustomDate] = useState("2026-08-09");
+  const [datePeriod, setDatePeriod] = useState("all");
+  const realTodayStr = new Date().toISOString().split("T")[0];
+  const [customDate, setCustomDate] = useState(realTodayStr);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 6;
+
+  const INITIAL_POS_SEED_ORDERS: Order[] = useMemo(() => [
+    {
+      code: "HD-82910",
+      customerName: "Nguyễn Văn Đức",
+      customerPhone: "0912 345 678",
+      staffName: "Phạm Văn Đức",
+      type: "POS Quầy",
+      posCategory: "court_service",
+      totalAmount: 215000,
+      paymentMethod: "VietQR",
+      status: "PAID",
+      createdAt: `${realTodayStr} 10:45`,
+      dateStr: realTodayStr,
+      shippingAddress: "Sân thi đấu tại chỗ",
+      courtInfo: {
+        courtName: "Sân A1 (Tiêu chuẩn)",
+        timeRange: "09:30 - 10:30 (60 phút)",
+      },
+      items: [
+        { id: 101, name: "Tiền Giờ Sân A1 (60 phút)", qty: 1, price: 140000 },
+        { id: 102, name: "Nước Điện Giải Pocari Sweat 500ml", qty: 2, price: 25000 },
+        { id: 103, name: "Nước Suối Aquafina 500ml", qty: 1, price: 15000 },
+        { id: 104, name: "Băng Cán Vợt JOOLA Pro Grip", qty: 1, price: 10000 },
+      ],
+    },
+    {
+      code: "HD-82915",
+      customerName: "Trần Mai Anh",
+      customerPhone: "0988 776 655",
+      staffName: "Lễ tân quầy",
+      type: "POS Quầy",
+      posCategory: "court_service",
+      totalAmount: 320000,
+      paymentMethod: "Tiền mặt",
+      status: "PAID",
+      createdAt: `${realTodayStr} 11:15`,
+      dateStr: realTodayStr,
+      shippingAddress: "Sân thi đấu tại chỗ",
+      courtInfo: {
+        courtName: "Sân B2 (Tiêu chuẩn)",
+        timeRange: "10:00 - 11:00 (60 phút)",
+      },
+      items: [
+        { id: 201, name: "Tiền Giờ Sân B2 (60 phút)", qty: 1, price: 140000 },
+        { id: 202, name: "Dịch Vụ Thuê Máy Bắn Bóng (1 giờ)", qty: 1, price: 120000 },
+        { id: 203, name: "Nước Bò Húc Red Bull Thái", qty: 2, price: 25000 },
+        { id: 204, name: "Xúc Xích Nướng CP Phô Mai", qty: 1, price: 10000 },
+      ],
+    },
+    {
+      code: "HD-82922",
+      customerName: "Lê Hoàng Long",
+      customerPhone: "0903 112 233",
+      staffName: "Lễ tân quầy",
+      type: "POS Quầy",
+      posCategory: "court_service",
+      totalAmount: 230000,
+      paymentMethod: "VietQR",
+      status: "PAID",
+      createdAt: `${realTodayStr} 12:00`,
+      dateStr: realTodayStr,
+      shippingAddress: "Sân thi đấu tại chỗ",
+      courtInfo: {
+        courtName: "Sân C1 (VIP Trong Nhà)",
+        timeRange: "11:00 - 12:00 (60 phút)",
+      },
+      items: [
+        { id: 301, name: "Tiền Giờ Sân C1 VIP (60 phút)", qty: 1, price: 180000 },
+        { id: 302, name: "Nước Tăng Lực Revive Chanh Muối", qty: 2, price: 20000 },
+        { id: 303, name: "Bánh Mì Nóng Giòn", qty: 1, price: 10000 },
+      ],
+    },
+    {
+      code: "HD-82930",
+      customerName: "Khách vãng lai",
+      customerPhone: "",
+      staffName: "Lễ tân quầy",
+      type: "POS Quầy",
+      posCategory: "retail",
+      totalAmount: 245000,
+      paymentMethod: "Tiền mặt",
+      status: "PAID",
+      createdAt: `${realTodayStr} 12:20`,
+      dateStr: realTodayStr,
+      shippingAddress: "Mua hàng trực tiếp tại quầy",
+      items: [
+        { id: 401, name: "Bóng Pickleball Franklin X-40 (Hộp 4 quả)", qty: 1, price: 180000 },
+        { id: 402, name: "Nước Điện Giải Pocari Sweat 500ml", qty: 2, price: 25000 },
+        { id: 403, name: "Nước Suối Aquafina 500ml", qty: 1, price: 15000 },
+      ],
+    },
+  ], [realTodayStr]);
 
   const [ordersList, setOrdersList] = useState<Order[]>(() => {
     try {
@@ -86,13 +180,18 @@ export default function Orders() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.filter((o: Order) => !o.code?.startsWith("CAM-") && !o.code?.startsWith("HD260917") && !o.code?.startsWith("HD260918"));
+          const filtered = parsed.filter((o: Order) => !o.code?.startsWith("CAM-") && !o.code?.startsWith("HD260917") && !o.code?.startsWith("HD260918"));
+          const hasPosCourt = filtered.some((o: Order) => o.type === "POS Quầy" && o.posCategory === "court_service");
+          if (!hasPosCourt) {
+            return [...filtered, ...INITIAL_POS_SEED_ORDERS];
+          }
+          return filtered;
         }
       }
-      return [];
+      return INITIAL_POS_SEED_ORDERS;
     } catch (err) {
       console.warn("Failed to load saved admin orders from localStorage:", err);
-      return [];
+      return INITIAL_POS_SEED_ORDERS;
     }
   });
 
@@ -669,7 +768,8 @@ export default function Orders() {
       if (!isModeMatch) return false;
 
       if (viewMode === "pos") {
-        const matchesPosSub = order.posCategory === posSubFilter;
+        const effectivePosCategory = order.posCategory || (order.items?.some(i => i.name.toLowerCase().includes("sân")) ? "court_service" : "retail");
+        const matchesPosSub = effectivePosCategory === posSubFilter;
         const matchesStatus = order.status === statusFilter;
         const matchesSearch =
           order.code.toLowerCase().includes(search.toLowerCase()) ||
@@ -677,10 +777,21 @@ export default function Orders() {
           order.staffName.toLowerCase().includes(search.toLowerCase()) ||
           (order.courtInfo?.courtName && order.courtInfo.courtName.toLowerCase().includes(search.toLowerCase()));
 
+        const currentTodayStr = new Date().toISOString().split("T")[0];
+        const yDate = new Date();
+        yDate.setDate(yDate.getDate() - 1);
+        const currentYesterdayStr = yDate.toISOString().split("T")[0];
+
         let matchesDate = true;
-        if (datePeriod === "today") matchesDate = order.dateStr === "2026-08-09";
-        else if (datePeriod === "yesterday") matchesDate = order.dateStr === "2026-08-08";
-        else if (datePeriod === "custom") matchesDate = order.dateStr === customDate;
+        if (datePeriod === "today") {
+          matchesDate = order.dateStr === currentTodayStr || order.dateStr === "2026-08-09" || (order.createdAt && order.createdAt.startsWith(currentTodayStr));
+        } else if (datePeriod === "yesterday") {
+          matchesDate = order.dateStr === currentYesterdayStr || order.dateStr === "2026-08-08" || (order.createdAt && order.createdAt.startsWith(currentYesterdayStr));
+        } else if (datePeriod === "custom") {
+          matchesDate = order.dateStr === customDate;
+        } else if (datePeriod === "all") {
+          matchesDate = true;
+        }
 
         return matchesPosSub && matchesStatus && matchesSearch && matchesDate;
       }
@@ -865,6 +976,7 @@ export default function Orders() {
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-bold text-slate-500 mr-1">Thời gian:</span>
                 {[
+                  { id: "all", label: "Tất cả" },
                   { id: "today", label: "Hôm nay" },
                   { id: "yesterday", label: "Hôm qua" },
                   { id: "custom", label: "Tùy chọn ngày" },

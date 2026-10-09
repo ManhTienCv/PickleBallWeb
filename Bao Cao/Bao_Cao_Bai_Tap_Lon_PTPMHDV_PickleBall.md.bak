@@ -123,7 +123,7 @@ Mặc dù nhóm đã nỗ lực hết sức để hoàn thiện đề tài từ 
 
 * **DANH MỤC THUẬT NGỮ VÀ TỪ VIẾT TẮT**
 * **DANH MỤC BẢNG BIỂU**
-* **DANH MỤC HÌNH ẢNH**
+* **DANH MỤC HÌNH ẢNH VÀ SƠ ĐỒ**
 * **MỞ ĐẦU**
   * 1. Lý do chọn đề tài
   * 2. Mục tiêu nghiên cứu
@@ -176,44 +176,48 @@ Mặc dù nhóm đã nỗ lực hết sức để hoàn thiện đề tài từ 
 
 # DANH MỤC BẢNG BIỂU
 
-* Bảng 1.1: So sánh Enterprise SOA, Microservices và Kiến trúc Modular Monolith
-* Bảng 1.2: Đối chiếu 8 nguyên tắc thiết kế dịch vụ chuẩn hóa của Thomas Erl
-* Bảng 1.3: So sánh Web Service truyền thống (SOAP/WSDL) và Kiến trúc RESTful Web API
-* Bảng 1.4: Chuẩn hóa HTTP Methods và tính chất Idempotent trong hệ thống
-* Bảng 1.5: Tổng hợp so sánh công nghệ lựa chọn cho hệ thống
-* Bảng 2.1: Danh mục 37 RESTful API Endpoints của hệ thống PickleBallWeb
-* Bảng 2.2: Ma trận ánh xạ màn hình Client tiêu thụ API Backend
-* Bảng 3.1: Môi trường và phiên bản công nghệ phát triển hệ thống
-* Bảng 4.1: Bảng tổng hợp kết quả 25 ca kiểm thử tự động API (Automated Test Suite)
-* Bảng 4.2: Bảng đối soát các tiêu chí kỹ thuật đề tài
-* Bảng 4.3: Bảng danh mục đối soát 11 hình ảnh minh chứng thực nghiệm hệ thống
+| Ký hiệu bảng | Tên bảng biểu | Vị trí trong báo cáo |
+| :---: | :--- | :---: |
+| **Bảng 1.1** | So sánh Enterprise SOA, Microservices và Kiến trúc Modular Monolith | Mục 1.1.2 |
+| **Bảng 1.2** | Đối chiếu 8 nguyên tắc thiết kế dịch vụ chuẩn hóa của Thomas Erl | Mục 1.1.3 |
+| **Bảng 1.3** | So sánh Web Service truyền thống (SOAP/WSDL) và Kiến trúc RESTful Web API | Mục 1.2.2 |
+| **Bảng 1.4** | Chuẩn hóa HTTP Methods và tính chất Idempotent trong hệ thống | Mục 1.2.3 |
+| **Bảng 1.5** | Tổng hợp so sánh công nghệ lựa chọn cho hệ thống | Mục 1.3.4 |
+| **Bảng 2.1** | Danh mục 37 RESTful API Endpoints của hệ thống PickleBallWeb | Mục 2.5.1 |
+| **Bảng 2.2** | Ma trận ánh xạ màn hình Client tiêu thụ API Backend | Mục 2.6.2 |
+| **Bảng 3.1** | Môi trường và phiên bản công nghệ phát triển hệ thống | Mục 3.1 |
+| **Bảng 4.1** | Bảng tổng hợp kết quả 25 ca kiểm thử tự động API (Automated Test Suite) | Mục 4.1 |
+| **Bảng 4.2** | Bảng đối soát các tiêu chí kỹ thuật đề tài | Mục 4.3.1 |
+| **Bảng 4.3** | Bảng danh mục đối soát 11 hình ảnh minh chứng thực nghiệm hệ thống | Mục 4.3.4 |
 
 ---
 
 \newpage
 
-# DANH MỤC HÌNH ẢNH
+# DANH MỤC HÌNH ẢNH VÀ SƠ ĐỒ
 
-* Hình 1.1: Sơ đồ tương tác giữa Service Consumer, Service Contract và Service Provider
-* Hình 2.1: Sơ đồ Use Case tổng thể hệ thống PickleBallWeb
-* Hình 2.2: Sơ đồ tuần tự nghiệp vụ Đặt sân và Khóa giữ chỗ 10 phút
-* Hình 2.3: Sơ đồ tuần tự nghiệp vụ Thanh toán MoMo và Xử lý Webhook IPN
-* Hình 2.4: Sơ đồ vòng đời trạng thái Khung giờ sân (TimeSlot State Lifecycle)
-* Hình 2.5: Sơ đồ vòng đời trạng thái Đơn hàng hỗn hợp (Order State Lifecycle)
-* Hình 2.6: Sơ đồ kiến trúc tổng thể hệ thống hướng dịch vụ 3 tầng
-* Hình 2.7: Sơ đồ quan hệ thực thể cơ sở dữ liệu (ERD Model)
-* Hình 2.8: Sơ đồ điều hướng các phân hệ màn hình Client (Customer & Admin)
-* Hình 3.1: Giao diện Trang chủ và Danh mục sản phẩm cổng Khách hàng
-* Hình 3.2: Lưới ma trận đặt sân thời gian thực 8 cụm sân (Booking Matrix)
-* Hình 3.3: Màn hình Giỏ hàng hỗn hợp đa dịch vụ và Đồng hồ đếm ngược giữ chỗ
-* Hình 3.4: Giao diện Cổng thanh toán trực tuyến MoMo AIO Gateway
-* Hình 3.5: Giao diện Đơn hàng thành công, Thông báo Email và Mã vé QR Check-in
-* Hình 3.6: Bảng điều khiển quản trị tổng hợp Admin Analytics Dashboard
-* Hình 3.7: Sơ đồ quản lý 8 sân theo trục thời gian thực (CourtMap)
-* Hình 3.8: Giao diện Bán hàng POS tại quầy thu ngân dành cho Lễ tân
-* Hình 3.9: Giao diện Triển khai ứng dụng Client thành công trên nền tảng Vercel Edge
-* Hình 4.1: Báo cáo kết quả kiểm thử tự động toàn diện đạt 25/25 Test Cases thành công
-* Hình 4.2: Kết quả kiểm thử xử lý tranh chấp giữ chỗ đồng thời bảo đảm tính nhất quán
+| Ký hiệu hình | Tên hình ảnh / sơ đồ minh họa | Thể loại | Vị trí trong báo cáo |
+| :---: | :--- | :---: | :---: |
+| **Hình 1.1** | Sơ đồ tương tác giữa Service Consumer, Service Contract và Service Provider | Sơ đồ kiến trúc | Mục 1.1.1 |
+| **Hình 2.1** | Sơ đồ Use Case tổng thể hệ thống PickleBallWeb | Sơ đồ chức năng | Mục 2.2.1 |
+| **Hình 2.2** | Sơ đồ tuần tự nghiệp vụ Đặt sân và Khóa giữ chỗ 10 phút | Sơ đồ tuần tự | Mục 2.2.3 |
+| **Hình 2.3** | Sơ đồ tuần tự nghiệp vụ Thanh toán MoMo và Xử lý Webhook IPN | Sơ đồ tuần tự | Mục 2.2.3 |
+| **Hình 2.4** | Sơ đồ vòng đời trạng thái Khung giờ sân (TimeSlot State Lifecycle) | Sơ đồ trạng thái | Mục 2.2.4 |
+| **Hình 2.5** | Sơ đồ vòng đời trạng thái Đơn hàng hỗn hợp (Order State Lifecycle) | Sơ đồ trạng thái | Mục 2.2.4 |
+| **Hình 2.6** | Sơ đồ kiến trúc tổng thể hệ thống hướng dịch vụ 3 tầng | Sơ đồ kiến trúc | Mục 2.3.1 |
+| **Hình 2.7** | Sơ đồ quan hệ thực thể cơ sở dữ liệu (ERD Model) | Sơ đồ dữ liệu | Mục 2.4.1 |
+| **Hình 2.8** | Sơ đồ điều hướng các phân hệ màn hình Client (Customer & Admin) | Sơ đồ luồng màn hình | Mục 2.6.1 |
+| **Hình 3.1** | Giao diện Trang chủ và Danh mục sản phẩm cổng Khách hàng | Ảnh chụp giao diện | Mục 3.3.4a |
+| **Hình 3.2** | Lưới ma trận đặt sân thời gian thực 8 cụm sân (Booking Matrix) | Ảnh chụp giao diện | Mục 3.3.4b |
+| **Hình 3.3** | Màn hình Giỏ hàng hỗn hợp đa dịch vụ và Đồng hồ đếm ngược giữ chỗ | Ảnh chụp giao diện | Mục 3.3.4c |
+| **Hình 3.4** | Giao diện Cổng thanh toán trực tuyến MoMo AIO Gateway | Ảnh chụp giao diện | Mục 3.3.4d |
+| **Hình 3.5** | Giao diện Đơn hàng thành công, Thông báo Email và Mã vé QR Check-in | Ảnh chụp giao diện | Mục 3.3.4e |
+| **Hình 3.6** | Bảng điều khiển quản trị tổng hợp Admin Analytics Dashboard | Ảnh chụp giao diện | Mục 3.3.5a |
+| **Hình 3.7** | Sơ đồ quản lý 8 sân theo trục thời gian thực (CourtMap) | Ảnh chụp giao diện | Mục 3.3.5b |
+| **Hình 3.8** | Giao diện Bán hàng POS tại quầy thu ngân dành cho Lễ tân | Ảnh chụp giao diện | Mục 3.3.5c |
+| **Hình 3.9** | Giao diện Triển khai ứng dụng Client thành công trên nền tảng Vercel Edge | Ảnh chụp giao diện | Mục 3.4 |
+| **Hình 4.1** | Báo cáo kết quả kiểm thử tự động toàn diện đạt 25/25 Test Cases thành công | Ảnh chụp kiểm thử | Mục 4.1 |
+| **Hình 4.2** | Kết quả kiểm thử xử lý tranh chấp giữ chỗ đồng thời bảo đảm tính nhất quán | Ảnh chụp kiểm thử | Mục 4.1 |
 
 ---
 

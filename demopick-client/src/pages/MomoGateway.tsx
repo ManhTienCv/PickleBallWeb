@@ -18,6 +18,7 @@ import {
   RefreshCw,
   Building2,
   ExternalLink,
+  Calendar,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -32,6 +33,31 @@ export default function MomoGatewayPage() {
   const [timeLeft, setTimeLeft] = useState(600) // 10 phút
   const [copied, setCopied] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isCourtBooking, setIsCourtBooking] = useState<boolean>(() => {
+    try {
+      if (localStorage.getItem('demopick_current_hold')) return true
+      const savedClientOrders = localStorage.getItem('demopick_orders_client')
+      if (savedClientOrders && orderCode) {
+        const clientOrders = JSON.parse(savedClientOrders)
+        const found = clientOrders.find((o: any) => o.order_code === orderCode || o.code === orderCode)
+        if (found) {
+          if (found.slot_ids?.length > 0) return true
+          if (found.items?.some((it: any) => it.item_type === 'booking' || it.item_type === 'booking_slot')) return true
+        }
+      }
+    } catch {}
+    return false
+  })
+
+  useEffect(() => {
+    if (orderCode) {
+      orderService.getOrderByCode(orderCode).then((ord) => {
+        if (ord && ((ord as any).slot_ids?.length > 0 || (ord.items as any[])?.some((it: any) => it.itemType === 'booking_slot' || it.item_type === 'booking_slot' || it.item_type === 'booking'))) {
+          setIsCourtBooking(true)
+        }
+      }).catch(() => {})
+    }
+  }, [orderCode])
 
   // Đếm ngược 10 phút
   useEffect(() => {
@@ -225,11 +251,20 @@ export default function MomoGatewayPage() {
 
             <Button
               variant="ghost"
-              onClick={() => navigate('/checkout')}
+              onClick={() => navigate(isCourtBooking ? '/booking' : '/checkout')}
               className="w-full text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 text-xs font-semibold gap-1.5 h-9"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Quay lại trang Đặt hàng</span>
+              {isCourtBooking ? (
+                <>
+                  <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Quay lại Lịch đặt sân</span>
+                </>
+              ) : (
+                <>
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Quay lại trang Đặt hàng</span>
+                </>
+              )}
             </Button>
           </Card>
 

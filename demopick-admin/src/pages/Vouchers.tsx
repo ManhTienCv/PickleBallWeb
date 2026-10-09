@@ -28,6 +28,7 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
+import { formatNumberWithDots } from "@/lib/utils";
 import api, { ApiResponse } from "@/lib/api";
 
 interface VoucherItem {
@@ -518,10 +519,11 @@ export default function VouchersPage() {
                   {formType === "percentage" ? "Mức giảm (%)" : "Mức giảm (VNĐ)"}
                 </Label>
                 <Input
-                  type="number"
-                  value={formValue}
-                  onChange={(e) => setFormValue(e.target.value)}
-                  placeholder={formType === "percentage" ? "10" : "50000"}
+                  type="text"
+                  inputMode="numeric"
+                  value={formatNumberWithDots(formValue)}
+                  onChange={(e) => setFormValue(e.target.value.replace(/\D/g, ""))}
+                  placeholder={formType === "percentage" ? "10" : "50.000"}
                   required
                 />
               </div>
@@ -531,10 +533,11 @@ export default function VouchersPage() {
               <div className="space-y-1.5">
                 <Label className="text-xs font-bold">Giảm tối đa (VNĐ)</Label>
                 <Input
-                  type="number"
-                  value={formMaxDiscount}
-                  onChange={(e) => setFormMaxDiscount(e.target.value)}
-                  placeholder="200000 (Để trống nếu không giới hạn)"
+                  type="text"
+                  inputMode="numeric"
+                  value={formatNumberWithDots(formMaxDiscount)}
+                  onChange={(e) => setFormMaxDiscount(e.target.value.replace(/\D/g, ""))}
+                  placeholder="200.000 (Để trống nếu không giới hạn)"
                 />
               </div>
             )}
@@ -543,20 +546,22 @@ export default function VouchersPage() {
               <div className="space-y-1.5">
                 <Label className="text-xs font-bold">Đơn hàng tối thiểu (VNĐ)</Label>
                 <Input
-                  type="number"
-                  value={formMinOrder}
-                  onChange={(e) => setFormMinOrder(e.target.value)}
-                  placeholder="300000"
+                  type="text"
+                  inputMode="numeric"
+                  value={formatNumberWithDots(formMinOrder)}
+                  onChange={(e) => setFormMinOrder(e.target.value.replace(/\D/g, ""))}
+                  placeholder="300.000"
                 />
               </div>
 
               <div className="space-y-1.5">
                 <Label className="text-xs font-bold">Giới hạn số lượt dùng</Label>
                 <Input
-                  type="number"
-                  value={formLimit}
-                  onChange={(e) => setFormLimit(e.target.value)}
-                  placeholder="1000 (Để trống nếu vô hạn)"
+                  type="text"
+                  inputMode="numeric"
+                  value={formatNumberWithDots(formLimit)}
+                  onChange={(e) => setFormLimit(e.target.value.replace(/\D/g, ""))}
+                  placeholder="1.000 (Để trống nếu vô hạn)"
                 />
               </div>
             </div>

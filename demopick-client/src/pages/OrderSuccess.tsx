@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
+import { orderService } from '@/services/order.service'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -13,6 +14,33 @@ export default function OrderSuccess() {
   const [isReceiptOpen, setIsReceiptOpen] = useState(false)
   const state = location.state || {}
   const { customerName, customerPhone, shippingAddress, paymentMethod } = state
+
+  const [hasCourtBooking, setHasCourtBooking] = useState<boolean>(() => {
+    if (state.hasCourtBooking || state.holdId || state.slotIds?.length) return true
+    if (state.items?.some((it: any) => it.itemType === 'booking_slot' || it.item_type === 'booking_slot' || it.item_type === 'booking' || it.name?.includes('ca sân') || it.name?.includes('Sân'))) return true
+    try {
+      const saved = localStorage.getItem('demopick_orders_client')
+      if (saved && code) {
+        const clientOrders = JSON.parse(saved)
+        const found = clientOrders.find((o: any) => o.order_code === code || o.code === code)
+        if (found) {
+          if (found.slot_ids?.length > 0) return true
+          if (found.items?.some((it: any) => it.item_type === 'booking' || it.item_type === 'booking_slot' || it.name?.includes('ca sân') || it.name?.includes('Sân'))) return true
+        }
+      }
+    } catch {}
+    return false
+  })
+
+  useEffect(() => {
+    if (code) {
+      orderService.getOrderByCode(code).then((ord) => {
+        if (ord && ((ord as any).slot_ids?.length > 0 || (ord.items as any[])?.some((it: any) => it.itemType === 'booking_slot' || it.item_type === 'booking_slot' || it.item_type === 'booking' || it.name?.includes('ca sân') || it.name?.includes('Sân')))) {
+          setHasCourtBooking(true)
+        }
+      }).catch(() => {})
+    }
+  }, [code])
 
   return (
     <div className="container mx-auto py-12 px-4 sm:px-6 max-w-2xl text-center font-sans">
@@ -114,11 +142,20 @@ export default function OrderSuccess() {
           <span>Quản lý đơn hàng của tôi</span>
         </Button>
         <Button
-          onClick={() => navigate('/products')}
-          className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl h-11"
+          onClick={() => navigate(hasCourtBooking ? '/booking' : '/products')}
+          className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl h-11 cursor-pointer"
         >
-          <ShoppingBag className="h-4 w-4" />
-          <span>Tiếp tục mua sắm</span>
+          {hasCourtBooking ? (
+            <>
+              <CalendarDays className="h-4 w-4" />
+              <span>Quay Lại Lịch Đặt Sân</span>
+            </>
+          ) : (
+            <>
+              <ShoppingBag className="h-4 w-4" />
+              <span>Tiếp tục mua sắm</span>
+            </>
+          )}
         </Button>
       </div>
 

@@ -14,6 +14,7 @@ export interface CreateOrderParams {
   discount?: number
   holdId?: number
   slotId?: number
+  slotIds?: number[]
   shippingFee?: number
   items: Array<{
     id: number
@@ -48,11 +49,13 @@ export interface CheckoutResult {
 
 export interface OrderItem {
   id: number
-  item_type?: 'product' | 'booking'
+  item_type?: 'product' | 'booking' | 'booking_slot'
   item_name: string
   quantity: number
   price: number
   subtotal: number
+  product_id?: number
+  slot_ids?: number[]
 }
 
 export interface Order {
@@ -84,6 +87,8 @@ export interface Order {
   court_address?: string
   play_time?: string
   qr_checkin_code?: string
+  slot_id?: number
+  slot_ids?: number[]
   items: OrderItem[]
 }
 
@@ -97,9 +102,12 @@ export const orderService = {
    */
   async createOrder(params: CreateOrderParams): Promise<CreateOrderResult> {
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://pickleball-manhtien.vercel.app'
-    const effectiveRedirectUrl = params.redirectUrl || `${origin}/payment/momo/callback`
+    const effectiveRedirectUrl = `${origin}/payment/momo/gateway`
+    const effectiveSlotIds = params.slotIds || (params.slotId ? [params.slotId] : [])
     const orderPayload = {
       ...params,
+      slotIds: effectiveSlotIds,
+      slotId: params.slotId || effectiveSlotIds[0],
       redirectUrl: effectiveRedirectUrl,
     }
 
@@ -126,6 +134,7 @@ export const orderService = {
             payment_status: 'unpaid',
             payment_method: params.paymentMethod,
             total_amount: totalAmount,
+            slot_ids: effectiveSlotIds,
             created_at: new Date().toISOString(),
             customer_name: params.shippingName,
             customer_phone: params.shippingPhone,
@@ -133,6 +142,8 @@ export const orderService = {
             items: params.items.map((it, idx) => ({
               id: idx + 1,
               item_name: it.name,
+              item_type: (it.name?.toLowerCase().includes('ca') || it.name?.toLowerCase().includes('sân') || effectiveSlotIds.includes(it.id)) ? 'booking' : 'product',
+              slot_ids: effectiveSlotIds.includes(it.id) ? [it.id] : (effectiveSlotIds.length > 0 ? effectiveSlotIds : undefined),
               quantity: it.quantity,
               price: it.price,
               subtotal: it.price * it.quantity,

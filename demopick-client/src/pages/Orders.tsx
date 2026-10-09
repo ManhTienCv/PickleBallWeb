@@ -104,7 +104,7 @@ export default function OrdersPage() {
           localStorage.setItem('demopick_orders_admin', JSON.stringify(updated))
           window.dispatchEvent(new Event('storage'))
         }
-      } catch {}
+      } catch { }
       refetch()
     } catch (err: any) {
       toast.error(err.message || 'Lỗi khi hủy đơn hàng.')
@@ -334,8 +334,8 @@ export default function OrdersPage() {
                 o.paymentMethod === 'COD' || o.paymentMethod === 'Tiền mặt' || o.payment_method === 'cod'
                   ? 'cod'
                   : o.paymentMethod === 'MoMo' || o.paymentMethod === 'Cổng Online' || o.paymentMethod === 'VietQR' || o.payment_method === 'momo'
-                  ? 'momo'
-                  : 'bank_transfer',
+                    ? 'momo'
+                    : 'bank_transfer',
               total_amount: o.totalAmount || o.grandTotal || o.total_amount || 0,
               shipping_address: o.shippingAddress || o.shipping_address || 'Số 10 Đường Pickleball, Q. Cầu Giấy, Hà Nội',
               shipping_carrier: o.shippingCarrier || o.shipping_carrier || 'GHN Express',
@@ -483,12 +483,12 @@ export default function OrdersPage() {
       prev.map((o) =>
         o.id === editingOrder.id
           ? {
-              ...o,
-              shipping_address: editAddress,
-              customer_name: editName,
-              customer_phone: editPhone,
-              note: editNote,
-            }
+            ...o,
+            shipping_address: editAddress,
+            customer_name: editName,
+            customer_phone: editPhone,
+            note: editNote,
+          }
           : o
       )
     )
@@ -677,11 +677,10 @@ export default function OrdersPage() {
           <button
             key={tabItem.id}
             onClick={() => setActiveTab(tabItem.id as any)}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors duration-150 cursor-pointer border ${
-              activeTab === tabItem.id
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors duration-150 cursor-pointer border ${activeTab === tabItem.id
                 ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm shadow-emerald-600/20'
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-transparent'
-            }`}
+              }`}
           >
             {tabItem.label} ({tabItem.count})
           </button>
@@ -698,8 +697,8 @@ export default function OrdersPage() {
             {activeTab === 'completed'
               ? 'Chưa có đơn hàng sản phẩm nào hoàn thành giao tận nơi.'
               : activeTab === 'booking'
-              ? 'Bạn chưa có vé đặt sân Pickleball nào.'
-              : 'Bạn chưa có đơn hàng nào ở mục này.'}
+                ? 'Bạn chưa có vé đặt sân Pickleball nào.'
+                : 'Bạn chưa có đơn hàng nào ở mục này.'}
           </p>
           <Button
             onClick={() => navigate(activeTab === 'booking' ? '/booking' : '/products')}
@@ -835,7 +834,7 @@ export default function OrdersPage() {
                         </span>
                       </div>
                       <div>
-                        <span className="text-slate-500 dark:text-slate-400">Đối tác giao: </span>
+                        <span className="text-slate-500 dark:text-slate-400">Bên Vận Chuyển: </span>
                         <span className="font-bold text-emerald-700 dark:text-emerald-400">
                           {order.shipping_carrier || 'GHN'} Express {order.tracking_number && `(#${order.tracking_number})`}
                         </span>
@@ -886,8 +885,8 @@ export default function OrdersPage() {
                         {order.payment_method === 'cod' || order.payment_method === 'cash'
                           ? 'Thu tiền khi nhận (COD GHN)'
                           : order.payment_method === 'momo'
-                          ? 'Cổng MoMo / VietQR Hosted'
-                          : 'Cổng Trực Tuyến'}
+                            ? 'Cổng MoMo / VietQR Hosted'
+                            : 'Cổng Trực Tuyến'}
                       </strong>
                     </span>
 
@@ -1103,11 +1102,10 @@ export default function OrdersPage() {
                     return (
                       <div key={idx} className="relative space-y-1">
                         <div
-                          className={`absolute -left-6 top-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                            isLatest
+                          className={`absolute -left-6 top-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center ${isLatest
                               ? 'bg-emerald-600 border-white dark:border-card ring-4 ring-emerald-100 dark:ring-emerald-950'
                               : 'bg-slate-300 dark:bg-slate-600 border-white dark:border-card'
-                          }`}
+                            }`}
                         >
                           {isLatest && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                         </div>
@@ -1246,11 +1244,10 @@ export default function OrdersPage() {
                     className="p-1 hover:scale-110 transition-transform"
                   >
                     <Star
-                      className={`w-6 h-6 ${
-                        (orderHoverRating || orderRating) >= star
+                      className={`w-6 h-6 ${(orderHoverRating || orderRating) >= star
                           ? 'fill-amber-400 text-amber-400'
                           : 'text-slate-300 dark:text-slate-600'
-                      }`}
+                        }`}
                     />
                   </button>
                 ))}
@@ -1258,10 +1255,10 @@ export default function OrdersPage() {
                   {orderRating === 5
                     ? '⭐ Rất Hài Lòng (5/5)'
                     : orderRating === 4
-                    ? '⭐ Tốt (4/5)'
-                    : orderRating === 3
-                    ? '⭐ Bình Thường (3/5)'
-                    : '⭐ Chưa Hài Lòng'}
+                      ? '⭐ Tốt (4/5)'
+                      : orderRating === 3
+                        ? '⭐ Bình Thường (3/5)'
+                        : '⭐ Chưa Hài Lòng'}
                 </span>
               </div>
             </div>

@@ -20,6 +20,7 @@ import {
   Receipt,
   Download,
   Info,
+  Calendar,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -45,6 +46,14 @@ export default function VietQrPaymentPage() {
     accountName: 'NGUYEN MANH TIEN',
     enabled: true,
   })
+
+  const hasCourtBooking = Boolean(
+    stateData?.holdId ||
+    stateData?.slotIds?.length ||
+    order?.items?.some((it: any) => it.itemType === 'booking_slot' || it.item_type === 'booking_slot' || it.item_type === 'booking' || it.name?.includes('ca sân') || it.name?.includes('Sân')) ||
+    order?.slot_ids?.length ||
+    localStorage.getItem('demopick_current_hold')
+  )
 
   // Đếm ngược 15 phút bảo lưu đơn hàng & tồn kho
   const [timeLeft, setTimeLeft] = useState(() => {
@@ -145,8 +154,16 @@ export default function VietQrPaymentPage() {
         const savedClient = localStorage.getItem('demopick_orders_client')
         if (savedClient) {
           const clientOrders = JSON.parse(savedClient)
+          const foundSlots: number[] = []
           const updated = clientOrders.map((o: any) => {
             if (o.order_code === orderCode || o.code === orderCode) {
+              if (Array.isArray(o.slot_ids)) foundSlots.push(...o.slot_ids)
+              if (Array.isArray(o.items)) {
+                o.items.forEach((it: any) => {
+                  if (it.slot_ids && Array.isArray(it.slot_ids)) foundSlots.push(...it.slot_ids)
+                  if ((it.item_type === 'booking' || it.item_type === 'booking_slot') && it.id) foundSlots.push(it.id)
+                })
+              }
               return {
                 ...o,
                 payment_status: 'completed',
@@ -157,6 +174,27 @@ export default function VietQrPaymentPage() {
             return o
           })
           localStorage.setItem('demopick_orders_client', JSON.stringify(updated))
+
+          // Lấy thêm từ confirmedOrder hoặc state nếu có
+          if (Array.isArray(confirmedOrder?.items)) {
+            confirmedOrder.items.forEach((it: any) => {
+              if ((it.itemType === 'booking_slot' || it.item_type === 'booking_slot') && (it.productId || it.product_id)) {
+                foundSlots.push(Number(it.productId || it.product_id))
+              }
+            })
+          }
+          if (Array.isArray(stateData?.slotIds)) {
+            foundSlots.push(...stateData.slotIds)
+          }
+
+          if (foundSlots.length > 0) {
+            const rawBooked = localStorage.getItem('demopick_booked_slots')
+            const currentBooked: string[] = rawBooked ? JSON.parse(rawBooked) : []
+            foundSlots.forEach((sid) => {
+              if (!currentBooked.includes(String(sid))) currentBooked.push(String(sid))
+            })
+            localStorage.setItem('demopick_booked_slots', JSON.stringify(currentBooked))
+          }
         }
 
         // Cập nhật admin orders
@@ -249,11 +287,20 @@ export default function VietQrPaymentPage() {
         {/* Navigation Bar */}
         <div className="flex items-center justify-between">
           <Link
-            to="/checkout"
+            to={hasCourtBooking ? "/booking" : "/checkout"}
             className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Quay lại trang Đặt hàng</span>
+            {hasCourtBooking ? (
+              <>
+                <Calendar className="w-4 h-4 text-emerald-600" />
+                <span>Quay lại Lịch đặt sân</span>
+              </>
+            ) : (
+              <>
+                <ArrowLeft className="w-4 h-4" />
+                <span>Quay lại trang Đặt hàng</span>
+              </>
+            )}
           </Link>
 
           <div className="flex items-center gap-2">

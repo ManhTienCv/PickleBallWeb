@@ -435,7 +435,7 @@ export default function MapLocationPicker({
           setCurrentLng(startLng)
         }
       }
-    } catch {}
+    } catch { }
 
     const map = L.map(mapContainerRef.current, {
       center: [startLat, startLng],
@@ -517,7 +517,7 @@ export default function MapLocationPicker({
           await performSmartReverseGeocode(latitude, longitude)
           try {
             sessionStorage.setItem('demopick_last_gps_pos', JSON.stringify({ lat: latitude, lng: longitude }))
-          } catch {}
+          } catch { }
         },
         (err) => {
           console.log('Auto geolocation skipped or blocked:', err.message)
@@ -620,7 +620,7 @@ export default function MapLocationPicker({
         await performSmartReverseGeocode(latitude, longitude)
         try {
           sessionStorage.setItem('demopick_last_gps_pos', JSON.stringify({ lat: latitude, lng: longitude }))
-        } catch {}
+        } catch { }
         setIsLocating(false)
         toast.success('Đã xác định vị trí GPS hiện tại của bạn!')
       },
@@ -785,10 +785,6 @@ export default function MapLocationPicker({
             </div>
           </div>
         </div>
-
-        <p className="text-xs text-slate-500 dark:text-slate-400 italic">
-          👉 Bấm <strong>"Xác Nhận Dùng Địa Chỉ Này"</strong> để áp dụng thông tin vị trí vào biểu mẫu.
-        </p>
       </div>
 
       {/* Footer Buttons */}
