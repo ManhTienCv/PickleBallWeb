@@ -171,17 +171,59 @@ export default function Reports() {
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
+  // Hàm tiện ích kiểm tra đơn hàng nằm trong khoảng thời gian được chọn
+  const isWithinPeriod = (dateVal: any, period: string): boolean => {
+    if (period === "all") return true;
+    if (!dateVal) return false;
+    const dateObj = new Date(dateVal);
+    if (isNaN(dateObj.getTime())) return true;
+    const now = new Date();
+    const diffMs = now.getTime() - dateObj.getTime();
+
+    if (period === "today") {
+      return (
+        dateObj.getDate() === now.getDate() &&
+        dateObj.getMonth() === now.getMonth() &&
+        dateObj.getFullYear() === now.getFullYear()
+      );
+    }
+    if (period === "7days") {
+      return diffMs >= 0 && diffMs <= 7 * 24 * 3600 * 1000;
+    }
+    if (period === "30days") {
+      return diffMs >= 0 && diffMs <= 30 * 24 * 3600 * 1000;
+    }
+    if (period === "this_month") {
+      return (
+        dateObj.getMonth() === now.getMonth() &&
+        dateObj.getFullYear() === now.getFullYear()
+      );
+    }
+    if (period === "this_year") {
+      return dateObj.getFullYear() === now.getFullYear();
+    }
+    return true;
+  };
+
   // ── 2. TÍNH TOÁN CÁC CHỈ SỐ DOANH THU ĐỘNG (DYNAMIC METRICS) ───────────────
-  // Lọc các đơn hàng đã thanh toán thành công
-  const paidOrders = useMemo(() => {
+  // Lọc các đơn hàng theo mốc thời gian đã chọn
+  const periodOrders = useMemo(() => {
     return orders.filter((o: any) => {
+      const orderDate = o.created_at || o.createdAt || o.dateStr || o.date;
+      return isWithinPeriod(orderDate, selectedPeriod);
+    });
+  }, [orders, selectedPeriod]);
+
+  // Lọc các đơn hàng đã thanh toán thành công trong mốc thời gian
+  const paidOrders = useMemo(() => {
+    return periodOrders.filter((o: any) => {
       const st = (o.status || "").toUpperCase();
       const pst = (o.payment_status || "").toLowerCase();
       return st === "PAID" || st === "COMPLETED" || pst === "paid" || st === "CONFIRMED" || st === "SHIPPING";
     });
-  }, [orders]);
+  }, [periodOrders]);
 
-  // Tổng doanh thu thực tế
+  // Tổng doanh thu thực tế theo mốc thời gian
   const totalRevenue = useMemo(() => {
     return paidOrders.reduce((sum, o) => {
       const amt = Number(o.final_amount ?? o.total ?? o.total_amount) || 0;
@@ -189,20 +231,20 @@ export default function Reports() {
     }, 0);
   }, [paidOrders]);
 
-  // Tổng số đơn hàng
-  const totalOrdersCount = orders.length;
+  // Tổng số đơn hàng theo mốc thời gian
+  const totalOrdersCount = periodOrders.length;
 
-  // Tổng số khách hàng duy nhất
+  // Tổng số khách hàng duy nhất theo mốc thời gian
   const totalCustomersCount = useMemo(() => {
     const custSet = new Set<string>();
-    orders.forEach((o) => {
+    periodOrders.forEach((o) => {
       const key = o.customer_phone || o.phone || o.customer_name || o.customer;
       if (key && typeof key === "string" && key.trim()) {
         custSet.add(key.trim());
       }
     });
     return custSet.size;
-  }, [orders]);
+  }, [periodOrders]);
 
   // Doanh thu theo danh mục sản phẩm thực tế
   const categoryRevenueData = useMemo(() => {
@@ -295,6 +337,11 @@ export default function Reports() {
 
     return entries.sort((a, b) => b.date.localeCompare(a.date));
   }, [paidOrders]);
+
+  // Dữ liệu theo thứ tự thời gian tăng dần cho biểu đồ AreaChart (tránh reverse trong render)
+  const chronologicalDailyData = useMemo(() => {
+    return [...dailyRevenueData].reverse();
+  }, [dailyRevenueData]);
 
   // Doanh thu theo tháng thực tế (Monthly Revenue)
   const monthlyRevenueData = useMemo(() => {
@@ -1124,7 +1171,7 @@ export default function Reports() {
                         </div>
                       ) : (
                         <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={[...dailyRevenueData].reverse()}>
+                          <AreaChart data={chronologicalDailyData}>
                             <defs>
                               <linearGradient id="colorDaily" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />

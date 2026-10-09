@@ -51,6 +51,8 @@ import { toast } from "sonner";
 
 import StaffTable, { StaffUser } from "@/components/crm/StaffTable";
 import AddStaffDialog from "@/components/crm/AddStaffDialog";
+import { UserFormModal, UserFormData } from "@/components/crm/UserFormModal";
+import { UserProfileModal } from "@/components/crm/UserProfileModal";
 
 export type UserRole = "admin" | "staff" | "customer";
 export type UserStatus = "active" | "locked";
@@ -244,6 +246,29 @@ export default function UsersPage() {
     return filteredUsers.slice(start, start + itemsPerPage);
   }, [filteredUsers, currentPage, itemsPerPage]);
 
+  const paginationRange = useMemo((): (number | string)[] => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const delta = 1;
+    const range: (number | string)[] = [];
+    const left = Math.max(2, currentPage - delta);
+    const right = Math.min(totalPages - 1, currentPage + delta);
+
+    range.push(1);
+    if (left > 2) {
+      range.push("...");
+    }
+    for (let i = left; i <= right; i++) {
+      range.push(i);
+    }
+    if (right < totalPages - 1) {
+      range.push("...");
+    }
+    range.push(totalPages);
+    return range;
+  }, [totalPages, currentPage]);
+
   useEffect(() => {
     if (currentPage > totalPages) {
       setCurrentPage(totalPages);
@@ -377,6 +402,14 @@ export default function UsersPage() {
     setFormRole(user.role);
     setFormStatus(user.status);
     setModalOpen(true);
+  };
+
+  const handleFormChange = <K extends keyof UserFormData>(field: K, value: UserFormData[K]) => {
+    if (field === "name") setFormName(value as string);
+    else if (field === "email") setFormEmail(value as string);
+    else if (field === "phone") setFormPhone(value as string);
+    else if (field === "role") setFormRole(value as UserRole);
+    else if (field === "status") setFormStatus(value as UserStatus);
   };
 
   const handleSaveUser = (e: React.FormEvent) => {
@@ -982,19 +1015,32 @@ export default function UsersPage() {
                   </Button>
 
                   <div className="flex items-center gap-1 px-1">
-                    {Array.from({ length: totalPages }).map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setCurrentPage(i + 1)}
-                        className={`w-8 h-8 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                          currentPage === i + 1
-                            ? "bg-emerald-600 text-white shadow-sm"
-                            : "text-slate-600 hover:bg-slate-200"
-                        }`}
-                      >
-                        {i + 1}
-                      </button>
-                    ))}
+                    {paginationRange.map((item, idx) => {
+                      if (item === "...") {
+                        return (
+                          <span
+                            key={`dots-${idx}`}
+                            className="w-8 h-8 flex items-center justify-center text-xs font-bold text-slate-400 select-none"
+                          >
+                            ...
+                          </span>
+                        );
+                      }
+                      const pageNum = item as number;
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`w-8 h-8 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                            currentPage === pageNum
+                              ? "bg-emerald-600 text-white shadow-sm"
+                              : "text-slate-600 hover:bg-slate-200"
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
                   </div>
 
                   <Button
@@ -1107,381 +1153,31 @@ export default function UsersPage() {
         )}
 
         {/* MODAL THÊM / SỬA TÀI KHOẢN NGƯỜI DÙNG */}
-        <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-          <DialogContent className="max-w-lg rounded-3xl p-6 sm:p-7 bg-white shadow-2xl border-0">
-            <DialogHeader className="space-y-1 pb-2 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
-                  {editingUserId ? <Edit className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />}
-                </div>
-                <div>
-                  <DialogTitle className="text-base sm:text-lg font-black text-slate-900 leading-tight">
-                    {editingUserId ? "Cập Nhật Hồ Sơ & Phân Quyền" : "Tạo Mới Tài Khoản Người Dùng"}
-                  </DialogTitle>
-                  <DialogDescription className="text-xs text-slate-500 mt-0.5">
-                    Quản lý thông tin tài khoản và thiết lập quyền hạn truy cập hệ thống.
-                  </DialogDescription>
-                </div>
-              </div>
-            </DialogHeader>
-
-            <form onSubmit={handleSaveUser} className="space-y-4 pt-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-slate-700 flex items-center gap-1">
-                  <span>Họ và tên người dùng</span>
-                  <span className="text-rose-500">*</span>
-                </Label>
-                <div className="relative">
-                  <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <Input
-                    value={formName}
-                    onChange={(e) => setFormName(e.target.value)}
-                    placeholder="Ví dụ: Nguyễn Lê Hoàng Nam"
-                    className="pl-9.5 h-10 rounded-xl text-xs bg-slate-50/70 border-slate-200 focus-visible:bg-white"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-slate-700 flex items-center gap-1">
-                    <span>Email đăng nhập</span>
-                    <span className="text-rose-500">*</span>
-                  </Label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <Input
-                      type="email"
-                      value={formEmail}
-                      onChange={(e) => setFormEmail(e.target.value)}
-                      placeholder="hoangnam@example.com"
-                      className="pl-9.5 h-10 rounded-xl text-xs bg-slate-50/70 border-slate-200 focus-visible:bg-white"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-slate-700">Số điện thoại</Label>
-                  <div className="relative">
-                    <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <Input
-                      value={formPhone}
-                      onChange={(e) => setFormPhone(e.target.value)}
-                      placeholder="0988 123 456"
-                      className="pl-9.5 h-10 rounded-xl text-xs bg-slate-50/70 border-slate-200 focus-visible:bg-white"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-slate-700">Phân quyền vai trò</Label>
-                <Select value={formRole} onValueChange={(v: any) => setFormRole(v)}>
-                  <SelectTrigger className="h-10 rounded-xl text-xs font-semibold bg-slate-50/70 border-slate-200">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl p-1.5 shadow-xl border-slate-200">
-                    <SelectItem value="customer" className="rounded-xl py-2 cursor-pointer">
-                      <div>
-                        <p className="font-bold text-blue-950 text-xs flex items-center gap-1.5">
-                          <Users className="w-3.5 h-3.5 text-blue-600" />
-                          <span>Khách hàng</span>
-                        </p>
-                        <p className="text-[11px] text-slate-500 mt-0.5">Đặt sân online, mua thiết bị pickleball, theo dõi đơn hàng</p>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="staff" className="rounded-xl py-2 cursor-pointer">
-                      <div>
-                        <p className="font-bold text-amber-950 text-xs flex items-center gap-1.5">
-                          <UserCheck className="w-3.5 h-3.5 text-amber-600" />
-                          <span>Lễ tân</span>
-                        </p>
-                        <p className="text-[11px] text-slate-500 mt-0.5">Trực quầy POS, check-in sân bóng, hỗ trợ Live chat</p>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="admin" className="rounded-xl py-2 cursor-pointer">
-                      <div>
-                        <p className="font-bold text-rose-950 text-xs flex items-center gap-1.5">
-                          <ShieldCheck className="w-3.5 h-3.5 text-rose-600" />
-                          <span>Admin</span>
-                        </p>
-                        <p className="text-[11px] text-slate-500 mt-0.5">Toàn quyền hệ thống, xem báo cáo, kho hàng và phân quyền</p>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-slate-700">Trạng thái tài khoản</Label>
-                <Select value={formStatus} onValueChange={(v: any) => setFormStatus(v)}>
-                  <SelectTrigger className="h-10 rounded-xl text-xs font-semibold bg-slate-50/70 border-slate-200">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl">
-                    <SelectItem value="active" className="cursor-pointer text-xs font-medium">
-                      <span className="flex items-center gap-2 text-emerald-700 font-bold">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                        Đang kích hoạt (Được phép đăng nhập)
-                      </span>
-                    </SelectItem>
-                    <SelectItem value="locked" className="cursor-pointer text-xs font-medium">
-                      <span className="flex items-center gap-2 text-rose-700 font-bold">
-                        <span className="w-2 h-2 rounded-full bg-rose-500" />
-                        Tạm khóa tài khoản (Chặn đăng nhập)
-                      </span>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {!editingUserId && (
-                <div className="p-3 bg-emerald-50/60 rounded-2xl border border-emerald-200 text-[11px] text-emerald-900 flex items-start gap-2">
-                  <KeyRound className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold">Mật khẩu mặc định hệ thống: </span>
-                    <code className="bg-white px-1.5 py-0.5 rounded-md border border-emerald-300 font-bold text-emerald-700">123456</code>
-                    <p className="text-emerald-700 mt-0.5">Người dùng có thể đăng nhập ngay và tự đổi mật khẩu trong hồ sơ cá nhân.</p>
-                  </div>
-                </div>
-              )}
-
-              <DialogFooter className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setModalOpen(false)}
-                  className="rounded-xl text-xs font-semibold h-9.5 px-4"
-                >
-                  Hủy bỏ
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold h-9.5 px-5 shadow-sm"
-                >
-                  {editingUserId ? "Lưu Thay Đổi" : "Tạo Người Dùng"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <UserFormModal
+          open={modalOpen}
+          onOpenChange={setModalOpen}
+          editingUserId={editingUserId}
+          formData={{
+            name: formName,
+            email: formEmail,
+            phone: formPhone,
+            role: formRole,
+            status: formStatus,
+          }}
+          onChange={handleFormChange}
+          onSubmit={handleSaveUser}
+        />
 
         {/* MODAL XEM HỒ SƠ CHI TIẾT */}
-        {selectedUser && (
-          <Dialog open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
-            <DialogContent className="max-w-xl rounded-3xl p-0 overflow-hidden bg-white shadow-2xl border-0">
-              <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 p-6 text-white relative">
-                <button
-                  onClick={() => setSelectedUser(null)}
-                  className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/80 hover:text-white transition-colors cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-
-                <div className="flex items-center gap-4">
-                  <div
-                    className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${
-                      selectedUser.avatarColor || "from-emerald-500 to-teal-600"
-                    } text-white flex items-center justify-center font-black text-2xl shadow-lg ring-4 ring-white/20`}
-                  >
-                    {selectedUser.name.charAt(0).toUpperCase()}
-                  </div>
-
-                  <div>
-                    <h3 className="text-xl font-black text-white">{selectedUser.name}</h3>
-                    <p className="text-xs text-white/70 font-normal mt-0.5">{selectedUser.email}</p>
-
-                    <div className="flex items-center gap-2 mt-2">
-                      {selectedUser.role === "admin" ? (
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">
-                          Admin
-                        </span>
-                      ) : selectedUser.role === "staff" ? (
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                          Lễ tân
-                        </span>
-                      ) : (
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/40">
-                          Khách hàng
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex border-b border-slate-200 px-6 bg-slate-50/50">
-                <button
-                  onClick={() => setDetailTab("overview")}
-                  className={`py-3 px-4 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
-                    detailTab === "overview"
-                      ? "border-emerald-600 text-emerald-700 bg-white"
-                      : "border-transparent text-slate-500 hover:text-slate-900"
-                  }`}
-                >
-                  Tổng Quan Hồ Sơ
-                </button>
-                <button
-                  onClick={() => setDetailTab("orders")}
-                  className={`py-3 px-4 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
-                    detailTab === "orders"
-                      ? "border-emerald-600 text-emerald-700 bg-white"
-                      : "border-transparent text-slate-500 hover:text-slate-900"
-                  }`}
-                >
-                  Lịch Sử Đơn Hàng & Đặt Sân ({selectedUser.recentOrders?.length || selectedUser.ordersCount})
-                </button>
-                <button
-                  onClick={() => setDetailTab("security")}
-                  className={`py-3 px-4 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
-                    detailTab === "security"
-                      ? "border-emerald-600 text-emerald-700 bg-white"
-                      : "border-transparent text-slate-500 hover:text-slate-900"
-                  }`}
-                >
-                  Phân Quyền & Bảo Mật
-                </button>
-              </div>
-
-              <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
-                {detailTab === "overview" && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                        <p className="text-[11px] text-slate-400 font-semibold">Số điện thoại</p>
-                        <p className="text-xs font-bold text-slate-800 mt-0.5 flex items-center gap-1.5">
-                          <Phone className="w-3.5 h-3.5 text-slate-500" />
-                          {selectedUser.phone}
-                        </p>
-                      </div>
-
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                        <p className="text-[11px] text-slate-400 font-semibold">Ngày tham gia hệ thống</p>
-                        <p className="text-xs font-bold text-slate-800 mt-0.5 flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                          {selectedUser.createdAt}
-                        </p>
-                      </div>
-
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                        <p className="text-[11px] text-slate-400 font-semibold">Tổng tiền đã chi tiêu</p>
-                        <p className="text-sm font-black text-emerald-700 mt-0.5">
-                          {selectedUser.totalSpent.toLocaleString("vi-VN")} đ
-                        </p>
-                      </div>
-
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                        <p className="text-[11px] text-slate-400 font-semibold">Tổng lượt đặt sân & mua hàng</p>
-                        <p className="text-sm font-black text-blue-700 mt-0.5">
-                          {selectedUser.ordersCount + (selectedUser.courtBookingsCount || 0)} lượt giao dịch
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {detailTab === "orders" && (
-                  <div className="space-y-3">
-                    {selectedUser.recentOrders && selectedUser.recentOrders.length > 0 ? (
-                      selectedUser.recentOrders.map((ord) => (
-                        <div
-                          key={ord.code}
-                          className="p-3.5 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200 transition-colors space-y-1.5"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-xs text-emerald-700">{ord.code}</span>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                              {ord.status}
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-700 font-medium line-clamp-1">{ord.items}</p>
-                          <div className="flex items-center justify-between text-[11px] pt-1 text-slate-400">
-                            <span>{ord.date}</span>
-                            <strong className="text-slate-900 font-bold">{ord.total.toLocaleString("vi-VN")} đ</strong>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="py-8 text-center text-slate-400 text-xs">
-                        <ShoppingBag className="w-8 h-8 mx-auto text-slate-300 mb-2" />
-                        Chưa có lịch sử giao dịch phát sinh.
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {detailTab === "security" && (
-                  <div className="space-y-4">
-                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-                      <h4 className="text-xs font-bold text-slate-900 flex items-center gap-2">
-                        <KeyRound className="w-4 h-4 text-slate-600" />
-                        <span>Trạng Thái Quyền Hạn & Khóa Tài Khoản</span>
-                      </h4>
-
-                      <div className="flex items-center justify-between pt-1">
-                        <div>
-                          <p className="text-xs font-bold text-slate-800">Trạng thái hoạt động</p>
-                          <p className="text-[11px] text-slate-400">
-                            {selectedUser.status === "active" ? "Tài khoản đang được phép đăng nhập" : "Tài khoản đã bị tạm khóa"}
-                          </p>
-                        </div>
-
-                        <Button
-                          size="sm"
-                          variant={selectedUser.status === "active" ? "destructive" : "default"}
-                          disabled={selectedUser.id === 1}
-                          onClick={() => handleToggleLock(selectedUser)}
-                          className="rounded-xl text-xs font-bold h-8"
-                        >
-                          {selectedUser.status === "active" ? "Khóa Tài Khoản" : "Mở Khóa"}
-                        </Button>
-                      </div>
-
-                      <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
-                        <div>
-                          <p className="text-xs font-bold text-slate-800">Đặt lại mật khẩu</p>
-                          <p className="text-[11px] text-slate-400">Khôi phục mật khẩu mặc định về <code>123456</code></p>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => toast.success(`Đã gửi yêu cầu reset mật khẩu về email ${selectedUser.email}!`)}
-                          className="rounded-xl text-xs font-semibold h-8"
-                        >
-                          Gửi Mật Khẩu Mới
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    handleOpenEditUser(selectedUser);
-                    setSelectedUser(null);
-                  }}
-                  className="rounded-xl text-xs font-bold gap-1.5"
-                >
-                  <Edit className="w-3.5 h-3.5 text-blue-600" />
-                  Chỉnh Sửa Hồ Sơ
-                </Button>
-
-                <Button
-                  onClick={() => setSelectedUser(null)}
-                  className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold px-5"
-                >
-                  Đóng
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
-      </div>
+        <UserProfileModal
+          user={selectedUser}
+          onClose={() => setSelectedUser(null)}
+          onEdit={(user) => {
+            handleOpenEditUser(user);
+          }}
+          onToggleLock={handleToggleLock}
+        />
+        </div>
     </AppLayout>
   );
 }

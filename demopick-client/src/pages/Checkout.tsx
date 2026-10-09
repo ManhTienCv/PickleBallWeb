@@ -6,7 +6,7 @@ import { orderService } from '@/services/order.service'
 import { notificationService } from '@/services/notification.service'
 import { shippingService, GHNProvince, GHNDistrict, GHNWard } from '@/services/shipping.service'
 import { addressService, UserAddress } from '@/services/address.service'
-import MapLocationPicker, { SelectedLocationResult } from '@/components/MapLocationPicker'
+import { type SelectedLocationResult } from '@/components/MapLocationPicker'
 import { useCheckoutTimer } from '@/contexts/CheckoutTimerContext'
 import { authHelpers } from '@/stores/useAuthStore'
 import { useAuthModalStore } from '@/stores/useAuthModalStore'
@@ -16,14 +16,11 @@ import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog'
+import { MapPickerModal } from '@/components/checkout/MapPickerModal'
+import { ConfirmOrderModal } from '@/components/checkout/ConfirmOrderModal'
+import { ExitCheckoutModal } from '@/components/checkout/ExitCheckoutModal'
+import { SessionExpiredModal } from '@/components/checkout/SessionExpiredModal'
+import { VoucherPickerModal } from '@/components/checkout/VoucherPickerModal'
 import {
   CreditCard,
   Banknote,
@@ -1143,227 +1140,70 @@ export default function CheckoutPage() {
       </form>
 
       {/* MAP PICKER MODAL IN CHECKOUT */}
-      <Dialog open={showMapPickerModal} onOpenChange={setShowMapPickerModal}>
-        <DialogContent className="sm:max-w-4xl max-w-[95vw] w-full sm:rounded-3xl p-6 sm:p-8 bg-white dark:bg-card border border-slate-200 dark:border-border shadow-2xl font-sans max-h-[92vh] overflow-y-auto overflow-x-hidden text-card-foreground">
-          <DialogHeader className="space-y-1">
-            <DialogTitle className="text-lg font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              <span>Ghim Vị Trí Nhận Hàng Trên Bản Đồ</span>
-            </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-              Chọn toạ độ GPS chính xác để Shipper giao hàng tận cửa
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="py-2">
-            <MapLocationPicker
-              initialAddress={fullShippingAddress}
-              onSelectLocation={handleMapLocationConfirmed}
-              onCancel={() => setShowMapPickerModal(false)}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
+      <MapPickerModal
+        open={showMapPickerModal}
+        onOpenChange={setShowMapPickerModal}
+        initialAddress={fullShippingAddress}
+        onSelectLocation={handleMapLocationConfirmed}
+        onCancel={() => setShowMapPickerModal(false)}
+      />
 
       {/* Confirm COD Modal */}
-      <Dialog open={showConfirmOrderModal} onOpenChange={setShowConfirmOrderModal}>
-        <DialogContent className="sm:max-w-md bg-white dark:bg-card rounded-3xl p-6 font-sans border-border text-card-foreground">
-          <DialogHeader className="space-y-2">
-            <DialogTitle className="text-lg font-black text-slate-900 dark:text-slate-100">
-              Xác Nhận Đặt Hàng (Thu Tiền COD)
-            </DialogTitle>
-            <DialogDescription className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed font-medium">
-              Bạn đang chọn hình thức thanh toán khi nhận hàng. Đơn hàng sẽ được chuyển tới bộ phận đóng gói và bàn giao cho Shipper <strong className="text-slate-900 dark:text-slate-100">GHN Express</strong>.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-border text-xs space-y-1">
-            <div className="flex justify-between">
-              <span className="text-slate-500 dark:text-slate-400">Người nhận:</span>
-              <span className="font-bold text-slate-900 dark:text-slate-100">{customerName} ({customerPhone})</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500 dark:text-slate-400">Địa chỉ giao:</span>
-              <span className="font-semibold text-slate-800 dark:text-slate-200">{fullShippingAddress}</span>
-            </div>
-            <div className="flex justify-between border-t border-slate-200 dark:border-border pt-1 mt-1">
-              <span className="text-slate-500 dark:text-slate-400">Tổng thanh toán COD:</span>
-              <span className="font-black text-emerald-600 dark:text-emerald-400">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(grandTotal)}</span>
-            </div>
-          </div>
-
-          <DialogFooter className="flex flex-row gap-3 justify-end pt-4 border-t border-slate-100 dark:border-border">
-            <Button
-              variant="outline"
-              onClick={() => setShowConfirmOrderModal(false)}
-              className="rounded-xl font-bold border-slate-300 dark:border-border"
-            >
-              Hủy
-            </Button>
-            <Button
-              onClick={executeCheckoutSubmit}
-              disabled={isSubmitting}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md"
-            >
-              {isSubmitting ? 'Đang xử lý...' : 'Xác Nhận Đặt Hàng'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmOrderModal
+        open={showConfirmOrderModal}
+        onOpenChange={setShowConfirmOrderModal}
+        customerName={customerName}
+        customerPhone={customerPhone}
+        fullShippingAddress={fullShippingAddress}
+        grandTotal={grandTotal}
+        isSubmitting={isSubmitting}
+        onConfirm={executeCheckoutSubmit}
+        onCancel={() => setShowConfirmOrderModal(false)}
+      />
 
       {/* Exit Modal */}
-      <Dialog open={showExitModal} onOpenChange={setShowExitModal}>
-        <DialogContent className="sm:max-w-md bg-white dark:bg-card rounded-3xl p-6 font-sans border-border text-card-foreground">
-          <DialogHeader className="space-y-2">
-            <DialogTitle className="text-lg font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
-              <span>{hasCourtBooking ? 'Quay Lại Lịch Đặt Sân?' : 'Quay Lại Giỏ Hàng?'}</span>
-            </DialogTitle>
-            <DialogDescription className="text-slate-600 dark:text-slate-400 text-xs font-medium">
-              {hasCourtBooking
-                ? 'Thời gian giữ ca sân 15 phút sẽ bị hủy bỏ và giải phóng ngay lập tức nếu bạn rời khỏi trang thanh toán.'
-                : 'Thời gian giữ đơn 20 phút sẽ bị hủy bỏ nếu bạn rời khỏi trang thanh toán.'}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex flex-row gap-3 justify-end pt-4 border-t border-slate-100 dark:border-border">
-            <Button variant="outline" onClick={() => setShowExitModal(false)} className="rounded-xl font-bold border-slate-300 dark:border-border cursor-pointer">
-              Ở Lại Tiếp Tục
-            </Button>
-            <Button
-              onClick={async () => {
-                if (holdId) {
-                  try {
-                    await bookingService.releaseHold(Number(holdId))
-                  } catch { }
-                  localStorage.removeItem('demopick_current_hold')
-                }
-                resetTimer()
-                navigate(hasCourtBooking ? '/booking' : '/cart')
-              }}
-              variant="destructive"
-              className="rounded-xl font-bold cursor-pointer"
-            >
-              Rời Khỏi
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ExitCheckoutModal
+        open={showExitModal}
+        onOpenChange={setShowExitModal}
+        hasCourtBooking={hasCourtBooking}
+        onStay={() => setShowExitModal(false)}
+        onExit={async () => {
+          if (holdId) {
+            try {
+              await bookingService.releaseHold(Number(holdId))
+            } catch { }
+            localStorage.removeItem('demopick_current_hold')
+          }
+          resetTimer()
+          navigate(hasCourtBooking ? '/booking' : '/cart')
+        }}
+      />
 
       {/* Session Expired Modal */}
-      <Dialog open={isExpired} onOpenChange={() => { }}>
-        <DialogContent className="sm:max-w-md bg-white dark:bg-card rounded-3xl p-6 font-sans border-border text-card-foreground">
-          <DialogHeader className="space-y-2">
-            <DialogTitle className="text-lg font-black text-rose-600 dark:text-rose-400 flex items-center gap-2">
-              <Clock className="h-5 w-5 text-rose-600 dark:text-rose-400" />
-              <span>Thời Gian Giữ Đơn Đã Hết Hạn</span>
-            </DialogTitle>
-            <DialogDescription className="text-slate-600 dark:text-slate-400 text-xs font-medium">
-              {hasCourtBooking
-                ? 'Phiên giữ chỗ ca sân 15 phút của bạn đã kết thúc. Vui lòng quay lại màn hình chọn sân để đặt lại ca mới.'
-                : 'Phiên giữ sản phẩm & lịch sân 20 phút của bạn đã kết thúc. Bạn có muốn gia hạn thêm 20 phút để tiếp tục thanh toán không?'}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex flex-row gap-3 justify-end pt-4 border-t border-slate-100 dark:border-border">
-            <Button
-              variant="outline"
-              onClick={() => {
-                resetTimer()
-                navigate(hasCourtBooking ? '/booking' : '/cart')
-              }}
-              className="rounded-xl font-bold border-slate-300 dark:border-border cursor-pointer"
-            >
-              {hasCourtBooking ? 'Về Lịch Đặt Sân' : 'Về Giỏ Hàng'}
-            </Button>
-            <Button
-              onClick={() => {
-                extendTimer()
-                toast.success('Đã gia hạn thêm 20 phút giữ chỗ thanh toán!')
-              }}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md cursor-pointer"
-            >
-              Gia Hạn Thêm 20 Phút
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SessionExpiredModal
+        open={isExpired}
+        hasCourtBooking={hasCourtBooking}
+        onReturn={() => {
+          resetTimer()
+          navigate(hasCourtBooking ? '/booking' : '/cart')
+        }}
+        onExtend={() => {
+          extendTimer()
+          toast.success('Đã gia hạn thêm 20 phút giữ chỗ thanh toán!')
+        }}
+      />
 
       {/* Voucher Picker Modal */}
-      <Dialog open={showVoucherModal} onOpenChange={setShowVoucherModal}>
-        <DialogContent className="sm:max-w-lg bg-white dark:bg-card rounded-3xl p-6 font-sans border-border text-card-foreground">
-          <DialogHeader className="space-y-1 pb-2 border-b border-slate-100 dark:border-border">
-            <DialogTitle className="text-lg font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <Ticket className="h-5 w-5 text-amber-500" />
-              <span>Kho Mã Giảm Giá &amp; Ưu Đãi</span>
-            </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-              Chọn mã ưu đãi phù hợp nhất với giá trị đơn hàng của bạn
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3 max-h-[60vh] overflow-y-auto py-2 pr-1">
-            {availableVouchers.map((v) => {
-              const isEligible = combinedSubtotal >= v.min_order_amount
-              const isCurrent = appliedVoucher?.code === v.code
-
-              return (
-                <div
-                  key={v.id}
-                  className={`p-3.5 rounded-2xl border transition-all flex items-start justify-between gap-3 ${isCurrent
-                    ? 'border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/30'
-                    : isEligible
-                      ? 'border-slate-200 dark:border-border hover:border-primary/50 bg-card'
-                      : 'border-slate-200/60 dark:border-border/40 opacity-60 bg-muted/20'
-                    }`}
-                >
-                  <div className="space-y-1 min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-black text-xs px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200 uppercase">
-                        {v.code}
-                      </span>
-                      <span className="font-bold text-xs text-slate-900 dark:text-slate-100 truncate">
-                        {v.title}
-                      </span>
-                    </div>
-                    {v.description && (
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
-                        {v.description}
-                      </p>
-                    )}
-                    <div className="text-[10px] text-slate-400 dark:text-slate-500 pt-0.5">
-                      Đơn tối thiểu: <b>{new Intl.NumberFormat('vi-VN').format(v.min_order_amount)}đ</b>
-                    </div>
-                  </div>
-
-                  <Button
-                    type="button"
-                    size="sm"
-                    disabled={!isEligible || isCurrent || isApplyingVoucher}
-                    onClick={() => handleApplyVoucher(v.code)}
-                    className={`rounded-xl text-xs font-bold shrink-0 h-8 px-3 ${isCurrent
-                      ? 'bg-emerald-600 text-white'
-                      : isEligible
-                        ? 'bg-primary hover:bg-primary/90'
-                        : 'bg-muted text-muted-foreground'
-                      }`}
-                  >
-                    {isCurrent ? 'Đang dùng' : isEligible ? 'Áp dụng' : 'Chưa đủ ĐK'}
-                  </Button>
-                </div>
-              )
-            })}
-          </div>
-
-          <DialogFooter className="pt-2 border-t border-slate-100 dark:border-border">
-            <Button
-              variant="outline"
-              onClick={() => setShowVoucherModal(false)}
-              className="w-full rounded-xl font-bold"
-            >
-              Đóng
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <VoucherPickerModal
+        open={showVoucherModal}
+        onOpenChange={setShowVoucherModal}
+        availableVouchers={availableVouchers}
+        combinedSubtotal={combinedSubtotal}
+        appliedVoucher={appliedVoucher}
+        isApplyingVoucher={isApplyingVoucher}
+        onApplyVoucher={handleApplyVoucher}
+        onClose={() => setShowVoucherModal(false)}
+      />
     </div>
   )
 }

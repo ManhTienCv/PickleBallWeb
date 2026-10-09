@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import { adminService } from "@/services/admin.service";
@@ -7,14 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { CategoryFormModal } from "@/components/inventory/modals/CategoryFormModal";
+import { BrandFormModal } from "@/components/inventory/modals/BrandFormModal";
+import { QuickRestockModal } from "@/components/inventory/modals/QuickRestockModal";
+import { StaffCounterModal } from "@/components/inventory/modals/StaffCounterModal";
+import { ProductFormModal } from "@/components/inventory/modals/ProductFormModal";
+import { ProductPreviewModal } from "@/components/inventory/modals/ProductPreviewModal";
 import {
   Search,
   Plus,
@@ -27,9 +25,7 @@ import {
   Trash2,
   PlusCircle,
   ShoppingBag,
-  Store,
   X,
-  Check,
   Coffee,
   ChevronLeft,
   ChevronRight,
@@ -38,10 +34,6 @@ import {
   Trophy,
   Layers,
   CircleDot,
-  Globe,
-  Sparkles,
-  Building2,
-  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatNumberWithDots } from "@/lib/utils";
@@ -121,8 +113,8 @@ export default function Inventory() {
     try {
       const parsed: InventoryProduct[] = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        // Discard stale cache if it contains old unsplash images or lacks drinks
-        if (parsed.some((p: any) => (p.image || "").includes("unsplash")) || parsed.length < 30) {
+        // Chỉ xóa cache cũ nếu còn sót link ảnh unsplash hỏng
+        if (parsed.some((p: any) => (p.image || "").includes("unsplash"))) {
           localStorage.removeItem("demopick_online_products_v3");
           return initialUnifiedProducts;
         }
@@ -198,14 +190,8 @@ export default function Inventory() {
   const [newStaffItemPrice, setNewStaffItemPrice] = useState<number | "">(20000);
   const [newStaffItemStock, setNewStaffItemStock] = useState<number | "">(24);
 
-  // Sync to localStorage
+  // Sync to localStorage với bộ đệm bảo vệ tràn hạn mức QuotaExceededError
   useEffect(() => {
-    localStorage.setItem("demopick_online_products_v3", JSON.stringify(products));
-    localStorage.setItem("demopick_categories", JSON.stringify(categories));
-    localStorage.setItem("demopick_brands", JSON.stringify(brands));
-    localStorage.setItem("demopick_synced_categories", JSON.stringify(categories));
-    localStorage.setItem("demopick_synced_brands", JSON.stringify(brands));
-
     const syncedList = products.map((p) => ({
       id: p.id,
       name: p.name,
@@ -228,8 +214,19 @@ export default function Inventory() {
         },
       ],
     }));
-    localStorage.setItem("demopick_synced_products", JSON.stringify(syncedList));
-    localStorage.setItem("demopick_synced_products_v3", JSON.stringify(syncedList));
+
+    try {
+      localStorage.setItem("demopick_online_products_v3", JSON.stringify(products));
+      localStorage.setItem("demopick_categories", JSON.stringify(categories));
+      localStorage.setItem("demopick_brands", JSON.stringify(brands));
+      localStorage.setItem("demopick_synced_categories", JSON.stringify(categories));
+      localStorage.setItem("demopick_synced_brands", JSON.stringify(brands));
+      localStorage.setItem("demopick_synced_products_v3", JSON.stringify(syncedList));
+    } catch (err: any) {
+      if (err?.name === "QuotaExceededError" || err?.code === 22) {
+        console.warn("[LocalStorage] QuotaExceededError: Đạt giới hạn bộ nhớ cục bộ, tự động bảo vệ dữ liệu sản phẩm.");
+      }
+    }
     window.dispatchEvent(new Event("storage"));
   }, [products, categories, brands]);
 
@@ -251,9 +248,6 @@ export default function Inventory() {
   const [formStock, setFormStock] = useState<number | "">(15);
   const [formImage, setFormImage] = useState("");
   const [formGallery, setFormGallery] = useState<string[]>([]);
-  const coverInputRef = useRef<HTMLInputElement | null>(null);
-  const posCoverInputRef = useRef<HTMLInputElement | null>(null);
-  const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const [formHighlights, setFormHighlights] = useState<string[]>([]);
   const [formSpecs, setFormSpecs] = useState<{ label: string; value: string }[]>([]);
   const [formDescription, setFormDescription] = useState("");
@@ -736,127 +730,7 @@ export default function Inventory() {
     }
   };
 
-  // Add/Remove Highlights & Specs Handlers
-  const handleAddHighlight = () => setFormHighlights([...formHighlights, ""]);
-  const handleUpdateHighlight = (idx: number, val: string) => {
-    const updated = [...formHighlights];
-    updated[idx] = val;
-    setFormHighlights(updated);
-  };
-  const handleRemoveHighlight = (idx: number) =>
-    setFormHighlights(formHighlights.filter((_, i) => i !== idx));
 
-  const handleAddSpec = () => setFormSpecs([...formSpecs, { label: "", value: "" }]);
-  const handleUpdateSpec = (idx: number, field: "label" | "value", val: string) => {
-    const updated = [...formSpecs];
-    updated[idx][field] = val;
-    setFormSpecs(updated);
-  };
-  const handleRemoveSpec = (idx: number) => setFormSpecs(formSpecs.filter((_, i) => i !== idx));
-
-  const handleCoverFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Kích thước ảnh tối đa 5MB!");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      setFormImage(dataUrl);
-      toast.success("Đã tải ảnh đại diện lên thành công!");
-    };
-    reader.readAsDataURL(file);
-    e.target.value = "";
-  };
-
-  const handleCoverDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("Vui lòng tải tệp hình ảnh!");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Kích thước ảnh tối đa 5MB!");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      setFormImage(dataUrl);
-      toast.success("Đã tải ảnh đại diện lên thành công!");
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleGalleryFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    const validFiles = Array.from(files).filter((file) => {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error(`Ảnh "${file.name}" vượt quá kích thước 5MB!`);
-        return false;
-      }
-      return true;
-    });
-
-    if (validFiles.length === 0) return;
-
-    let loadedCount = 0;
-    validFiles.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const dataUrl = event.target?.result as string;
-        setFormGallery((prev) => [...prev, dataUrl]);
-        loadedCount++;
-        if (loadedCount === validFiles.length) {
-          toast.success(`Đã thêm ${loadedCount} ảnh vào bộ sưu tập!`);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-
-    e.target.value = "";
-  };
-
-  const handleGalleryDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    const files = e.dataTransfer.files;
-    if (!files || files.length === 0) return;
-
-    const validFiles = Array.from(files).filter((file) => {
-      if (!file.type.startsWith("image/")) {
-        toast.error(`Tệp "${file.name}" không phải hình ảnh!`);
-        return false;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error(`Ảnh "${file.name}" vượt quá kích thước 5MB!`);
-        return false;
-      }
-      return true;
-    });
-
-    let loadedCount = 0;
-    validFiles.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const dataUrl = event.target?.result as string;
-        setFormGallery((prev) => [...prev, dataUrl]);
-        loadedCount++;
-        if (loadedCount === validFiles.length) {
-          toast.success(`Đã thêm ${loadedCount} ảnh vào bộ sưu tập!`);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const handleRemoveGalleryImage = (idx: number) =>
-    setFormGallery((prev) => prev.filter((_, i) => i !== idx));
 
   return (
     <AppLayout
@@ -1421,1168 +1295,109 @@ export default function Inventory() {
       {/* ═══════════════════════════════════════════════════════════════
           MODAL: THÊM / SỬA DANH MỤC (CATEGORY DIALOG)
       ═══════════════════════════════════════════════════════════════ */}
-      <Dialog open={categoryModalOpen} onOpenChange={setCategoryModalOpen}>
-        <DialogContent className="max-w-md bg-white rounded-3xl p-6 border border-slate-200 font-sans shadow-2xl">
-          <form onSubmit={handleSaveCategory} className="space-y-4 text-xs">
-            <DialogHeader>
-              <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1">
-                <FolderTree className="w-5 h-5" />
-              </div>
-              <DialogTitle className="text-base font-bold text-slate-900">
-                {editingCategory ? "Chỉnh Sửa Danh Mục" : "Thêm Danh Mục Mới"}
-              </DialogTitle>
-              <DialogDescription className="text-xs text-slate-500 font-normal">
-                Danh mục sẽ tự động đồng bộ sang Form nhập sản phẩm & Thanh lọc sản phẩm trên Website.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-3 pt-2">
-              <div className="space-y-1.5">
-                <Label className="font-semibold text-slate-800 text-xs">Tên Danh Mục (*):</Label>
-                <Input
-                  value={catName}
-                  onChange={(e) => setCatName(e.target.value)}
-                  placeholder="Ví dụ: Vợt Pickleball, Giày thể thao..."
-                  className="h-10 text-xs font-normal rounded-xl border-slate-200"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="font-semibold text-slate-800 text-xs">Loại Biểu Tượng (Icon):</Label>
-                <select
-                  value={catIconType}
-                  onChange={(e) => setCatIconType(e.target.value as CategoryItem["iconType"])}
-                  className="w-full h-10 px-3 border border-slate-200 rounded-xl text-xs bg-white font-normal focus:ring-2 focus:ring-emerald-500"
-                >
-                  <option value="trophy">🏆 Cúp Thể Thao (Vợt / Giải đấu)</option>
-                  <option value="circle-dot">🎾 Quả Bóng (Bóng thi đấu)</option>
-                  <option value="shopping-bag">🛍️ Túi Đựng / Balo (Phụ kiện)</option>
-                  <option value="layers">👕 Trang Phục / Quần Áo</option>
-                  <option value="tag">🏷️ Thẻ Nhãn / Giày Thể Thao</option>
-                  <option value="coffee">☕ Đồ Uống & Đồ Ăn</option>
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="font-semibold text-slate-800 text-xs">Mô Tả Danh Mục:</Label>
-                <textarea
-                  value={catDesc}
-                  onChange={(e) => setCatDesc(e.target.value)}
-                  placeholder="Mô tả tóm tắt đặc điểm của nhóm sản phẩm này..."
-                  className="w-full h-20 p-3 border border-slate-200 rounded-xl text-xs font-normal focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <DialogFooter className="pt-3 border-t border-slate-100 gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setCategoryModalOpen(false)}
-                className="h-9 px-4 rounded-xl text-xs font-normal"
-              >
-                Hủy
-              </Button>
-              <Button
-                type="submit"
-                className="h-9 px-5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs"
-              >
-                {editingCategory ? "Lưu Cập Nhật" : "Tạo Danh Mục"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          MODAL: THÊM / SỬA THƯƠNG HIỆU (BRAND DIALOG)
-      ═══════════════════════════════════════════════════════════════ */}
-      <Dialog open={brandModalOpen} onOpenChange={setBrandModalOpen}>
-        <DialogContent className="max-w-md bg-white rounded-3xl p-6 border border-slate-200 font-sans shadow-2xl">
-          <form onSubmit={handleSaveBrand} className="space-y-4 text-xs">
-            <DialogHeader>
-              <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1">
-                <Tag className="w-5 h-5" />
-              </div>
-              <DialogTitle className="text-base font-bold text-slate-900">
-                {editingBrand ? "Chỉnh Sửa Thương Hiệu" : "Thêm Hãng / Thương Hiệu Mới"}
-              </DialogTitle>
-              <DialogDescription className="text-xs text-slate-500 font-normal">
-                Hãng mới sẽ xuất hiện trong Form thêm sản phẩm & Cột bộ lọc đa chọn thương hiệu trên Web.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-3 pt-2">
-              <div className="space-y-1.5">
-                <Label className="font-semibold text-slate-800 text-xs">Tên Hãng / Thương Hiệu (*):</Label>
-                <Input
-                  value={brandName}
-                  onChange={(e) => setBrandName(e.target.value)}
-                  placeholder="Ví dụ: Diadem, Babolat, Wilson, Adidas..."
-                  className="h-10 text-xs font-normal rounded-xl border-slate-200"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="font-semibold text-slate-800 text-xs">Quốc Gia / Xuất Xứ:</Label>
-                <Input
-                  value={brandOrigin}
-                  onChange={(e) => setBrandOrigin(e.target.value)}
-                  placeholder="Ví dụ: Mỹ (USA), Đức, Pháp, Nhật Bản..."
-                  className="h-10 text-xs font-normal rounded-xl border-slate-200"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="font-semibold text-slate-800 text-xs">Mô Tả Thương Hiệu:</Label>
-                <textarea
-                  value={brandDesc}
-                  onChange={(e) => setBrandDesc(e.target.value)}
-                  placeholder="Thông tin giới thiệu về thương hiệu này..."
-                  className="w-full h-20 p-3 border border-slate-200 rounded-xl text-xs font-normal focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <DialogFooter className="pt-3 border-t border-slate-100 gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setBrandModalOpen(false)}
-                className="h-9 px-4 rounded-xl text-xs font-normal"
-              >
-                Hủy
-              </Button>
-              <Button
-                type="submit"
-                className="h-9 px-5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl text-xs"
-              >
-                {editingBrand ? "Lưu Cập Nhật" : "Tạo Hãng Mới"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          STAFF DEDICATED DIALOG: RESTOCK OR ADD NEW COUNTER ITEM
-      ═══════════════════════════════════════════════════════════════ */}
-      <Dialog open={staffModalOpen} onOpenChange={setStaffModalOpen}>
-        <DialogContent className="max-w-md bg-white rounded-3xl p-6 border border-slate-200 font-sans shadow-2xl">
-          <DialogHeader>
-            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1">
-              <PlusCircle className="h-5 w-5" />
-            </div>
-            <DialogTitle className="text-base font-bold text-slate-900">
-              Quản Lý Hàng Hóa Quầy Lễ Tân
-            </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500 font-normal">
-              Bổ sung số lượng tồn kho hoặc thêm món mới phục vụ tại quầy.
-            </DialogDescription>
-          </DialogHeader>
-
-          {/* TAB SWITCHER */}
-          <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-xl">
-            <button
-              type="button"
-              onClick={() => setStaffModalTab("restock")}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${staffModalTab === "restock"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
-                }`}
-            >
-              Bổ sung số lượng
-            </button>
-            <button
-              type="button"
-              onClick={() => setStaffModalTab("new_item")}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${staffModalTab === "new_item"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
-                }`}
-            >
-              + Thêm món quầy mới
-            </button>
-          </div>
-
-          {staffModalTab === "restock" ? (
-            <form onSubmit={handleStaffRestockSubmit} className="space-y-4 text-xs pt-1">
-              <div className="space-y-1.5">
-                <Label className="font-semibold text-slate-800 text-xs">Chọn Mặt Hàng Cần Nhập Thêm (*):</Label>
-                <select
-                  value={selectedStaffProductId || ""}
-                  onChange={(e) => setSelectedStaffProductId(Number(e.target.value))}
-                  className="w-full h-10 px-3 border border-slate-200 rounded-xl text-xs bg-white font-medium focus:ring-2 focus:ring-emerald-500"
-                  required
-                >
-                  {roleBaseProducts.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} (Hiện có: {p.stock}) — {p.category}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {(() => {
-                const target = roleBaseProducts.find((p) => p.id === Number(selectedStaffProductId));
-                if (!target) return null;
-                return (
-                  <div className="p-3 bg-emerald-50/80 rounded-2xl border border-emerald-200/80 text-emerald-900 space-y-1">
-                    <div className="flex justify-between items-center text-xs">
-                      <span>Tồn kho hiện tại:</span>
-                      <strong className="text-sm font-bold text-emerald-700">{target.stock} đơn vị</strong>
-                    </div>
-                    <div className="flex justify-between items-center text-xs pt-1 border-t border-emerald-200/50">
-                      <span>Tồn sau khi nhập:</span>
-                      <strong className="text-sm font-bold text-slate-900">
-                        {target.stock + (Number(staffRestockQty) || 0)} đơn vị
-                      </strong>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              <div className="space-y-2">
-                <Label className="font-semibold text-slate-800 text-xs">Số Lượng Nhập Thêm Vào Kho (*):</Label>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  value={formatNumberWithDots(staffRestockQty)}
-                  onChange={(e) => {
-                    const raw = e.target.value.replace(/\D/g, "");
-                    setStaffRestockQty(raw === "" ? "" : Number(raw));
-                  }}
-                  className="font-bold text-base text-emerald-700 h-10 rounded-xl border-slate-200"
-                  required
-                />
-
-                {/* Quick Add Presets */}
-                <div className="flex items-center gap-2 pt-1">
-                  <span className="text-[11px] text-slate-400 font-medium">Nhập nhanh:</span>
-                  {[5, 10, 24, 50, 100].map((qty) => (
-                    <button
-                      key={qty}
-                      type="button"
-                      onClick={() => setStaffRestockQty(qty)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${staffRestockQty === qty
-                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                        : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                        }`}
-                    >
-                      +{qty}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <DialogFooter className="pt-3 border-t border-slate-100 gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setStaffModalOpen(false)}
-                  className="h-9 px-4 rounded-xl text-xs font-medium border-slate-300"
-                >
-                  Hủy bỏ
-                </Button>
-                <Button
-                  type="submit"
-                  className="h-9 px-5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs shadow-md shadow-emerald-500/20"
-                >
-                  Xác Nhận Nhập Kho
-                </Button>
-              </DialogFooter>
-            </form>
-          ) : (
-            <form onSubmit={handleStaffCreateItemSubmit} className="space-y-3.5 text-xs pt-1">
-              <div className="space-y-1.5">
-                <Label className="font-semibold text-slate-800 text-xs">Tên Món Hàng Quầy (*):</Label>
-                <Input
-                  value={newStaffItemName}
-                  onChange={(e) => setNewStaffItemName(e.target.value)}
-                  placeholder="Ví dụ: Nước dừa tươi, Bánh sừng bò, Thuê khăn tắm..."
-                  className="h-10 text-xs font-normal rounded-xl border-slate-200"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="font-semibold text-slate-800 text-xs">Phân Loại:</Label>
-                  <select
-                    value={newStaffItemCategory}
-                    onChange={(e) => setNewStaffItemCategory(e.target.value)}
-                    className="w-full h-10 px-3 border border-slate-200 rounded-xl text-xs bg-white font-medium focus:ring-2 focus:ring-emerald-500"
-                  >
-                    <option value="Đồ uống & Đồ ăn">Đồ uống & Đồ ăn</option>
-                    <option value="Thiết bị & Dịch vụ cho thuê">Thiết bị cho thuê</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className="font-semibold text-slate-800 text-xs">Hãng / Nguồn Cung:</Label>
-                  <Input
-                    value={newStaffItemBrand}
-                    onChange={(e) => setNewStaffItemBrand(e.target.value)}
-                    placeholder="Quầy sân / Nhà cung cấp"
-                    className="h-10 text-xs font-normal rounded-xl border-slate-200"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="font-semibold text-slate-800 text-xs">Giá Bán Tại Quầy (đ):</Label>
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    value={formatNumberWithDots(newStaffItemPrice)}
-                    onChange={(e) => {
-                      const raw = e.target.value.replace(/\D/g, "");
-                      setNewStaffItemPrice(raw === "" ? "" : Number(raw));
-                    }}
-                    className="h-10 text-xs font-bold text-slate-900 rounded-xl border-slate-200"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className="font-semibold text-slate-800 text-xs">Số Lượng Nhập Ban Đầu:</Label>
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    value={formatNumberWithDots(newStaffItemStock)}
-                    onChange={(e) => {
-                      const raw = e.target.value.replace(/\D/g, "");
-                      setNewStaffItemStock(raw === "" ? "" : Number(raw));
-                    }}
-                    className="h-10 text-xs font-bold text-emerald-700 rounded-xl border-slate-200"
-                    required
-                  />
-                </div>
-              </div>
-
-              <DialogFooter className="pt-3 border-t border-slate-100 gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setStaffModalOpen(false)}
-                  className="h-9 px-4 rounded-xl text-xs font-medium border-slate-300"
-                >
-                  Hủy bỏ
-                </Button>
-                <Button
-                  type="submit"
-                  className="h-9 px-5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs shadow-md shadow-emerald-500/20"
-                >
-                  Tạo Món & Nhập Kho
-                </Button>
-              </DialogFooter>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          QUICK RESTOCK DIALOG (ADMIN)
-      ═══════════════════════════════════════════════════════════════ */}
-      <Dialog open={!!restockProduct} onOpenChange={() => setRestockProduct(null)}>
-        <DialogContent className="max-w-md bg-white rounded-3xl p-6 border border-slate-200 font-sans shadow-2xl">
-          {restockProduct && (
-            <form onSubmit={handleQuickRestockSubmit} className="space-y-4 text-xs">
-              <DialogHeader>
-                <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1">
-                  <PlusCircle className="h-5 w-5" />
-                </div>
-                <DialogTitle className="text-base font-bold text-slate-900">
-                  Nhập Bổ Sung Tồn Kho
-                </DialogTitle>
-                <DialogDescription className="text-xs text-slate-500 font-normal">
-                  Cập nhật số lượng mặt hàng: <strong className="font-medium text-slate-800">{restockProduct.name}</strong>
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="p-3 bg-emerald-50/80 rounded-2xl border border-emerald-200/80 text-emerald-900 space-y-1">
-                <div className="flex justify-between items-center text-xs">
-                  <span>Tồn kho hiện tại:</span>
-                  <strong className="text-sm font-bold text-emerald-700">{formatNumberWithDots(restockProduct.stock)} đơn vị</strong>
-                </div>
-                <div className="flex justify-between items-center text-xs pt-1 border-t border-emerald-200/50">
-                  <span>Tồn sau khi nhập:</span>
-                  <strong className="text-sm font-bold text-slate-900">
-                    {formatNumberWithDots(restockProduct.stock + (Number(restockQty) || 0))} đơn vị
-                  </strong>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="font-semibold text-slate-800 text-xs">Số Lượng Nhập Thêm Vào Kho (*):</Label>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  value={formatNumberWithDots(restockQty)}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, "");
-                    setRestockQty(val === "" ? "" : Number(val));
-                  }}
-                  className="font-bold text-base text-emerald-700 h-10 rounded-xl border-slate-200"
-                  required
-                />
-
-                {/* Quick Add Presets */}
-                <div className="flex items-center gap-2 pt-1">
-                  <span className="text-[11px] text-slate-400 font-medium">Nhập nhanh:</span>
-                  {[5, 10, 24, 50, 100].map((qty) => (
-                    <button
-                      key={qty}
-                      type="button"
-                      onClick={() => setRestockQty(qty)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${restockQty === qty
-                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                        : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                        }`}
-                    >
-                      +{qty}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <DialogFooter className="pt-3 border-t border-slate-100 gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setRestockProduct(null)}
-                  className="h-9 px-4 rounded-xl text-xs font-medium border-slate-300"
-                >
-                  Hủy bỏ
-                </Button>
-                <Button
-                  type="submit"
-                  className="h-9 px-5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs shadow-md shadow-emerald-500/20"
-                >
-                  Xác Nhận Nhập Kho
-                </Button>
-              </DialogFooter>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          ADD / EDIT PRODUCT MODAL (ĐỌC CATEGORY VÀ BRAND ĐỘNG)
-      ═══════════════════════════════════════════════════════════════ */}
-      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-        <DialogContent className="max-w-2xl bg-white max-h-[90vh] overflow-y-auto p-6 rounded-3xl border border-slate-200 font-sans shadow-2xl">
-          <form onSubmit={handleSaveProductForm} className="space-y-5 text-xs">
-            <DialogHeader className="border-b pb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <DialogTitle className="text-lg font-semibold text-slate-900">
-                    {editingProduct ? "Chỉnh Sửa Mặt Hàng Kho" : "Thêm Mặt Hàng Mới Vào Kho"}
-                  </DialogTitle>
-                  <DialogDescription className="font-normal text-slate-500 text-xs mt-0.5">
-                    Hệ thống sẽ đồng bộ thông tin và tồn kho ngay lập tức giữa Website & Quầy POS.
-                  </DialogDescription>
-                </div>
-              </div>
-
-              {/* FORM TAB SWITCHER */}
-              <div className="flex items-center gap-2 pt-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFormProductType("online");
-                    if (!editingProduct && formCategory === "Đồ uống & Đồ ăn") {
-                      setFormCategory(categories[0]?.name || "Vợt Pickleball");
-                      setFormPrice("");
-                    }
-                  }}
-                  className={`px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-2 ${formProductType === "online"
-                    ? "bg-emerald-600 text-white font-semibold shadow-md shadow-emerald-500/20"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 font-normal"
-                    }`}
-                >
-                  <ShoppingBag className="w-3.5 h-3.5" />
-                  <span>Sản Phẩm Đăng Bán Online & Quầy (Vợt, bóng, phụ kiện...)</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFormProductType("pos");
-                    if (!editingProduct && (formCategory === "Vợt Pickleball" || !formCategory)) {
-                      setFormCategory("Đồ uống & Đồ ăn");
-                      setFormPrice(20000);
-                      setFormStock(24);
-                      setFormImage("/images/pocari_sweat_500ml.jpg");
-                    }
-                  }}
-                  className={`px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-2 ${formProductType === "pos"
-                    ? "bg-blue-600 text-white font-semibold shadow-md shadow-blue-500/20"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 font-normal"
-                    }`}
-                >
-                  <Store className="w-3.5 h-3.5" />
-                  <span>Dịch Vụ Bán Tại Quầy (Đồ uống, thuê sân...)</span>
-                </button>
-              </div>
-            </DialogHeader>
-
-            {/* TAB CONTENT: ONLINE PRODUCTS */}
-            {formProductType === "online" && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5 sm:col-span-2">
-                    <Label className="font-semibold text-slate-800">Tên Sản Phẩm (*):</Label>
-                    <Input
-                      value={formName}
-                      onChange={(e) => setFormName(e.target.value)}
-                      placeholder="Ví dụ: Vợt JOOLA Perseus 3S Carbon 16mm"
-                      className="font-normal text-xs h-10 border-slate-200 rounded-xl"
-                      required
-                    />
-                  </div>
-
-                  {/* DYNAMIC CATEGORY DROPDOWN */}
-                  <div className="space-y-1.5">
-                    <Label className="font-semibold text-slate-800">Danh Mục Sản Phẩm:</Label>
-                    <select
-                      value={formCategory}
-                      onChange={(e) => setFormCategory(e.target.value)}
-                      className="w-full h-10 px-3 border border-slate-200 rounded-xl text-xs bg-white font-normal focus:ring-2 focus:ring-emerald-500"
-                    >
-                      {categories.map((cat) => (
-                        <option key={cat.id} value={cat.name}>
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* DYNAMIC BRAND DROPDOWN */}
-                  <div className="space-y-1.5">
-                    <Label className="font-semibold text-slate-800">Hãng Sản Xuất / Thương Hiệu:</Label>
-                    <select
-                      value={formBrand}
-                      onChange={(e) => setFormBrand(e.target.value)}
-                      className="w-full h-10 px-3 border border-slate-200 rounded-xl text-xs bg-white font-normal focus:ring-2 focus:ring-emerald-500"
-                    >
-                      {brands.map((brand) => (
-                        <option key={brand.id} value={brand.name}>
-                          {brand.name} ({brand.origin})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label className="font-semibold text-slate-800">Giá Bán Niêm Yết (VNĐ) (*):</Label>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      value={formatNumberWithDots(formPrice)}
-                      onChange={(e) => {
-                        const raw = e.target.value.replace(/\D/g, "");
-                        setFormPrice(raw === "" ? "" : Number(raw));
-                      }}
-                      placeholder="5.490.000"
-                      className="font-normal text-xs h-10 border-slate-200 rounded-xl"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label className="font-semibold text-slate-800">Giá Gốc / Giá Gạch (VNĐ):</Label>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      value={formatNumberWithDots(formOriginalPrice)}
-                      onChange={(e) => {
-                        const raw = e.target.value.replace(/\D/g, "");
-                        setFormOriginalPrice(raw === "" ? "" : Number(raw));
-                      }}
-                      placeholder="5.990.000"
-                      className="font-normal text-xs h-10 border-slate-200 rounded-xl"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label className="font-semibold text-slate-800">Số Lượng Tồn Kho Ban Đầu (*):</Label>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      value={formatNumberWithDots(formStock)}
-                      onChange={(e) => {
-                        const raw = e.target.value.replace(/\D/g, "");
-                        setFormStock(raw === "" ? "" : Number(raw));
-                      }}
-                      placeholder="15"
-                      className="font-normal text-xs h-10 border-slate-200 rounded-xl"
-                      required
-                    />
-                  </div>
-
-                </div>
-
-                {/* 3. HÌNH ẢNH SẢN PHẨM (TẢI LÊN) */}
-                <div className="space-y-4 pt-3 border-t border-slate-100">
-                  <h4 className="text-orange-600 font-bold text-xs uppercase tracking-wider">
-                    3. HÌNH ẢNH SẢN PHẨM (TẢI LÊN)
-                  </h4>
-
-                  {/* ẢNH ĐẠI DIỆN CHÍNH (COVER IMAGE) */}
-                  <div className="space-y-2">
-                    <Label className="font-bold text-slate-800 text-xs uppercase tracking-wide">
-                      ẢNH ĐẠI DIỆN CHÍNH (COVER IMAGE) *
-                    </Label>
-
-                    <input
-                      ref={coverInputRef}
-                      type="file"
-                      accept="image/png,image/jpeg,image/jpg,image/webp"
-                      onChange={handleCoverFileChange}
-                      className="hidden"
-                    />
-
-                    <div
-                      onClick={() => coverInputRef.current?.click()}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={handleCoverDrop}
-                      className="border-2 border-dashed border-amber-200/90 hover:border-orange-400 bg-amber-50/10 hover:bg-amber-50/30 rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center cursor-pointer transition-all text-center relative group"
-                    >
-                      {formImage ? (
-                        <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4">
-                          <div className="flex items-center gap-4 text-left">
-                            <img
-                              src={formImage}
-                              alt="Ảnh đại diện"
-                              className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-xl border border-orange-200 shadow-sm"
-                            />
-                            <div>
-                              <span className="text-xs font-bold text-slate-800 block">
-                                Ảnh đại diện đã được tải lên
-                              </span>
-                              <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1 mt-0.5">
-                                <CheckCircle2 className="w-3.5 h-3.5" /> Sẵn sàng hiển thị trực quan
-                              </span>
-                              <p className="text-[11px] text-slate-400 mt-1">
-                                Nhấp chuột vào đây hoặc nút bên phải để đổi ảnh khác
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                coverInputRef.current?.click();
-                              }}
-                              className="text-xs h-8 rounded-xl border-orange-200 hover:bg-orange-50 text-orange-600 font-semibold"
-                            >
-                              <Upload className="w-3.5 h-3.5 mr-1.5" />
-                              Tải ảnh khác
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setFormImage("");
-                              }}
-                              className="text-xs h-8 rounded-xl text-rose-500 hover:bg-rose-50 hover:text-rose-600"
-                            >
-                              <X className="w-3.5 h-3.5 mr-1" />
-                              Xóa
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="w-12 h-12 rounded-2xl border border-orange-200/80 bg-white flex items-center justify-center text-orange-500 shadow-sm mb-2 group-hover:scale-105 transition-transform">
-                            <Upload className="w-5 h-5 text-orange-500" />
-                          </div>
-                          <p className="font-bold text-slate-800 text-xs sm:text-sm">
-                            Bấm vào đây để tải ảnh đại diện lên *
-                          </p>
-                          <p className="text-[11px] text-slate-400 mt-0.5">
-                            Hỗ trợ PNG, JPG, JPEG, WEBP (Tối đa 5MB)
-                          </p>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* BỘ SƯU TẬP ẢNH CHI TIẾT (GALLERY) */}
-                  <div className="space-y-2 pt-2">
-                    <div className="flex items-center justify-between">
-                      <Label className="font-bold text-slate-800 text-xs uppercase tracking-wide">
-                        BỘ SƯU TẬP ẢNH CHI TIẾT (GALLERY)
-                      </Label>
-                      <button
-                        type="button"
-                        onClick={() => galleryInputRef.current?.click()}
-                        className="text-orange-600 hover:text-orange-700 font-bold text-xs flex items-center gap-1.5 transition-colors"
-                      >
-                        <Upload className="w-3.5 h-3.5" />
-                        + Tải thêm ảnh chi tiết
-                      </button>
-                    </div>
-
-                    <input
-                      ref={galleryInputRef}
-                      type="file"
-                      multiple
-                      accept="image/png,image/jpeg,image/jpg,image/webp"
-                      onChange={handleGalleryFilesChange}
-                      className="hidden"
-                    />
-
-                    <div
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={handleGalleryDrop}
-                      className="flex flex-wrap items-center gap-3 pt-1"
-                    >
-                      {/* Box + Thêm ảnh */}
-                      <div
-                        onClick={() => galleryInputRef.current?.click()}
-                        className="w-24 h-24 border-2 border-dashed border-amber-200/90 hover:border-orange-400 bg-amber-50/10 hover:bg-amber-50/40 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all shrink-0 group"
-                      >
-                        <Upload className="w-5 h-5 text-slate-400 group-hover:text-orange-500 mb-1 transition-colors" />
-                        <span className="text-[11px] font-medium text-slate-600 group-hover:text-orange-600 transition-colors">
-                          + Thêm ảnh
-                        </span>
-                      </div>
-
-                      {/* Danh sách ảnh trong Gallery */}
-                      {formGallery.map((g, idx) => (
-                        <div
-                          key={idx}
-                          className="relative w-24 h-24 rounded-2xl overflow-hidden border border-slate-200 shadow-sm group shrink-0"
-                        >
-                          <img
-                            src={g}
-                            alt={`Ảnh chi tiết ${idx + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveGalleryImage(idx)}
-                            className="absolute top-1.5 right-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-full p-1 shadow-md transition-all hover:scale-110"
-                            title="Xóa ảnh này"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* HIGHLIGHTS */}
-                <div className="space-y-2 pt-2 border-t border-slate-100">
-                  <div className="flex items-center justify-between">
-                    <Label className="font-semibold text-slate-800">Đặc Điểm Nổi Bật (Highlights):</Label>
-                    <button
-                      type="button"
-                      onClick={handleAddHighlight}
-                      className="text-[11px] text-emerald-700 hover:underline font-medium"
-                    >
-                      + Thêm dòng nổi bật
-                    </button>
-                  </div>
-                  {formHighlights.map((hl, idx) => (
-                    <div key={idx} className="flex gap-2">
-                      <Input
-                        value={hl}
-                        onChange={(e) => handleUpdateHighlight(idx, e.target.value)}
-                        placeholder="Ví dụ: Cảm biến Carbon T700 3S xoáy bóng 33%..."
-                        className="text-xs h-8 border-slate-200 rounded-xl"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveHighlight(idx)}
-                        className="text-rose-500 hover:text-rose-700"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                {/* SPECS */}
-                <div className="space-y-2 pt-2 border-t border-slate-100">
-                  <div className="flex items-center justify-between">
-                    <Label className="font-semibold text-slate-800">Thông Số Kỹ Thuật (Specs):</Label>
-                    <button
-                      type="button"
-                      onClick={handleAddSpec}
-                      className="text-[11px] text-emerald-700 hover:underline font-medium"
-                    >
-                      + Thêm thông số
-                    </button>
-                  </div>
-                  {formSpecs.map((spec, idx) => (
-                    <div key={idx} className="flex gap-2">
-                      <Input
-                        value={spec.label}
-                        onChange={(e) => handleUpdateSpec(idx, "label", e.target.value)}
-                        placeholder="Tên thông số (vd: Mặt vợt)"
-                        className="text-xs h-8 w-1/3 border-slate-200 rounded-xl"
-                      />
-                      <Input
-                        value={spec.value}
-                        onChange={(e) => handleUpdateSpec(idx, "value", e.target.value)}
-                        placeholder="Giá trị (vd: Carbon Fiber T700 3S)"
-                        className="text-xs h-8 w-2/3 border-slate-200 rounded-xl"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSpec(idx)}
-                        className="text-rose-500 hover:text-rose-700"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                {/* DESCRIPTION */}
-                <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                  <Label className="font-semibold text-slate-800">Bài Viết Giới Thiệu & Mô Tả Chi Tiết:</Label>
-                  <textarea
-                    value={formDescription}
-                    onChange={(e) => setFormDescription(e.target.value)}
-                    placeholder="Nhập nội dung bài viết chi tiết để khách hàng xem trên trang Web..."
-                    className="w-full h-24 p-3 border border-slate-200 rounded-xl text-xs font-normal focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* TAB CONTENT: POS ONLY */}
-            {formProductType === "pos" && (
-              <div className="space-y-4">
-                <div className="p-3 bg-blue-50 rounded-xl border border-blue-200 text-blue-900 text-xs">
-                  Mặt hàng này chỉ hiển thị tại <strong>Máy Bán Hàng Lễ Tân (POS)</strong> cho các dịch vụ ăn uống và thuê trang thiết bị.
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5 sm:col-span-2">
-                    <Label className="font-semibold text-slate-800">Tên Mặt Hàng / Dịch Vụ (*):</Label>
-                    <Input
-                      value={formName}
-                      onChange={(e) => setFormName(e.target.value)}
-                      placeholder="Ví dụ: Băng Quấn Cán Vợt Wilson Pro"
-                      className="font-normal text-xs h-10 border-slate-200 rounded-xl"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label className="font-semibold text-slate-800">Phân Loại Dịch Vụ:</Label>
-                    <select
-                      value={formCategory}
-                      onChange={(e) => setFormCategory(e.target.value)}
-                      className="w-full h-10 px-3 border border-slate-200 rounded-xl text-xs bg-white font-normal"
-                    >
-                      <option value="Đồ uống & Đồ ăn">Đồ uống & Đồ ăn</option>
-                      <option value="Phụ kiện & Bao vợt">Phụ kiện & Bao vợt</option>
-                      <option value="Bóng Pickleball">Bóng Pickleball</option>
-                      <option value="Thuê vợt & máy">Thuê vợt & máy tập</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label className="font-semibold text-slate-800">Giá Bán Lễ Tân (VNĐ) (*):</Label>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      value={formatNumberWithDots(formPrice)}
-                      onChange={(e) => {
-                        const raw = e.target.value.replace(/\D/g, "");
-                        setFormPrice(raw === "" ? "" : Number(raw));
-                      }}
-                      placeholder="20.000"
-                      className="font-normal text-xs h-10 border-slate-200 rounded-xl"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label className="font-semibold text-slate-800">Số Lượng Tồn Sẵn Tại Quầy (*):</Label>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      value={formatNumberWithDots(formStock)}
-                      onChange={(e) => {
-                        const raw = e.target.value.replace(/\D/g, "");
-                        setFormStock(raw === "" ? "" : Number(raw));
-                      }}
-                      placeholder="100"
-                      className="font-normal text-xs h-10 border-slate-200 rounded-xl"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className="font-semibold text-slate-800">Ghi Chú Đơn Vị Tính / Quy Cách:</Label>
-                  <textarea
-                    value={formDescription}
-                    onChange={(e) => setFormDescription(e.target.value)}
-                    placeholder="Ghi chú quy cách đóng gói (Lốc 6 chai, chai 500ml...)"
-                    className="w-full h-20 p-3 border border-slate-200 rounded-xl text-xs font-normal focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-
-                {/* HÌNH ẢNH MẶT HÀNG / ĐỒ UỐNG / DỊCH VỤ QUẦY (TẢI LÊN) */}
-                <div className="space-y-3 pt-3 border-t border-slate-100">
-                  <div className="flex items-center justify-between">
-                    <Label className="font-bold text-slate-800 text-xs uppercase tracking-wide">
-                      HÌNH ẢNH MÓN / ĐỒ UỐNG / DỊCH VỤ QUẦY (TẢI LÊN) *
-                    </Label>
-                    <span className="text-[11px] text-blue-600 font-medium">
-                      Hiển thị trực quan tại máy bán hàng POS
-                    </span>
-                  </div>
-
-                  <input
-                    ref={posCoverInputRef}
-                    type="file"
-                    accept="image/png,image/jpeg,image/jpg,image/webp"
-                    onChange={handleCoverFileChange}
-                    className="hidden"
-                  />
-
-                  <div
-                    onClick={() => posCoverInputRef.current?.click()}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={handleCoverDrop}
-                    className="border-2 border-dashed border-blue-200/90 hover:border-blue-400 bg-blue-50/10 hover:bg-blue-50/30 rounded-2xl p-5 sm:p-6 flex flex-col items-center justify-center cursor-pointer transition-all text-center relative group"
-                  >
-                    {formImage ? (
-                      <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div className="flex items-center gap-3 text-left">
-                          <img
-                            src={formImage}
-                            alt="Ảnh quầy POS"
-                            className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-xl border border-blue-200 shadow-sm"
-                          />
-                          <div>
-                            <span className="text-xs font-bold text-slate-800 block">
-                              Ảnh mặt hàng quầy đã được chọn
-                            </span>
-                            <span className="text-[11px] text-blue-600 font-medium flex items-center gap-1 mt-0.5">
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Sẵn sàng bán tại quầy POS
-                            </span>
-                            <p className="text-[11px] text-slate-400 mt-1">
-                              Bấm chuột vào đây hoặc nút bên phải để đổi ảnh
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              posCoverInputRef.current?.click();
-                            }}
-                            className="text-xs h-8 rounded-xl border-blue-200 hover:bg-blue-50 text-blue-600 font-semibold"
-                          >
-                            <Upload className="w-3.5 h-3.5 mr-1.5" />
-                            Tải ảnh khác
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setFormImage("");
-                            }}
-                            className="text-xs h-8 rounded-xl text-rose-500 hover:bg-rose-50 hover:text-rose-600"
-                          >
-                            <X className="w-3.5 h-3.5 mr-1" />
-                            Xóa
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="w-11 h-11 rounded-2xl border border-blue-200/80 bg-white flex items-center justify-center text-blue-500 shadow-sm mb-2 group-hover:scale-105 transition-transform">
-                          <Upload className="w-5 h-5 text-blue-500" />
-                        </div>
-                        <p className="font-bold text-slate-800 text-xs sm:text-sm">
-                          Bấm vào đây để tải ảnh đồ uống / món ăn lên *
-                        </p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">
-                          Hỗ trợ PNG, JPG, JPEG, WEBP (Tối đa 5MB)
-                        </p>
-                      </>
-                    )}
-                  </div>
-
-                  {/* GỢI Ý CHỌN NHANH ẢNH MẪU ĐỒ UỐNG / ĐỒ ĂN CÓ SẴN */}
-                  <div className="space-y-1.5 pt-1">
-                    <span className="text-[11px] font-semibold text-slate-500">
-                      Hoặc chọn nhanh ảnh mẫu đồ uống / đồ ăn phổ biến:
-                    </span>
-                    <div className="flex flex-wrap gap-2">
-                      {[
-                        { name: "Pocari Sweat", url: "/images/pocari_sweat_500ml.jpg", icon: "🥤" },
-                        { name: "Revive chanh", url: "/images/revive_lemon_drink.jpg", icon: "⚡" },
-                        { name: "Bò húc", url: "/images/red_bull_can.jpg", icon: "🐂" },
-                        { name: "Nước LaVie", url: "/images/water_bottle_lavie.jpg", icon: "💧" },
-                        { name: "Cà phê Cold Brew", url: "/images/cold_brew_coffee.jpg", icon: "☕" },
-                        { name: "Trà chanh đá", url: "/images/iced_lemon_tea.jpg", icon: "🍋" },
-                        { name: "Dừa tươi", url: "/images/fresh_coconut.jpg", icon: "🥥" },
-                        { name: "Bánh Snickers", url: "/images/snickers_bar.jpg", icon: "🍫" },
-                        { name: "Thanh Granola", url: "/images/protein_granola_bar.jpg", icon: "🌾" },
-                        { name: "Chuối Dole", url: "/images/dole_banana.jpg", icon: "🍌" },
-                        { name: "Bóng Pickleball", url: "/images/pickleball_balls_yellow.jpg", icon: "🎾" },
-                        { name: "Băng quấn cán", url: "/images/pickleball_overgrip_tape.jpg", icon: "🎗️" },
-                      ].map((item) => (
-                        <button
-                          key={item.url}
-                          type="button"
-                          onClick={() => {
-                            setFormImage(item.url);
-                            toast.success(`Đã áp dụng ảnh mẫu "${item.name}"!`);
-                          }}
-                          className={`px-2.5 py-1 rounded-xl text-[11px] font-medium border flex items-center gap-1.5 transition-all ${
-                            formImage === item.url
-                              ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                              : "bg-white text-slate-700 border-slate-200 hover:border-blue-300 hover:bg-blue-50/50"
-                          }`}
-                        >
-                          <span>{item.icon}</span>
-                          <span>{item.name}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* MODAL FOOTER */}
-            <DialogFooter className="pt-4 border-t border-slate-100 gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setEditModalOpen(false)}
-                className="font-normal text-xs h-10 px-5 rounded-xl border-slate-300"
-              >
-                Hủy bỏ
-              </Button>
-
-              <Button
-                type="submit"
-                className={`font-medium text-xs h-10 px-7 rounded-xl text-white shadow-md ${formProductType === "online"
-                  ? "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20"
-                  : "bg-blue-600 hover:bg-blue-500 shadow-blue-500/20"
-                  }`}
-              >
-                {editingProduct ? "Lưu Cập Nhật Mặt Hàng" : "Thêm Mặt Hàng Vào Kho"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          PREVIEW DIALOG
-      ═══════════════════════════════════════════════════════════════ */}
-      <Dialog open={previewModalOpen} onOpenChange={setPreviewModalOpen}>
-        <DialogContent className="max-w-2xl bg-white max-h-[85vh] overflow-y-auto p-6 rounded-3xl border border-slate-200 font-sans">
-          {previewProduct && (
-            <div className="space-y-5 text-xs">
-              <DialogHeader className="border-b pb-3">
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-800 border-emerald-200 font-normal">
-                    {previewProduct.category}
-                  </Badge>
-                  <Badge variant="secondary" className="text-[10px] font-normal">Hãng: {previewProduct.brand}</Badge>
-                </div>
-                <DialogTitle className="text-lg font-semibold text-slate-900 mt-1">
-                  {previewProduct.name}
-                </DialogTitle>
-              </DialogHeader>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <img src={previewProduct.image} alt={previewProduct.name} className="w-full h-52 rounded-2xl object-cover border" />
-                  <div className="flex gap-2 overflow-x-auto">
-                    {previewProduct.gallery?.map((g, idx) => (
-                      <img key={idx} src={g} alt="" className="w-12 h-12 rounded-lg object-cover border shrink-0" />
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <span className="text-slate-400 text-[11px] block">Giá bán niêm yết:</span>
-                    <span className="text-xl font-semibold text-emerald-700">
-                      {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(previewProduct.price)}
-                    </span>
-                  </div>
-
-                  <div className="p-3 bg-slate-50 rounded-xl border space-y-1">
-                    <div className="font-medium text-slate-900">Tình trạng tồn kho:</div>
-                    <p className="text-emerald-700 font-semibold text-sm">
-                      {previewProduct.stock > 0 ? `Còn hàng (${previewProduct.stock} sản phẩm)` : "Hết hàng"}
-                    </p>
-                  </div>
-
-                  {previewProduct.highlights?.length > 0 && (
-                    <div className="space-y-1.5">
-                      <div className="font-medium text-slate-900">Đặc điểm nổi bật:</div>
-                      <ul className="space-y-1 text-slate-600 font-normal">
-                        {previewProduct.highlights.map((hl, i) => (
-                          <li key={i} className="flex items-start gap-1.5">
-                            <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                            <span>{hl}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {previewProduct.specs?.length > 0 && (
-                <div className="space-y-2 pt-3 border-t">
-                  <h4 className="font-medium text-slate-900 text-sm">Thông số kỹ thuật chi tiết</h4>
-                  <div className="border rounded-xl overflow-hidden divide-y">
-                    {previewProduct.specs.map((s, idx) => (
-                      <div key={idx} className="grid grid-cols-12 p-2.5 bg-slate-50/50">
-                        <span className="col-span-5 font-medium text-slate-700">{s.label}</span>
-                        <span className="col-span-7 font-normal text-slate-900">{s.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {previewProduct.description && (
-                <div className="space-y-2 pt-3 border-t">
-                  <h4 className="font-medium text-slate-900 text-sm">Bài viết mô tả sản phẩm</h4>
-                  <p className="text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border font-normal">
-                    {previewProduct.description}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* MODAL: THÊM / SỬA DANH MỤC */}
+      <CategoryFormModal
+        isOpen={categoryModalOpen}
+        onClose={() => setCategoryModalOpen(false)}
+        editingCategory={editingCategory}
+        catName={catName}
+        setCatName={setCatName}
+        catIconType={catIconType}
+        setCatIconType={setCatIconType}
+        catDesc={catDesc}
+        setCatDesc={setCatDesc}
+        onSubmit={handleSaveCategory}
+      />
+
+      {/* MODAL: THÊM / SỬA THƯƠNG HIỆU */}
+      <BrandFormModal
+        isOpen={brandModalOpen}
+        onClose={() => setBrandModalOpen(false)}
+        editingBrand={editingBrand}
+        brandName={brandName}
+        setBrandName={setBrandName}
+        brandOrigin={brandOrigin}
+        setBrandOrigin={setBrandOrigin}
+        brandDesc={brandDesc}
+        setBrandDesc={setBrandDesc}
+        onSubmit={handleSaveBrand}
+      />
+
+      {/* MODAL RIÊNG BIỆT DÀNH CHO NHÂN VIÊN: NHẬP HÀNG QUẦY / TẠO MẶT HÀNG NHẸ */}
+      <StaffCounterModal
+        isOpen={staffModalOpen}
+        onClose={() => setStaffModalOpen(false)}
+        staffModalTab={staffModalTab}
+        setStaffModalTab={setStaffModalTab}
+        roleBaseProducts={roleBaseProducts}
+        selectedStaffProductId={selectedStaffProductId as number | null}
+        setSelectedStaffProductId={(id) => setSelectedStaffProductId(id)}
+        staffRestockQty={staffRestockQty}
+        setStaffRestockQty={setStaffRestockQty}
+        onRestockSubmit={handleStaffRestockSubmit}
+        newStaffItemName={newStaffItemName}
+        setNewStaffItemName={setNewStaffItemName}
+        newStaffItemCategory={newStaffItemCategory}
+        setNewStaffItemCategory={setNewStaffItemCategory}
+        newStaffItemBrand={newStaffItemBrand}
+        setNewStaffItemBrand={setNewStaffItemBrand}
+        newStaffItemPrice={newStaffItemPrice}
+        setNewStaffItemPrice={setNewStaffItemPrice}
+        newStaffItemStock={newStaffItemStock}
+        setNewStaffItemStock={setNewStaffItemStock}
+        onCreateItemSubmit={handleStaffCreateItemSubmit}
+      />
+
+      {/* MODAL: NHẬP NHANH SỐ LƯỢNG KHO */}
+      <QuickRestockModal
+        product={restockProduct}
+        isOpen={!!restockProduct}
+        onClose={() => setRestockProduct(null)}
+        restockQty={restockQty}
+        setRestockQty={setRestockQty}
+        onSubmit={handleQuickRestockSubmit}
+      />
+
+      {/* MODAL: THÊM / CHỈNH SỬA SẢN PHẨM TOÀN DIỆN */}
+      <ProductFormModal
+        isOpen={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        editingProduct={editingProduct}
+        categories={categories}
+        brands={brands}
+        formProductType={formProductType}
+        setFormProductType={setFormProductType}
+        formName={formName}
+        setFormName={setFormName}
+        formCategory={formCategory}
+        setFormCategory={setFormCategory}
+        formBrand={formBrand}
+        setFormBrand={setFormBrand}
+        formPrice={formPrice}
+        setFormPrice={setFormPrice}
+        formOriginalPrice={formOriginalPrice}
+        setFormOriginalPrice={setFormOriginalPrice}
+        formStock={formStock}
+        setFormStock={setFormStock}
+        formImage={formImage}
+        setFormImage={setFormImage}
+        formGallery={formGallery}
+        setFormGallery={setFormGallery}
+        formHighlights={formHighlights}
+        setFormHighlights={setFormHighlights}
+        formSpecs={formSpecs}
+        setFormSpecs={setFormSpecs}
+        formDescription={formDescription}
+        setFormDescription={setFormDescription}
+        onSubmit={handleSaveProductForm}
+      />
+
+      {/* MODAL: XEM TRƯỚC SẢN PHẨM */}
+      <ProductPreviewModal
+        product={previewProduct}
+        isOpen={previewModalOpen}
+        onClose={() => setPreviewModalOpen(false)}
+      />
     </AppLayout>
   );
 }

@@ -16,8 +16,9 @@ import PosReceiptModal from "@/components/pos/PosReceiptModal";
 import PosShiftReportModal from "@/components/pos/PosShiftReportModal";
 import PosQuickRestockModal from "@/components/pos/PosQuickRestockModal";
 import PosStartSessionModal from "@/components/pos/PosStartSessionModal";
+import { PosLiveCourtCard, calculateLiveCourtDetails } from "@/components/pos/PosLiveCourtCard";
 
-interface CartItem {
+export interface CartItem {
   variantId: number;
   productName: string;
   variantName: string;
@@ -26,7 +27,7 @@ interface CartItem {
   isCourtFee?: boolean;
 }
 
-interface CourtStatusItem {
+export interface CourtStatusItem {
   id: number;
   name: string;
   status: "in_use" | "ending" | "available" | "booked";
@@ -113,9 +114,10 @@ export default function POS() {
     queryFn: adminService.getCourts,
   });
 
-  const [liveNow, setLiveNow] = useState<Date>(new Date());
+  // Timer nhẹ nhàng 10s chỉ dùng để cập nhật banner cảnh báo quá giờ/sắp hết ca, không làm re-render toàn trang
+  const [, setAlertTick] = useState(0);
   useEffect(() => {
-    const timer = setInterval(() => setLiveNow(new Date()), 1000);
+    const timer = setInterval(() => setAlertTick((t) => t + 1), 10000);
     return () => clearInterval(timer);
   }, []);
 
@@ -341,74 +343,7 @@ export default function POS() {
     currentPage * itemsPerPage
   );
 
-  // Calculate real-time elapsed ticker and fee estimation
-  const calculateLiveCourtDetails = (court: any) => {
-    if (court.status !== "in_use" && court.status !== "ending") {
-      return {
-        elapsedTimeStr: court.time || "Sẵn sàng thi đấu",
-        exactMinutes: 0,
-        roundedMinutes: 0,
-        currentEstimatedPrice: court.rate || 140000,
-        expectedMinutes: null as number | null,
-        remainingMinutes: null as number | null,
-        isNearEnding: false,
-        isOvertime: false,
-        overtimeMinutes: 0,
-      };
-    }
 
-    if (!court.start_time) {
-      const fallbackHours = court.hours || 1;
-      const exactMinutes = Math.round(fallbackHours * 60);
-      const expectedMinutes = court.expected_duration_minutes || exactMinutes;
-      const remainingMinutes = expectedMinutes - exactMinutes;
-      return {
-        elapsedTimeStr: court.time || "00:00:00",
-        exactMinutes,
-        roundedMinutes: exactMinutes,
-        currentEstimatedPrice: (court.rate || 140000) * fallbackHours,
-        expectedMinutes,
-        remainingMinutes,
-        isNearEnding: false,
-        isOvertime: false,
-        overtimeMinutes: 0,
-      };
-    }
-
-    const parts = court.start_time.split(":");
-    const start = new Date();
-    start.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), parseInt(parts[2] || "0", 10));
-
-    const diffSeconds = Math.max(0, Math.floor((liveNow.getTime() - start.getTime()) / 1000));
-    const hrs = Math.floor(diffSeconds / 3600);
-    const mins = Math.floor((diffSeconds % 3600) / 60);
-    const secs = diffSeconds % 60;
-    const timeFormatted = `${String(hrs).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
-
-    const exactMins = Math.max(1, Math.floor(diffSeconds / 60));
-    const roundedMins = Math.max(15, Math.ceil(exactMins / 15) * 15);
-    const hourlyRate = court.rate || 140000;
-    const estPrice = Math.round((roundedMins / 60) * hourlyRate);
-
-    // Duration limit calculation:
-    const expectedMinutes: number | null = court.expected_duration_minutes || (court.hours ? Math.round(court.hours * 60) : 60);
-    const remainingMinutes = expectedMinutes ? expectedMinutes - exactMins : null;
-    const isNearEnding = remainingMinutes !== null && remainingMinutes <= 10 && remainingMinutes > 0;
-    const isOvertime = remainingMinutes !== null && remainingMinutes <= 0;
-    const overtimeMinutes = isOvertime && remainingMinutes !== null ? Math.abs(remainingMinutes) : 0;
-
-    return {
-      elapsedTimeStr: timeFormatted,
-      exactMinutes: exactMins,
-      roundedMinutes: roundedMins,
-      currentEstimatedPrice: estPrice,
-      expectedMinutes,
-      remainingMinutes,
-      isNearEnding,
-      isOvertime,
-      overtimeMinutes,
-    };
-  };
 
   const handleExtendCourtDuration = (court: any, extraMinutes: number, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -796,14 +731,26 @@ export default function POS() {
         try { currentProductsList = JSON.parse(syncedRaw); } catch { }
       }
       const updatedProducts = currentProductsList.map((p) => {
-        const itemInCart = cartItems.find((c) => !c.isCourtFee && (c.productName === p.name || c.variantId === p.id));
-        if (itemInCart) {
-          const currentQty = p.variants?.[0]?.stock_quantity || 15;
-          const newQty = Math.max(0, currentQty - itemInCart.quantity);
+        let hasModified = false;
+        const updatedVariants = (p.variants || []).map((v) => {
+          const matchedCartItem = cartItems.find(
+            (c) => !c.isCourtFee && (c.variantId === v.id || c.productName.toLowerCase() === p.name.toLowerCase())
+          );
+          if (matchedCartItem) {
+            hasModified = true;
+            const currentQty = v.stock_quantity ?? 15;
+            const newQty = Math.max(0, currentQty - matchedCartItem.quantity);
+            return { ...v, stock_quantity: newQty };
+          }
+          return v;
+        });
+
+        if (hasModified) {
+          const totalStock = updatedVariants.reduce((sum, v) => sum + (v.stock_quantity || 0), 0);
           return {
             ...p,
-            in_stock: newQty > 0,
-            variants: (p.variants || []).map((v) => ({ ...v, stock_quantity: newQty })),
+            in_stock: totalStock > 0,
+            variants: updatedVariants,
           };
         }
         return p;
@@ -1046,298 +993,20 @@ export default function POS() {
 
           {/* Dedicated Scrollable Court List */}
           <div className="space-y-2 flex-1 min-h-0 overflow-y-auto pr-1.5">
-            {courtStatusList.map((court: any) => {
-              const live = calculateLiveCourtDetails(court);
-              const isInUse = court.status === "in_use";
-              const isEnding = court.status === "ending" || live.isNearEnding;
-              const isOvertime = live.isOvertime;
-              const isAvailable = court.status === "available";
-              const isBooked = court.status === "booked";
-              const isSessionRunning = isInUse || isEnding || isOvertime;
-
-              const cardBorder = isOvertime
-                ? "border-rose-400 bg-rose-50/40 shadow-xs ring-1 ring-rose-300"
-                : isEnding
-                  ? "border-amber-400 bg-amber-50/40 shadow-xs ring-1 ring-amber-300"
-                  : isInUse
-                    ? "border-emerald-400 bg-emerald-50/20 shadow-xs"
-                    : isBooked
-                      ? "border-blue-300 bg-blue-50/20"
-                      : "border-slate-200 hover:border-slate-300";
-
-              let displayStatusLabel = court.statusLabel;
-              let displayStatusColor = court.statusColor;
-
-              if (isOvertime) {
-                displayStatusLabel = `QUÁ GIỜ (+${live.overtimeMinutes}p)`;
-                displayStatusColor = "bg-rose-50 text-rose-700 border-rose-300 animate-pulse";
-              } else if (isEnding) {
-                displayStatusLabel = `SẮP HẾT GIỜ (Còn ${live.remainingMinutes}p)`;
-                displayStatusColor = "bg-amber-50 text-amber-700 border-amber-300 animate-pulse";
-              } else if (isInUse && live.remainingMinutes !== null) {
-                displayStatusLabel = `ĐANG CHƠI (Còn ${live.remainingMinutes}p)`;
-                displayStatusColor = "bg-emerald-50 text-emerald-700 border-emerald-300";
-              }
-
-              return (
-                <Card
-                  key={court.id}
-                  className={`p-3 bg-white border transition-all duration-150 space-y-2 ${cardBorder}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-extrabold text-xs text-slate-900">{court.name}</span>
-                      {isSessionRunning && (
-                        <span className="flex h-2 w-2 relative">
-                          <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                            isOvertime ? "bg-rose-400" : isEnding ? "bg-amber-400" : "bg-emerald-400"
-                          }`}></span>
-                          <span className={`relative inline-flex rounded-full h-2 w-2 ${
-                            isOvertime ? "bg-rose-500" : isEnding ? "bg-amber-500" : "bg-emerald-500"
-                          }`}></span>
-                        </span>
-                      )}
-                    </div>
-                    <Badge className={`text-[9px] font-bold border ${displayStatusColor}`}>
-                      {displayStatusLabel}
-                    </Badge>
-                  </div>
-
-                  {/* Body Info */}
-                  <div className="text-[11px] space-y-1.5">
-                    {isSessionRunning ? (
-                      <div className="space-y-1.5">
-                        <div
-                          className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg font-mono border transition-all ${
-                            isOvertime
-                              ? "bg-rose-500/10 dark:bg-rose-950/40 border-rose-300/80 dark:border-rose-800/60 text-rose-950 dark:text-rose-200"
-                              : isEnding
-                                ? "bg-amber-500/10 dark:bg-amber-950/40 border-amber-300/80 dark:border-amber-800/60 text-amber-950 dark:text-amber-200"
-                                : "bg-emerald-500/10 dark:bg-emerald-950/40 border-emerald-300/80 dark:border-emerald-800/60 text-emerald-950 dark:text-emerald-200"
-                          }`}
-                        >
-                          <div
-                            className={`flex items-center gap-1.5 text-[11px] font-semibold ${
-                              isOvertime
-                                ? "text-rose-800 dark:text-rose-300"
-                                : isEnding
-                                  ? "text-amber-800 dark:text-amber-300"
-                                  : "text-emerald-800 dark:text-emerald-300"
-                            }`}
-                          >
-                            <Timer
-                              className={`h-3.5 w-3.5 animate-pulse ${
-                                isOvertime
-                                  ? "text-rose-600 dark:text-rose-400"
-                                  : isEnding
-                                    ? "text-amber-600 dark:text-amber-400"
-                                    : "text-emerald-600 dark:text-emerald-400"
-                              }`}
-                            />
-                            <span>{isOvertime ? "Quá giờ:" : isEnding ? "Sắp hết:" : "Giờ chơi:"}</span>
-                          </div>
-                          <span
-                            className={`font-black text-xs tracking-wider ${
-                              isOvertime
-                                ? "text-rose-700 dark:text-rose-400"
-                                : isEnding
-                                  ? "text-amber-700 dark:text-amber-400"
-                                  : "text-emerald-700 dark:text-emerald-400"
-                            }`}
-                          >
-                            {live.elapsedTimeStr}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-slate-600 px-0.5 pt-0.5">
-                          <span>Tạm tính tiền sân:</span>
-                          <span className="font-bold text-slate-900">
-                            {new Intl.NumberFormat("vi-VN").format(live.currentEstimatedPrice)}đ ({live.roundedMinutes}p)
-                          </span>
-                        </div>
-                        {court.customerName && (
-                          <div className="flex items-center gap-1 text-slate-500 text-[10px] px-0.5">
-                            <User className="h-3 w-3 text-slate-400" />
-                            <span className="font-medium text-slate-700 truncate">{court.customerName}</span>
-                            {court.customerPhone && <span>• {court.customerPhone}</span>}
-                          </div>
-                        )}
-
-                        {/* Court Tab Items (Nước/Món đã gọi trong lúc chơi) */}
-                        {courtTabOrders[court.id] && courtTabOrders[court.id].length > 0 && (
-                          <div className="bg-amber-50/90 border border-amber-200 rounded-lg p-2 text-[10px] space-y-1">
-                            <div className="flex items-center justify-between font-bold text-amber-900">
-                              <span className="flex items-center gap-1">
-                                <Coffee className="h-3.5 w-3.5 text-amber-600" />
-                                Đã gọi {courtTabOrders[court.id].reduce((a, b) => a + b.quantity, 0)} món:
-                              </span>
-                              <span>
-                                {new Intl.NumberFormat("vi-VN").format(
-                                  courtTabOrders[court.id].reduce((sum, item) => sum + item.price * item.quantity, 0)
-                                )}đ
-                              </span>
-                            </div>
-                            <div className="text-slate-600 space-y-1 max-h-20 overflow-y-auto pr-0.5">
-                              {courtTabOrders[court.id].map((tabItem) => (
-                                <div key={tabItem.variantId} className="flex items-center justify-between bg-white/70 px-1.5 py-0.5 rounded border border-amber-100">
-                                  <span className="truncate pr-1">• {tabItem.quantity}x {tabItem.productName}</span>
-                                  <div className="flex items-center gap-1 shrink-0">
-                                    <span className="text-slate-500 font-medium">
-                                      {new Intl.NumberFormat("vi-VN").format(tabItem.price * tabItem.quantity)}đ
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleCourtTabItemQuantity(court.id, tabItem.variantId, -1);
-                                      }}
-                                      className="text-rose-500 hover:text-rose-700 font-bold px-1 rounded hover:bg-rose-50"
-                                      title="Giảm 1 món"
-                                    >
-                                      -
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleCourtTabItemQuantity(court.id, tabItem.variantId, 1);
-                                      }}
-                                      className="text-emerald-600 hover:text-emerald-800 font-bold px-1 rounded hover:bg-emerald-50"
-                                      title="Thêm 1 món"
-                                    >
-                                      +
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ) : isBooked ? (
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1 text-blue-700 bg-blue-50 px-2 py-1 rounded-md text-[10px] font-medium">
-                          <Clock className="h-3 w-3 text-blue-500" />
-                          <span>Lịch hẹn: {court.next_booking_time || court.time || "Khách Online"}</span>
-                        </div>
-                        {court.customerName && (
-                          <div className="text-[10px] text-slate-600 px-0.5">
-                            Khách: <strong className="text-slate-800">{court.customerName}</strong>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1 text-slate-500">
-                          <Clock className="h-3 w-3 text-slate-400" />
-                          <span>
-                            {court.available_minutes_until_next && court.next_booking_time
-                              ? `Trống ${court.available_minutes_until_next}p (đến ${court.next_booking_time})`
-                              : "Sẵn sàng đón khách"}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between font-bold text-slate-700">
-                          <span className="text-emerald-700 text-xs">{new Intl.NumberFormat("vi-VN").format(court.rate)}đ/h</span>
-                          <span className="text-[10px] text-slate-400 font-normal">Pickleball Chuẩn</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Actions Hub */}
-                  <div className="pt-1.5 border-t border-slate-100 space-y-1.5">
-                    {isSessionRunning ? (
-                      <>
-                        <div className="flex items-center gap-1.5 w-full">
-                          <Button
-                            size="sm"
-                            onClick={(e) => handleStopCourtSession(court, e)}
-                            className="flex-1 h-7 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg gap-1 shadow-xs"
-                          >
-                            <Square className="h-3 w-3 fill-current" />
-                            <span>Trả Sân & Chốt Bill</span>
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant={activeServingCourtId === court.id ? "default" : "outline"}
-                            onClick={(e) => handleToggleServeCourt(court.id, e)}
-                            className={`h-7 px-2 text-[10px] font-bold rounded-lg shadow-xs transition-colors ${
-                              activeServingCourtId === court.id
-                                ? "bg-amber-600 hover:bg-amber-700 text-white border-amber-600 animate-pulse"
-                                : "bg-white hover:bg-amber-50 border-amber-300 text-amber-800"
-                            }`}
-                            title="Chọn đồ uống/thực phẩm nạp vào sân này"
-                          >
-                            <Coffee className="h-3 w-3 mr-0.5" />
-                            <span>{activeServingCourtId === court.id ? "Đang nạp" : "+ Nước"}</span>
-                          </Button>
-                        </div>
-
-                        {/* Thanh gia hạn giờ chơi */}
-                        <div className="flex items-center justify-between text-[10px] text-slate-500 bg-slate-50 px-1.5 py-1 rounded-md border border-slate-200">
-                          <span className="font-semibold text-slate-600 flex items-center gap-1">
-                            <Clock className="h-3 w-3 text-slate-400" />
-                            Gia hạn:
-                          </span>
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={(e) => handleExtendCourtDuration(court, 15, e)}
-                              className="px-1.5 py-0.5 bg-white hover:bg-blue-100 text-slate-700 hover:text-blue-700 rounded border border-slate-200 font-bold transition-colors"
-                              title="Thêm 15 phút"
-                            >
-                              +15p
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => handleExtendCourtDuration(court, 30, e)}
-                              className="px-1.5 py-0.5 bg-white hover:bg-blue-100 text-slate-700 hover:text-blue-700 rounded border border-slate-200 font-bold transition-colors"
-                              title="Thêm 30 phút"
-                            >
-                              +30p
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => handleExtendCourtDuration(court, 60, e)}
-                              className="px-1.5 py-0.5 bg-white hover:bg-blue-100 text-slate-700 hover:text-blue-700 rounded border border-slate-200 font-bold transition-colors"
-                              title="Thêm 1 tiếng"
-                            >
-                              +1h
-                            </button>
-                          </div>
-                        </div>
-                      </>
-                    ) : isBooked ? (
-                      <Button
-                        size="sm"
-                        onClick={(e) => handleOpenStartSessionModal(court, e)}
-                        className="w-full h-7 text-[11px] font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg gap-1 shadow-xs"
-                      >
-                        <CheckSquare className="h-3 w-3" />
-                        <span>Check-in Vào Sân</span>
-                      </Button>
-                    ) : (
-                      <div className="flex items-center gap-1.5 w-full">
-                        <Button
-                          size="sm"
-                          onClick={(e) => handleOpenStartSessionModal(court, e)}
-                          className="flex-1 h-7 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-xs transition-colors"
-                        >
-                          Bật Giờ
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleSelectCourtFromSidebar(court)}
-                          className="h-7 px-2 text-[10px] font-bold bg-white hover:bg-emerald-50 border-slate-300 text-slate-700 hover:text-emerald-700 rounded-lg shadow-xs"
-                        >
-                          + 1h Bill
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </Card>
-              );
-            })}
+            {courtStatusList.map((court: any) => (
+              <PosLiveCourtCard
+                key={court.id}
+                court={court}
+                activeServingCourtId={activeServingCourtId}
+                courtTabItems={courtTabOrders[court.id] || []}
+                onStopSession={handleStopCourtSession}
+                onToggleServe={handleToggleServeCourt}
+                onCourtTabQty={handleCourtTabItemQuantity}
+                onExtendDuration={handleExtendCourtDuration}
+                onStartSession={handleOpenStartSessionModal}
+                onSelectCourt={handleSelectCourtFromSidebar}
+              />
+            ))}
           </div>
         </div>
 

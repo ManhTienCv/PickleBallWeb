@@ -29,6 +29,8 @@ import { OrderTrackingDialog } from "@/components/orders/OrderTrackingDialog";
 import { OrderDetailDialog } from "@/components/orders/OrderDetailDialog";
 import { OrderEditPosDialog } from "@/components/orders/OrderEditPosDialog";
 import { OrderReceiptDialog } from "@/components/orders/OrderReceiptDialog";
+import { OrderCancelDialog } from "@/components/orders/OrderCancelDialog";
+import { OrderRefundDialog } from "@/components/orders/OrderRefundDialog";
 
 export default function Orders() {
   const [searchParams] = useSearchParams();
@@ -312,11 +314,31 @@ export default function Orders() {
     fetchBackendOrders(true);
   };
 
-  const handleAdminCancelOrder = async (orderCode: string) => {
-    const reason = window.prompt("Nhập lý do hủy đơn hàng (Admin):", "Khách hàng yêu cầu hủy / Hết hàng");
-    if (reason === null) return;
+  // CANCEL ORDER MODAL STATE
+  const [cancelModalOrder, setCancelModalOrder] = useState<Order | null>(null);
+  const [cancelReasonInput, setCancelReasonInput] = useState("Khách hàng yêu cầu hủy / Hết hàng");
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  // REFUND ORDER MODAL STATE
+  const [refundModalOrder, setRefundModalOrder] = useState<Order | null>(null);
+  const [refundTransIdInput, setRefundTransIdInput] = useState("");
+  const [refundNoteInput, setRefundNoteInput] = useState("Quản trị viên đã chuyển tiền hoàn cho khách qua Internet Banking/MoMo");
+  const [isRefunding, setIsRefunding] = useState(false);
+
+  const handleAdminCancelOrder = (orderCode: string) => {
+    const target = ordersList.find((o) => o.code === orderCode);
+    if (!target) return;
+    setCancelReasonInput("Khách hàng yêu cầu hủy / Hết hàng");
+    setCancelModalOrder(target);
+  };
+
+  const handleExecuteCancelOrder = async () => {
+    if (!cancelModalOrder) return;
+    const orderCode = cancelModalOrder.code;
+    const reason = cancelReasonInput.trim();
 
     try {
+      setIsCancelling(true);
       toast.info(`Đang xử lý hủy đơn hàng #${orderCode}...`);
       let serverUpdated = false;
       try {
@@ -325,7 +347,6 @@ export default function Orders() {
       } catch (adminErr: any) {
         const status = adminErr?.response?.status;
         if (status === 404 || status === 500) {
-          // Fallback to general order cancel endpoint
           try {
             await api.post(`/orders/${orderCode}/cancel`, { reason });
             serverUpdated = true;
@@ -345,7 +366,8 @@ export default function Orders() {
         } catch {}
         return next;
       });
-      // Refresh to ensure full synchronization with server
+
+      setCancelModalOrder(null);
       if (serverUpdated) {
         setTimeout(() => fetchBackendOrders(false), 500);
       }
@@ -355,31 +377,32 @@ export default function Orders() {
       } else {
         toast.error("Không thể hủy đơn hàng.");
       }
+    } finally {
+      setIsCancelling(false);
     }
   };
 
-  const handleConfirmRefund = async (orderCode: string) => {
+  const handleConfirmRefund = (orderCode: string) => {
     const target = ordersList.find((o) => o.code === orderCode);
-    const amountStr = target
-      ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(target.totalAmount)
-      : "";
+    if (!target) return;
     const defaultTransId = `REF_${Date.now().toString().slice(-6)}`;
-    const transIdInput = window.prompt(
-      `XÁC NHẬN HOÀN TIỀN ĐƠN HÀNG #${orderCode}\nSố tiền hoàn: ${amountStr}\nPhương thức: ${target?.paymentMethod || "Online"}\n\nNhập mã giao dịch chuyển khoản đối soát (Bank/MoMo):`,
-      defaultTransId
-    );
-    if (transIdInput === null) return;
+    setRefundTransIdInput(defaultTransId);
+    setRefundNoteInput("Quản trị viên đã chuyển tiền hoàn cho khách qua Internet Banking/MoMo");
+    setRefundModalOrder(target);
+  };
 
-    const noteInput = window.prompt(
-      "Ghi chú hoàn tiền (tùy chọn):",
-      "Quản trị viên đã chuyển tiền hoàn cho khách qua Internet Banking/MoMo"
-    );
+  const handleExecuteConfirmRefund = async () => {
+    if (!refundModalOrder) return;
+    const orderCode = refundModalOrder.code;
+    const transId = refundTransIdInput.trim();
+    const note = refundNoteInput.trim();
 
     try {
+      setIsRefunding(true);
       toast.info(`Đang cập nhật xác nhận hoàn tiền cho đơn #${orderCode}...`);
       await adminService.confirmRefund(orderCode, {
-        refund_trans_id: transIdInput,
-        refund_note: noteInput || undefined,
+        refund_trans_id: transId,
+        refund_note: note || undefined,
       });
 
       setOrdersList((prev) =>
@@ -389,14 +412,15 @@ export default function Orders() {
               ...o,
               status: "REFUNDED",
               paymentStatus: "REFUNDED",
-              refundTransId: transIdInput,
-              refundNote: noteInput || "",
+              refundTransId: transId,
+              refundNote: note || "",
               refundedAt: new Date().toISOString(),
             }
             : o
         )
       );
       toast.success(`Đã xác nhận hoàn tiền thành công cho đơn #${orderCode}!`);
+      setRefundModalOrder(null);
       fetchBackendOrders();
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -404,6 +428,8 @@ export default function Orders() {
       } else {
         toast.error("Lỗi khi xác nhận hoàn tiền.");
       }
+    } finally {
+      setIsRefunding(false);
     }
   };
 
@@ -784,9 +810,9 @@ export default function Orders() {
 
         let matchesDate = true;
         if (datePeriod === "today") {
-          matchesDate = order.dateStr === currentTodayStr || order.dateStr === "2026-08-09" || (order.createdAt && order.createdAt.startsWith(currentTodayStr));
+          matchesDate = order.dateStr === currentTodayStr || (!!order.createdAt && order.createdAt.startsWith(currentTodayStr));
         } else if (datePeriod === "yesterday") {
-          matchesDate = order.dateStr === currentYesterdayStr || order.dateStr === "2026-08-08" || (order.createdAt && order.createdAt.startsWith(currentYesterdayStr));
+          matchesDate = order.dateStr === currentYesterdayStr || (!!order.createdAt && order.createdAt.startsWith(currentYesterdayStr));
         } else if (datePeriod === "custom") {
           matchesDate = order.dateStr === customDate;
         } else if (datePeriod === "all") {
@@ -1157,6 +1183,28 @@ export default function Orders() {
           receiptOrder={printReceiptOrder}
           isOpen={!!printReceiptOrder}
           onClose={() => setPrintReceiptOrder(null)}
+        />
+
+        <OrderCancelDialog
+          order={cancelModalOrder}
+          isOpen={!!cancelModalOrder}
+          onClose={() => setCancelModalOrder(null)}
+          reason={cancelReasonInput}
+          onReasonChange={setCancelReasonInput}
+          onConfirm={handleExecuteCancelOrder}
+          isLoading={isCancelling}
+        />
+
+        <OrderRefundDialog
+          order={refundModalOrder}
+          isOpen={!!refundModalOrder}
+          onClose={() => setRefundModalOrder(null)}
+          transId={refundTransIdInput}
+          onTransIdChange={setRefundTransIdInput}
+          note={refundNoteInput}
+          onNoteChange={setRefundNoteInput}
+          onConfirm={handleExecuteConfirmRefund}
+          isLoading={isRefunding}
         />
       </div>
     </AppLayout>
