@@ -26,6 +26,9 @@ import { wishlistService } from '@/services/wishlist.service'
 import { authHelpers } from '@/stores/useAuthStore'
 import { useAuthModalStore } from '@/stores/useAuthModalStore'
 
+const SAFE_PLACEHOLDER_IMAGE =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23f1f5f9'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' font-weight='bold' fill='%2394a3b8'%3EPickleball DemoPick%3C/text%3E%3C/svg%3E"
+
 interface ProductCardProps {
   product: Product
   onAddToCart?: (product: Product) => void
@@ -177,7 +180,9 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
               src={product.image_url || '/images/pickleball_paddle_joola.jpg'}
               alt={product.name}
               onError={(e) => {
-                (e.target as HTMLImageElement).src = '/images/pickleball_paddle_joola.jpg'
+                const target = e.currentTarget
+                target.onerror = null
+                target.src = SAFE_PLACEHOLDER_IMAGE
               }}
               className="h-full w-full object-cover object-center transition-transform duration-500 group-hover/img:scale-105"
             />
@@ -327,7 +332,9 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
                 src={product.image_url || '/images/pickleball_paddle_joola.jpg'}
                 alt={product.name}
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/images/pickleball_paddle_joola.jpg'
+                  const target = e.currentTarget
+                  target.onerror = null
+                  target.src = SAFE_PLACEHOLDER_IMAGE
                 }}
                 className="max-h-72 w-full object-contain rounded-2xl shadow-sm"
               />

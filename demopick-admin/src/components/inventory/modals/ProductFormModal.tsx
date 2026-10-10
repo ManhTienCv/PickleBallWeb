@@ -253,11 +253,10 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     setFormPrice("");
                   }
                 }}
-                className={`px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-2 cursor-pointer ${
-                  formProductType === "online"
+                className={`px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-2 cursor-pointer ${formProductType === "online"
                     ? "bg-emerald-600 text-white font-semibold shadow-md shadow-emerald-500/20"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200 font-normal"
-                }`}
+                  }`}
               >
                 <ShoppingBag className="w-3.5 h-3.5" />
                 <span>Sản Phẩm Đăng Bán Online & Quầy (Vợt, bóng, phụ kiện...)</span>
@@ -274,11 +273,10 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     setFormImage("/images/pocari_sweat_500ml.jpg");
                   }
                 }}
-                className={`px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-2 cursor-pointer ${
-                  formProductType === "pos"
+                className={`px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-2 cursor-pointer ${formProductType === "pos"
                     ? "bg-blue-600 text-white font-semibold shadow-md shadow-blue-500/20"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200 font-normal"
-                }`}
+                  }`}
               >
                 <Store className="w-3.5 h-3.5" />
                 <span>Dịch Vụ Bán Tại Quầy (Đồ uống, thuê sân...)</span>
@@ -787,18 +785,18 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   </span>
                   <div className="flex flex-wrap gap-2">
                     {[
-                      { name: "Pocari Sweat", url: "/images/pocari_sweat_500ml.jpg", icon: "🥤" },
-                      { name: "Revive chanh", url: "/images/revive_lemon_drink.jpg", icon: "⚡" },
-                      { name: "Bò húc", url: "/images/red_bull_can.jpg", icon: "🐂" },
-                      { name: "Nước LaVie", url: "/images/water_bottle_lavie.jpg", icon: "💧" },
-                      { name: "Cà phê Cold Brew", url: "/images/cold_brew_coffee.jpg", icon: "☕" },
-                      { name: "Trà chanh đá", url: "/images/iced_lemon_tea.jpg", icon: "🍋" },
-                      { name: "Dừa tươi", url: "/images/fresh_coconut.jpg", icon: "🥥" },
-                      { name: "Bánh Snickers", url: "/images/snickers_bar.jpg", icon: "🍫" },
-                      { name: "Thanh Granola", url: "/images/protein_granola_bar.jpg", icon: "🌾" },
-                      { name: "Chuối Dole", url: "/images/dole_banana.jpg", icon: "🍌" },
-                      { name: "Bóng Pickleball", url: "/images/pickleball_balls_yellow.jpg", icon: "🎾" },
-                      { name: "Băng quấn cán", url: "/images/pickleball_overgrip_tape.jpg", icon: "🎗️" },
+                      { name: "Pocari Sweat", url: "/images/pocari_sweat_500ml.jpg", icon: "" },
+                      { name: "Revive chanh", url: "/images/revive_lemon_drink.jpg", icon: "" },
+                      { name: "Bò húc", url: "/images/red_bull_can.jpg", icon: "" },
+                      { name: "Nước LaVie", url: "/images/water_bottle_lavie.jpg", icon: "" },
+                      { name: "Cà phê Cold Brew", url: "/images/cold_brew_coffee.jpg", icon: "" },
+                      { name: "Trà chanh đá", url: "/images/iced_lemon_tea.jpg", icon: "" },
+                      { name: "Dừa tươi", url: "/images/fresh_coconut.jpg", icon: "" },
+                      { name: "Bánh Snickers", url: "/images/snickers_bar.jpg", icon: "" },
+                      { name: "Thanh Granola", url: "/images/protein_granola_bar.jpg", icon: "" },
+                      { name: "Chuối Dole", url: "/images/dole_banana.jpg", icon: "" },
+                      { name: "Bóng Pickleball", url: "/images/pickleball_balls_yellow.jpg", icon: "" },
+                      { name: "Băng quấn cán", url: "/images/pickleball_overgrip_tape.jpg", icon: "" },
                     ].map((item) => (
                       <button
                         key={item.url}
@@ -807,11 +805,10 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                           setFormImage(item.url);
                           toast.success(`Đã áp dụng ảnh mẫu "${item.name}"!`);
                         }}
-                        className={`px-2.5 py-1 rounded-xl text-[11px] font-medium border flex items-center gap-1.5 transition-all cursor-pointer ${
-                          formImage === item.url
+                        className={`px-2.5 py-1 rounded-xl text-[11px] font-medium border flex items-center gap-1.5 transition-all cursor-pointer ${formImage === item.url
                             ? "bg-blue-600 text-white border-blue-600 shadow-sm"
                             : "bg-white text-slate-700 border-slate-200 hover:border-blue-300 hover:bg-blue-50/50"
-                        }`}
+                          }`}
                       >
                         <span>{item.icon}</span>
                         <span>{item.name}</span>
@@ -836,11 +833,10 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
             <Button
               type="submit"
-              className={`font-medium text-xs h-10 px-7 rounded-xl text-white shadow-md cursor-pointer ${
-                formProductType === "online"
+              className={`font-medium text-xs h-10 px-7 rounded-xl text-white shadow-md cursor-pointer ${formProductType === "online"
                   ? "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20"
                   : "bg-blue-600 hover:bg-blue-500 shadow-blue-500/20"
-              }`}
+                }`}
             >
               {editingProduct ? "Lưu Cập Nhật Mặt Hàng" : "Thêm Mặt Hàng Vào Kho"}
             </Button>

@@ -23,8 +23,12 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> login(@Valid @RequestBody LoginRequest request) {
-        Map<String, Object> result = authService.login(request);
+    public ResponseEntity<ApiResponse<Map<String, Object>>> login(
+            @Valid @RequestBody LoginRequest request,
+            jakarta.servlet.http.HttpServletRequest servletRequest) {
+        String ipAddress = servletRequest != null ? servletRequest.getRemoteAddr() : null;
+        String userAgent = servletRequest != null ? servletRequest.getHeader("User-Agent") : null;
+        Map<String, Object> result = authService.login(request, ipAddress, userAgent);
         return ResponseEntity.ok(ApiResponse.success(result, "Đăng nhập thành công."));
     }
 

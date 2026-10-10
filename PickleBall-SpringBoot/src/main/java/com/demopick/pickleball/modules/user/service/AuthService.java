@@ -8,6 +8,9 @@ import com.demopick.pickleball.modules.user.dto.RegisterRequest;
 import com.demopick.pickleball.modules.user.entity.User;
 import com.demopick.pickleball.modules.user.repository.UserRepository;
 import com.demopick.pickleball.security.JwtTokenProvider;
+import com.demopick.pickleball.common.service.EmailService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,18 +24,29 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class AuthService {
 
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
+    private final EmailService emailService;
     private static final Map<String, String> RESET_OTP_CACHE = new ConcurrentHashMap<>();
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtTokenProvider tokenProvider) {
+    public AuthService(UserRepository userRepository,
+                       PasswordEncoder passwordEncoder,
+                       JwtTokenProvider tokenProvider,
+                       EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
+        this.emailService = emailService;
     }
 
     public Map<String, Object> login(LoginRequest request) {
+        return login(request, null, null);
+    }
+
+    public Map<String, Object> login(LoginRequest request, String ipAddress, String userAgent) {
         String email = request.getEmail() != null ? request.getEmail().trim() : "";
         User user = userRepository.findByEmail(email.toLowerCase())
                 .or(() -> userRepository.findByEmail(email))
@@ -46,6 +60,13 @@ public class AuthService {
 
         String role = user.getRole();
         String token = tokenProvider.generateToken(user.getId(), user.getEmail(), role);
+
+        // Gửi email cảnh báo bảo mật khi đăng nhập thành công
+        try {
+            emailService.sendLoginAlertEmail(user, ipAddress, userAgent);
+        } catch (Exception ex) {
+            log.warn("Could not send login alert email to {}: {}", user.getEmail(), ex.getMessage());
+        }
 
         Map<String, Object> result = new HashMap<>();
         result.put("token", token);
@@ -68,6 +89,13 @@ public class AuthService {
         user.setRole(user.getRole());
 
         user = userRepository.save(user);
+
+        // Gửi email chào mừng thành viên mới
+        try {
+            emailService.sendWelcomeEmail(user);
+        } catch (Exception ex) {
+            log.warn("Could not send welcome email to {}: {}", user.getEmail(), ex.getMessage());
+        }
 
         String token = tokenProvider.generateToken(user.getId(), user.getEmail(), user.getRole());
 
@@ -144,6 +172,13 @@ public class AuthService {
         String cleanEmail = email.trim().toLowerCase();
         String otp = String.format("%06d", (int) (Math.random() * 900000) + 100000);
         RESET_OTP_CACHE.put(cleanEmail, otp);
+
+        // Gửi mã OTP xác thực qua email thật
+        try {
+            emailService.sendOtpResetPasswordEmail(cleanEmail, otp);
+        } catch (Exception ex) {
+            log.warn("Could not send OTP email to {}: {}", cleanEmail, ex.getMessage());
+        }
 
         Map<String, Object> res = new HashMap<>();
         res.put("message", "Mã xác thực OTP đã được gửi tới " + cleanEmail);

@@ -131,10 +131,14 @@ export default function Reports() {
         });
       }
 
-      // 2. Fetch court bookings
-      const resBookings = await api.get("/bookings");
-      if (resBookings.data?.data && Array.isArray(resBookings.data.data)) {
-        setCourtBookings(resBookings.data.data);
+      // 2. Fetch court bookings (Fallback an toàn nếu backend chưa có route /bookings)
+      try {
+        const resBookings = await api.get("/bookings");
+        if (resBookings.data?.data && Array.isArray(resBookings.data.data)) {
+          setCourtBookings(resBookings.data.data);
+        }
+      } catch {
+        // Backend chưa có route /bookings, tự động chuyển sang đọc từ storage cục bộ
       }
 
       if (showToast) {

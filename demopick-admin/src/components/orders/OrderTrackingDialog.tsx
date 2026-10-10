@@ -92,7 +92,7 @@ export const OrderTrackingDialog: React.FC<OrderTrackingDialogProps> = ({
                 <span>
                   {trackingInfo.isCompleted
                     ? "Đã giao thành công 100%"
-                    : `⚡ Chuyển sang Bước ${trackingInfo.currentStage + 1}`}
+                    : `Chuyển sang Bước ${trackingInfo.currentStage + 1}`}
                 </span>
               </Button>
               <Button
@@ -116,11 +116,10 @@ export const OrderTrackingDialog: React.FC<OrderTrackingDialogProps> = ({
                   <div key={idx} className="relative space-y-1">
                     {/* Dot */}
                     <div
-                      className={`absolute -left-6 top-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                        isLatest
+                      className={`absolute -left-6 top-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center ${isLatest
                           ? "bg-emerald-600 border-white ring-4 ring-emerald-100"
                           : "bg-slate-300 border-white"
-                      }`}
+                        }`}
                     >
                       {isLatest && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                     </div>

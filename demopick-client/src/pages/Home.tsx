@@ -25,6 +25,9 @@ import { toast } from 'sonner'
 import { authHelpers } from '@/stores/useAuthStore'
 import { useAuthModalStore } from '@/stores/useAuthModalStore'
 
+const SAFE_PLACEHOLDER_IMAGE =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23f1f5f9'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' font-weight='bold' fill='%2394a3b8'%3EPickleball DemoPick%3C/text%3E%3C/svg%3E"
+
 export default function Home() {
   const navigate = useNavigate()
   const [activeCategory, setActiveCategory] = useState<string>('all')
@@ -286,6 +289,11 @@ export default function Home() {
                   <img
                     src="/images/pickleball_court.jpg"
                     alt="Sân Pickleball Pick Center"
+                    onError={(e) => {
+                      const target = e.currentTarget
+                      target.onerror = null
+                      target.src = SAFE_PLACEHOLDER_IMAGE
+                    }}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
 
@@ -492,6 +500,11 @@ export default function Home() {
                 <img
                   src={court.image}
                   alt={court.name}
+                  onError={(e) => {
+                    const target = e.currentTarget
+                    target.onerror = null
+                    target.src = SAFE_PLACEHOLDER_IMAGE
+                  }}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 <Badge className="absolute top-2.5 left-2.5 bg-slate-900/90 dark:bg-slate-800/90 text-white text-[11px] font-medium backdrop-blur-sm">

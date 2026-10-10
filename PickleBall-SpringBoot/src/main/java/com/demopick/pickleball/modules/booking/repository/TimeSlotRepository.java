@@ -19,6 +19,8 @@ public interface TimeSlotRepository extends JpaRepository<TimeSlot, Long> {
 
     List<TimeSlot> findByCourtIdAndDateOrderByStartTimeAsc(Long courtId, LocalDate date);
 
+    List<TimeSlot> findByDateAndStatusOrderByStartTimeAsc(LocalDate date, String status);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT ts FROM TimeSlot ts WHERE ts.id = :id")
     Optional<TimeSlot> findByIdWithLock(@Param("id") Long id);

@@ -209,6 +209,11 @@ export function AuthModal() {
             <img
               src="/images/pickleball_court.jpg"
               alt="Sân Pickleball Chuẩn Thi Đấu"
+              onError={(e) => {
+                const target = e.currentTarget
+                target.onerror = null
+                target.style.display = 'none'
+              }}
               className="absolute inset-0 w-full h-full object-cover scale-105 transition-transform duration-700 hover:scale-110"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900/95 via-slate-900/40 to-slate-900/10" />

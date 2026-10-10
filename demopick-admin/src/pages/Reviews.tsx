@@ -12,9 +12,7 @@ import {
   CheckCircle2,
   AlertCircle,
   ThumbsUp,
-  Image as ImageIcon,
   RefreshCw,
-  Filter,
   MessageSquare,
   ShieldCheck,
   X,
@@ -153,7 +151,7 @@ export default function ReviewsPage() {
         <Button
           variant="outline"
           size="sm"
-          onClick={fetchReviews}
+          onClick={() => fetchReviews(true)}
           className="gap-2 border-emerald-500/30 text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400"
         >
           <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />

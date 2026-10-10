@@ -471,6 +471,12 @@ public class OrderService {
         if ("cod".equalsIgnoreCase(order.getPaymentMethod())) {
             try {
                 emailService.sendPaymentSuccessEmail(order, itemsToSave);
+                List<OrderItem> bookingSlots = itemsToSave.stream()
+                        .filter(i -> "booking_slot".equalsIgnoreCase(i.getItemType()))
+                        .toList();
+                if (!bookingSlots.isEmpty()) {
+                    emailService.sendCourtBookingSuccessEmail(order, bookingSlots);
+                }
             } catch (Exception ex) {
                 log.warn("Could not send confirmation email for COD order #{}: {}", order.getOrderCode(), ex.getMessage());
             }
@@ -559,6 +565,12 @@ public class OrderService {
                 // Gửi email xác nhận thanh toán thành công
                 try {
                     emailService.sendPaymentSuccessEmail(order, items);
+                    List<OrderItem> bookingSlots = items.stream()
+                            .filter(i -> "booking_slot".equalsIgnoreCase(i.getItemType()))
+                            .toList();
+                    if (!bookingSlots.isEmpty()) {
+                        emailService.sendCourtBookingSuccessEmail(order, bookingSlots);
+                    }
                 } catch (Exception ex) {
                     log.warn("Could not send confirmation email for order #{}: {}", order.getOrderCode(), ex.getMessage());
                 }
@@ -679,7 +691,14 @@ public class OrderService {
             order.setStatus(normalizedStatus);
         }
 
-        return orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+        try {
+            emailService.sendOrderStatusUpdateEmail(savedOrder, savedOrder.getStatus(), savedOrder.getTrackingCode());
+        } catch (Exception ex) {
+            log.warn("Could not send order status update email for #{}: {}", savedOrder.getOrderCode(), ex.getMessage());
+        }
+
+        return savedOrder;
     }
 
     @Transactional
@@ -813,7 +832,13 @@ public class OrderService {
         // Tự động gửi Email xác nhận thanh toán thành công kèm hóa đơn chi tiết cho khách hàng
         try {
             emailService.sendPaymentSuccessEmail(order, items);
-            log.info("Sent payment success email to {} for confirmed order #{}", order.getCustomerEmail(), order.getOrderCode());
+            List<OrderItem> bookingSlots = items.stream()
+                    .filter(i -> "booking_slot".equalsIgnoreCase(i.getItemType()))
+                    .toList();
+            if (!bookingSlots.isEmpty()) {
+                emailService.sendCourtBookingSuccessEmail(order, bookingSlots);
+            }
+            log.info("Sent payment & booking success email to {} for confirmed order #{}", order.getCustomerEmail(), order.getOrderCode());
         } catch (Exception ex) {
             log.warn("Could not send payment success email for order #{}: {}", order.getOrderCode(), ex.getMessage());
         }

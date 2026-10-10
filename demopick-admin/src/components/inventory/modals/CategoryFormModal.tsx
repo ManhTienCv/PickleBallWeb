@@ -73,12 +73,12 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
                 onChange={(e) => setCatIconType(e.target.value as CategoryItem["iconType"])}
                 className="w-full h-10 px-3 border border-slate-200 rounded-xl text-xs bg-white font-normal focus:ring-2 focus:ring-emerald-500"
               >
-                <option value="trophy">🏆 Cúp Thể Thao (Vợt / Giải đấu)</option>
-                <option value="circle-dot">🎾 Quả Bóng (Bóng thi đấu)</option>
-                <option value="shopping-bag">🛍️ Túi Đựng / Balo (Phụ kiện)</option>
-                <option value="layers">👕 Trang Phục / Quần Áo</option>
-                <option value="tag">🏷️ Thẻ Nhãn / Giày Thể Thao</option>
-                <option value="coffee">☕ Đồ Uống & Đồ Ăn</option>
+                <option value="trophy"> Cúp Thể Thao (Vợt / Giải đấu)</option>
+                <option value="circle-dot"> Quả Bóng (Bóng thi đấu)</option>
+                <option value="shopping-bag"> Túi Đựng / Balo (Phụ kiện)</option>
+                <option value="layers"> Trang Phục / Quần Áo</option>
+                <option value="tag"> Thẻ Nhãn / Giày Thể Thao</option>
+                <option value="coffee"> Đồ Uống & Đồ Ăn</option>
               </select>
             </div>
 

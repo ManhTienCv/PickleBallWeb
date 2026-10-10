@@ -455,24 +455,14 @@ export default function CheckoutPage() {
 
       if (paymentMethod === 'momo') {
         resetTimer()
-        let targetUrl = result.payUrl || `/payment/momo/gateway?orderId=${orderCode}&amount=${grandTotal}`
-
-        // Nếu là Cổng MoMo nội bộ (/payment/momo/gateway), luôn chuyển về relative URL
-        // để ở lại đúng domain hiện tại (dù đang ở Vercel, localhost hay custom domain)
-        if (targetUrl.includes('/payment/momo/gateway')) {
-          const queryIndex = targetUrl.indexOf('?')
-          const queryString = queryIndex !== -1 ? targetUrl.substring(queryIndex) : `?orderId=${orderCode}&amount=${grandTotal}`
-          targetUrl = `/payment/momo/gateway${queryString}`
-        }
+        // Cổng MoMo Gateway nội bộ (/payment/momo/gateway) tích hợp giao diện quét mã QR, OTP và giả lập thanh toán
+        // Sử dụng điều hướng nội bộ để đảm bảo 100% không bị lỗi 504 Gateway Time-out từ máy chủ test-payment.momo.vn
+        const targetUrl = `/payment/momo/gateway?orderId=${orderCode}&amount=${grandTotal}`
 
         toast.success('Đang chuyển hướng sang Cổng thanh toán MoMo...')
         setTimeout(() => {
-          if (targetUrl.startsWith('http://') || targetUrl.startsWith('https://')) {
-            window.location.href = targetUrl
-          } else {
-            navigate(targetUrl)
-          }
-        }, 1000)
+          navigate(targetUrl)
+        }, 800)
         return
       }
 

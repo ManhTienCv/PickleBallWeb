@@ -40,6 +40,7 @@ import {
   Receipt,
   Lock,
   Ban,
+  CreditCard,
 } from 'lucide-react'
 import {
   Tooltip,
@@ -112,7 +113,7 @@ export default function OrdersPage() {
   }
 
   const [orders, setOrders] = useState<any[]>([])
-  const [activeTab, setActiveTab] = useState<'pending' | 'shipped' | 'completed' | 'booking'>('pending')
+  const [activeTab, setActiveTab] = useState<'pending' | 'unpaid' | 'shipped' | 'completed' | 'cancelled' | 'booking'>('pending')
   const [editingOrder, setEditingOrder] = useState<any | null>(null)
   const [editAddress, setEditAddress] = useState('')
   const [editName, setEditName] = useState('')
@@ -143,6 +144,40 @@ export default function OrdersPage() {
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false)
 
   // Status Category Helpers
+  const isCancelledStatus = (status?: string) => {
+    const s = (status || '').toLowerCase().trim()
+    return [
+      'cancelled',
+      'canceled',
+      'đã_hủy',
+      'đã hủy',
+      'hủy',
+      'refund_pending',
+      'refunded',
+      'chờ_hoàn_tiền',
+      'chờ hoàn tiền',
+      'đã_hoàn_tiền',
+      'đã hoàn tiền',
+    ].includes(s)
+  }
+
+  const isUnpaidOrder = (order: any) => {
+    if (!order) return false
+    if (isCancelledStatus(order.status)) return false
+    const s = (order.status || '').toLowerCase().trim()
+    const ps = (order.payment_status || order.paymentStatus || '').toLowerCase().trim()
+    const pm = (order.payment_method || order.paymentMethod || '').toLowerCase().trim()
+
+    // COD is cash on delivery, not waiting for payment gateway
+    if (pm === 'cod' || pm === 'tiền mặt') return false
+
+    // Explicit unpaid/chờ thanh toán
+    if (s === 'chờ_thanh_toán' || s === 'chờ thanh toán') return true
+    if (ps === 'unpaid' && (s === 'pending' || s === 'chờ_thanh_toán' || s === 'chờ thanh toán')) return true
+
+    return false
+  }
+
   const isPendingStatus = (status?: string) => {
     const s = (status || '').toLowerCase().trim()
     return [
@@ -150,15 +185,20 @@ export default function OrdersPage() {
       'confirmed',
       'paid',
       'processing',
-      'chờ_thanh_toán',
       'đã_thanh_toán',
-      'chờ thanh toán',
       'đã thanh toán',
       'cho_dong_goi',
       'chờ đóng gói',
       'chờ duyệt',
       'đang xử lý',
     ].includes(s)
+  }
+
+  const isPendingPackageOrder = (order: any) => {
+    if (!order) return false
+    if (isCancelledStatus(order.status)) return false
+    if (isUnpaidOrder(order)) return false
+    return isPendingStatus(order.status)
   }
 
   const isShippedStatus = (status?: string) => {
@@ -188,17 +228,6 @@ export default function OrdersPage() {
     ].includes(s)
   }
 
-  const isCancelledStatus = (status?: string) => {
-    const s = (status || '').toLowerCase().trim()
-    return [
-      'cancelled',
-      'canceled',
-      'đã_hủy',
-      'đã hủy',
-      'hủy',
-    ].includes(s)
-  }
-
   const isBookingOrder = (order: any) =>
     order.order_type === 'booking' ||
     order.items?.some((i: any) => i.item_type === 'booking') ||
@@ -224,6 +253,35 @@ export default function OrdersPage() {
       s === 'delivered' ||
       s === 'đã giao'
     )
+  }
+
+  const handleCancelAllUnpaidOrders = async () => {
+    const unpaidList = orders.filter((o) => !isBookingOrder(o) && isUnpaidOrder(o))
+    if (unpaidList.length === 0) {
+      toast.info('Không có đơn hàng nào đang chờ thanh toán.')
+      return
+    }
+    if (!window.confirm(`Bạn có chắc chắn muốn hủy tất cả ${unpaidList.length} đơn hàng chưa hoàn tất thanh toán MoMo này không?`)) {
+      return
+    }
+
+    let successCount = 0
+    toast.info(`Đang tiến hành hủy ${unpaidList.length} đơn hàng chưa thanh toán...`)
+    for (const ord of unpaidList) {
+      try {
+        await orderService.cancelOrder(ord.order_code, 'Hủy đơn hàng chưa hoàn tất thanh toán MoMo')
+        successCount++
+      } catch (e) {
+        console.error('Error cancelling order', ord.order_code, e)
+      }
+    }
+
+    setOrders((prev) =>
+      prev.map((o) => (isUnpaidOrder(o) ? { ...o, status: 'cancelled' } : o))
+    )
+    toast.success(`Đã hủy thành công ${successCount} đơn hàng chưa thanh toán! Đã chuyển sang tab 'Đã hủy'.`)
+    setActiveTab('cancelled')
+    refetch()
   }
 
   // Initial orders list containing simulated completed order & separated booking tickets
@@ -418,17 +476,11 @@ export default function OrdersPage() {
 
   useEffect(() => {
     loadOrdersData()
-    orderService.getOrders().then((ords) => {
-      if (ords && ords.length > 0) {
-        loadOrdersData()
-      }
-    })
     const handleStorageChange = () => {
       loadOrdersData()
     }
     window.addEventListener('storage', handleStorageChange)
     return () => window.removeEventListener('storage', handleStorageChange)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiOrders])
 
   const filteredOrders = orders.filter((order) => {
@@ -436,9 +488,11 @@ export default function OrdersPage() {
     if (activeTab === 'booking') return isBooking
     if (isBooking) return false
 
-    if (activeTab === 'pending') return isPendingStatus(order.status)
-    if (activeTab === 'shipped') return isShippedStatus(order.status)
-    if (activeTab === 'completed') return isCompletedStatus(order.status)
+    if (activeTab === 'unpaid') return isUnpaidOrder(order)
+    if (activeTab === 'pending') return isPendingPackageOrder(order)
+    if (activeTab === 'shipped') return isShippedStatus(order.status) && !isCancelledStatus(order.status)
+    if (activeTab === 'completed') return isCompletedStatus(order.status) && !isCancelledStatus(order.status)
+    if (activeTab === 'cancelled') return isCancelledStatus(order.status)
     return true
   })
 
@@ -585,11 +639,19 @@ export default function OrdersPage() {
     }
   }
 
-  const getStatusBadge = (status: string, isBooking?: boolean, carrier?: string) => {
+  const getStatusBadge = (status: string, isBooking?: boolean, carrier?: string, order?: any) => {
     if (isBooking) {
       return (
         <Badge className="bg-emerald-600 font-bold text-white gap-1 px-3 py-1">
           <CheckCircle2 className="w-3.5 h-3.5" /> Đã Xác Nhận Lịch Sân
+        </Badge>
+      )
+    }
+
+    if (order && isUnpaidOrder(order)) {
+      return (
+        <Badge className="bg-pink-600 hover:bg-pink-700 font-bold text-white gap-1 px-3 py-1 shadow-xs animate-pulse">
+          <CreditCard className="w-3.5 h-3.5" /> Chờ Thanh Toán (MoMo)
         </Badge>
       )
     }
@@ -611,26 +673,25 @@ export default function OrdersPage() {
     }
 
     if (isCancelledStatus(status)) {
+      const s = (status || '').toLowerCase()
+      if (s === 'refund_pending' || s.includes('chờ_hoàn_tiền') || s.includes('chờ hoàn tiền')) {
+        return (
+          <Badge className="bg-amber-500 font-bold text-white gap-1 px-3 py-1 shadow-xs animate-pulse">
+            <Clock className="w-3.5 h-3.5" /> Chờ Hoàn Tiền (Admin Đang Xử Lý)
+          </Badge>
+        )
+      }
+      if (s === 'refunded' || s.includes('đã_hoàn_tiền') || s.includes('đã hoàn tiền')) {
+        return (
+          <Badge className="bg-blue-600 font-bold text-white gap-1 px-3 py-1">
+            <CheckCircle2 className="w-3.5 h-3.5" /> Đã Hoàn Tiền
+          </Badge>
+        )
+      }
       return <Badge variant="destructive" className="font-bold">Đã Hủy</Badge>
     }
 
     const s = (status || '').toLowerCase()
-    if (s === 'refund_pending' || s.includes('chờ_hoàn_tiền') || s.includes('chờ hoàn tiền')) {
-      return (
-        <Badge className="bg-amber-500 font-bold text-white gap-1 px-3 py-1 shadow-xs animate-pulse">
-          <Clock className="w-3.5 h-3.5" /> Chờ Hoàn Tiền (Admin Đang Xử Lý)
-        </Badge>
-      )
-    }
-
-    if (s === 'refunded' || s.includes('đã_hoàn_tiền') || s.includes('đã hoàn tiền')) {
-      return (
-        <Badge className="bg-blue-600 font-bold text-white gap-1 px-3 py-1">
-          <CheckCircle2 className="w-3.5 h-3.5" /> Đã Hoàn Tiền
-        </Badge>
-      )
-    }
-
     if (s === 'confirmed' || s === 'paid' || s.includes('đã_thanh_toán') || s.includes('đã thanh toán')) {
       return (
         <Badge className="bg-emerald-500 font-bold text-white gap-1 px-3 py-1">
@@ -654,9 +715,11 @@ export default function OrdersPage() {
     )
   }
 
-  const pendingCount = orders.filter((o) => !isBookingOrder(o) && isPendingStatus(o.status)).length
-  const shippedCount = orders.filter((o) => !isBookingOrder(o) && isShippedStatus(o.status)).length
-  const completedCount = orders.filter((o) => !isBookingOrder(o) && isCompletedStatus(o.status)).length
+  const unpaidCount = orders.filter((o) => !isBookingOrder(o) && isUnpaidOrder(o)).length
+  const pendingCount = orders.filter((o) => !isBookingOrder(o) && isPendingPackageOrder(o)).length
+  const shippedCount = orders.filter((o) => !isBookingOrder(o) && isShippedStatus(o.status) && !isCancelledStatus(o.status)).length
+  const completedCount = orders.filter((o) => !isBookingOrder(o) && isCompletedStatus(o.status) && !isCancelledStatus(o.status)).length
+  const cancelledCount = orders.filter((o) => !isBookingOrder(o) && isCancelledStatus(o.status)).length
   const bookingCount = orders.filter((o) => isBookingOrder(o)).length
 
   return (
@@ -670,8 +733,10 @@ export default function OrdersPage() {
       <div className="flex flex-wrap items-center gap-2 mb-6 bg-white dark:bg-card p-2 rounded-2xl border border-slate-200 dark:border-border shadow-sm">
         {[
           { id: 'pending', label: 'Chờ đóng gói', count: pendingCount },
+          { id: 'unpaid', label: 'Chờ thanh toán', count: unpaidCount },
           { id: 'shipped', label: 'Đang giao hàng', count: shippedCount },
           { id: 'completed', label: 'Đã nhận hàng', count: completedCount },
+          { id: 'cancelled', label: 'Đã hủy', count: cancelledCount },
           { id: 'booking', label: 'Vé đặt sân', count: bookingCount },
         ].map((tabItem) => (
           <button
@@ -687,6 +752,29 @@ export default function OrdersPage() {
         ))}
       </div>
 
+      {/* Unpaid orders notice banner */}
+      {activeTab === 'unpaid' && unpaidCount > 0 && (
+        <div className="mb-6 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex flex-wrap items-center justify-between gap-3 text-amber-900 dark:text-amber-200 shadow-sm animate-in fade-in duration-300">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+            <div className="text-xs">
+              <span className="font-bold">Bạn có {unpaidCount} đơn hàng chưa hoàn tất thanh toán MoMo.</span>
+              <p className="text-amber-700 dark:text-amber-300 mt-0.5">
+                Bạn có thể bấm &quot;Thanh toán MoMo ngay&quot; trên từng đơn để thanh toán qua cổng giả lập, hoặc hủy đơn nếu không còn nhu cầu mua.
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleCancelAllUnpaidOrders}
+            className="text-xs font-bold text-rose-600 border-rose-300 hover:bg-rose-50 dark:border-rose-800 dark:hover:bg-rose-950/30 rounded-xl cursor-pointer"
+          >
+            Hủy tất cả đơn chưa thanh toán
+          </Button>
+        </div>
+      )}
+
       {filteredOrders.length === 0 ? (
         <div className="container mx-auto py-16 px-4 text-center max-w-md bg-white dark:bg-card rounded-3xl border border-slate-200 dark:border-border p-8 shadow-sm">
           <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 mx-auto mb-4">
@@ -696,9 +784,13 @@ export default function OrdersPage() {
           <p className="text-slate-500 dark:text-slate-400 mt-2 text-xs font-normal">
             {activeTab === 'completed'
               ? 'Chưa có đơn hàng sản phẩm nào hoàn thành giao tận nơi.'
-              : activeTab === 'booking'
-                ? 'Bạn chưa có vé đặt sân Pickleball nào.'
-                : 'Bạn chưa có đơn hàng nào ở mục này.'}
+              : activeTab === 'unpaid'
+                ? 'Không có đơn hàng nào đang chờ thanh toán.'
+                : activeTab === 'cancelled'
+                  ? 'Bạn không có đơn hàng nào đã hủy hoặc hoàn tiền.'
+                  : activeTab === 'booking'
+                    ? 'Bạn chưa có vé đặt sân Pickleball nào.'
+                    : 'Bạn chưa có đơn hàng nào ở mục này.'}
           </p>
           <Button
             onClick={() => navigate(activeTab === 'booking' ? '/booking' : '/products')}
@@ -726,7 +818,7 @@ export default function OrdersPage() {
                     <div className="font-mono font-bold text-slate-900 dark:text-slate-100 text-base">#{order.order_code}</div>
                   </div>
                   <div className="flex items-center gap-3">
-                    {getStatusBadge(order.status, isBooking, order.shipping_carrier)}
+                    {getStatusBadge(order.status, isBooking, order.shipping_carrier, order)}
                     <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                       {new Date(order.created_at).toLocaleString('vi-VN', {
                         day: '2-digit',
@@ -983,7 +1075,32 @@ export default function OrdersPage() {
                       </div>
                     )}
 
-                    {order.status !== 'completed' && order.status !== 'cancelled' && order.status !== 'refund_pending' && order.status !== 'refunded' && (
+                    {/* Reorder button for cancelled orders */}
+                    {isCancelledStatus(order.status) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleReorder(order)}
+                        className="h-8 text-xs font-bold text-slate-700 dark:text-slate-300 border-slate-300 dark:border-border hover:bg-slate-50 dark:hover:bg-slate-800 gap-1.5 rounded-xl shadow-sm cursor-pointer"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Mua lại đơn này</span>
+                      </Button>
+                    )}
+
+                    {/* MoMo payment button for unpaid orders */}
+                    {isUnpaidOrder(order) && (
+                      <Button
+                        size="sm"
+                        onClick={() => navigate(`/payment/momo/gateway?orderId=${order.order_code}&amount=${order.total_amount}`)}
+                        className="h-8 text-xs font-bold bg-[#ae2070] hover:bg-[#92185c] text-white gap-1.5 rounded-xl shadow-sm cursor-pointer"
+                      >
+                        <CreditCard className="w-3.5 h-3.5" />
+                        <span>Thanh toán MoMo ngay</span>
+                      </Button>
+                    )}
+
+                    {!isCompleted && !isCancelledStatus(order.status) && (
                       isOrderLockedForCancel(order.status) ? (
                         <TooltipProvider>
                           <Tooltip>

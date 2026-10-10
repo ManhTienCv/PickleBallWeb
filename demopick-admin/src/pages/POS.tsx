@@ -223,6 +223,8 @@ export default function POS() {
     const paramCourtName = searchParams.get("courtName");
     const paramPrice = searchParams.get("price");
     const paramTime = searchParams.get("time");
+    const paramCustomerName = searchParams.get("customerName");
+    const paramCustomerPhone = searchParams.get("customerPhone");
 
     if (paramCourtName && paramPrice) {
       const priceNum = Number(paramPrice);
@@ -235,6 +237,17 @@ export default function POS() {
         isCourtFee: true,
       };
       setCartItems((prev) => [newCourtCartItem, ...prev]);
+
+      if (paramCustomerName) {
+        setRetailCustomerName(paramCustomerName);
+        if (paramCustomerPhone) setRetailCustomerPhone(paramCustomerPhone);
+        setCourtCustomer({
+          name: paramCustomerName,
+          phone: paramCustomerPhone || "",
+          courtName: paramCourtName,
+        });
+      }
+
       toast.success(`Đã tự động thêm Tiền Sân "${paramCourtName}" vào hóa đơn POS!`);
     }
   }, [searchParams]);
