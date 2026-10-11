@@ -41,6 +41,9 @@ import {
   Lock,
   Ban,
   CreditCard,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
 } from 'lucide-react'
 import {
   Tooltip,
@@ -113,7 +116,15 @@ export default function OrdersPage() {
   }
 
   const [orders, setOrders] = useState<any[]>([])
-  const [activeTab, setActiveTab] = useState<'pending' | 'unpaid' | 'shipped' | 'completed' | 'cancelled' | 'booking'>('pending')
+  const [activeTab, setActiveTab] = useState<'pending' | 'unpaid' | 'shipped' | 'completed' | 'returned' | 'cancelled' | 'booking' | 'cancelled_booking'>('pending')
+  const [currentPage, setCurrentPage] = useState(1)
+  const ORDERS_PER_PAGE = 5
+
+  const handleTabChange = (tab: typeof activeTab) => {
+    setActiveTab(tab)
+    setCurrentPage(1)
+  }
+
   const [editingOrder, setEditingOrder] = useState<any | null>(null)
   const [editAddress, setEditAddress] = useState('')
   const [editName, setEditName] = useState('')
@@ -139,12 +150,47 @@ export default function OrdersPage() {
   const [orderImages, setOrderImages] = useState<string[]>([])
   const orderFileInputRef = useRef<HTMLInputElement>(null)
 
+  // Return & Refund Modal States
+  const [returningOrder, setReturningOrder] = useState<any | null>(null)
+  const [returnReason, setReturnReason] = useState('Sản phẩm bị lỗi kỹ thuật, hỏng hóc hoặc móp méo')
+  const [returnNote, setReturnNote] = useState('')
+  const [returnBankName, setReturnBankName] = useState('')
+  const [returnAccountNumber, setReturnAccountNumber] = useState('')
+  const [returnAccountHolder, setReturnAccountHolder] = useState('')
+  const [isSubmittingReturn, setIsSubmittingReturn] = useState(false)
+
+  const handleOpenReturnModal = (order: any) => {
+    setReturningOrder(order)
+    setReturnReason('Sản phẩm bị lỗi kỹ thuật, hỏng hóc hoặc móp méo')
+    setReturnNote('')
+    setReturnBankName('')
+    setReturnAccountNumber('')
+    setReturnAccountHolder(order.customer_name || 'Khách hàng')
+  }
+
   // Order Receipt Modal
   const [selectedReceiptOrder, setSelectedReceiptOrder] = useState<any | null>(null)
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false)
 
   // Status Category Helpers
+  const isReturnedStatus = (status?: string) => {
+    const s = (status || '').toLowerCase().trim()
+    return [
+      'returned',
+      'return_pending',
+      'hoàn_hàng',
+      'hoàn hàng',
+      'chờ_hoàn_hàng',
+      'chờ hoàn hàng',
+      'trả_hàng',
+      'trả hàng',
+      'yêu_cầu_hoàn_hàng',
+      'yêu cầu hoàn hàng',
+    ].includes(s)
+  }
+
   const isCancelledStatus = (status?: string) => {
+    if (isReturnedStatus(status)) return false
     const s = (status || '').toLowerCase().trim()
     return [
       'cancelled',
@@ -214,6 +260,7 @@ export default function OrdersPage() {
   }
 
   const isCompletedStatus = (status?: string) => {
+    if (isReturnedStatus(status)) return false
     const s = (status || '').toLowerCase().trim()
     return [
       'completed',
@@ -341,6 +388,10 @@ export default function OrdersPage() {
               play_time: co.play_time,
               qr_checkin_code: co.qr_checkin_code,
               items,
+              return_reason: co.return_reason || co.returnReason,
+              return_note: co.return_note || co.returnNote,
+              return_bank_info: co.return_bank_info || co.returnBankInfo,
+              return_requested_at: co.return_requested_at || co.returnRequestedAt,
             })
           })
         }
@@ -466,6 +517,10 @@ export default function OrdersPage() {
             play_time: ao.play_time,
             qr_checkin_code: ao.qr_checkin_code,
             items,
+            return_reason: ao.return_reason || ao.returnReason,
+            return_note: ao.return_note || ao.returnNote,
+            return_bank_info: ao.return_bank_info || ao.returnBankInfo,
+            return_requested_at: ao.return_requested_at || ao.returnRequestedAt,
           })
         }
       })
@@ -485,16 +540,40 @@ export default function OrdersPage() {
 
   const filteredOrders = orders.filter((order) => {
     const isBooking = isBookingOrder(order)
-    if (activeTab === 'booking') return isBooking
+    if (activeTab === 'booking') return isBooking && !isCancelledStatus(order.status)
+    if (activeTab === 'cancelled_booking') return isBooking && isCancelledStatus(order.status)
     if (isBooking) return false
 
     if (activeTab === 'unpaid') return isUnpaidOrder(order)
     if (activeTab === 'pending') return isPendingPackageOrder(order)
-    if (activeTab === 'shipped') return isShippedStatus(order.status) && !isCancelledStatus(order.status)
-    if (activeTab === 'completed') return isCompletedStatus(order.status) && !isCancelledStatus(order.status)
-    if (activeTab === 'cancelled') return isCancelledStatus(order.status)
+    if (activeTab === 'shipped') return isShippedStatus(order.status) && !isCancelledStatus(order.status) && !isReturnedStatus(order.status)
+    if (activeTab === 'completed') return isCompletedStatus(order.status) && !isCancelledStatus(order.status) && !isReturnedStatus(order.status)
+    if (activeTab === 'returned') return isReturnedStatus(order.status)
+    if (activeTab === 'cancelled') return isCancelledStatus(order.status) && !isReturnedStatus(order.status)
     return true
   })
+
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / ORDERS_PER_PAGE))
+  const paginatedOrders = filteredOrders.slice(
+    (currentPage - 1) * ORDERS_PER_PAGE,
+    currentPage * ORDERS_PER_PAGE
+  )
+
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = []
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i)
+    } else {
+      if (currentPage <= 4) {
+        pages.push(1, 2, 3, 4, 5, '...', totalPages)
+      } else if (currentPage >= totalPages - 3) {
+        pages.push(1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages)
+      } else {
+        pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages)
+      }
+    }
+    return pages
+  }
 
   const openEditModal = (order: any) => {
     setEditingOrder(order)
@@ -625,7 +704,98 @@ export default function OrdersPage() {
     }
   }
 
+  const handleSubmitReturnOrder = async () => {
+    if (!returningOrder) return
+    if (!returnNote.trim()) {
+      toast.error('Vui lòng nhập mô tả chi tiết lý do muốn trả hàng')
+      return
+    }
+
+    setIsSubmittingReturn(true)
+    try {
+      const orderCode = returningOrder.order_code
+      const bankInfoStr = returnBankName.trim() && returnAccountNumber.trim()
+        ? `${returnBankName.trim()} - STK: ${returnAccountNumber.trim()} (${returnAccountHolder.trim() || 'Chủ TK'})`
+        : 'Theo phương thức thanh toán ban đầu'
+
+      // 1. Cập nhật state local
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.order_code === orderCode
+            ? {
+                ...o,
+                status: 'returned',
+                return_reason: returnReason,
+                return_note: returnNote.trim(),
+                return_bank_info: bankInfoStr,
+                return_requested_at: new Date().toISOString(),
+              }
+            : o
+        )
+      )
+
+      // 2. Cập nhật localStorage client
+      try {
+        const savedClient = localStorage.getItem('demopick_orders_client') || localStorage.getItem('demopick_client_orders')
+        if (savedClient) {
+          const list = JSON.parse(savedClient)
+          const updated = list.map((o: any) =>
+            (o.order_code || o.code) === orderCode
+              ? {
+                  ...o,
+                  status: 'returned',
+                  return_reason: returnReason,
+                  return_note: returnNote.trim(),
+                  return_bank_info: bankInfoStr,
+                  return_requested_at: new Date().toISOString(),
+                }
+              : o
+          )
+          localStorage.setItem('demopick_orders_client', JSON.stringify(updated))
+          localStorage.setItem('demopick_client_orders', JSON.stringify(updated))
+        }
+      } catch {}
+
+      // 3. Đồng bộ sang demopick_orders_admin để Admin thấy ngay lập tức ở tab Hoàn hàng (RETURNED)
+      try {
+        const savedAdmin = localStorage.getItem('demopick_orders_admin')
+        if (savedAdmin) {
+          const adminList = JSON.parse(savedAdmin)
+          const updatedAdmin = adminList.map((o: any) =>
+            (o.code || o.orderCode || o.order_code) === orderCode
+              ? {
+                  ...o,
+                  status: 'RETURNED',
+                  editNote: `[YÊU CẦU HOÀN HÀNG] Lý do: ${returnReason} | Ghi chú: ${returnNote.trim()} | Hoàn tiền về: ${bankInfoStr}`,
+                  returnReason: returnReason,
+                  returnNote: returnNote.trim(),
+                  returnBankInfo: bankInfoStr,
+                }
+              : o
+          )
+          localStorage.setItem('demopick_orders_admin', JSON.stringify(updatedAdmin))
+          window.dispatchEvent(new Event('storage'))
+        }
+      } catch {}
+
+      toast.success(`Đã gửi yêu cầu trả hàng cho đơn #${orderCode}! Đơn hàng đã chuyển sang tab 'Trả hàng / Hoàn hàng'.`, {
+        duration: 5000,
+      })
+      setReturningOrder(null)
+      setActiveTab('returned')
+      setCurrentPage(1)
+    } catch (err: any) {
+      toast.error(err.message || 'Có lỗi xảy ra khi gửi yêu cầu trả hàng.')
+    } finally {
+      setIsSubmittingReturn(false)
+    }
+  }
+
   const handleReorder = async (order: any) => {
+    if (isBookingOrder(order)) {
+      toast.error('Vé đặt sân đã hủy không thể đặt lại.')
+      return
+    }
     try {
       for (const item of order.items || []) {
         if (item.item_type !== 'booking') {
@@ -641,6 +811,13 @@ export default function OrdersPage() {
 
   const getStatusBadge = (status: string, isBooking?: boolean, carrier?: string, order?: any) => {
     if (isBooking) {
+      if (isCancelledStatus(status)) {
+        return (
+          <Badge variant="destructive" className="font-bold gap-1 px-3 py-1 shadow-xs">
+            <Ban className="w-3.5 h-3.5" /> Vé Sân Đã Hủy
+          </Badge>
+        )
+      }
       return (
         <Badge className="bg-emerald-600 font-bold text-white gap-1 px-3 py-1">
           <CheckCircle2 className="w-3.5 h-3.5" /> Đã Xác Nhận Lịch Sân
@@ -652,6 +829,14 @@ export default function OrdersPage() {
       return (
         <Badge className="bg-pink-600 hover:bg-pink-700 font-bold text-white gap-1 px-3 py-1 shadow-xs animate-pulse">
           <CreditCard className="w-3.5 h-3.5" /> Chờ Thanh Toán (MoMo)
+        </Badge>
+      )
+    }
+
+    if (isReturnedStatus(status)) {
+      return (
+        <Badge className="bg-purple-600 font-bold text-white gap-1 px-3 py-1 shadow-xs">
+          <RotateCcw className="w-3.5 h-3.5" /> Yêu Cầu Trả Hàng / Hoàn Tiền
         </Badge>
       )
     }
@@ -717,10 +902,12 @@ export default function OrdersPage() {
 
   const unpaidCount = orders.filter((o) => !isBookingOrder(o) && isUnpaidOrder(o)).length
   const pendingCount = orders.filter((o) => !isBookingOrder(o) && isPendingPackageOrder(o)).length
-  const shippedCount = orders.filter((o) => !isBookingOrder(o) && isShippedStatus(o.status) && !isCancelledStatus(o.status)).length
-  const completedCount = orders.filter((o) => !isBookingOrder(o) && isCompletedStatus(o.status) && !isCancelledStatus(o.status)).length
-  const cancelledCount = orders.filter((o) => !isBookingOrder(o) && isCancelledStatus(o.status)).length
-  const bookingCount = orders.filter((o) => isBookingOrder(o)).length
+  const shippedCount = orders.filter((o) => !isBookingOrder(o) && isShippedStatus(o.status) && !isCancelledStatus(o.status) && !isReturnedStatus(o.status)).length
+  const completedCount = orders.filter((o) => !isBookingOrder(o) && isCompletedStatus(o.status) && !isCancelledStatus(o.status) && !isReturnedStatus(o.status)).length
+  const returnedCount = orders.filter((o) => !isBookingOrder(o) && isReturnedStatus(o.status)).length
+  const cancelledCount = orders.filter((o) => !isBookingOrder(o) && isCancelledStatus(o.status) && !isReturnedStatus(o.status)).length
+  const bookingCount = orders.filter((o) => isBookingOrder(o) && !isCancelledStatus(o.status)).length
+  const cancelledBookingCount = orders.filter((o) => isBookingOrder(o) && isCancelledStatus(o.status)).length
 
   return (
     <div className="container mx-auto py-8 px-4 sm:px-6 max-w-4xl font-sans">
@@ -736,12 +923,14 @@ export default function OrdersPage() {
           { id: 'unpaid', label: 'Chờ thanh toán', count: unpaidCount },
           { id: 'shipped', label: 'Đang giao hàng', count: shippedCount },
           { id: 'completed', label: 'Đã nhận hàng', count: completedCount },
+          { id: 'returned', label: 'Trả hàng / Hoàn hàng', count: returnedCount },
           { id: 'cancelled', label: 'Đã hủy', count: cancelledCount },
           { id: 'booking', label: 'Vé đặt sân', count: bookingCount },
+          { id: 'cancelled_booking', label: 'Vé đã hủy', count: cancelledBookingCount },
         ].map((tabItem) => (
           <button
             key={tabItem.id}
-            onClick={() => setActiveTab(tabItem.id as any)}
+            onClick={() => handleTabChange(tabItem.id as any)}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors duration-150 cursor-pointer border ${activeTab === tabItem.id
                 ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm shadow-emerald-600/20'
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-transparent'
@@ -786,27 +975,46 @@ export default function OrdersPage() {
               ? 'Chưa có đơn hàng sản phẩm nào hoàn thành giao tận nơi.'
               : activeTab === 'unpaid'
                 ? 'Không có đơn hàng nào đang chờ thanh toán.'
-                : activeTab === 'cancelled'
-                  ? 'Bạn không có đơn hàng nào đã hủy hoặc hoàn tiền.'
-                  : activeTab === 'booking'
-                    ? 'Bạn chưa có vé đặt sân Pickleball nào.'
-                    : 'Bạn chưa có đơn hàng nào ở mục này.'}
+                : activeTab === 'returned'
+                  ? 'Bạn chưa có đơn hàng nào đang yêu cầu trả hàng hoặc hoàn tiền.'
+                  : activeTab === 'cancelled'
+                    ? 'Bạn không có đơn hàng nào đã hủy hoặc hoàn tiền.'
+                    : activeTab === 'booking'
+                      ? 'Bạn chưa có vé đặt sân Pickleball nào.'
+                      : activeTab === 'cancelled_booking'
+                        ? 'Bạn không có vé đặt sân nào đã hủy.'
+                        : 'Bạn chưa có đơn hàng nào ở mục này.'}
           </p>
           <Button
-            onClick={() => navigate(activeTab === 'booking' ? '/booking' : '/products')}
-            className="mt-6 gap-2 bg-[#27c372] text-white font-bold rounded-xl text-xs"
+            onClick={() => {
+              if (activeTab === 'cancelled_booking') {
+                handleTabChange('booking')
+              } else if (activeTab === 'booking') {
+                navigate('/booking')
+              } else {
+                navigate('/products')
+              }
+            }}
+            className="mt-6 gap-2 bg-[#27c372] text-white font-bold rounded-xl text-xs cursor-pointer"
           >
             <ShoppingBag className="h-4 w-4" />
-            <span>{activeTab === 'booking' ? 'Đặt sân Pickleball ngay' : 'Khám phá Cửa hàng ngay'}</span>
+            <span>
+              {activeTab === 'cancelled_booking'
+                ? 'Xem vé đặt sân'
+                : activeTab === 'booking'
+                  ? 'Đặt sân Pickleball ngay'
+                  : 'Khám phá Cửa hàng ngay'}
+            </span>
           </Button>
         </div>
       ) : (
         <div className="space-y-6">
-          {filteredOrders.map((order: any) => {
+          {paginatedOrders.map((order: any) => {
             const isBooking = isBookingOrder(order)
             const isPending = isPendingStatus(order.status)
             const isShipped = isShippedStatus(order.status)
             const isCompleted = isCompletedStatus(order.status) && !isBooking
+            const isReturned = isReturnedStatus(order.status) && !isBooking
             const isOrderPaid = isPaidStatus(order)
 
             return (
@@ -851,40 +1059,66 @@ export default function OrdersPage() {
 
                 {/* COURT BOOKING TICKET */}
                 {isBooking ? (
-                  <div className="bg-emerald-50/70 dark:bg-emerald-950/40 p-4 rounded-2xl border border-emerald-200/90 dark:border-emerald-800 space-y-3 text-xs text-emerald-950 dark:text-emerald-200">
+                  <div className={`p-4 rounded-2xl border space-y-3 text-xs ${
+                    isCancelledStatus(order.status)
+                      ? 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-200/80 dark:border-rose-900/60 text-rose-950 dark:text-rose-200'
+                      : 'bg-emerald-50/70 dark:bg-emerald-950/40 border-emerald-200/90 dark:border-emerald-800 text-emerald-950 dark:text-emerald-200'
+                  }`}>
                     <div className="flex items-center justify-between border-b border-emerald-200/80 dark:border-emerald-800 pb-2">
-                      <div className="flex items-center gap-1.5 font-bold text-emerald-900 dark:text-emerald-300 text-sm">
-                        <MapPin className="w-4 h-4 text-[#27c372]" /> Thông tin vị trí & Lịch thi đấu tại sân
+                      <div className="flex items-center gap-1.5 font-bold text-sm">
+                        {isCancelledStatus(order.status) ? (
+                          <Ban className="w-4 h-4 text-rose-600" />
+                        ) : (
+                          <MapPin className="w-4 h-4 text-[#27c372]" />
+                        )}
+                        <span className={isCancelledStatus(order.status) ? 'text-rose-900 dark:text-rose-300' : 'text-emerald-900 dark:text-emerald-300'}>
+                          Thông tin vị trí & Lịch thi đấu tại sân
+                        </span>
                       </div>
-                      <Badge className="bg-emerald-600 text-white font-bold text-[10px]">
-                        Xác nhận trực tiếp
+                      <Badge className={isCancelledStatus(order.status) ? 'bg-rose-600 text-white font-bold text-[10px]' : 'bg-emerald-600 text-white font-bold text-[10px]'}>
+                        {isCancelledStatus(order.status) ? 'Vé đã hủy' : 'Xác nhận trực tiếp'}
                       </Badge>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                       <div>
-                        <span className="text-emerald-700 dark:text-emerald-400">Cụm sân thi đấu: </span>
+                        <span className={isCancelledStatus(order.status) ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}>Cụm sân thi đấu: </span>
                         <span className="font-bold text-slate-900 dark:text-slate-100">{order.court_address || 'Số 188 Nguyễn Văn Cừ, Q. Long Biên, Hà Nội'}</span>
                       </div>
                       <div>
-                        <span className="text-emerald-700 dark:text-emerald-400">Khung giờ đặt: </span>
+                        <span className={isCancelledStatus(order.status) ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}>Khung giờ đặt: </span>
                         <span className="font-bold text-slate-900 dark:text-slate-100">{order.play_time || '08:00 - 10:00 (15/08/2026)'}</span>
                       </div>
                     </div>
 
                     {/* QR Check-in Box */}
-                    <div className="pt-2 flex items-center justify-between bg-white dark:bg-card p-3 rounded-xl border border-emerald-200 dark:border-emerald-800 shadow-inner">
-                      <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
-                        <QrCode className="h-5 w-5 text-[#27c372]" />
-                        <div>
-                          <div>Mã QR Check-in nhận sân tại quầy:</div>
-                          <div className="text-[11px] text-slate-400 font-normal">Đưa mã này cho Lễ tân khi đến sân chơi</div>
+                    {isCancelledStatus(order.status) ? (
+                      <div className="pt-2 flex items-center justify-between bg-white dark:bg-card p-3 rounded-xl border border-rose-200 dark:border-rose-900 shadow-inner">
+                        <div className="flex items-center gap-2 text-xs font-bold text-rose-700 dark:text-rose-300">
+                          <Ban className="h-5 w-5 text-rose-500" />
+                          <div>
+                            <div>Vé đặt sân đã hủy:</div>
+                            <div className="text-[11px] text-slate-400 font-normal">Mã QR này không còn hiệu lực check-in tại sân</div>
+                          </div>
                         </div>
+                        <code className="font-mono font-bold text-sm text-rose-500 bg-rose-50 dark:bg-rose-950/60 px-3 py-1 rounded-lg border border-rose-200 dark:border-rose-800 line-through">
+                          {order.qr_checkin_code || 'PK-90218-VIP'}
+                        </code>
                       </div>
-                      <code className="font-mono font-black text-base text-[#27c372] bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800">
-                        {order.qr_checkin_code || 'PK-90218-VIP'}
-                      </code>
-                    </div>
+                    ) : (
+                      <div className="pt-2 flex items-center justify-between bg-white dark:bg-card p-3 rounded-xl border border-emerald-200 dark:border-emerald-800 shadow-inner">
+                        <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
+                          <QrCode className="h-5 w-5 text-[#27c372]" />
+                          <div>
+                            <div>Mã QR Check-in nhận sân tại quầy:</div>
+                            <div className="text-[11px] text-slate-400 font-normal">Đưa mã này cho Lễ tân khi đến sân chơi</div>
+                          </div>
+                        </div>
+                        <code className="font-mono font-black text-base text-[#27c372] bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                          {order.qr_checkin_code || 'PK-90218-VIP'}
+                        </code>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   /* PRODUCT ORDER: SHIPPING & RECEIVER DETAILS */
@@ -961,7 +1195,37 @@ export default function OrdersPage() {
                       <div className="mt-2 p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-emerald-900 dark:text-emerald-200 text-[11px] flex items-start gap-2">
                         <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                         <div>
-                          <strong>Đã nhận hàng thành công:</strong> Kiện hàng #{order.order_code} đã được giao đến tay bạn. Bạn có thể bấm <strong>"Đánh giá sản phẩm"</strong> bên dưới để chia sẻ cảm nhận!
+                          <strong>Đã nhận hàng thành công:</strong> Kiện hàng #{order.order_code} đã được giao đến tay bạn. Bạn có thể bấm <strong>"Đánh giá sản phẩm"</strong> hoặc yêu cầu <strong>"Trả hàng / Hoàn tiền"</strong> (nếu có lỗi) trong vòng 7 ngày!
+                        </div>
+                      </div>
+                    )}
+
+                    {isReturned && (
+                      <div className="mt-2 p-3.5 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 rounded-2xl text-purple-900 dark:text-purple-200 text-xs space-y-1.5">
+                        <div className="font-bold flex items-center gap-1.5 text-purple-800 dark:text-purple-300">
+                          <RotateCcw className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                          <span>Thông tin yêu cầu Trả hàng & Hoàn tiền</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-700 dark:text-slate-300">
+                          <div>
+                            <span className="text-slate-500 dark:text-slate-400">Lý do hoàn hàng: </span>
+                            <span className="font-semibold text-purple-700 dark:text-purple-300">{order.return_reason || 'Sản phẩm không phù hợp / Lỗi kỹ thuật'}</span>
+                          </div>
+                          {order.return_bank_info && (
+                            <div>
+                              <span className="text-slate-500 dark:text-slate-400">TK nhận hoàn tiền: </span>
+                              <span className="font-mono font-semibold">{order.return_bank_info}</span>
+                            </div>
+                          )}
+                          {order.return_note && (
+                            <div className="sm:col-span-2">
+                              <span className="text-slate-500 dark:text-slate-400">Ghi chú của bạn: </span>
+                              <span className="italic">{order.return_note}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-purple-600 dark:text-purple-400 font-medium pt-1 border-t border-purple-200/60 dark:border-purple-800/60">
+                          ℹ️ Hệ thống đã chuyển yêu cầu đến bộ phận kho vận DemoPick. Nhân viên sẽ liên hệ và hướng dẫn gửi hàng hoàn về kho trong 24 giờ làm việc.
                         </div>
                       </div>
                     )}
@@ -1048,6 +1312,20 @@ export default function OrdersPage() {
                           </Button>
                         )}
 
+                        {/* Yêu cầu Trả hàng / Hoàn tiền cho đơn đã giao thành công */}
+                        {!isBooking && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleOpenReturnModal(order)}
+                            className="h-8 text-xs font-bold text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/60 gap-1.5 rounded-xl shadow-sm cursor-pointer"
+                            title="Yêu cầu Trả hàng / Hoàn tiền nếu sản phẩm bị lỗi hoặc giao sai"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                            <span>Trả hàng / Hoàn tiền</span>
+                          </Button>
+                        )}
+
                         <Button
                           size="sm"
                           variant="outline"
@@ -1056,6 +1334,25 @@ export default function OrdersPage() {
                         >
                           <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
                           <span>Mua lại</span>
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Return in progress notice */}
+                    {isReturned && (
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 bg-purple-50 dark:bg-purple-950/40 border border-purple-300 dark:border-purple-700/60 text-purple-800 dark:text-purple-300 px-3 py-1.5 rounded-xl text-xs font-semibold">
+                          <Clock className="w-3.5 h-3.5 text-purple-600 animate-spin" />
+                          <span>Đang chờ Admin/Thủ kho tiếp nhận & kiểm tra</span>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleReorder(order)}
+                          className="h-8 text-xs font-bold text-slate-700 dark:text-slate-300 border-slate-300 dark:border-border hover:bg-slate-50 dark:hover:bg-slate-800 gap-1.5 rounded-xl shadow-sm cursor-pointer"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                          <span>Mua lại đơn này</span>
                         </Button>
                       </div>
                     )}
@@ -1075,8 +1372,8 @@ export default function OrdersPage() {
                       </div>
                     )}
 
-                    {/* Reorder button for cancelled orders */}
-                    {isCancelledStatus(order.status) && (
+                    {/* Reorder button ONLY for cancelled shop product orders (cancelled tickets cannot be reordered) */}
+                    {isCancelledStatus(order.status) && !isBooking && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -1086,6 +1383,14 @@ export default function OrdersPage() {
                         <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
                         <span>Mua lại đơn này</span>
                       </Button>
+                    )}
+
+                    {/* Notice for cancelled court booking tickets */}
+                    {isCancelledStatus(order.status) && isBooking && (
+                      <span className="text-xs text-rose-500 dark:text-rose-400 font-semibold italic flex items-center gap-1">
+                        <Ban className="w-3.5 h-3.5 shrink-0" />
+                        <span>Vé đã hủy — Không thể đặt lại vé</span>
+                      </span>
                     )}
 
                     {/* MoMo payment button for unpaid orders */}
@@ -1130,7 +1435,7 @@ export default function OrdersPage() {
                           className="h-8 text-xs font-bold text-rose-600 dark:text-rose-400 border-rose-300 dark:border-rose-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 gap-1.5 rounded-xl shadow-sm cursor-pointer"
                         >
                           <Ban className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
-                          <span>Hủy Đơn</span>
+                          <span>{isBooking ? 'Hủy Vé Sân' : 'Hủy Đơn'}</span>
                         </Button>
                       )
                     )}
@@ -1159,6 +1464,72 @@ export default function OrdersPage() {
               </Card>
             )
           })}
+
+          {/* Pagination Controls (5 items per page) */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 pb-4 border-t border-slate-200 dark:border-border mt-6">
+              <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                Hiển thị <span className="font-bold text-slate-800 dark:text-slate-200">{(currentPage - 1) * ORDERS_PER_PAGE + 1}</span> - <span className="font-bold text-slate-800 dark:text-slate-200">{Math.min(currentPage * ORDERS_PER_PAGE, filteredOrders.length)}</span> trên tổng số <span className="font-bold text-[#27c372]">{filteredOrders.length}</span> đơn hàng
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage <= 1}
+                  onClick={() => {
+                    setCurrentPage((p) => Math.max(1, p - 1))
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                  className="h-8 px-2.5 rounded-xl text-xs font-bold gap-1 border-slate-200 dark:border-border hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 cursor-pointer"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>Trước</span>
+                </Button>
+
+                {getPageNumbers().map((pageItem, idx) => {
+                  if (pageItem === '...') {
+                    return (
+                      <span key={`dots-${idx}`} className="px-1 text-slate-400 text-xs font-bold select-none">
+                        ...
+                      </span>
+                    )
+                  }
+                  const page = Number(pageItem)
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => {
+                        setCurrentPage(page)
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                      }}
+                      className={`h-8 w-8 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                        currentPage === page
+                          ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm shadow-emerald-600/30'
+                          : 'border-slate-200 dark:border-border text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  )
+                })}
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => {
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                  className="h-8 px-2.5 rounded-xl text-xs font-bold gap-1 border-slate-200 dark:border-border hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 cursor-pointer"
+                >
+                  <span>Sau</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1448,6 +1819,119 @@ export default function OrdersPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* RETURN & REFUND MODAL */}
+      <Dialog open={!!returningOrder} onOpenChange={(open) => !open && setReturningOrder(null)}>
+        <DialogContent className="max-w-lg sm:rounded-3xl p-6 bg-white dark:bg-card border border-slate-200 dark:border-border shadow-2xl text-card-foreground">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <RotateCcw className="w-5 h-5 text-purple-600" />
+              <span>Yêu Cầu Trả Hàng & Hoàn Tiền #{returningOrder?.order_code}</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
+              Hỗ trợ trả hàng trong vòng 7 ngày kể từ khi nhận. Vui lòng cung cấp lý do và thông tin nhận hoàn tiền.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2 text-xs">
+            <div className="space-y-1.5">
+              <Label className="font-bold text-slate-700 dark:text-slate-300 text-xs">
+                1. Lý do muốn trả hàng <span className="text-rose-500">*</span>
+              </Label>
+              <select
+                value={returnReason}
+                onChange={(e) => setReturnReason(e.target.value)}
+                className="w-full h-10 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-card text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+              >
+                <option value="Sản phẩm bị lỗi kỹ thuật, hỏng hóc hoặc móp méo">Sản phẩm bị lỗi kỹ thuật, hỏng hóc hoặc móp méo</option>
+                <option value="Giao sai mẫu mã, phân loại hoặc kích thước">Giao sai mẫu mã, phân loại hoặc kích thước</option>
+                <option value="Sản phẩm thực tế khác xa mô tả / thiếu phụ kiện kèm theo">Sản phẩm thực tế khác xa mô tả / thiếu phụ kiện kèm theo</option>
+                <option value="Hàng bị bể vỡ do quá trình vận chuyển">Hàng bị bể vỡ do quá trình vận chuyển</option>
+                <option value="Đổi ý, không còn nhu cầu sử dụng (hàng nguyên seal)">Đổi ý, không còn nhu cầu sử dụng (hàng nguyên seal)</option>
+                <option value="Khác (vui lòng ghi chú chi tiết)">Khác (vui lòng ghi chú chi tiết)</option>
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="font-bold text-slate-700 dark:text-slate-300 text-xs">
+                2. Mô tả chi tiết lý do & tình trạng hàng <span className="text-rose-500">*</span>
+              </Label>
+              <Textarea
+                rows={3}
+                value={returnNote}
+                onChange={(e) => setReturnNote(e.target.value)}
+                placeholder="Mô tả chi tiết tình trạng sản phẩm hoặc vấn đề bạn gặp phải..."
+                className="text-xs rounded-xl focus-visible:ring-purple-500"
+              />
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-purple-50/60 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900/60 space-y-3">
+              <div className="font-bold text-purple-900 dark:text-purple-200 flex items-center justify-between">
+                <span>3. Thông tin nhận tiền hoàn</span>
+                <span className="font-black text-purple-700 dark:text-purple-300 text-sm">
+                  {returningOrder?.total_amount ? Number(returningOrder.total_amount).toLocaleString('vi-VN') + ' đ' : ''}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-slate-600 dark:text-slate-400">Tên Ngân hàng / Ví</Label>
+                  <Input
+                    placeholder="VD: Vietcombank, MB Bank, MoMo..."
+                    value={returnBankName}
+                    onChange={(e) => setReturnBankName(e.target.value)}
+                    className="h-9 text-xs rounded-lg"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-slate-600 dark:text-slate-400">Số tài khoản / SĐT Ví</Label>
+                  <Input
+                    placeholder="VD: 1029384855"
+                    value={returnAccountNumber}
+                    onChange={(e) => setReturnAccountNumber(e.target.value)}
+                    className="h-9 text-xs rounded-lg font-mono font-bold"
+                  />
+                </div>
+                <div className="sm:col-span-2 space-y-1">
+                  <Label className="text-[11px] text-slate-600 dark:text-slate-400">Tên chủ tài khoản (viết hoa không dấu)</Label>
+                  <Input
+                    placeholder="VD: NGUYEN VAN A"
+                    value={returnAccountHolder}
+                    onChange={(e) => setReturnAccountHolder(e.target.value)}
+                    className="h-9 text-xs rounded-lg uppercase"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t border-slate-100 dark:border-border">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setReturningOrder(null)}
+              disabled={isSubmittingReturn}
+              className="rounded-xl text-xs font-bold border-border"
+            >
+              Hủy Bỏ
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleSubmitReturnOrder}
+              disabled={isSubmittingReturn}
+              className="bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl text-xs gap-1.5 shadow-sm"
+            >
+              {isSubmittingReturn ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <RotateCcw className="w-3.5 h-3.5" />
+              )}
+              <span>Xác Nhận Gửi Yêu Cầu Hoàn Hàng</span>
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

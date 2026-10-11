@@ -204,9 +204,9 @@ export const OnlineOrdersTable: React.FC<OnlineOrdersTableProps> = ({
                           <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
                           <span>Chờ lấy hàng</span>
                         </span>
-                      ) : order.status === "RETURNED" ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-orange-50 text-orange-700 border border-orange-200 shadow-xs">
-                          <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                      ) : (order.status === "RETURNED" || (order.status as string)?.toLowerCase() === "returned") ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200 shadow-xs">
+                          <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
                           <span>Hoàn hàng</span>
                         </span>
                       ) : (
@@ -339,17 +339,32 @@ export const OnlineOrdersTable: React.FC<OnlineOrdersTableProps> = ({
                           </>
                         )}
 
-                        {/* 4. HOÀN THÀNH: COMPLETED -> Xem hành trình (nếu có vận đơn) */}
-                        {isCompleted && order.trackingNumber && (
-                          <Button
-                            size="sm"
-                            onClick={() => onOpenTrackingModal(order)}
-                            className="h-8 px-2 text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold rounded-xl shadow-xs gap-1 cursor-pointer"
-                            title="Xem hành trình vận đơn đã giao"
-                          >
-                            <Navigation className="w-3.5 h-3.5" />
-                            <span className="hidden xl:inline">Hành trình</span>
-                          </Button>
+                        {/* 4. HOÀN THÀNH: COMPLETED -> Xem hành trình (nếu có vận đơn) & Tiếp nhận Hoàn hàng */}
+                        {isCompleted && (
+                          <>
+                            {order.trackingNumber && (
+                              <Button
+                                size="sm"
+                                onClick={() => onOpenTrackingModal(order)}
+                                className="h-8 px-2 text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold rounded-xl shadow-xs gap-1 cursor-pointer"
+                                title="Xem hành trình vận đơn đã giao"
+                              >
+                                <Navigation className="w-3.5 h-3.5" />
+                                <span className="hidden xl:inline">Hành trình</span>
+                              </Button>
+                            )}
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => onUpdateStatus(order.code, "RETURNED")}
+                              className="h-8 px-2 text-xs border-purple-200 text-purple-700 hover:bg-purple-50 font-semibold rounded-xl gap-1 cursor-pointer"
+                              title="Khách yêu cầu trả hàng / đổi trả sau khi nhận"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Hoàn hàng</span>
+                            </Button>
+                          </>
                         )}
 
                         {/* 5. HOÀN TIỀN: REFUND_PENDING -> Xác nhận mã đối soát chuyển khoản */}
@@ -365,16 +380,16 @@ export const OnlineOrdersTable: React.FC<OnlineOrdersTableProps> = ({
                           </Button>
                         )}
 
-                        {/* 6. TRẢ HÀNG VỀ KHO: RETURNED -> Xác nhận nhập lại kho */}
-                        {order.status === "RETURNED" && (
+                        {/* 6. TRẢ HÀNG VỀ KHO: RETURNED -> Xác nhận nhập lại kho & Hoàn tiền */}
+                        {(order.status === "RETURNED" || (order.status as string)?.toLowerCase() === "returned") && (
                           <Button
                             size="sm"
-                            onClick={() => onUpdateStatus(order.code, "CANCELLED")}
+                            onClick={() => onUpdateStatus(order.code, "REFUNDED")}
                             className="h-8 px-2.5 text-xs bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl shadow-sm gap-1.5 cursor-pointer"
-                            title="Xác nhận đã nhận hàng hoàn về kho"
+                            title="Xác nhận đã nhận hàng hoàn về kho và hoàn tiền cho khách"
                           >
                             <PackageCheck className="w-3.5 h-3.5" />
-                            <span>Nhận hàng hoàn</span>
+                            <span>Nhận hoàn & Hoàn tiền</span>
                           </Button>
                         )}
 

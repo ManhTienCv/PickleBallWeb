@@ -238,6 +238,8 @@ export default function Orders() {
             mappedStatus = "REFUNDED";
           } else if (rawStatus === "CANCELLED" || rawStatus === "ĐÃ_HỦY") {
             mappedStatus = "CANCELLED";
+          } else if (rawStatus === "RETURNED" || rawStatus === "HOÀN_HÀNG" || rawStatus === "HOÀN HÀNG") {
+            mappedStatus = "RETURNED";
           } else if (bOrder.payment_status === "paid" || rawStatus === "CONFIRMED" || rawStatus === "PAID") {
             mappedStatus = "PAID";
           } else if (rawStatus === "SHIPPING" || rawStatus === "DELIVERING") {
@@ -676,7 +678,8 @@ export default function Orders() {
 
     onlineOrders.forEach((o) => {
       counts.ALL++;
-      const st = o.status;
+      const raw = (o.status || "").toString();
+      const st = raw.toUpperCase();
       if (st === "REFUND_PENDING" || st === "CHỜ_HOÀN_TIỀN") counts.REFUND_PENDING++;
       else if (st === "REFUNDED" || st === "ĐÃ_HOÀN_TIỀN") counts.REFUNDED++;
       else if (st === "PENDING" || st === "CHỜ_THANH_TOÁN" || st === "PAID" || st === "CONFIRMED") counts.PENDING++;
@@ -684,7 +687,7 @@ export default function Orders() {
       else if (st === "PICKING") counts.PICKING++;
       else if (st === "SHIPPED" || st === "SHIPPING") counts.SHIPPING++;
       else if (st === "COMPLETED") counts.COMPLETED++;
-      else if (st === "RETURNED") counts.RETURNED++;
+      else if (st === "RETURNED" || st === "HOÀN_HÀNG" || st === "HOÀN HÀNG" || raw.toLowerCase() === "returned") counts.RETURNED++;
       else if (st === "CANCELLED") counts.CANCELLED++;
     });
 
@@ -845,7 +848,9 @@ export default function Orders() {
       } else if (onlineStatusFilter === "REFUNDED") {
         matchesStatus = order.status === "REFUNDED" || order.status === "ĐÃ_HOÀN_TIỀN";
       } else if (onlineStatusFilter === "RETURNED") {
-        matchesStatus = order.status === "RETURNED";
+        const raw = (order.status || "").toString();
+        const st = raw.toUpperCase();
+        matchesStatus = st === "RETURNED" || st === "HOÀN_HÀNG" || raw.toLowerCase() === "returned";
       } else if (onlineStatusFilter === "CANCELLED") {
         matchesStatus = order.status === "CANCELLED";
       }

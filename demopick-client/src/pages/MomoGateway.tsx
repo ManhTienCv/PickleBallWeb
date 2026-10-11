@@ -324,28 +324,28 @@ export default function MomoGatewayPage() {
                 Trong môi trường thử nghiệm cục bộ, bạn có thể bấm nút dưới đây để mô phỏng hoàn tất thanh toán thành công hoặc hủy giao dịch:
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
                 <Button
                   onClick={handleSimulateSuccess}
                   disabled={isProcessing}
-                  className="flex-1 bg-gradient-to-r from-[#a50064] to-[#d82d8b] hover:from-[#8b0054] hover:to-[#be257a] text-white font-black rounded-xl h-12 shadow-lg shadow-pink-500/20 gap-2 cursor-pointer"
+                  className="sm:col-span-8 w-full bg-gradient-to-r from-[#a50064] to-[#d82d8b] hover:from-[#8b0054] hover:to-[#be257a] text-white font-bold rounded-xl h-11 px-3 text-xs sm:text-sm shadow-md shadow-pink-500/20 gap-2 cursor-pointer"
                 >
                   {isProcessing ? (
-                    <RefreshCw className="w-5 h-5 animate-spin" />
+                    <RefreshCw className="w-4 h-4 animate-spin shrink-0" />
                   ) : (
-                    <CheckCircle2 className="w-5 h-5" />
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
                   )}
-                  <span>Xác Nhận Đã Thanh Toán (Thành Công)</span>
+                  <span className="truncate">Xác Nhận Đã Thanh Toán (Thành Công)</span>
                 </Button>
 
                 <Button
                   variant="outline"
                   onClick={handleCancelPayment}
                   disabled={isProcessing}
-                  className="rounded-xl border-rose-300 hover:bg-rose-50 dark:border-rose-900 text-rose-600 dark:text-rose-400 font-bold h-12 gap-1.5 cursor-pointer"
+                  className="sm:col-span-4 w-full rounded-xl border-rose-300 hover:bg-rose-50 dark:border-rose-900 text-rose-600 dark:text-rose-400 font-bold h-11 px-3 text-xs gap-1.5 cursor-pointer"
                 >
-                  <XCircle className="w-4 h-4" />
-                  <span>Hủy Giao Dịch</span>
+                  <XCircle className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Hủy Giao Dịch</span>
                 </Button>
               </div>
             </div>
