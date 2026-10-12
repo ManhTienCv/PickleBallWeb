@@ -1631,10 +1631,10 @@ export default function OrdersPage() {
           })}
 
           {/* Pagination Controls (5 items per page) */}
-          {totalPages > 1 && (
+          {filteredOrders.length > 0 && (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 pb-4 border-t border-slate-200 dark:border-border mt-6">
               <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                Hiển thị <span className="font-bold text-slate-800 dark:text-slate-200">{(currentPage - 1) * ORDERS_PER_PAGE + 1}</span> - <span className="font-bold text-slate-800 dark:text-slate-200">{Math.min(currentPage * ORDERS_PER_PAGE, filteredOrders.length)}</span> trên tổng số <span className="font-bold text-[#27c372]">{filteredOrders.length}</span> đơn hàng
+                Hiển thị <span className="font-bold text-slate-800 dark:text-slate-200">{(currentPage - 1) * ORDERS_PER_PAGE + 1}</span> - <span className="font-bold text-slate-800 dark:text-slate-200">{Math.min(currentPage * ORDERS_PER_PAGE, filteredOrders.length)}</span> trên tổng số <span className="font-bold text-[#27c372]">{filteredOrders.length}</span> đơn hàng (Tối đa 5 đơn/trang)
               </div>
 
               <div className="flex items-center gap-1.5">

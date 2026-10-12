@@ -81,7 +81,7 @@ export default function Orders() {
   const realTodayStr = new Date().toISOString().split("T")[0];
   const [customDate, setCustomDate] = useState(realTodayStr);
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 6;
+  const pageSize = 5;
 
   const INITIAL_POS_SEED_ORDERS: Order[] = useMemo(() => [
     {
@@ -783,6 +783,23 @@ export default function Orders() {
         return o;
       })
     );
+
+    const notifType =
+      newStatus === "SHIPPED" || newStatus === "SHIPPING" ? "shipping" :
+      newStatus === "COMPLETED" ? "completed" :
+      newStatus === "RETURN_PENDING" || newStatus === "RETURNED" ? "return" :
+      newStatus === "REFUND_PENDING" || newStatus === "REFUNDED" ? "refund" :
+      newStatus === "CANCELLED" ? "cancelled" : "pending";
+
+    notificationService.addNotification({
+      orderCode,
+      title: `Đơn hàng chuyển sang ${getStatusLabel(newStatus)}`,
+      message: `Đơn hàng #${orderCode} (${target.customerName}) đã chuyển sang "${getStatusLabel(newStatus)}".`,
+      status: newStatus,
+      type: notifType,
+      linkUrl: `/orders?tab=online`,
+    });
+
     toast.success(`Đã cập nhật trạng thái đơn #${orderCode} sang "${getStatusLabel(newStatus)}"!`);
   };
 
@@ -1110,35 +1127,50 @@ export default function Orders() {
           </div>
         )}
 
-        {/* PAGINATION */}
-        <div className="flex items-center justify-between pt-2 text-xs">
-          <span className="text-slate-500 font-medium">
-            Hiển thị {paginatedOrders.length} / {filteredOrders.length} đơn
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              className="h-8 rounded-xl font-bold"
-            >
-              Trang trước
-            </Button>
-            <span className="font-bold text-slate-900 px-2">
-              {currentPage} / {totalPages}
+        {/* PAGINATION (Tối đa 5 sản phẩm/đơn hàng 1 trang) */}
+        {filteredOrders.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 pb-2 border-t border-slate-200/80 bg-white p-3.5 rounded-2xl shadow-2xs text-xs">
+            <span className="text-slate-600 font-medium">
+              Hiển thị <span className="font-bold text-slate-900">{(currentPage - 1) * pageSize + 1}</span> -{' '}
+              <span className="font-bold text-slate-900">{Math.min(currentPage * pageSize, filteredOrders.length)}</span> trên tổng số{' '}
+              <span className="font-bold text-emerald-700">{filteredOrders.length}</span> đơn hàng (Tối đa 5 đơn/trang)
             </span>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={currentPage >= totalPages}
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              className="h-8 rounded-xl font-bold"
-            >
-              Trang tiếp
-            </Button>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="h-8 px-2.5 rounded-xl font-bold text-xs border-slate-200 hover:bg-slate-50 cursor-pointer disabled:opacity-40"
+              >
+                Trang trước
+              </Button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  type="button"
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-8 h-8 rounded-xl text-xs font-bold transition-colors cursor-pointer border ${
+                    currentPage === page
+                      ? 'bg-emerald-600 border-emerald-600 text-white shadow-2xs'
+                      : 'border-slate-200 text-slate-700 hover:bg-slate-100 bg-white'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="h-8 px-2.5 rounded-xl font-bold text-xs border-slate-200 hover:bg-slate-50 cursor-pointer disabled:opacity-40"
+              >
+                Trang tiếp
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* 6 MODAL DIALOGS */}
         <OrderShippingDialog

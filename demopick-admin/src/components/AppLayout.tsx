@@ -24,6 +24,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import CheckInDialog from "@/components/CheckInDialog";
 import PickleballLogo from "@/components/PickleballLogo";
+import NotificationBell from "@/components/NotificationBell";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -436,6 +437,7 @@ const AppLayout = ({ children, title, subtitle, headerRight, noScroll = false }:
           </div>
 
           <div className="flex items-center gap-3">
+            <NotificationBell />
             {headerRight}
           </div>
         </header>
