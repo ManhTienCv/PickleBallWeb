@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { orderService } from '@/services/order.service'
+import { orderService, checkBookingCancellationLock } from '@/services/order.service'
 import { notificationService } from '@/services/notification.service'
 import { shopService } from '@/services/shop.service'
 import { cartService } from '@/services/cart.service'
@@ -79,8 +79,32 @@ export default function OrdersPage() {
   }
 
   const handleCancelOrder = async (orderCode: string) => {
-    const reason = window.prompt('Vui lòng nhập lý do hủy đơn hàng (tùy chọn):', 'Thay đổi kế hoạch mua sắm')
-    if (reason === null) return
+    const targetOrder = orders.find((o) => o.order_code === orderCode || o.code === orderCode)
+    const isBooking = targetOrder ? isBookingOrder(targetOrder) : false
+
+    let reason: string | null = null
+
+    if (isBooking && targetOrder) {
+      const cancelCheck = checkBookingCancellationLock(targetOrder)
+      if (cancelCheck.isLocked) {
+        toast.error(cancelCheck.reason || 'Vé sân đã quá hạn hoặc cận giờ thi đấu. Không thể hủy vé theo quy định.')
+        return
+      }
+
+      const formattedRefund = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
+        targetOrder.total_amount * (cancelCheck.refundPercentage / 100)
+      )
+
+      const confirmMsg = cancelCheck.refundPercentage === 100
+        ? `XÁC NHẬN HỦY VÉ ĐẶT SÂN #${orderCode}\n\n• Quy định hủy: Trước giờ chơi ≥ 2 tiếng\n• Mức hoàn tiền: 100% (${formattedRefund})\n• Phương thức: Hoàn tiền về ví MoMo / TK ngân hàng\n\nBạn có chắc chắn muốn hủy vé đặt sân này không?`
+        : `XÁC NHẬN HỦY VÉ ĐẶT SÂN #${orderCode}\n\n• Quy định hủy: Trước giờ chơi từ 1 - 2 tiếng\n• Mức hoàn tiền: 50% (${formattedRefund})\n• Phí hủy ca muộn: 50% (${formattedRefund})\n\nBạn có chắc chắn muốn hủy vé đặt sân này không?`
+
+      if (!window.confirm(confirmMsg)) return
+      reason = `Khách hàng hủy vé sân (Mức hoàn tiền ${cancelCheck.refundPercentage}%)`
+    } else {
+      reason = window.prompt('Vui lòng nhập lý do hủy đơn hàng (tùy chọn):', 'Thay đổi kế hoạch mua sắm')
+      if (reason === null) return
+    }
 
     try {
       toast.info(`Đang gửi yêu cầu hủy đơn hàng #${orderCode}...`)
@@ -93,7 +117,7 @@ export default function OrdersPage() {
           duration: 6000,
         })
       } else {
-        toast.success(`Đã hủy thành công đơn hàng COD #${orderCode}! Số lượng tồn kho đã được hoàn lại.`)
+        toast.success(isBooking ? `Đã hủy vé sân #${orderCode} thành công!` : `Đã hủy thành công đơn hàng COD #${orderCode}! Số lượng tồn kho đã được hoàn lại.`)
       }
 
       setOrders((prev) =>
@@ -276,9 +300,34 @@ export default function OrdersPage() {
   }
 
   const isBookingOrder = (order: any) =>
-    order.order_type === 'booking' ||
-    order.items?.some((i: any) => i.item_type === 'booking') ||
-    Boolean(order.court_name && order.court_name.length > 0)
+    order?.order_type === 'booking' ||
+    order?.type === 'Đặt Sân' ||
+    order?.type === 'Đặt Sân & Thiết Bị' ||
+    order?.type === 'booking' ||
+    order?.items?.some((i: any) =>
+      i.item_type === 'booking' ||
+      i.item_type === 'booking_slot' ||
+      (i.name && i.name.toLowerCase().includes('thuê ca sân')) ||
+      (i.item_name && i.item_name.toLowerCase().includes('thuê ca sân'))
+    ) ||
+    Boolean(order?.court_name && order.court_name.length > 0) ||
+    Boolean(order?.play_time && order.play_time.length > 0) ||
+    Boolean(order?.booking_date && order.booking_date.length > 0) ||
+    Boolean(order?.slot_ids && order.slot_ids.length > 0) ||
+    Boolean(order?.slot_id)
+
+  const getDisplayPlayTime = (order: any) => {
+    let pt = order?.play_time
+    if (pt && pt.includes('15/08/2026')) {
+      const createdDate = order.created_at ? new Date(order.created_at) : new Date()
+      const dStr = createdDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      pt = pt.replace('15/08/2026', dStr)
+    }
+    if (pt) return pt
+    const createdDate = order?.created_at ? new Date(order.created_at) : new Date()
+    const dStr = createdDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    return `08:00 - 10:00 (${dStr})`
+  }
 
   const isPaidStatus = (order: any) => {
     const s = (order?.status || '').toLowerCase().trim()
@@ -1011,6 +1060,9 @@ export default function OrdersPage() {
         <div className="space-y-6">
           {paginatedOrders.map((order: any) => {
             const isBooking = isBookingOrder(order)
+            const bookingCancelCheck = isBooking
+              ? checkBookingCancellationLock(order)
+              : { isLocked: false, canCancel: true, refundPercentage: 100, reason: '' }
             const isPending = isPendingStatus(order.status)
             const isShipped = isShippedStatus(order.status)
             const isCompleted = isCompletedStatus(order.status) && !isBooking
@@ -1087,7 +1139,7 @@ export default function OrdersPage() {
                       </div>
                       <div>
                         <span className={isCancelledStatus(order.status) ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}>Khung giờ đặt: </span>
-                        <span className="font-bold text-slate-900 dark:text-slate-100">{order.play_time || '08:00 - 10:00 (15/08/2026)'}</span>
+                        <span className="font-bold text-slate-900 dark:text-slate-100">{getDisplayPlayTime(order)}</span>
                       </div>
                     </div>
 
@@ -1424,6 +1476,27 @@ export default function OrdersPage() {
                             </TooltipTrigger>
                             <TooltipContent side="top" className="bg-slate-900 text-white text-xs font-semibold max-w-xs p-2">
                               🔒 Đơn hàng đã bàn giao cho GHN Express vận chuyển, không thể hủy để bảo vệ quy trình đóng gói.
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : isBooking && bookingCancelCheck.isLocked ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-block">
+                                <Button
+                                  disabled
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8 text-xs font-bold opacity-70 cursor-not-allowed border-rose-200 dark:border-rose-900 bg-rose-50/60 dark:bg-rose-950/30 text-rose-500 gap-1.5 rounded-xl"
+                                >
+                                  <Lock className="w-3.5 h-3.5 text-rose-500" />
+                                  <span>Quá Hạn Hủy Vé</span>
+                                </Button>
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="bg-slate-900 text-white text-xs font-semibold max-w-xs p-2.5">
+                              {bookingCancelCheck.reason}
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>

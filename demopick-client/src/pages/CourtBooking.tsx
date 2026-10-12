@@ -106,9 +106,19 @@ export default function CourtBooking() {
     setIsHolding(true)
     try {
       const hold = await bookingService.createHold(selectedSlotIds, slots)
-      setCurrentHold(hold)
+      const timesSummary = selectedSlotsData.map((s) => s.time).join(', ')
+      const courtsSummary = Array.from(new Set(selectedSlotsData.map((s) => s.courtName))).join(', ')
+      const formattedDate = format(selectedDate, 'dd/MM/yyyy')
+      const enrichedHold: Hold = {
+        ...hold,
+        booking_date: format(selectedDate, 'yyyy-MM-dd'),
+        play_time: `${timesSummary} (${formattedDate})`,
+        court_name: courtsSummary || 'Cụm Sân Pickleball DemoPick',
+        court_address: 'Số 188 Nguyễn Văn Cừ, Q. Long Biên, Hà Nội',
+      }
+      setCurrentHold(enrichedHold)
       try {
-        localStorage.setItem('demopick_current_hold', JSON.stringify(hold))
+        localStorage.setItem('demopick_current_hold', JSON.stringify(enrichedHold))
       } catch { }
       toast.success(`Đã tạm giữ ${selectedSlotIds.length} khung giờ thành công trong 10 phút!`)
       refetch()

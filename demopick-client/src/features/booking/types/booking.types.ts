@@ -28,6 +28,10 @@ export interface Hold {
   expires_at: string
   seconds_remaining: number
   total_price: number
+  booking_date?: string
+  play_time?: string
+  court_name?: string
+  court_address?: string
 }
 
 export interface BookingGridProps {

@@ -31,7 +31,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -624,6 +626,49 @@ public class OrderService {
 
         if ("cancelled".equalsIgnoreCase(order.getStatus())) {
             return order;
+        }
+
+        // Kiểm tra điều kiện thời gian hủy vé đặt sân theo Quy định sân:
+        // Không cho phép hủy nếu ca sân đã diễn ra trong quá khứ (hôm qua hoặc trước đó) hoặc còn < 1 giờ trước giờ bắt đầu
+        List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
+        for (OrderItem item : items) {
+            if ("booking_slot".equalsIgnoreCase(item.getItemType()) && item.getReferenceId() != null) {
+                TimeSlot slot = timeSlotRepository.findById(item.getReferenceId()).orElse(null);
+                if (slot != null && slot.getDate() != null) {
+                    LocalDate today = LocalDate.now();
+                    LocalTime nowTime = LocalTime.now();
+                    if (slot.getDate().isBefore(today)) {
+                        throw new ApiException("Không thể hủy vé đặt sân: Ca thi đấu đã diễn ra trong quá khứ (" + slot.getDate() + "). Theo quy định sân, không thể hủy vé đã qua ngày.", HttpStatus.BAD_REQUEST);
+                    }
+                    if (slot.getDate().isEqual(today)) {
+                        LocalTime startTime = slot.getStartTime() != null ? slot.getStartTime() : LocalTime.of(8, 0);
+                        if (nowTime.isAfter(startTime)) {
+                            throw new ApiException("Không thể hủy vé đặt sân: Ca thi đấu hôm nay (" + startTime + ") đã bắt đầu hoặc đã kết thúc. Không thể hủy sau khi ca sân đã diễn ra.", HttpStatus.BAD_REQUEST);
+                        }
+                        if (nowTime.plusHours(1).isAfter(startTime)) {
+                            throw new ApiException("Không thể hủy vé đặt sân: Ca thi đấu bắt đầu trong vòng dưới 1 giờ. Theo chính sách sân, không được phép hủy vé cận giờ thi đấu.", HttpStatus.BAD_REQUEST);
+                        }
+                    }
+                }
+            }
+        }
+
+        if ("booking".equalsIgnoreCase(order.getOrderType()) && order.getCreatedAt() != null) {
+            LocalDate createdDate = order.getCreatedAt().toLocalDate();
+            if (createdDate.isBefore(LocalDate.now())) {
+                boolean hasFutureSlot = false;
+                for (OrderItem item : items) {
+                    if ("booking_slot".equalsIgnoreCase(item.getItemType()) && item.getReferenceId() != null) {
+                        TimeSlot slot = timeSlotRepository.findById(item.getReferenceId()).orElse(null);
+                        if (slot != null && slot.getDate() != null && !slot.getDate().isBefore(LocalDate.now())) {
+                            hasFutureSlot = true;
+                        }
+                    }
+                }
+                if (!hasFutureSlot) {
+                    throw new ApiException("Không thể hủy vé đặt sân: Vé sân được đặt từ hôm qua hoặc các ngày đã qua (" + createdDate + ") đã kết thúc thời gian thi đấu.", HttpStatus.BAD_REQUEST);
+                }
+            }
         }
 
         order.setStatus("cancelled");

@@ -302,23 +302,30 @@ export default function CheckoutPage() {
           : []
 
       const holdSlotIds: number[] = currentHoldData?.slot_ids || (currentHoldData?.slot_id ? [currentHoldData.slot_id] : [])
+      const bookingDate = currentHoldData?.booking_date || new Date().toISOString().split('T')[0]
+      const playTime = currentHoldData?.play_time || `18:00 - 20:00 (${new Date().toLocaleDateString('vi-VN')})`
+      const courtName = currentHoldData?.court_name || 'Cụm Sân Pickleball DemoPick'
+      const courtAddress = currentHoldData?.court_address || 'Số 188 Nguyễn Văn Cừ, Q. Long Biên, Hà Nội'
+
       const holdItems =
         holdId && courtFee > 0
           ? (holdSlotIds.length > 0
               ? holdSlotIds.map((sid: number, idx: number) => ({
                   id: sid,
                   product_id: undefined,
-                  name: `Thuê ca sân Pickleball (Ca #${idx + 1})`,
+                  name: `Thuê ca sân ${courtName} (Ca #${idx + 1} - ${playTime})`,
                   quantity: 1,
                   price: Math.round(courtFee / (holdSlotIds.length || 1)),
+                  item_type: 'booking' as const,
                 }))
               : [
                   {
                     id: Number(holdId),
                     product_id: undefined,
-                    name: 'Thuê ca sân Pickleball',
+                    name: `Thuê ca sân ${courtName} (${playTime})`,
                     quantity: 1,
                     price: courtFee,
+                    item_type: 'booking' as const,
                   },
                 ])
           : []
@@ -353,6 +360,11 @@ export default function CheckoutPage() {
         slotId: holdSlotIds[0],
         slotIds: holdSlotIds,
         shippingFee: effectiveShippingFee,
+        order_type: hasCourtBooking ? (cart?.items?.length ? 'mixed' : 'booking') : 'shop',
+        booking_date: hasCourtBooking ? bookingDate : undefined,
+        play_time: hasCourtBooking ? playTime : undefined,
+        court_name: hasCourtBooking ? courtName : undefined,
+        court_address: hasCourtBooking ? courtAddress : undefined,
         items: orderItems,
       })
 
@@ -400,7 +412,14 @@ export default function CheckoutPage() {
           customerName,
           customerPhone,
           staffName: 'Hệ thống Tự Động Online',
-          type: 'Đặt Sân & Thiết Bị',
+          type: hasCourtBooking ? (cart?.items?.length ? 'Đặt Sân & Thiết Bị' : 'Đặt Sân') : 'Thiết Bị',
+          order_type: hasCourtBooking ? (cart?.items?.length ? 'mixed' : 'booking') : 'shop',
+          booking_date: hasCourtBooking ? bookingDate : undefined,
+          play_time: hasCourtBooking ? playTime : undefined,
+          court_name: hasCourtBooking ? courtName : undefined,
+          court_address: hasCourtBooking ? courtAddress : undefined,
+          qr_checkin_code: hasCourtBooking ? `PK-${orderCode.replace(/[^0-9]/g, '').slice(-5) || '90218'}-VIP` : undefined,
+          slot_ids: holdSlotIds,
           totalAmount: grandTotal,
           paymentMethod: paymentMethod === 'cod' ? 'COD' : 'Cổng Online',
           status: paymentMethod === 'cod' ? 'PENDING' : 'CHỜ_THANH_TOÁN',
@@ -416,6 +435,7 @@ export default function CheckoutPage() {
             name: item.name,
             qty: item.quantity,
             price: item.price,
+            item_type: (item as any).item_type || 'product',
           })),
         }
 

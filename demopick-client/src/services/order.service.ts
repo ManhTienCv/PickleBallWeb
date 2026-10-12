@@ -16,12 +16,18 @@ export interface CreateOrderParams {
   slotId?: number
   slotIds?: number[]
   shippingFee?: number
+  order_type?: 'shop' | 'booking' | 'mixed'
+  booking_date?: string
+  play_time?: string
+  court_name?: string
+  court_address?: string
   items: Array<{
     id: number
     product_id?: number
     name: string
     quantity: number
     price: number
+    item_type?: 'product' | 'booking' | 'booking_slot'
   }>
 }
 
@@ -86,10 +92,159 @@ export interface Order {
   court_name?: string
   court_address?: string
   play_time?: string
+  booking_date?: string
+  order_type?: string
   qr_checkin_code?: string
   slot_id?: number
   slot_ids?: number[]
   items: OrderItem[]
+}
+
+/**
+ * Kiểm tra xem vé đặt sân có bị khóa hủy do quá hạn (hôm qua/quá khứ)
+ * hoặc cận giờ thi đấu (< 1 tiếng) hay không theo Quy định sân Pickleball.
+ */
+export function checkBookingCancellationLock(order: any): {
+  isLocked: boolean
+  canCancel: boolean
+  refundPercentage: number
+  reason: string
+} {
+  const now = new Date()
+  const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+
+  // 1. Xác định ngày diễn ra trận đấu
+  let playDateOnly: number | null = null
+  let dateLabel = ''
+
+  // Ưu tiên 1: Trường order.booking_date (yyyy-MM-dd)
+  if (order.booking_date) {
+    const parts = String(order.booking_date).split('-').map(Number)
+    if (parts.length === 3) {
+      const d = new Date(parts[0], parts[1] - 1, parts[2])
+      playDateOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+      dateLabel = `${String(parts[2]).padStart(2, '0')}/${String(parts[1]).padStart(2, '0')}/${parts[0]}`
+    }
+  }
+
+  // Ưu tiên 2: Trích xuất ngày từ order.play_time (vd: "18:00 - 20:00 (12/10/2026)")
+  if (!playDateOnly && order.play_time) {
+    let cleanPlayTime = String(order.play_time)
+    // Nếu có dính chuỗi mock cũ 15/08/2026 thì thay bằng ngày tạo đơn thực tế
+    if (cleanPlayTime.includes('15/08/2026') && order.created_at) {
+      const c = new Date(order.created_at)
+      if (!isNaN(c.getTime())) {
+        const dStr = c.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        cleanPlayTime = cleanPlayTime.replace('15/08/2026', dStr)
+      }
+    }
+
+    const dmyMatch = cleanPlayTime.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/)
+    if (dmyMatch) {
+      const day = parseInt(dmyMatch[1], 10)
+      const month = parseInt(dmyMatch[2], 10) - 1
+      const year = parseInt(dmyMatch[3], 10)
+      const d = new Date(year, month, day)
+      playDateOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+      dateLabel = `${String(day).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}/${year}`
+    } else {
+      const ymdMatch = cleanPlayTime.match(/(\d{4})[\/\-](\d{2})[\/\-](\d{2})/)
+      if (ymdMatch) {
+        const year = parseInt(ymdMatch[1], 10)
+        const month = parseInt(ymdMatch[2], 10) - 1
+        const day = parseInt(ymdMatch[3], 10)
+        const d = new Date(year, month, day)
+        playDateOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+        dateLabel = `${String(day).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}/${year}`
+      }
+    }
+  }
+
+  // Ưu tiên 3: Dựa trên ngày tạo đơn order.created_at
+  if (!playDateOnly && order.created_at) {
+    const c = new Date(order.created_at)
+    if (!isNaN(c.getTime())) {
+      playDateOnly = new Date(c.getFullYear(), c.getMonth(), c.getDate()).getTime()
+      dateLabel = c.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    }
+  }
+
+  if (!playDateOnly) {
+    playDateOnly = todayOnly
+    dateLabel = 'hôm nay'
+  }
+
+  // KIỂM TRA 1: Vé đặt sân của ngày hôm qua hoặc các ngày trước đó trong quá khứ
+  if (playDateOnly < todayOnly) {
+    return {
+      isLocked: true,
+      canCancel: false,
+      refundPercentage: 0,
+      reason: `🔒 Vé đặt sân ngày ${dateLabel} (hôm qua/quá khứ) đã kết thúc. Theo quy định sân, không thể hủy vé của các ngày đã qua.`,
+    }
+  }
+
+  // KIỂM TRA 2: Vé đặt sân của ngày tương lai (ngày mai trở đi) -> Cho phép hủy hoàn tiền 100%
+  if (playDateOnly > todayOnly) {
+    return {
+      isLocked: false,
+      canCancel: true,
+      refundPercentage: 100,
+      reason: `Hủy trước ≥ 2 tiếng: Được hoàn tiền 100% về tài khoản.`,
+    }
+  }
+
+  // KIỂM TRA 3: Vé đặt sân diễn ra HÔM NAY -> Tính chính xác số phút trước giờ bắt đầu
+  let startHour = 8
+  let startMinute = 0
+  if (order.play_time) {
+    const timeMatch = String(order.play_time).match(/(\d{1,2}):(\d{2})/)
+    if (timeMatch) {
+      startHour = parseInt(timeMatch[1], 10)
+      startMinute = parseInt(timeMatch[2], 10)
+    }
+  }
+
+  const slotStartTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startHour, startMinute, 0).getTime()
+  const diffMinutes = Math.floor((slotStartTime - now.getTime()) / (1000 * 60))
+
+  // Ca sân đã đến giờ bắt đầu hoặc đã kết thúc trong ngày
+  if (diffMinutes <= 0) {
+    return {
+      isLocked: true,
+      canCancel: false,
+      refundPercentage: 0,
+      reason: `🔒 Ca thi đấu hôm nay (${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}) đã bắt đầu hoặc đã kết thúc. Không thể hủy sau khi giờ chơi đã diễn ra.`,
+    }
+  }
+
+  // Cận giờ chơi (< 1 giờ) -> Khóa hủy theo quy định sân
+  if (diffMinutes < 60) {
+    return {
+      isLocked: true,
+      canCancel: false,
+      refundPercentage: 0,
+      reason: `🔒 Ca thi đấu bắt đầu trong vòng dưới 1 giờ (${diffMinutes} phút nữa). Theo chính sách sân, vé không được phép hủy cận giờ thi đấu (Không hoàn tiền).`,
+    }
+  }
+
+  // Từ 1 - 2 tiếng trước giờ chơi -> Hoàn tiền 50%
+  if (diffMinutes < 120) {
+    return {
+      isLocked: false,
+      canCancel: true,
+      refundPercentage: 50,
+      reason: `Hủy trước 1 - 2 tiếng (${diffMinutes} phút nữa): Bạn được hoàn lại 50% tiền sân theo quy định.`,
+    }
+  }
+
+  // Trước giờ chơi ≥ 2 tiếng -> Hoàn tiền 100%
+  return {
+    isLocked: false,
+    canCancel: true,
+    refundPercentage: 100,
+    reason: `Hủy trước ≥ 2 tiếng (${Math.floor(diffMinutes / 60)} giờ nữa): Được hoàn tiền 100% về tài khoản.`,
+  }
 }
 
 export const orderService = {
@@ -212,9 +367,19 @@ export const orderService = {
       try {
         const saved = localStorage.getItem('demopick_orders_client')
         const orders = saved ? JSON.parse(saved) : []
+        const isBooking = Boolean(
+          params.order_type === 'booking' ||
+          params.order_type === 'mixed' ||
+          params.slotId ||
+          (params.slotIds && params.slotIds.length > 0) ||
+          params.booking_date ||
+          params.play_time ||
+          params.items?.some((it: any) => it.item_type === 'booking' || (it.name && it.name.toLowerCase().includes('thuê ca sân')))
+        )
         orders.unshift({
           id: Date.now(),
           order_code: fallbackCode,
+          order_type: isBooking ? (params.order_type || 'booking') : 'shop',
           status: params.paymentMethod === 'cod' ? 'pending' : 'pending',
           payment_status: 'unpaid',
           payment_method: params.paymentMethod,
@@ -223,12 +388,19 @@ export const orderService = {
           customer_name: params.shippingName,
           customer_phone: params.shippingPhone,
           shipping_address: params.shippingAddress,
+          booking_date: params.booking_date || (isBooking ? new Date().toISOString().split('T')[0] : undefined),
+          play_time: params.play_time || (isBooking ? `18:00 - 20:00 (${new Date().toLocaleDateString('vi-VN')})` : undefined),
+          court_name: params.court_name,
+          court_address: params.court_address,
+          qr_checkin_code: isBooking ? `PK-${fallbackCode.slice(-5)}-VIP` : undefined,
+          slot_ids: params.slotIds || (params.slotId ? [params.slotId] : []),
           items: (params.items || []).map((it, idx) => ({
             id: idx + 1,
             item_name: it.name,
             quantity: it.quantity,
             price: it.price,
             subtotal: it.price * it.quantity,
+            item_type: it.item_type || (isBooking ? 'booking' : 'product'),
           })),
         })
         localStorage.setItem('demopick_orders_client', JSON.stringify(orders))
@@ -341,6 +513,7 @@ export const orderService = {
           return {
             id: found.id || 1,
             order_code: found.code || found.order_code,
+            order_type: found.order_type || (found.type?.includes('Đặt Sân') ? 'booking' : 'shop'),
             status: (found.status?.toLowerCase() === 'chờ_thanh_toán' ? 'pending' : found.status?.toLowerCase()) || 'pending',
             payment_status: 'unpaid',
             payment_method: found.paymentMethod || 'momo',
@@ -349,6 +522,12 @@ export const orderService = {
             customer_phone: found.customerPhone,
             shipping_address: found.shippingAddress,
             created_at: found.createdAt || new Date().toISOString(),
+            booking_date: found.booking_date,
+            play_time: found.play_time,
+            court_name: found.court_name,
+            court_address: found.court_address,
+            qr_checkin_code: found.qr_checkin_code,
+            slot_ids: found.slot_ids,
             items: found.items || [],
           } as Order
         }
@@ -429,11 +608,64 @@ export const orderService = {
     message: string
     data?: any
   }> {
+    // 1. Kiểm tra chính sách khóa hủy vé đặt sân trên bộ nhớ cục bộ
+    try {
+      const local = localStorage.getItem('demopick_orders_client') || localStorage.getItem('demopick_client_orders')
+      if (local) {
+        const list = JSON.parse(local)
+        const target = list.find((o: any) => o.order_code === code || o.code === code)
+        if (target) {
+          const isBooking = Boolean(
+            target.order_type === 'booking' ||
+            target.court_name ||
+            target.play_time ||
+            target.booking_date ||
+            target.items?.some((i: any) => i.item_type === 'booking' || (i.item_name && i.item_name.includes('thuê ca sân')))
+          )
+          if (isBooking) {
+            const lockCheck = checkBookingCancellationLock(target)
+            if (lockCheck.isLocked) {
+              throw new Error(lockCheck.reason || 'Vé sân đã quá hạn hoặc cận giờ thi đấu. Không thể hủy vé theo quy định.')
+            }
+          }
+        }
+      }
+    } catch (e: any) {
+      if (e.message?.includes('Vé đặt sân') || e.message?.includes('quá hạn') || e.message?.includes('Ca thi đấu')) {
+        throw e
+      }
+    }
+
     try {
       const response = await api.post(`/orders/${code}/cancel`, { reason })
       return response.data
     } catch (err: any) {
-      const errMsg = err.response?.data?.message || 'Không thể hủy đơn hàng.'
+      if (err.response?.data?.message) {
+        throw new Error(err.response.data.message)
+      }
+
+      // Xử lý hủy trên localStorage nếu offline / mock
+      const local = localStorage.getItem('demopick_orders_client') || localStorage.getItem('demopick_client_orders')
+      if (local) {
+        const list = JSON.parse(local)
+        const target = list.find((o: any) => o.order_code === code || o.code === code)
+        if (target) {
+          const isPaid = (target.payment_status || '').toLowerCase() === 'paid'
+          const newStatus = isPaid ? 'refund_pending' : 'cancelled'
+          const updated = list.map((o: any) =>
+            o.order_code === code || o.code === code ? { ...o, status: newStatus } : o
+          )
+          localStorage.setItem('demopick_orders_client', JSON.stringify(updated))
+          localStorage.setItem('demopick_client_orders', JSON.stringify(updated))
+          return {
+            success: true,
+            action: isPaid ? 'refund_pending' : 'cancelled',
+            message: isPaid ? 'Đã gửi yêu cầu hoàn tiền vé sân thành công.' : 'Đã hủy thành công đơn hàng.',
+          }
+        }
+      }
+
+      const errMsg = err.response?.data?.message || err.message || 'Không thể hủy đơn hàng.'
       throw new Error(errMsg)
     }
   },
