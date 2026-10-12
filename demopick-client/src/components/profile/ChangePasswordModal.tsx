@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -10,9 +10,10 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Lock, Eye, EyeOff, CheckCircle2 } from 'lucide-react'
+import { Lock, Eye, EyeOff, CheckCircle2, KeyRound, Mail, RefreshCw, ArrowLeft, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { authService } from '@/services/auth.service'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface ChangePasswordModalProps {
   isOpen: boolean
@@ -20,6 +21,12 @@ interface ChangePasswordModalProps {
 }
 
 export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProps) {
+  const { user } = useAuth()
+
+  // Chế độ: 'change' (đổi bằng mật khẩu hiện tại) | 'forgot_otp' (quên pass, đặt lại bằng mã OTP email)
+  const [mode, setMode] = useState<'change' | 'forgot_otp'>('change')
+
+  // State cho Form 1: Đổi mật khẩu
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -28,16 +35,92 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
 
+  // State cho Form 2: Quên mật khẩu & Đặt lại qua OTP
+  const [otpCode, setOtpCode] = useState('')
+  const [resetNewPassword, setResetNewPassword] = useState('')
+  const [resetConfirmPassword, setResetConfirmPassword] = useState('')
+  const [showResetNewPassword, setShowResetNewPassword] = useState(false)
+  const [showResetConfirmPassword, setShowResetConfirmPassword] = useState(false)
+  const [isSendingOtp, setIsSendingOtp] = useState(false)
+  const [isResettingPassword, setIsResettingPassword] = useState(false)
+  const [countdown, setCountdown] = useState(0)
+  const [otpSent, setOtpSent] = useState(false)
+
+  // Đếm ngược gửi lại OTP
+  useEffect(() => {
+    let timer: NodeJS.Timeout
+    if (countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000)
+    }
+    return () => clearTimeout(timer)
+  }, [countdown])
+
   const handleClose = () => {
+    setMode('change')
     setCurrentPassword('')
     setNewPassword('')
     setConfirmPassword('')
     setShowCurrentPassword(false)
     setShowNewPassword(false)
     setShowConfirmPassword(false)
+
+    setOtpCode('')
+    setResetNewPassword('')
+    setResetConfirmPassword('')
+    setShowResetNewPassword(false)
+    setShowResetConfirmPassword(false)
+    setOtpSent(false)
+    setCountdown(0)
+
     onClose()
   }
 
+  // Chuyển sang form Quên Mật Khẩu và tự động gửi mã OTP
+  const handleSwitchToForgot = async () => {
+    setMode('forgot_otp')
+    const emailToUse = user?.email
+    if (!emailToUse) {
+      toast.error('Không tìm thấy thông tin email của tài khoản.')
+      return
+    }
+
+    if (!otpSent) {
+      setIsSendingOtp(true)
+      try {
+        await authService.requestPasswordResetOTP(emailToUse)
+        setOtpSent(true)
+        setCountdown(60)
+        toast.success(`Mã OTP đã được gửi tới email ${emailToUse}`)
+      } catch (err: any) {
+        toast.error(err.message || 'Không thể gửi mã OTP. Vui lòng thử lại.')
+      } finally {
+        setIsSendingOtp(false)
+      }
+    }
+  }
+
+  // Gửi lại mã OTP đặt lại mật khẩu
+  const handleResendResetOtp = async () => {
+    if (countdown > 0) return
+    const emailToUse = user?.email
+    if (!emailToUse) {
+      toast.error('Không tìm thấy thông tin email của tài khoản.')
+      return
+    }
+
+    setIsSendingOtp(true)
+    try {
+      await authService.requestPasswordResetOTP(emailToUse)
+      setCountdown(60)
+      toast.success('Đã gửi lại mã OTP mới qua email!')
+    } catch (err: any) {
+      toast.error(err.message || 'Lỗi gửi lại mã OTP.')
+    } finally {
+      setIsSendingOtp(false)
+    }
+  }
+
+  // Đánh giá độ mạnh mật khẩu
   const getPasswordStrength = (pass: string) => {
     if (!pass) return { score: 0, text: '', color: '' }
     let score = 0
@@ -50,9 +133,11 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
     return { score: 3, text: 'Rất mạnh', color: 'bg-emerald-500 text-emerald-500' }
   }
 
-  const passwordStrength = getPasswordStrength(newPassword)
+  const changeStrength = getPasswordStrength(newPassword)
+  const resetStrength = getPasswordStrength(resetNewPassword)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Submit Form 1: Đổi mật khẩu thông thường
+  const handleChangeSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!currentPassword) {
@@ -82,7 +167,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
         new_password: newPassword,
         new_password_confirmation: confirmPassword,
       })
-      toast.success('Đổi mật khẩu thành công! Tài khoản của bạn đã được cập nhật mật khẩu mới an toàn.')
+      toast.success('Đổi mật khẩu thành công! Mật khẩu mới của bạn đã có hiệu lực.')
       handleClose()
     } catch (err: any) {
       toast.error(err.message || 'Mật khẩu hiện tại không chính xác. Vui lòng kiểm tra lại.')
@@ -91,149 +176,376 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
     }
   }
 
+  // Submit Form 2: Đặt lại mật khẩu bằng mã OTP
+  const handleResetSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const emailToUse = user?.email
+    if (!emailToUse) {
+      toast.error('Không tìm thấy email tài khoản.')
+      return
+    }
+
+    if (!otpCode || otpCode.trim().length !== 6) {
+      toast.error('Vui lòng nhập đúng mã OTP gồm 6 chữ số.')
+      return
+    }
+
+    if (resetNewPassword.length < 6) {
+      toast.error('Mật khẩu mới phải có tối thiểu 6 ký tự.')
+      return
+    }
+
+    if (resetNewPassword !== resetConfirmPassword) {
+      toast.error('Mật khẩu xác nhận không trùng khớp.')
+      return
+    }
+
+    setIsResettingPassword(true)
+    try {
+      await authService.resetPasswordWithOTP(emailToUse, otpCode.trim(), resetNewPassword)
+      toast.success('🎉 Đặt lại mật khẩu thành công! Tài khoản của bạn đã được cập nhật mật khẩu mới an toàn.')
+      handleClose()
+    } catch (err: any) {
+      toast.error(err.message || 'Mã OTP không chính xác hoặc đã hết hạn.')
+    } finally {
+      setIsResettingPassword(false)
+    }
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="max-w-md sm:rounded-3xl p-6 border border-slate-200 dark:border-border bg-white dark:bg-card shadow-2xl font-sans text-card-foreground">
+        {/* ================= HEADER ================= */}
         <DialogHeader className="text-center sm:text-left space-y-1.5">
           <div className="flex items-center justify-center sm:justify-start gap-2.5">
             <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center border border-emerald-100 dark:border-emerald-800">
-              <Lock className="w-5 h-5" />
+              {mode === 'change' ? <Lock className="w-5 h-5" /> : <KeyRound className="w-5 h-5" />}
             </div>
             <div>
               <DialogTitle className="text-lg font-black text-slate-900 dark:text-slate-100">
-                Đổi Mật Khẩu Tài Khoản
+                {mode === 'change' ? 'Đổi Mật Khẩu Tài Khoản' : 'Đặt Lại Mật Khẩu (Quên Mật Khẩu)'}
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-                Cập nhật mật khẩu mới để tăng cường an toàn tuyệt đối
+                {mode === 'change'
+                  ? 'Cập nhật mật khẩu mới để tăng cường an toàn tuyệt đối'
+                  : 'Xác thực qua mã OTP email để tạo mật khẩu mới an toàn'}
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-          {/* Current password */}
-          <div className="space-y-1.5">
-            <Label htmlFor="currPass" className="text-xs font-bold text-slate-800 dark:text-slate-200">
-              Mật khẩu hiện tại <span className="text-rose-500">*</span>
-            </Label>
-            <div className="relative">
-              <Input
-                id="currPass"
-                type={showCurrentPassword ? 'text' : 'password'}
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="Nhập mật khẩu hiện tại"
-                required
-                className="h-11 rounded-xl text-xs font-medium pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
-              >
-                {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
-
-          {/* New password */}
-          <div className="space-y-1.5">
-            <Label htmlFor="newPass" className="text-xs font-bold text-slate-800 dark:text-slate-200">
-              Mật khẩu mới <span className="text-rose-500">*</span>
-            </Label>
-            <div className="relative">
-              <Input
-                id="newPass"
-                type={showNewPassword ? 'text' : 'password'}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Tối thiểu 6 ký tự"
-                required
-                className="h-11 rounded-xl text-xs font-medium pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
-              >
-                {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-
-            {/* Password strength meter */}
-            {newPassword && (
-              <div className="space-y-1 pt-1">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-500">Độ bảo mật:</span>
-                  <span className={`font-bold ${passwordStrength.color.split(' ')[1]}`}>
-                    {passwordStrength.text}
-                  </span>
-                </div>
-                <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden flex gap-1">
-                  <div className={`h-full flex-1 rounded-full transition-all ${passwordStrength.score >= 1 ? passwordStrength.color.split(' ')[0] : 'bg-transparent'}`} />
-                  <div className={`h-full flex-1 rounded-full transition-all ${passwordStrength.score >= 2 ? passwordStrength.color.split(' ')[0] : 'bg-transparent'}`} />
-                  <div className={`h-full flex-1 rounded-full transition-all ${passwordStrength.score >= 3 ? passwordStrength.color.split(' ')[0] : 'bg-transparent'}`} />
-                </div>
+        {/* ================= FORM 1: ĐỔI MẬT KHẨU KHI NHỚ PASS CŨ ================= */}
+        {mode === 'change' && (
+          <form onSubmit={handleChangeSubmit} className="space-y-4 pt-2">
+            {/* Current password */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="currPass" className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                  Mật khẩu hiện tại <span className="text-rose-500">*</span>
+                </Label>
+                <button
+                  type="button"
+                  onClick={handleSwitchToForgot}
+                  className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                >
+                  Quên mật khẩu?
+                </button>
               </div>
-            )}
-          </div>
 
-          {/* Confirm new password */}
-          <div className="space-y-1.5">
-            <Label htmlFor="confPass" className="text-xs font-bold text-slate-800 dark:text-slate-200">
-              Xác nhận lại mật khẩu mới <span className="text-rose-500">*</span>
-            </Label>
-            <div className="relative">
-              <Input
-                id="confPass"
-                type={showConfirmPassword ? 'text' : 'password'}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Nhập lại mật khẩu mới"
-                required
-                className="h-11 rounded-xl text-xs font-medium pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
-              >
-                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
+              <div className="relative">
+                <Input
+                  id="currPass"
+                  type={showCurrentPassword ? 'text' : 'password'}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Nhập mật khẩu hiện tại"
+                  required
+                  className="h-11 rounded-xl text-xs font-medium pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
+                >
+                  {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+
+              {/* Dòng Quên Mật Khẩu ở dưới theo đúng yêu cầu */}
+              <div className="flex items-center justify-between pt-1 text-[11px] bg-slate-50 dark:bg-slate-800/40 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
+                <span className="text-slate-500 dark:text-slate-400">Không nhớ mật khẩu cũ?</span>
+                <button
+                  type="button"
+                  onClick={handleSwitchToForgot}
+                  className="font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer inline-flex items-center gap-1"
+                >
+                  <KeyRound className="w-3 h-3" />
+                  <span>Quên mật khẩu? Đặt lại bằng mã OTP</span>
+                </button>
+              </div>
             </div>
-            {confirmPassword && (
-              <div className="text-[11px] pt-0.5">
-                {newPassword === confirmPassword ? (
-                  <span className="text-emerald-600 font-bold flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" /> Mật khẩu xác nhận trùng khớp
+
+            {/* New password */}
+            <div className="space-y-1.5">
+              <Label htmlFor="newPass" className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                Mật khẩu mới <span className="text-rose-500">*</span>
+              </Label>
+              <div className="relative">
+                <Input
+                  id="newPass"
+                  type={showNewPassword ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Tối thiểu 6 ký tự"
+                  required
+                  className="h-11 rounded-xl text-xs font-medium pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
+                >
+                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+
+              {/* Password strength meter */}
+              {newPassword && (
+                <div className="space-y-1 pt-1">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500">Độ bảo mật:</span>
+                    <span className={`font-bold ${changeStrength.color.split(' ')[1]}`}>
+                      {changeStrength.text}
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden flex gap-1">
+                    <div className={`h-full flex-1 rounded-full transition-all ${changeStrength.score >= 1 ? changeStrength.color.split(' ')[0] : 'bg-transparent'}`} />
+                    <div className={`h-full flex-1 rounded-full transition-all ${changeStrength.score >= 2 ? changeStrength.color.split(' ')[0] : 'bg-transparent'}`} />
+                    <div className={`h-full flex-1 rounded-full transition-all ${changeStrength.score >= 3 ? changeStrength.color.split(' ')[0] : 'bg-transparent'}`} />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Confirm new password */}
+            <div className="space-y-1.5">
+              <Label htmlFor="confPass" className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                Xác nhận lại mật khẩu mới <span className="text-rose-500">*</span>
+              </Label>
+              <div className="relative">
+                <Input
+                  id="confPass"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Nhập lại mật khẩu mới"
+                  required
+                  className="h-11 rounded-xl text-xs font-medium pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {confirmPassword && (
+                <div className="text-[11px] pt-0.5">
+                  {newPassword === confirmPassword ? (
+                    <span className="text-emerald-600 font-bold flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> Mật khẩu xác nhận trùng khớp
+                    </span>
+                  ) : (
+                    <span className="text-rose-500 font-bold">
+                      Mật khẩu xác nhận chưa trùng khớp
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <DialogFooter className="pt-3 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleClose}
+                className="rounded-xl text-xs font-bold h-11 px-4 border-slate-200 dark:border-border cursor-pointer"
+              >
+                Hủy Bỏ
+              </Button>
+              <Button
+                type="submit"
+                disabled={isChangingPassword || !currentPassword || newPassword.length < 6 || newPassword !== confirmPassword}
+                className="bg-[#27c372] hover:bg-[#22c55e] text-white font-black rounded-xl text-xs h-11 px-6 shadow-md cursor-pointer flex-1"
+              >
+                {isChangingPassword ? 'Đang cập nhật...' : 'Cập Nhật Mật Khẩu'}
+              </Button>
+            </DialogFooter>
+          </form>
+        )}
+
+        {/* ================= FORM 2: ĐẶT LẠI MẬT KHẨU QUA MÃ OTP (KHI QUÊN PASS) ================= */}
+        {mode === 'forgot_otp' && (
+          <form onSubmit={handleResetSubmit} className="space-y-4 pt-2">
+            {/* Hộp thông báo gửi OTP */}
+            <div className="p-3 bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800 rounded-2xl flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                <Mail className="w-4 h-4" />
+              </div>
+              <div className="text-xs leading-relaxed">
+                <span className="text-slate-600 dark:text-slate-300">Gửi mã OTP về: </span>
+                <strong className="text-emerald-700 dark:text-emerald-400 font-mono font-bold">
+                  {user?.email || 'email tài khoản'}
+                </strong>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Mã OTP 6 số dùng để xác minh chính chủ và tạo mật khẩu mới.
+                </p>
+              </div>
+            </div>
+
+            {/* Ô nhập mã OTP 6 số */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="reset-otp" className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                  Mã xác thực OTP (6 số) <span className="text-rose-500">*</span>
+                </Label>
+                {countdown > 0 ? (
+                  <span className="text-[11px] font-mono font-medium text-slate-400">
+                    Gửi lại sau {countdown}s
                   </span>
                 ) : (
-                  <span className="text-rose-500 font-bold">
-                    Mật khẩu xác nhận chưa trùng khớp
-                  </span>
+                  <button
+                    type="button"
+                    onClick={handleResendResetOtp}
+                    disabled={isSendingOtp}
+                    className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${isSendingOtp ? 'animate-spin' : ''}`} />
+                    <span>Gửi lại mã OTP</span>
+                  </button>
                 )}
               </div>
-            )}
-          </div>
+              <Input
+                id="reset-otp"
+                type="text"
+                maxLength={6}
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                placeholder="123456"
+                autoFocus
+                required
+                className="h-11 rounded-xl text-center font-mono text-xl font-black tracking-widest text-emerald-700 bg-emerald-50/40 border-emerald-300 focus:border-emerald-500"
+              />
+            </div>
 
-          <DialogFooter className="pt-3 gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              className="rounded-xl text-xs font-bold h-11 px-4 border-slate-200 dark:border-border"
-            >
-              Hủy Bỏ
-            </Button>
-            <Button
-              type="submit"
-              disabled={isChangingPassword || !currentPassword || newPassword.length < 6 || newPassword !== confirmPassword}
-              className="bg-[#27c372] hover:bg-[#22c55e] text-white font-black rounded-xl text-xs h-11 px-6 shadow-md cursor-pointer flex-1"
-            >
-              {isChangingPassword ? 'Đang cập nhật...' : 'Cập Nhật Mật Khẩu'}
-            </Button>
-          </DialogFooter>
-        </form>
+            {/* Mật khẩu mới */}
+            <div className="space-y-1.5">
+              <Label htmlFor="resetNewPass" className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                Mật khẩu mới <span className="text-rose-500">*</span>
+              </Label>
+              <div className="relative">
+                <Input
+                  id="resetNewPass"
+                  type={showResetNewPassword ? 'text' : 'password'}
+                  value={resetNewPassword}
+                  onChange={(e) => setResetNewPassword(e.target.value)}
+                  placeholder="Tối thiểu 6 ký tự"
+                  required
+                  className="h-11 rounded-xl text-xs font-medium pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowResetNewPassword(!showResetNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
+                >
+                  {showResetNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+
+              {/* Password strength meter */}
+              {resetNewPassword && (
+                <div className="space-y-1 pt-1">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500">Độ bảo mật:</span>
+                    <span className={`font-bold ${resetStrength.color.split(' ')[1]}`}>
+                      {resetStrength.text}
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden flex gap-1">
+                    <div className={`h-full flex-1 rounded-full transition-all ${resetStrength.score >= 1 ? resetStrength.color.split(' ')[0] : 'bg-transparent'}`} />
+                    <div className={`h-full flex-1 rounded-full transition-all ${resetStrength.score >= 2 ? resetStrength.color.split(' ')[0] : 'bg-transparent'}`} />
+                    <div className={`h-full flex-1 rounded-full transition-all ${resetStrength.score >= 3 ? resetStrength.color.split(' ')[0] : 'bg-transparent'}`} />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Xác nhận lại mật khẩu mới */}
+            <div className="space-y-1.5">
+              <Label htmlFor="resetConfPass" className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                Xác nhận lại mật khẩu mới <span className="text-rose-500">*</span>
+              </Label>
+              <div className="relative">
+                <Input
+                  id="resetConfPass"
+                  type={showResetConfirmPassword ? 'text' : 'password'}
+                  value={resetConfirmPassword}
+                  onChange={(e) => setResetConfirmPassword(e.target.value)}
+                  placeholder="Nhập lại mật khẩu mới"
+                  required
+                  className="h-11 rounded-xl text-xs font-medium pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowResetConfirmPassword(!showResetConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
+                >
+                  {showResetConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {resetConfirmPassword && (
+                <div className="text-[11px] pt-0.5">
+                  {resetNewPassword === resetConfirmPassword ? (
+                    <span className="text-emerald-600 font-bold flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> Mật khẩu xác nhận trùng khớp
+                    </span>
+                  ) : (
+                    <span className="text-rose-500 font-bold">
+                      Mật khẩu xác nhận chưa trùng khớp
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <DialogFooter className="pt-3 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setMode('change')}
+                className="rounded-xl text-xs font-bold h-11 px-4 border-slate-200 dark:border-border cursor-pointer inline-flex items-center gap-1.5"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Quay Lại</span>
+              </Button>
+              <Button
+                type="submit"
+                disabled={isResettingPassword || !otpCode || otpCode.length !== 6 || resetNewPassword.length < 6 || resetNewPassword !== resetConfirmPassword}
+                className="bg-[#27c372] hover:bg-[#22c55e] text-white font-black rounded-xl text-xs h-11 px-6 shadow-md cursor-pointer flex-1"
+              >
+                {isResettingPassword ? (
+                  <span className="inline-flex items-center gap-2">
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Đang cập nhật...</span>
+                  </span>
+                ) : (
+                  'Xác Nhận Đặt Lại Mật Khẩu'
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   )
