@@ -470,7 +470,17 @@ export default function CheckoutPage() {
       resetTimer()
       toast.success('Đặt hàng thành công!')
       navigate(`/order-success/${orderCode}`, {
-        state: { result, orderCode, shippingAddress: fullShippingAddress, customerName, customerPhone, paymentMethod },
+        state: {
+          result,
+          orderCode,
+          shippingAddress: fullShippingAddress,
+          customerName,
+          customerPhone,
+          customerEmail,
+          paymentMethod,
+          totalAmount: result.totalAmount,
+          items: orderItems,
+        },
       })
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Không thể tạo đơn hàng. Vui lòng thử lại.')
