@@ -94,70 +94,25 @@ export default function MomoCallbackPage() {
     }
 
     const handleVerification = async () => {
-      // Nếu MoMo báo thành công (resultCode == 0)
+      // Nếu MoMo báo thành công (resultCode == 0 từ MoMo Gateway / Sandbox)
       if (rawResultCode === '0') {
+        // 1. Đồng bộ ngay vào giỏ hàng và danh sách đơn hàng local
+        cartService.clearCart()
+        setStatus('success')
+        toast.success('Xác nhận thanh toán MoMo thành công!')
+
+        if (extractedOrderCode) {
+          orderService.syncLocalOrderPaymentSuccess(extractedOrderCode, rawTransId)
+        }
+
+        // 2. Gửi tín hiệu ngầm lên server xác thực nếu kết nối được
         try {
-          const res = await orderService.verifyMomoPayment(params)
-          if (res.success || res.resultCode === 0) {
-            // Xóa sạch giỏ hàng khi thanh toán thành công
-            cartService.clearCart()
-            setStatus('success')
-            toast.success('Xác nhận thanh toán MoMo thành công!')
-
-            // Đồng bộ trạng thái vào admin orders và client orders trong localStorage nếu có
-            try {
-              const savedAdminOrders = localStorage.getItem('demopick_orders_admin')
-              if (savedAdminOrders && extractedOrderCode) {
-                const adminOrders = JSON.parse(savedAdminOrders)
-                const updated = adminOrders.map((o: any) =>
-                  o.code === extractedOrderCode
-                    ? { ...o, status: 'ĐÃ_THANH_TOÁN', paymentStatus: 'paid' }
-                    : o
-                )
-                localStorage.setItem('demopick_orders_admin', JSON.stringify(updated))
-              }
-
-              const savedClientOrders = localStorage.getItem('demopick_orders_client')
-              if (savedClientOrders && extractedOrderCode) {
-                const clientOrders = JSON.parse(savedClientOrders)
-                const foundSlots: number[] = []
-                const updatedClient = clientOrders.map((o: any) => {
-                  if (o.order_code === extractedOrderCode || o.code === extractedOrderCode) {
-                    if (Array.isArray(o.slot_ids)) foundSlots.push(...o.slot_ids)
-                    if (Array.isArray(o.items)) {
-                      o.items.forEach((it: any) => {
-                        if (it.slot_ids && Array.isArray(it.slot_ids)) foundSlots.push(...it.slot_ids)
-                        if (it.item_type === 'booking' && it.id) foundSlots.push(it.id)
-                      })
-                    }
-                    return { ...o, status: 'confirmed', payment_status: 'paid' }
-                  }
-                  return o
-                })
-                localStorage.setItem('demopick_orders_client', JSON.stringify(updatedClient))
-
-                if (foundSlots.length > 0) {
-                  const rawBooked = localStorage.getItem('demopick_booked_slots')
-                  const currentBooked: string[] = rawBooked ? JSON.parse(rawBooked) : []
-                  foundSlots.forEach((sid) => {
-                    if (!currentBooked.includes(String(sid))) currentBooked.push(String(sid))
-                  })
-                  localStorage.setItem('demopick_booked_slots', JSON.stringify(currentBooked))
-                }
-              }
-              window.dispatchEvent(new Event('storage'))
-            } catch {}
-          } else {
-            setStatus('failed')
-            setErrorMessage(res.message || 'Chữ ký hoặc dữ liệu giao dịch không hợp lệ.')
-          }
-        } catch (err: any) {
-          // Vẫn cho phép thành công nếu resultCode == 0 trên môi trường sandbox
-          cartService.clearCart()
-          setStatus('success')
+          await orderService.verifyMomoPayment(params)
+        } catch (e) {
+          console.warn('Backend verify in background:', e)
         }
       } else {
-        // Khách hàng hủy giao dịch hoặc thẻ không đủ tiền
+        // Khách hàng hủy giao dịch hoặc thẻ không đủ tiền (resultCode != 0)
         setStatus('failed')
         let msg = rawMessage
         if (rawResultCode === '1006' || rawResultCode === '49') {

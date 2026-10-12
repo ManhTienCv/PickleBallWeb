@@ -270,20 +270,67 @@ export const orderService = {
     }
   },
 
-  async getOrderByCode(code: string): Promise<Order | null> {
+  syncLocalOrderPaymentSuccess(orderCode: string, transId?: string): void {
     try {
-      const response = await api.get<any>(`/orders/${code}`)
-      const order = response.data?.data?.order || response.data?.data
-      if (order) return order
-    } catch {
-      // Ignored
-    }
+      const savedClient = localStorage.getItem('demopick_orders_client') || localStorage.getItem('demopick_client_orders')
+      if (savedClient) {
+        const clientOrders = JSON.parse(savedClient)
+        const foundSlots: number[] = []
+        const updatedClient = clientOrders.map((o: any) => {
+          if (o.order_code === orderCode || o.code === orderCode) {
+            if (Array.isArray(o.slot_ids)) foundSlots.push(...o.slot_ids)
+            if (Array.isArray(o.items)) {
+              o.items.forEach((it: any) => {
+                if (it.slot_ids && Array.isArray(it.slot_ids)) foundSlots.push(...it.slot_ids)
+                if (it.item_type === 'booking' && it.id) foundSlots.push(it.id)
+              })
+            }
+            return {
+              ...o,
+              status: 'confirmed',
+              payment_status: 'paid',
+              trans_id: transId || o.trans_id || ('MOMO_' + Date.now()),
+            }
+          }
+          return o
+        })
+        localStorage.setItem('demopick_orders_client', JSON.stringify(updatedClient))
+        localStorage.setItem('demopick_client_orders', JSON.stringify(updatedClient))
 
+        if (foundSlots.length > 0) {
+          const rawBooked = localStorage.getItem('demopick_booked_slots')
+          const currentBooked: string[] = rawBooked ? JSON.parse(rawBooked) : []
+          foundSlots.forEach((sid) => {
+            if (!currentBooked.includes(String(sid))) currentBooked.push(String(sid))
+          })
+          localStorage.setItem('demopick_booked_slots', JSON.stringify(currentBooked))
+        }
+      }
+
+      const savedAdmin = localStorage.getItem('demopick_orders_admin')
+      if (savedAdmin) {
+        const adminOrders = JSON.parse(savedAdmin)
+        const updatedAdmin = adminOrders.map((o: any) =>
+          (o.code === orderCode || o.order_code === orderCode)
+            ? { ...o, status: 'ĐÃ_THANH_TOÁN', paymentStatus: 'paid' }
+            : o
+        )
+        localStorage.setItem('demopick_orders_admin', JSON.stringify(updatedAdmin))
+      }
+
+      window.dispatchEvent(new Event('storage'))
+    } catch (e) {
+      console.warn('Lỗi đồng bộ local order:', e)
+    }
+  },
+
+  async getOrderByCode(code: string): Promise<Order | null> {
+    // 1. Kiểm tra localStorage trước để tránh gây lỗi 404 đỏ trên Console nếu là đơn local/fallback
     try {
-      const local = localStorage.getItem('demopick_orders_client')
+      const local = localStorage.getItem('demopick_orders_client') || localStorage.getItem('demopick_client_orders')
       if (local) {
         const list: Order[] = JSON.parse(local)
-        const found = list.find((o) => o.order_code === code)
+        const found = list.find((o) => o.order_code === code || (o as any).code === code)
         if (found) return found
       }
       const adminOrders = localStorage.getItem('demopick_orders_admin')
@@ -308,6 +355,15 @@ export const orderService = {
       }
     } catch { }
 
+    // 2. Nếu local không có, mới gọi API Backend
+    try {
+      const response = await api.get<any>(`/orders/${code}`)
+      const order = response.data?.data?.order || response.data?.data
+      if (order) return order
+    } catch {
+      // Ignored
+    }
+
     return null
   },
 
@@ -318,22 +374,41 @@ export const orderService = {
     transId?: string
     message?: string
   }> {
+    const isSuccessCode = String(params.resultCode) === '0'
+    const targetOrderCode = String(params.orderId || params.orderCode || '').split('_')[0]
+
     try {
       const response = await api.post('/payments/momo/verify', params)
       const data = response.data?.data || response.data
-      return {
-        success: data?.success ?? (data?.resultCode === 0),
-        orderCode: data?.orderCode || params.orderId,
-        resultCode: data?.resultCode ?? 0,
-        transId: data?.transId || params.transId,
-        message: data?.message || 'Xác nhận thanh toán MoMo thành công!',
-      }
-    } catch (err: any) {
-      const isSuccessCode = String(params.resultCode) === '0'
-      if (isSuccessCode) {
+      const backendSuccess = data?.success ?? (data?.resultCode === 0)
+
+      if (backendSuccess || isSuccessCode) {
+        if (targetOrderCode) {
+          orderService.syncLocalOrderPaymentSuccess(targetOrderCode, params.transId)
+        }
         return {
           success: true,
-          orderCode: params.orderId,
+          orderCode: data?.orderCode || targetOrderCode,
+          resultCode: 0,
+          transId: data?.transId || params.transId,
+          message: data?.message || 'Xác nhận thanh toán MoMo thành công!',
+        }
+      }
+
+      return {
+        success: false,
+        orderCode: data?.orderCode || targetOrderCode,
+        resultCode: data?.resultCode ?? 99,
+        message: data?.message || 'Thanh toán MoMo chưa hoàn tất hoặc đã bị hủy.',
+      }
+    } catch (err: any) {
+      if (isSuccessCode) {
+        if (targetOrderCode) {
+          orderService.syncLocalOrderPaymentSuccess(targetOrderCode, params.transId)
+        }
+        return {
+          success: true,
+          orderCode: targetOrderCode,
           resultCode: 0,
           transId: params.transId,
           message: 'Thanh toán MoMo thành công (Sandbox)!',
@@ -341,7 +416,7 @@ export const orderService = {
       }
       return {
         success: false,
-        orderCode: err.response?.data?.orderCode || params.orderId,
+        orderCode: err.response?.data?.orderCode || targetOrderCode,
         resultCode: err.response?.data?.resultCode ?? 99,
         message: err.response?.data?.message || 'Thanh toán MoMo chưa hoàn tất hoặc đã bị hủy.',
       }

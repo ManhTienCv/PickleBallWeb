@@ -91,27 +91,37 @@ export default function MomoGatewayPage() {
     const transId = 'MOMO_' + Date.now()
     try {
       toast.loading('Đang xử lý giao dịch qua cổng MoMo Sandbox...', { id: 'momo-proc' })
-      // Gọi verify payment lên backend Spring Boot
-      await orderService.verifyMomoPayment({
-        orderId: orderCode,
-        resultCode: 0,
-        amount: amount,
-        transId: transId,
-        message: 'Successful.',
-      })
+
+      // 1. Cập nhật ngay lập tức trạng thái trong localStorage (khách hàng & admin)
+      if (orderCode) {
+        orderService.syncLocalOrderPaymentSuccess(orderCode, transId)
+      }
+
+      // 2. Gửi tín hiệu xác thực lên Server (nếu online)
+      try {
+        await orderService.verifyMomoPayment({
+          orderId: orderCode,
+          resultCode: 0,
+          amount: amount,
+          transId: transId,
+          message: 'Successful.',
+        })
+      } catch (e) {
+        console.warn('Backend sync verify notice:', e)
+      }
+
       toast.dismiss('momo-proc')
       toast.success('Giao dịch MoMo được duyệt thành công!')
 
-      // Điều hướng về trang kết quả MoMo Callback
+      // 3. Điều hướng về trang kết quả MoMo Callback với mã 0 (Thành công)
       setTimeout(() => {
         navigate(
           `/payment/momo/callback?partnerCode=MOMOBKUN20180529&orderId=${orderCode}&amount=${amount}&resultCode=0&message=Successful&transId=${transId}`,
           { replace: true }
         )
-      }, 500)
+      }, 300)
     } catch (err) {
       toast.dismiss('momo-proc')
-      // Fallback redirect
       navigate(
         `/payment/momo/callback?partnerCode=MOMOBKUN20180529&orderId=${orderCode}&amount=${amount}&resultCode=0&message=Successful&transId=${transId}`,
         { replace: true }
