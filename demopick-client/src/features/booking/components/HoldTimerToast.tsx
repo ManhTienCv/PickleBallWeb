@@ -37,18 +37,17 @@ export function HoldTimerToast({ hold, onExpired }: HoldTimerToastProps) {
   const seconds = secondsLeft % 60
   const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 
-  const handleCancelHold = async () => {
+  const handleCancelHold = () => {
     setIsReleasing(true)
-    try {
-      await bookingService.releaseHold(hold.id)
-      localStorage.removeItem('demopick_current_hold')
-      toast.info('Đã hủy giữ chỗ ca sân. Ca sân đã được mở lại cho mọi người.')
-      onExpired()
-    } catch {
-      onExpired()
-    } finally {
+    // 1. Optimistically clear local storage and UI immediately (< 10ms)
+    localStorage.removeItem('demopick_current_hold')
+    toast.info('Đã hủy giữ chỗ ca sân. Ca sân đã được mở lại cho mọi người.')
+    onExpired()
+
+    // 2. Notify backend in background without blocking the user
+    bookingService.releaseHold(hold.id).finally(() => {
       setIsReleasing(false)
-    }
+    })
   }
 
   return (
