@@ -635,6 +635,67 @@ public class EmailService {
         return sendHtmlEmail(recipientEmail, subject, htmlContent, "OTP Quên mật khẩu: " + recipientEmail);
     }
 
+    /**
+     * 8. Gửi email Kiểm thử kết nối SMTP trực tiếp
+     */
+    public boolean sendTestEmail(String recipientEmail) {
+        if (recipientEmail == null || recipientEmail.isBlank()) {
+            recipientEmail = "nvmtein@gmail.com";
+        }
+        String cleanEmail = recipientEmail.trim();
+        String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy"));
+        String subject = "🏸 [DemoPick Pickleball] Kiểm thử dịch vụ Email SMTP thành công!";
+        String htmlContent = """
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #10b981; border-radius: 12px; background-color: #ffffff;">
+                <div style="text-align: center; padding-bottom: 16px; border-bottom: 2px solid #10b981;">
+                    <h1 style="color: #059669; margin: 0; font-size: 24px;">🏸 DEMOPICK PICKLEBALL CLUB</h1>
+                    <p style="color: #64748b; margin: 4px 0 0 0; font-size: 14px;">Kiểm tra dịch vụ gửi Email Thông Báo Tự Động</p>
+                </div>
+                <div style="padding: 24px 0;">
+                    <div style="background-color: #ecfdf5; border-left: 4px solid #10b981; padding: 16px; border-radius: 6px; margin-bottom: 20px;">
+                        <h3 style="color: #065f46; margin: 0 0 8px 0; font-size: 16px;">✅ KẾT NỐI SMTP THÀNH CÔNG!</h3>
+                        <p style="color: #047857; margin: 0; font-size: 14px; line-height: 1.5;">
+                            Thư điện tử này được gửi tự động từ máy chủ Backend Spring Boot thông qua giao thức <strong>Gmail SMTP</strong> (Cổng 587 - TLS).
+                        </p>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 20px;">
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 10px 0; color: #64748b;">Hòm thư gửi:</td>
+                            <td style="padding: 10px 0; font-weight: bold; color: #1e293b; text-align: right;">nvmtein@gmail.com</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 10px 0; color: #64748b;">Người nhận:</td>
+                            <td style="padding: 10px 0; font-weight: bold; color: #1e293b; text-align: right;">""" + escapeHtml(cleanEmail) + """
+                            </td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 10px 0; color: #64748b;">Thời gian gửi:</td>
+                            <td style="padding: 10px 0; font-weight: bold; color: #1e293b; text-align: right;">""" + now + """
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px 0; color: #64748b;">Trạng thái dịch vụ:</td>
+                            <td style="padding: 10px 0; font-weight: bold; color: #10b981; text-align: right;">Đang hoạt động hoàn hảo (Online)</td>
+                        </tr>
+                    </table>
+                    <p style="font-size: 14px; color: #334155; line-height: 1.6;">
+                        Từ giờ, các tính năng sau sẽ tự động kích hoạt gửi email tới khách hàng:
+                    </p>
+                    <ul style="color: #475569; font-size: 13px; line-height: 1.8;">
+                        <li>Hóa đơn điện tử khi thanh toán MoMo / Chuyển khoản thành công</li>
+                        <li>Vé điện tử kèm mã QR check-in tự động tại sân</li>
+                        <li>Thông báo cập nhật đơn hàng & mã vận đơn GHN Express</li>
+                        <li>Mã xác thực OTP khi người dùng khôi phục mật khẩu</li>
+                    </ul>
+                </div>
+                <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; text-align: center; font-size: 12px; color: #94a3b8;">
+                    © 2026 DemoPick Pickleball Club. Mọi quyền được bảo lưu.
+                </div>
+            </div>
+            """;
+        return sendHtmlEmail(cleanEmail, subject, htmlContent, "Kiểm thử Email SMTP: " + cleanEmail);
+    }
+
     // ── Helper methods ─────────────────────────────────────────────────────────
 
     private String resolveCustomerEmail(Order order) {

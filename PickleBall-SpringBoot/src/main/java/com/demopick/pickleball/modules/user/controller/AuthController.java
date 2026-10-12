@@ -17,9 +17,25 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final com.demopick.pickleball.common.service.EmailService emailService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService,
+                          com.demopick.pickleball.common.service.EmailService emailService) {
         this.authService = authService;
+        this.emailService = emailService;
+    }
+
+    @GetMapping("/test-email")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> testEmail(
+            @RequestParam(required = false, defaultValue = "nvmtein@gmail.com") String to) {
+        boolean sent = emailService.sendTestEmail(to);
+        Map<String, Object> result = new java.util.HashMap<>();
+        result.put("recipient", to);
+        result.put("sent", sent);
+        result.put("smtpHost", "smtp.gmail.com");
+        result.put("port", 587);
+        result.put("timestamp", java.time.LocalDateTime.now().toString());
+        return ResponseEntity.ok(ApiResponse.success(result, sent ? "Email kiểm thử đã được gửi thành công!" : "Gửi email thất bại hoặc chuyển sang mô phỏng."));
     }
 
     @PostMapping("/login")
