@@ -272,17 +272,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
               </div>
 
               {/* Dòng Quên Mật Khẩu ở dưới theo đúng yêu cầu */}
-              <div className="flex items-center justify-between pt-1 text-[11px] bg-slate-50 dark:bg-slate-800/40 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
-                <span className="text-slate-500 dark:text-slate-400">Không nhớ mật khẩu cũ?</span>
-                <button
-                  type="button"
-                  onClick={handleSwitchToForgot}
-                  className="font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer inline-flex items-center gap-1"
-                >
-                  <KeyRound className="w-3 h-3" />
-                  <span>Quên mật khẩu? Đặt lại bằng mã OTP</span>
-                </button>
-              </div>
+
             </div>
 
             {/* New password */}
