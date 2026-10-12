@@ -201,8 +201,10 @@ public class EmailService {
                             <table width="600" border="0" cellspacing="0" cellpadding="0" style="background-color: #FFFFFF; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #E2E8F0;">
                                 <tr>
                                     <td style="background: linear-gradient(135deg, #059669 0%%, #10B981 100%%); padding: 28px 24px; text-align: center; color: #FFFFFF;">
-                                        <div style="font-size: 32px; margin-bottom: 6px;">📦</div>
-                                        <h1 style="margin: 0; font-size: 20px; font-weight: 800;">PICKLEBALL PRO SHOP</h1>
+                                        <div style="margin-bottom: 8px;">
+                                            <img src="https://pickleball-manhtien.vercel.app/pickleball-logo.svg" alt="Pickleball" width="48" height="48" style="width: 48px; height: 48px; display: inline-block; vertical-align: middle; filter: brightness(0) invert(1);" />
+                                        </div>
+                                        <h1 style="margin: 0; font-size: 20px; font-weight: 800;">PICKLEBALL CLUB</h1>
                                         <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;">Cập Nhật Tiến Trình Đơn Hàng</p>
                                     </td>
                                 </tr>
@@ -229,7 +231,7 @@ public class EmailService {
                                                     <td style="color: #64748B;">Trạng thái hiện tại:</td>
                                                     <td align="right">
                                                         <span style="background-color: %s; color: #FFFFFF; font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 20px;">
-                                                            %s
+                                                             %s
                                                         </span>
                                                     </td>
                                                 </tr>
@@ -245,7 +247,7 @@ public class EmailService {
                                 </tr>
                                 <tr>
                                     <td style="background-color: #F8FAFC; padding: 16px; text-align: center; border-top: 1px solid #E2E8F0; font-size: 11px; color: #94A3B8;">
-                                        © 2026 DemoPick Pickleball Club. Mọi quyền được bảo lưu.
+                                        © 2026 Pickleball Club. Mọi quyền được bảo lưu.
                                     </td>
                                 </tr>
                             </table>
@@ -290,7 +292,9 @@ public class EmailService {
                             <table width="600" border="0" cellspacing="0" cellpadding="0" style="background-color: #FFFFFF; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #E2E8F0;">
                                 <tr>
                                     <td style="background: linear-gradient(135deg, #059669 0%%, #10B981 100%%); padding: 36px 24px; text-align: center; color: #FFFFFF;">
-                                        <div style="font-size: 36px; margin-bottom: 8px;">🎾</div>
+                                        <div style="margin-bottom: 8px;">
+                                            <img src="https://pickleball-manhtien.vercel.app/pickleball-logo.svg" alt="Pickleball" width="48" height="48" style="width: 48px; height: 48px; display: inline-block; vertical-align: middle; filter: brightness(0) invert(1);" />
+                                        </div>
                                         <h1 style="margin: 0; font-size: 22px; font-weight: 800;">CHÀO MỪNG ĐẾN VỚI PICKLEBALL CLUB!</h1>
                                         <p style="margin: 6px 0 0 0; font-size: 14px; opacity: 0.95;">Sân Chơi & Thiết Bị Thể Thao Hàng Đầu</p>
                                     </td>
@@ -299,7 +303,7 @@ public class EmailService {
                                     <td style="padding: 32px 28px;">
                                         <p style="font-size: 16px; color: #1E293B; margin: 0 0 14px 0;">Xin chào <strong>%s</strong>,</p>
                                         <p style="font-size: 14px; color: #475569; margin: 0 0 20px 0; line-height: 1.6;">
-                                            Tài khoản của bạn đã được khởi tạo thành công tại hệ thống <strong>DemoPick Pickleball</strong>. Bây giờ bạn có thể trải nghiệm toàn bộ tiện ích:
+                                            Tài khoản của bạn đã được khởi tạo thành công tại hệ thống <strong>Pickleball Club</strong>. Bây giờ bạn có thể trải nghiệm toàn bộ tiện ích:
                                         </p>
 
                                         <div style="background-color: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
@@ -311,7 +315,7 @@ public class EmailService {
                                         </div>
 
                                         <div style="text-align: center; margin: 30px 0;">
-                                            <a href="http://localhost:5173/booking" target="_blank"
+                                            <a href="https://pickleball-manhtien.vercel.app/booking" target="_blank"
                                                style="display: inline-block; background: linear-gradient(135deg, #059669 0%%, #10B981 100%%); color: #FFFFFF; font-size: 14px; font-weight: bold; padding: 12px 28px; border-radius: 10px; text-decoration: none; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
                                                 🚀 Khám Phá & Đặt Sân Ngay
                                             </a>
@@ -324,7 +328,7 @@ public class EmailService {
                                 </tr>
                                 <tr>
                                     <td style="background-color: #F8FAFC; padding: 16px; text-align: center; border-top: 1px solid #E2E8F0; font-size: 11px; color: #94A3B8;">
-                                        © 2026 DemoPick Pickleball Club. Mọi quyền được bảo lưu.
+                                        © 2026 Pickleball Club. Mọi quyền được bảo lưu.
                                     </td>
                                 </tr>
                             </table>
@@ -388,7 +392,7 @@ public class EmailService {
                                 </tr>
                                 <tr>
                                     <td style="background-color: #F8FAFC; padding: 14px; text-align: center; border-top: 1px solid #E2E8F0; font-size: 11px; color: #94A3B8;">
-                                        © 2026 DemoPick Pickleball Club. Mọi quyền được bảo lưu.
+                                        © 2026 Pickleball Club. Mọi quyền được bảo lưu.
                                     </td>
                                 </tr>
                             </table>
@@ -440,7 +444,9 @@ public class EmailService {
                             <table width="600" border="0" cellspacing="0" cellpadding="0" style="background-color: #FFFFFF; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #E2E8F0;">
                                 <tr>
                                     <td style="background: linear-gradient(135deg, #059669 0%%, #10B981 100%%); padding: 30px 24px; text-align: center; color: #FFFFFF;">
-                                        <div style="font-size: 32px; margin-bottom: 6px;">🎟️</div>
+                                        <div style="margin-bottom: 8px;">
+                                            <img src="https://pickleball-manhtien.vercel.app/pickleball-logo.svg" alt="Pickleball" width="48" height="48" style="width: 48px; height: 48px; display: inline-block; vertical-align: middle; filter: brightness(0) invert(1);" />
+                                        </div>
                                         <h1 style="margin: 0; font-size: 20px; font-weight: 800;">VÉ ĐẶT SÂN PICKLEBALL ĐIỆN TỬ</h1>
                                         <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;">Mã Đơn: #%s</p>
                                     </td>
@@ -471,7 +477,7 @@ public class EmailService {
                                 </tr>
                                 <tr>
                                     <td style="background-color: #F8FAFC; padding: 16px; text-align: center; border-top: 1px solid #E2E8F0; font-size: 11px; color: #94A3B8;">
-                                        Địa chỉ cụm sân: 123 Đường Pickleball, Tân Phong, Quận 7, TP. Hồ Chí Minh | Hotline: 1900 8888
+                                        Địa chỉ cụm sân: Số 188 Nguyễn Văn Cừ, Q. Long Biên, Hà Nội | Hotline: 1900 8888 | © 2026 Pickleball Club. Mọi quyền được bảo lưu.
                                     </td>
                                 </tr>
                             </table>
@@ -621,7 +627,7 @@ public class EmailService {
                                 </tr>
                                 <tr>
                                     <td style="background-color: #F8FAFC; padding: 14px; text-align: center; border-top: 1px solid #E2E8F0; font-size: 11px; color: #94A3B8;">
-                                        © 2026 DemoPick Pickleball Club. Mọi quyền được bảo lưu.
+                                        © 2026 Pickleball Club. Mọi quyền được bảo lưu.
                                     </td>
                                 </tr>
                             </table>
@@ -644,12 +650,15 @@ public class EmailService {
         }
         String cleanEmail = recipientEmail.trim();
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy"));
-        String subject = "🏸 [DemoPick Pickleball] Kiểm thử dịch vụ Email SMTP thành công!";
+        String subject = "🏸 [Pickleball] Kiểm thử dịch vụ Email SMTP thành công!";
         String htmlContent = """
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #10b981; border-radius: 12px; background-color: #ffffff;">
                 <div style="text-align: center; padding-bottom: 16px; border-bottom: 2px solid #10b981;">
-                    <h1 style="color: #059669; margin: 0; font-size: 24px;">🏸 DEMOPICK PICKLEBALL CLUB</h1>
-                    <p style="color: #64748b; margin: 4px 0 0 0; font-size: 14px;">Kiểm tra dịch vụ gửi Email Thông Báo Tự Động</p>
+                    <div style="margin-bottom: 10px;">
+                        <img src="https://pickleball-manhtien.vercel.app/pickleball-logo.svg" alt="Pickleball Logo" width="56" height="56" style="width: 56px; height: 56px; display: inline-block; vertical-align: middle;" />
+                    </div>
+                    <h1 style="color: #059669; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: 0.5px;">PICKLEBALL CLUB</h1>
+                    <p style="color: #64748b; margin: 4px 0 0 0; font-size: 14px;">Hệ Thống Sân & Dịch Vụ Thể Thao Tự Động</p>
                 </div>
                 <div style="padding: 24px 0;">
                     <div style="background-color: #ecfdf5; border-left: 4px solid #10b981; padding: 16px; border-radius: 6px; margin-bottom: 20px;">
@@ -688,8 +697,8 @@ public class EmailService {
                         <li>Mã xác thực OTP khi người dùng khôi phục mật khẩu</li>
                     </ul>
                 </div>
-                <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; text-align: center; font-size: 12px; color: #94a3b8;">
-                    © 2026 DemoPick Pickleball Club. Mọi quyền được bảo lưu.
+                <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; text-align: center; font-size: 12px; color: #94A3B8;">
+                    © 2026 Pickleball Club. Mọi quyền được bảo lưu.
                 </div>
             </div>
             """;
@@ -766,7 +775,9 @@ public class EmailService {
                             <table width="600" border="0" cellspacing="0" cellpadding="0" style="background-color: #FFFFFF; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); border: 1px solid #E2E8F0;">
                                 <tr>
                                     <td style="background: linear-gradient(135deg, #059669 0%%, #10B981 100%%); padding: 32px 24px; text-align: center; color: #FFFFFF;">
-                                        <div style="font-size: 28px; margin-bottom: 8px;">🏸</div>
+                                        <div style="margin-bottom: 8px;">
+                                            <img src="https://pickleball-manhtien.vercel.app/pickleball-logo.svg" alt="Pickleball" width="48" height="48" style="width: 48px; height: 48px; display: inline-block; vertical-align: middle; filter: brightness(0) invert(1);" />
+                                        </div>
                                         <h1 style="margin: 0; font-size: 22px; font-weight: 800;">PICKLEBALL CLUB & PRO SHOP</h1>
                                         <p style="margin: 6px 0 0 0; font-size: 13px; opacity: 0.9;">Xác Nhận Thanh Toán Thành Công</p>
                                     </td>
@@ -844,7 +855,7 @@ public class EmailService {
                                 </tr>
                                 <tr>
                                     <td style="background-color: #F8FAFC; padding: 20px 24px; text-align: center; border-top: 1px solid #E2E8F0; font-size: 11px; color: #94A3B8;">
-                                        © 2026 DemoPick Pickleball Club. Mọi quyền được bảo lưu.
+                                        © 2026 Pickleball Club. Mọi quyền được bảo lưu.
                                     </td>
                                 </tr>
                             </table>

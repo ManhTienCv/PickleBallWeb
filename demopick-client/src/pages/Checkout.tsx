@@ -304,20 +304,27 @@ export default function CheckoutPage() {
       const holdSlotIds: number[] = currentHoldData?.slot_ids || (currentHoldData?.slot_id ? [currentHoldData.slot_id] : [])
       const bookingDate = currentHoldData?.booking_date || new Date().toISOString().split('T')[0]
       const playTime = currentHoldData?.play_time || `18:00 - 20:00 (${new Date().toLocaleDateString('vi-VN')})`
-      const courtName = currentHoldData?.court_name || 'Cụm Sân Pickleball DemoPick'
+      const courtName = currentHoldData?.court_name || 'Cụm Sân Pickleball Club'
       const courtAddress = currentHoldData?.court_address || 'Số 188 Nguyễn Văn Cừ, Q. Long Biên, Hà Nội'
 
       const holdItems =
         holdId && courtFee > 0
           ? (holdSlotIds.length > 0
-              ? holdSlotIds.map((sid: number, idx: number) => ({
-                  id: sid,
-                  product_id: undefined,
-                  name: `Thuê ca sân ${courtName} (Ca #${idx + 1} - ${playTime})`,
-                  quantity: 1,
-                  price: Math.round(courtFee / (holdSlotIds.length || 1)),
-                  item_type: 'booking' as const,
-                }))
+              ? holdSlotIds.map((sid: number, idx: number) => {
+                  const slotDetail = currentHoldData?.slots_detail?.find((sd: any) => sd.id === sid) || currentHoldData?.slots_detail?.[idx]
+                  const slotTime = slotDetail?.time || (currentHoldData?.play_time?.includes(',') ? currentHoldData.play_time.split('(')[0].split(',')[idx]?.trim() : playTime)
+                  const slotCourt = slotDetail?.courtName || courtName
+                  const slotDate = slotDetail?.date || new Date(bookingDate).toLocaleDateString('vi-VN')
+                  const slotPrice = slotDetail?.price || Math.round(courtFee / (holdSlotIds.length || 1))
+                  return {
+                    id: sid,
+                    product_id: undefined,
+                    name: `Thuê ca sân ${slotCourt} (${slotTime} (${slotDate}))`,
+                    quantity: 1,
+                    price: slotPrice,
+                    item_type: 'booking' as const,
+                  }
+                })
               : [
                   {
                     id: Number(holdId),
@@ -336,7 +343,7 @@ export default function CheckoutPage() {
           {
             id: 1,
             product_id: 1,
-            name: 'Thiết bị Pickleball DemoPick',
+            name: 'Thiết bị Pickleball Club',
             quantity: 1,
             price: grandTotal || 550000,
           },

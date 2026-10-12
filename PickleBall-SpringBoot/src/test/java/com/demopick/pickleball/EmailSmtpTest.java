@@ -28,15 +28,18 @@ public class EmailSmtpTest {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("nvmtein@gmail.com", "DemoPick Pickleball");
+            helper.setFrom("nvmtein@gmail.com", "Pickleball Club");
             helper.setTo("nvmtein@gmail.com");
-            helper.setSubject("🏸 [DemoPick Pickleball] Kiểm thử dịch vụ Email SMTP thành công!");
+            helper.setSubject("🌟 [Pickleball Club] Kiểm thử dịch vụ Email SMTP thành công!");
             
             String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy"));
             String htmlContent = """
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #10b981; border-radius: 12px; background-color: #ffffff;">
                     <div style="text-align: center; padding-bottom: 16px; border-bottom: 2px solid #10b981;">
-                        <h1 style="color: #059669; margin: 0; font-size: 24px;">🏸 DEMOPICK PICKLEBALL CLUB</h1>
+                        <div style="margin-bottom: 8px;">
+                            <img src="https://pickleball-manhtien.vercel.app/pickleball-logo.svg" alt="Pickleball" width="48" height="48" style="width: 48px; height: 48px; display: inline-block; vertical-align: middle;" />
+                        </div>
+                        <h1 style="color: #059669; margin: 0; font-size: 24px; font-weight: 800;">PICKLEBALL CLUB</h1>
                         <p style="color: #64748b; margin: 4px 0 0 0; font-size: 14px;">Kiểm tra dịch vụ gửi Email Thông Báo Tự Động</p>
                     </div>
                     
@@ -80,7 +83,7 @@ public class EmailSmtpTest {
                     </div>
                     
                     <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; text-align: center; font-size: 12px; color: #94a3b8;">
-                        © 2026 DemoPick Pickleball Club. Mọi quyền được bảo lưu.
+                        © 2026 Pickleball Club. Mọi quyền được bảo lưu.
                     </div>
                 </div>
             """;

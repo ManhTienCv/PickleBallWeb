@@ -32,6 +32,13 @@ export interface Hold {
   play_time?: string
   court_name?: string
   court_address?: string
+  slots_detail?: Array<{
+    id: number
+    courtName: string
+    time: string
+    date: string
+    price: number
+  }>
 }
 
 export interface BookingGridProps {

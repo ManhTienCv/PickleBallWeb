@@ -323,17 +323,102 @@ export default function OrdersPage() {
     Boolean(order?.slot_ids && order.slot_ids.length > 0) ||
     Boolean(order?.slot_id)
 
-  const getDisplayPlayTime = (order: any) => {
+  const getDisplayPlayTime = (order: any): string => {
+    // 1. If order already has play_time and it's not a legacy hardcoded fallback
     let pt = order?.play_time
-    if (pt && pt.includes('15/08/2026')) {
-      const createdDate = order.created_at ? new Date(order.created_at) : new Date()
-      const dStr = createdDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
-      pt = pt.replace('15/08/2026', dStr)
+    if (pt && typeof pt === 'string' && pt.trim().length > 0 && !pt.includes('08:00 - 10:00')) {
+      if (pt.includes('15/08/2026')) {
+        const createdDate = order.created_at ? new Date(order.created_at) : new Date()
+        const dStr = createdDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        pt = pt.replace('15/08/2026', dStr)
+      }
+      return pt
     }
-    if (pt) return pt
+
+    // 2. Extract from order.items (handles both real API and synced orders)
+    const items = order?.items || []
+    const bookingItems = items.filter((it: any) =>
+      it.item_type === 'booking' ||
+      it.item_type === 'booking_slot' ||
+      (it.item_name && (it.item_name.includes('Thuê ca sân') || it.item_name.toLowerCase().includes('ca sân') || it.item_name.toLowerCase().includes('sân'))) ||
+      (it.name && (it.name.includes('Thuê ca sân') || it.name.toLowerCase().includes('ca sân') || it.name.toLowerCase().includes('sân')))
+    )
+
+    if (bookingItems.length > 0) {
+      const timeSet = new Set<string>()
+      let detectedDate = ''
+
+      bookingItems.forEach((it: any) => {
+        const text = (it.item_name || it.name || '')
+        const matches = text.match(/\b\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}\b/g)
+        if (matches) {
+          matches.forEach((m: string) => timeSet.add(m.trim()))
+        }
+        const dMatch = text.match(/\b\d{1,2}\/\d{1,2}\/\d{4}\b/)
+        if (dMatch && !detectedDate) {
+          detectedDate = dMatch[0]
+        }
+      })
+
+      if (timeSet.size > 0) {
+        const timeArray = Array.from(timeSet).sort()
+        if (!detectedDate) {
+          const createdDate = order?.created_at ? new Date(order.created_at) : new Date()
+          detectedDate = createdDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        }
+
+        // Merge continuous consecutive time ranges, e.g. 20:00 - 21:00 and 21:00 - 22:00 -> 20:00 - 22:00
+        if (timeArray.length > 1) {
+          const firstStart = timeArray[0].split('-')[0].trim()
+          let canMerge = true
+          for (let i = 0; i < timeArray.length - 1; i++) {
+            const endCurrent = timeArray[i].split('-')[1].trim()
+            const startNext = timeArray[i + 1].split('-')[0].trim()
+            if (endCurrent !== startNext) {
+              canMerge = false
+              break
+            }
+          }
+          if (canMerge) {
+            const lastEnd = timeArray[timeArray.length - 1].split('-')[1].trim()
+            return `${firstStart} - ${lastEnd} (${detectedDate})`
+          }
+        }
+
+        return `${timeArray.join(', ')} (${detectedDate})`
+      }
+    }
+
     const createdDate = order?.created_at ? new Date(order.created_at) : new Date()
     const dStr = createdDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
-    return `08:00 - 10:00 (${dStr})`
+    return `Khung giờ thi đấu (${dStr})`
+  }
+
+  const formatItemDisplayName = (item: any, index: number, order?: any): string => {
+    const rawName = item.item_name || item.name || ''
+    if (!rawName.includes('Thuê ca sân') && !rawName.toLowerCase().includes('ca sân')) {
+      return rawName
+    }
+
+    // Clean up "(Ca #1 - 20:00 - 21:00, 21:00 - 22:00 (12/10/2026))"
+    const caMatch = rawName.match(/\(Ca #(\d+)\s*-\s*([^)]+)\)/)
+    if (caMatch) {
+      const caNum = parseInt(caMatch[1], 10)
+      const timesAndDate = caMatch[2]
+      const dateMatch = timesAndDate.match(/\(([^)]+)\)/)
+      const datePart = dateMatch ? ` (${dateMatch[1]})` : ''
+      const timesStr = timesAndDate.replace(/\([^)]+\)/g, '').trim()
+      const timeSlots = timesStr.split(',').map((s: string) => s.trim()).filter(Boolean)
+
+      if (timeSlots.length > 1) {
+        const slotIdx = (caNum > 0 && caNum <= timeSlots.length) ? caNum - 1 : index % timeSlots.length
+        const chosenSlot = timeSlots[slotIdx] || timeSlots[0]
+        const courtPart = rawName.split('(')[0].trim()
+        return `${courtPart} (${chosenSlot}${datePart})`
+      }
+    }
+
+    return rawName
   }
 
   const isPaidStatus = (order: any) => {
@@ -1122,13 +1207,15 @@ export default function OrdersPage() {
 
                 {/* Items List */}
                 <div className="space-y-2">
-                  {order.items?.map((item: any) => (
+                  {order.items?.map((item: any, idx: number) => (
                     <div key={item.id} className="flex justify-between items-center text-sm py-1.5 border-b border-slate-50 dark:border-border/50 last:border-0">
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="text-[10px] font-bold border-border">
                           {item.item_type === 'booking' ? 'Thuê Sân' : 'Thiết bị'}
                         </Badge>
-                        <span className="font-bold text-slate-800 dark:text-slate-200">{item.item_name}</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200">
+                          {formatItemDisplayName(item, idx, order)}
+                        </span>
                         <span className="text-slate-500 dark:text-slate-400 text-xs font-medium">x{item.quantity}</span>
                       </div>
                       <span className="font-bold text-slate-900 dark:text-slate-100">
@@ -1207,7 +1294,7 @@ export default function OrdersPage() {
                             title="Bấm để phóng to vé check-in"
                           >
                             <img
-                              src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent('DEMOPICK-CHECKIN:' + (order.qr_checkin_code || 'PK-90218-VIP'))}`}
+                              src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent('PICKLEBALL-CHECKIN:' + (order.qr_checkin_code || 'PK-90218-VIP'))}`}
                               alt="QR Check-in"
                               className="w-12 h-12 object-contain rounded-lg"
                             />
@@ -1875,9 +1962,9 @@ export default function OrdersPage() {
           <form onSubmit={handleSubmitOrderReview} className="space-y-4 py-2 text-xs">
             <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200/80 dark:border-border space-y-1.5">
               <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase">Sản phẩm đánh giá:</div>
-              {reviewingOrder?.items?.map((item: any) => (
+              {reviewingOrder?.items?.map((item: any, idx: number) => (
                 <div key={item.id} className="font-bold text-slate-900 dark:text-slate-100 text-xs flex justify-between">
-                  <span>{item.item_name}</span>
+                  <span>{formatItemDisplayName(item, idx, reviewingOrder)}</span>
                   <span className="text-slate-500 dark:text-slate-400 font-medium">x{item.quantity}</span>
                 </div>
               ))}

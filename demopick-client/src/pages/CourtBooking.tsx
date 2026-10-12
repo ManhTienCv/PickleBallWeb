@@ -113,8 +113,15 @@ export default function CourtBooking() {
         ...hold,
         booking_date: format(selectedDate, 'yyyy-MM-dd'),
         play_time: `${timesSummary} (${formattedDate})`,
-        court_name: courtsSummary || 'Cụm Sân Pickleball DemoPick',
+        court_name: courtsSummary || 'Cụm Sân Pickleball Club',
         court_address: 'Số 188 Nguyễn Văn Cừ, Q. Long Biên, Hà Nội',
+        slots_detail: selectedSlotsData.map((s) => ({
+          id: s.id,
+          courtName: s.courtName,
+          time: s.time,
+          date: formattedDate,
+          price: s.price,
+        })),
       }
       setCurrentHold(enrichedHold)
       try {

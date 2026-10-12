@@ -53,7 +53,7 @@ export const CheckinTicketModal: React.FC<CheckinTicketModalProps> = ({
   if (!ticket) return null
 
   const effectiveTicketCode = ticket.ticketCode || `PK-${ticket.orderCode.replace(/\D/g, '').slice(-5) || '90218'}-VIP`
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`DEMOPICK-CHECKIN:${effectiveTicketCode}`)}`
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`PICKLEBALL-CHECKIN:${effectiveTicketCode}`)}`
 
   const handleCopyTicketCode = () => {
     navigator.clipboard.writeText(effectiveTicketCode)
@@ -83,11 +83,11 @@ export const CheckinTicketModal: React.FC<CheckinTicketModalProps> = ({
 
             <div className="flex items-center justify-between mb-2 relative z-10">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center font-black text-white text-xs">
-                  DP
+                <div className="w-7 h-7 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center p-1">
+                  <img src="/pickleball-logo.svg" alt="Pickleball" className="w-5 h-5 object-contain invert brightness-0" />
                 </div>
                 <div>
-                  <div className="font-extrabold text-sm tracking-wide leading-tight">DEMOPICK ARENA</div>
+                  <div className="font-extrabold text-sm tracking-wide leading-tight">PICKLEBALL ARENA</div>
                   <div className="text-[9.5px] text-emerald-100 uppercase tracking-wider font-semibold">Self-Service Pass</div>
                 </div>
               </div>
