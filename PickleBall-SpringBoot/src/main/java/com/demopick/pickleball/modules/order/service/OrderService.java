@@ -678,7 +678,6 @@ public class OrderService {
         order = orderRepository.save(order);
 
         // 1. Release court slots back to 'available'
-        List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
         for (OrderItem item : items) {
             if ("booking_slot".equalsIgnoreCase(item.getItemType()) && item.getReferenceId() != null) {
                 TimeSlot slot = timeSlotRepository.findById(item.getReferenceId()).orElse(null);
