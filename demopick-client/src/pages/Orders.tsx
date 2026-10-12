@@ -1209,7 +1209,7 @@ export default function OrdersPage() {
                             <img
                               src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent('DEMOPICK-CHECKIN:' + (order.qr_checkin_code || 'PK-90218-VIP'))}`}
                               alt="QR Check-in"
-                              className="w-13 h-13 object-contain rounded-lg"
+                              className="w-12 h-12 object-contain rounded-lg"
                             />
                           </div>
                           <div className="space-y-0.5">
