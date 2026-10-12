@@ -16,10 +16,13 @@ import {
   Sparkles,
   Copy,
   Check,
+  Ticket,
 } from 'lucide-react'
 import OrderReceiptModal from '@/components/OrderReceiptModal'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
+import Barcode from '@/components/Barcode'
+import CheckinTicketModal from '@/components/CheckinTicketModal'
 
 export default function OrderSuccess() {
   const { code } = useParams<{ code: string }>()
@@ -27,6 +30,7 @@ export default function OrderSuccess() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const [isReceiptOpen, setIsReceiptOpen] = useState(false)
+  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [order, setOrder] = useState<Order | null>(null)
 
@@ -114,8 +118,8 @@ export default function OrderSuccess() {
 
       {/* Main Order & Self-Service Card */}
       <div className="mt-8 space-y-5 text-left">
-        {/* QR Code Check-in Card (Sinh mã tự động theo chuẩn ZXing) */}
-        <Card className="p-5 bg-gradient-to-br from-emerald-50/70 via-white to-emerald-50/30 dark:from-emerald-950/40 dark:via-card dark:to-emerald-950/20 rounded-3xl border-2 border-emerald-500/30 ring-1 ring-emerald-500/10 shadow-sm">
+        {/* QR Code & Barcode Check-in Card (Sinh mã tự động theo chuẩn ZXing & Code-128) */}
+        <Card className="p-5 bg-gradient-to-br from-emerald-50/70 via-white to-emerald-50/30 dark:from-emerald-950/40 dark:via-card dark:to-emerald-950/20 rounded-3xl border-2 border-emerald-500/30 ring-1 ring-emerald-500/10 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row items-center gap-5">
             <div className="p-2 bg-white rounded-2xl border border-emerald-200 dark:border-emerald-800 shadow-md shrink-0 flex items-center justify-center">
               <img
@@ -129,14 +133,48 @@ export default function OrderSuccess() {
                 <Badge className="bg-emerald-600 text-white font-black text-[11px] px-2.5 py-0.5 shadow-xs">
                   <Sparkles className="w-3 h-3 mr-1" /> VÉ CHECK-IN TỰ PHỤC VỤ (SELF-SERVICE)
                 </Badge>
-                <span className="text-[11px] text-slate-400 font-mono">Chuẩn ZXing QR</span>
+                <span className="text-[11px] text-slate-400 font-mono">Chuẩn ZXing QR & Code-128</span>
               </div>
               <div className="text-xs text-slate-700 dark:text-slate-300">
                 Mã vé điện tử: <span className="font-mono font-black text-base text-emerald-600 dark:text-emerald-400">{qrTicketCode}</span>
               </div>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                Khách hàng lưu ảnh hoặc xuất trình mã QR này tại quầy Lễ tân hoặc máy quét check-in tại sân để nhận ca sân thi đấu ngay lập tức.
+                Khách hàng lưu ảnh hoặc xuất trình mã QR / mã vạch này tại quầy Lễ tân hoặc máy quét check-in tại sân để nhận ca sân thi đấu ngay lập tức.
               </p>
+              <div className="pt-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsTicketModalOpen(true)}
+                  className="h-8 px-3 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 bg-white dark:bg-card hover:bg-emerald-50 text-xs font-bold rounded-xl gap-1.5 shadow-2xs"
+                >
+                  <Ticket className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Xem Chi Tiết Vé & In Thẻ Boarding Pass</span>
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Authentic Vector Barcode Code-128 */}
+          <div className="pt-3 border-t border-emerald-200/60 dark:border-emerald-900/60 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white/70 dark:bg-card/70 p-3 rounded-2xl">
+            <div className="text-center sm:text-left">
+              <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200">
+                Mã vạch Code-128 Check-in (Máy quét Laser tại quầy):
+              </div>
+              <div className="text-[10px] text-slate-400 font-mono">
+                Tương thích mọi đầu đọc barcode tự động và máy POS quầy lễ tân
+              </div>
+            </div>
+            <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-2xs">
+              <Barcode
+                value={qrTicketCode}
+                format="CODE128"
+                width={1.6}
+                height={38}
+                fontSize={12}
+                className="mx-auto"
+              />
             </div>
           </div>
         </Card>
@@ -276,6 +314,24 @@ export default function OrderSuccess() {
           customer_phone: customerPhone,
           shipping_address: shippingAddress,
           items: items,
+        }}
+      />
+
+      {/* Self-Service Check-in Ticket Modal */}
+      <CheckinTicketModal
+        isOpen={isTicketModalOpen}
+        onClose={() => setIsTicketModalOpen(false)}
+        ticket={{
+          orderCode: effectiveOrderCode,
+          ticketCode: qrTicketCode,
+          courtName: (order as any)?.court_name || (items.find((i: any) => i.itemType === 'booking_slot' || i.item_type === 'booking_slot' || i.name?.includes('Sân'))?.name) || 'Sân Pickleball Chuẩn Quốc Tế',
+          playTime: (order as any)?.play_time || (order as any)?.slot_time || 'Ca sân đã xác nhận',
+          customerName: customerName,
+          customerPhone: customerPhone,
+          customerEmail: effectiveEmail,
+          totalAmount: totalAmount,
+          isPaid: true,
+          isCancelled: false,
         }}
       />
     </div>

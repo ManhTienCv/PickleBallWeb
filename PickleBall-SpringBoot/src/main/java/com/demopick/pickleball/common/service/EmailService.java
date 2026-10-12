@@ -29,13 +29,13 @@ public class EmailService {
     private final JavaMailSender mailSender;
     private final UserRepository userRepository;
 
-    @Value("${spring.mail.username:demopick.sports@gmail.com}")
+    @Value("${spring.mail.username:nvmtein@gmail.com}")
     private String mailUsername;
 
-    @Value("${spring.mail.password:}")
+    @Value("${spring.mail.password:rsaegcuzmnruldjs}")
     private String mailPassword;
 
-    @Value("${mail.from.address:demopick.sports@gmail.com}")
+    @Value("${mail.from.address:nvmtein@gmail.com}")
     private String fromAddress;
 
     @Value("${mail.from.name:Pickleball}")

@@ -44,6 +44,8 @@ import {
   ChevronLeft,
   ChevronRight,
   RefreshCw,
+  Ticket,
+  Sparkles,
 } from 'lucide-react'
 import {
   Tooltip,
@@ -56,6 +58,8 @@ import { toast } from 'sonner'
 import { authHelpers } from '@/stores/useAuthStore'
 import { useAuthModalStore } from '@/stores/useAuthModalStore'
 import OrderReceiptModal from '@/components/OrderReceiptModal'
+import Barcode from '@/components/Barcode'
+import CheckinTicketModal, { CheckinTicketData } from '@/components/CheckinTicketModal'
 
 export default function OrdersPage() {
   const navigate = useNavigate()
@@ -195,6 +199,9 @@ export default function OrdersPage() {
   // Order Receipt Modal
   const [selectedReceiptOrder, setSelectedReceiptOrder] = useState<any | null>(null)
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false)
+
+  // Self-Service Check-in Ticket Modal
+  const [selectedCheckinTicket, setSelectedCheckinTicket] = useState<CheckinTicketData | null>(null)
 
   // Status Category Helpers
   const isReturnedStatus = (status?: string) => {
@@ -349,6 +356,28 @@ export default function OrdersPage() {
       s === 'delivered' ||
       s === 'đã giao'
     )
+  }
+
+  const handleOpenCheckinTicket = (order: any) => {
+    const numericCode = (order.order_code || order.code || '').replace(/\D/g, '') || '90218'
+    const ticketCode = order.qr_checkin_code || `PK-${numericCode.slice(-5)}-VIP`
+    const courtName =
+      order.court_name ||
+      order.items?.find((i: any) => i.item_type === 'booking_slot' || i.itemType === 'booking_slot' || i.name?.includes('Sân') || i.item_name?.includes('Sân'))?.name ||
+      'Sân Pickleball Tiêu Chuẩn'
+
+    setSelectedCheckinTicket({
+      orderCode: order.order_code || order.code || '',
+      ticketCode,
+      courtName,
+      playTime: getDisplayPlayTime(order),
+      customerName: order.customer_name || 'Khách hàng',
+      customerPhone: order.shipping_phone || order.customer_phone || '',
+      customerEmail: order.customer_email || '',
+      totalAmount: order.total_amount,
+      isPaid: isPaidStatus(order),
+      isCancelled: isCancelledStatus(order.status),
+    })
   }
 
   const handleCancelAllUnpaidOrders = async () => {
@@ -1143,32 +1172,83 @@ export default function OrdersPage() {
                       </div>
                     </div>
 
-                    {/* QR Check-in Box */}
+                    {/* Visual Barcode & QR Check-in Box */}
                     {isCancelledStatus(order.status) ? (
-                      <div className="pt-2 flex items-center justify-between bg-white dark:bg-card p-3 rounded-xl border border-rose-200 dark:border-rose-900 shadow-inner">
+                      <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-card p-3 rounded-xl border border-rose-200 dark:border-rose-900 shadow-inner">
                         <div className="flex items-center gap-2 text-xs font-bold text-rose-700 dark:text-rose-300">
-                          <Ban className="h-5 w-5 text-rose-500" />
+                          <Ban className="h-5 w-5 text-rose-500 shrink-0" />
                           <div>
                             <div>Vé đặt sân đã hủy:</div>
-                            <div className="text-[11px] text-slate-400 font-normal">Mã QR này không còn hiệu lực check-in tại sân</div>
+                            <div className="text-[11px] text-slate-400 font-normal">Mã QR & mã vạch này không còn hiệu lực check-in tại sân</div>
                           </div>
                         </div>
-                        <code className="font-mono font-bold text-sm text-rose-500 bg-rose-50 dark:bg-rose-950/60 px-3 py-1 rounded-lg border border-rose-200 dark:border-rose-800 line-through">
-                          {order.qr_checkin_code || 'PK-90218-VIP'}
-                        </code>
+                        <div className="flex items-center gap-2">
+                          <code className="font-mono font-bold text-sm text-rose-500 bg-rose-50 dark:bg-rose-950/60 px-3 py-1 rounded-lg border border-rose-200 dark:border-rose-800 line-through">
+                            {order.qr_checkin_code || 'PK-90218-VIP'}
+                          </code>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleOpenCheckinTicket(order)}
+                            className="h-7 px-2.5 border-rose-200 text-rose-700 hover:bg-rose-50 rounded-lg text-xs font-semibold gap-1"
+                          >
+                            <Ticket className="w-3 h-3" />
+                            <span>Xem vé</span>
+                          </Button>
+                        </div>
                       </div>
                     ) : (
-                      <div className="pt-2 flex items-center justify-between bg-white dark:bg-card p-3 rounded-xl border border-emerald-200 dark:border-emerald-800 shadow-inner">
-                        <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
-                          <QrCode className="h-5 w-5 text-[#27c372]" />
-                          <div>
-                            <div>Mã QR Check-in nhận sân tại quầy:</div>
-                            <div className="text-[11px] text-slate-400 font-normal">Đưa mã này cho Lễ tân khi đến sân chơi</div>
+                      <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-card p-3.5 rounded-2xl border-2 border-emerald-500/30 dark:border-emerald-800 shadow-xs hover:border-emerald-500 transition-all">
+                        {/* QR Thumbnail & Code Info */}
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="p-1 bg-white rounded-xl border border-emerald-200 dark:border-emerald-800 shadow-2xs shrink-0 cursor-pointer hover:scale-105 transition-transform"
+                            onClick={() => handleOpenCheckinTicket(order)}
+                            title="Bấm để phóng to vé check-in"
+                          >
+                            <img
+                              src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent('DEMOPICK-CHECKIN:' + (order.qr_checkin_code || 'PK-90218-VIP'))}`}
+                              alt="QR Check-in"
+                              className="w-13 h-13 object-contain rounded-lg"
+                            />
+                          </div>
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <Badge className="bg-emerald-600 text-white font-extrabold text-[10px] px-2 py-0">
+                                <Sparkles className="w-2.5 h-2.5 mr-0.5" /> VÉ CHECK-IN TỰ PHỤC VỤ
+                              </Badge>
+                              <span className="text-[10px] text-slate-400 font-mono">ZXing QR & Code-128</span>
+                            </div>
+                            <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                              Mã vé: <code className="font-mono font-black text-sm text-[#27c372]">{order.qr_checkin_code || 'PK-90218-VIP'}</code>
+                            </div>
+                            <div className="text-[11px] text-slate-400 font-normal">
+                              Quét QR tại máy tự động hoặc đưa mã vạch cho Lễ tân
+                            </div>
                           </div>
                         </div>
-                        <code className="font-mono font-black text-base text-[#27c372] bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800">
-                          {order.qr_checkin_code || 'PK-90218-VIP'}
-                        </code>
+
+                        {/* Barcode Strip & Action Button */}
+                        <div className="flex items-center justify-between sm:justify-end gap-2.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-border">
+                          <div className="bg-white p-1 rounded-xl border border-slate-200 shadow-2xs hidden md:block shrink-0">
+                            <Barcode
+                              value={order.qr_checkin_code || 'PK-90218-VIP'}
+                              format="CODE128"
+                              width={1.2}
+                              height={26}
+                              fontSize={10}
+                              className="max-h-8"
+                            />
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={() => handleOpenCheckinTicket(order)}
+                            className="h-8.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs gap-1.5 shadow-sm whitespace-nowrap cursor-pointer shrink-0"
+                          >
+                            <Ticket className="w-3.5 h-3.5" />
+                            <span>Mở Vé Check-in</span>
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1511,6 +1591,18 @@ export default function OrdersPage() {
                           <span>{isBooking ? 'Hủy Vé Sân' : 'Hủy Đơn'}</span>
                         </Button>
                       )
+                    )}
+
+                    {isBooking && !isCancelledStatus(order.status) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleOpenCheckinTicket(order)}
+                        className="h-8 text-xs font-bold text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 gap-1.5 rounded-xl shadow-sm cursor-pointer"
+                      >
+                        <Ticket className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Vé Check-in</span>
+                      </Button>
                     )}
 
                     <Button
@@ -2013,6 +2105,13 @@ export default function OrdersPage() {
         open={isReceiptModalOpen}
         onOpenChange={setIsReceiptModalOpen}
         order={selectedReceiptOrder}
+      />
+
+      {/* SELF-SERVICE CHECK-IN TICKET MODAL */}
+      <CheckinTicketModal
+        isOpen={Boolean(selectedCheckinTicket)}
+        onClose={() => setSelectedCheckinTicket(null)}
+        ticket={selectedCheckinTicket}
       />
     </div>
   )
