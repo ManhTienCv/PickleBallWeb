@@ -52,39 +52,39 @@ export function HoldTimerToast({ hold, onExpired }: HoldTimerToastProps) {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5">
-      <Card className="flex items-center gap-4 bg-white/95 dark:bg-card/95 backdrop-blur-md text-slate-900 dark:text-slate-100 p-4 shadow-2xl border-2 border-emerald-500/30 ring-1 ring-emerald-500/10 rounded-2xl">
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60 animate-pulse shadow-xs">
+    <div className="fixed bottom-24 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 w-auto max-w-[calc(100vw-2rem)] animate-in slide-in-from-bottom-5">
+      <Card className="flex items-center gap-3 sm:gap-4 bg-white/95 dark:bg-card/95 backdrop-blur-md text-slate-900 dark:text-slate-100 p-3 sm:p-4 shadow-2xl border-2 border-emerald-500/30 ring-1 ring-emerald-500/10 rounded-2xl">
+        <div className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60 animate-pulse shadow-xs shrink-0">
           <Clock className="h-5 w-5" />
         </div>
 
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Khung giờ đã tạm giữ:</span>
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">Khung giờ đã tạm giữ:</span>
             <span className="font-mono text-sm font-bold text-amber-600 dark:text-amber-400">{formattedTime}</span>
           </div>
-          <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-0.5">
+          <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-0.5 whitespace-nowrap">
             {hold.slot_ids.length} suất sân • {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(hold.total_price)}
           </p>
         </div>
 
-        <div className="flex items-center gap-2 ml-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 ml-1 sm:ml-2 shrink-0">
           <Button
             size="sm"
             variant="ghost"
             disabled={isReleasing}
             onClick={handleCancelHold}
-            className="text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl px-2.5 h-8 font-semibold cursor-pointer"
+            className="text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl px-2 sm:px-2.5 h-8 font-semibold cursor-pointer"
             title="Hủy giữ sân ngay lập tức"
           >
-            <X className="h-3.5 w-3.5 mr-1" />
+            <X className="h-3.5 w-3.5 mr-0.5 sm:mr-1" />
             <span>{isReleasing ? '...' : 'Hủy giữ'}</span>
           </Button>
 
           <Button
             size="sm"
             onClick={() => navigate('/checkout', { state: { holdId: hold.id } })}
-            className="gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/20 cursor-pointer"
+            className="gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/20 cursor-pointer h-8 sm:h-9 px-3 sm:px-4"
           >
             <span>Thanh toán</span>
             <ArrowRight className="h-4 w-4" />

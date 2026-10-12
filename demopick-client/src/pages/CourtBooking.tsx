@@ -382,7 +382,7 @@ export default function CourtBooking() {
 
       {/* Selected Action Footer */}
       {selectedSlotIds.length > 0 && !currentHold && (
-        <div className="sticky bottom-6 z-40 mt-8 bg-white/95 dark:bg-card/95 backdrop-blur-md text-slate-900 dark:text-slate-100 p-4 sm:p-5 rounded-2xl shadow-2xl flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 border-2 border-emerald-500/30 ring-1 ring-emerald-500/10 animate-in slide-in-from-bottom-4">
+        <div className="sticky bottom-24 sm:bottom-6 z-40 mt-8 bg-white/95 dark:bg-card/95 backdrop-blur-md text-slate-900 dark:text-slate-100 p-4 sm:p-5 sm:pr-20 lg:pr-6 rounded-2xl shadow-2xl flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 border-2 border-emerald-500/30 ring-1 ring-emerald-500/10 animate-in slide-in-from-bottom-4">
           <div className="flex items-start sm:items-center gap-3.5">
             <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-center shrink-0 shadow-xs">
               <Clock className="w-6 h-6 animate-pulse" />
