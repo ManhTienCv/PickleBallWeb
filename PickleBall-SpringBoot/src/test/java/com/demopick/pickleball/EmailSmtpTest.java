@@ -99,4 +99,88 @@ public class EmailSmtpTest {
             throw new RuntimeException(e);
         }
     }
+
+    @Test
+    public void testSendOtpEmailDirect() {
+        JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
+        mailSender.setHost("smtp.gmail.com");
+        mailSender.setPort(587);
+        mailSender.setUsername("nvmtein@gmail.com");
+        mailSender.setPassword("rsaegcuzmnruldjs");
+
+        Properties props = mailSender.getJavaMailProperties();
+        props.put("mail.transport.protocol", "smtp");
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.starttls.required", "true");
+        props.put("mail.smtp.ssl.trust", "smtp.gmail.com");
+
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom("nvmtein@gmail.com", "Pickleball");
+            helper.setTo("nvmtein@gmail.com");
+            helper.setSubject("🔑 [Pickleball] Mã OTP đặt lại mật khẩu của bạn");
+
+            String otp = "864209";
+            String htmlContent = """
+                <!DOCTYPE html>
+                <html lang="vi">
+                <head><meta charset="UTF-8"><title>Mã OTP đặt lại mật khẩu</title></head>
+                <body style="margin: 0; padding: 0; background-color: #F8FAFC; font-family: 'Segoe UI', Arial, sans-serif;">
+                    <table width="100%%" border="0" cellspacing="0" cellpadding="0" style="padding: 30px 10px;">
+                        <tr>
+                            <td align="center">
+                                <table width="600" border="0" cellspacing="0" cellpadding="0" style="background-color: #FFFFFF; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #E2E8F0;">
+                                    <tr>
+                                        <td style="background: linear-gradient(135deg, #059669 0%%, #10B981 100%%); padding: 30px 24px; text-align: center; color: #FFFFFF;">
+                                            <div style="margin-bottom: 8px;">
+                                                <img src="https://pickleball-manhtien.vercel.app/pickleball-logo.svg" alt="Pickleball" width="48" height="48" style="width: 48px; height: 48px; display: inline-block; vertical-align: middle; filter: brightness(0) invert(1);" />
+                                            </div>
+                                            <h1 style="margin: 0; font-size: 20px; font-weight: 800;">ĐẶT LẠI MẬT KHẨU TÀI KHOẢN</h1>
+                                            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.95;">Pickleball Club & Pro Shop</p>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 32px 28px; text-align: center;">
+                                            <p style="font-size: 14px; color: #475569; margin: 0 0 20px 0;">
+                                                Bạn vừa yêu cầu mã xác nhận để đặt lại mật khẩu tài khoản. Mã OTP của bạn là:
+                                            </p>
+
+                                            <div style="display: inline-block; background-color: #F0FDF4; border: 2px dashed #059669; border-radius: 12px; padding: 14px 36px; margin-bottom: 20px;">
+                                                <span style="font-size: 32px; font-weight: 900; letter-spacing: 8px; color: #059669; font-family: monospace;">%s</span>
+                                            </div>
+
+                                            <p style="font-size: 12px; color: #64748B; margin: 0 0 8px 0;">
+                                                Mã OTP này có hiệu lực trong vòng <strong>10 phút</strong>.
+                                            </p>
+                                            <p style="font-size: 12px; color: #EF4444; margin: 0;">
+                                                Tuyệt đối không cung cấp mã này cho bất kỳ ai để đảm bảo an toàn cho tài khoản.
+                                            </p>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="background-color: #F8FAFC; padding: 14px; text-align: center; border-top: 1px solid #E2E8F0; font-size: 11px; color: #94A3B8;">
+                                            © 2026 Pickleball Club. Mọi quyền được bảo lưu.
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </body>
+                </html>
+            """;
+
+            helper.setText(String.format(htmlContent, otp), true);
+
+            System.out.println("Đang gửi email OTP đặt lại mật khẩu tới nvmtein@gmail.com...");
+            mailSender.send(message);
+            System.out.println(">>> GỬI EMAIL OTP THÀNH CÔNG RỰC RỠ TỚI nvmtein@gmail.com <<<");
+        } catch (Exception e) {
+            System.err.println(">>> GỬI EMAIL OTP THẤT BẠI: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+    }
 }

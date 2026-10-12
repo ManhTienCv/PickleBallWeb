@@ -10,9 +10,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
+import java.util.Properties;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
@@ -48,6 +51,27 @@ public class EmailService {
     }
 
     /**
+     * Lấy JavaMailSender từ Spring Context, hoặc tự động khởi tạo theo Gmail SMTP nếu Spring Context chưa cấu hình
+     */
+    private JavaMailSender getMailSender() {
+        if (this.mailSender != null) {
+            return this.mailSender;
+        }
+        JavaMailSenderImpl impl = new JavaMailSenderImpl();
+        impl.setHost("smtp.gmail.com");
+        impl.setPort(587);
+        impl.setUsername((mailUsername != null && !mailUsername.isBlank()) ? mailUsername : "nvmtein@gmail.com");
+        impl.setPassword((mailPassword != null && !mailPassword.isBlank()) ? mailPassword : "rsaegcuzmnruldjs");
+        Properties props = impl.getJavaMailProperties();
+        props.put("mail.transport.protocol", "smtp");
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.starttls.required", "true");
+        props.put("mail.smtp.ssl.trust", "smtp.gmail.com");
+        return impl;
+    }
+
+    /**
      * Helper gửi email HTML qua SMTP với cơ chế mô phỏng an toàn (fallback)
      */
     private boolean sendHtmlEmail(String recipientEmail, String subject, String htmlContent, String contextDesc) {
@@ -56,24 +80,24 @@ public class EmailService {
             return false;
         }
 
-        boolean hasSmtpConfig = mailSender != null && mailPassword != null && !mailPassword.trim().isEmpty();
+        String effectiveFrom = (fromAddress != null && !fromAddress.isBlank()) ? fromAddress : "nvmtein@gmail.com";
+        String effectiveName = (fromName != null && !fromName.isBlank()) ? fromName : "Pickleball";
 
-        if (hasSmtpConfig) {
-            try {
-                MimeMessage message = mailSender.createMimeMessage();
-                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-                helper.setFrom(fromAddress, fromName);
-                helper.setTo(recipientEmail);
-                helper.setSubject(subject);
-                helper.setText(htmlContent, true);
+        try {
+            JavaMailSender sender = getMailSender();
+            MimeMessage message = sender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(effectiveFrom, effectiveName);
+            helper.setTo(recipientEmail);
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
 
-                mailSender.send(message);
-                log.info("ĐÃ GỬI EMAIL THẬT THÀNH CÔNG [{}] tới {}", contextDesc, recipientEmail);
-                return true;
-            } catch (Exception ex) {
-                log.warn("Không thể gửi email qua SMTP ({}) tới {}: {}. Chuyển sang ghi nhận mô phỏng.",
-                        fromAddress, recipientEmail, ex.getMessage());
-            }
+            sender.send(message);
+            log.info("ĐÃ GỬI EMAIL THẬT THÀNH CÔNG [{}] tới {}", contextDesc, recipientEmail);
+            return true;
+        } catch (Exception ex) {
+            log.warn("Không thể gửi email qua SMTP ({}) tới {}: {}. Chuyển sang ghi nhận mô phỏng.",
+                    effectiveFrom, recipientEmail, ex.getMessage());
         }
 
         // Chế độ mô phỏng / Development log (khi chưa cấu hình hoặc SMTP bận)
@@ -602,9 +626,12 @@ public class EmailService {
                         <td align="center">
                             <table width="600" border="0" cellspacing="0" cellpadding="0" style="background-color: #FFFFFF; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #E2E8F0;">
                                 <tr>
-                                    <td style="background-color: #1E293B; padding: 26px; text-align: center; color: #FFFFFF;">
-                                        <div style="font-size: 30px; margin-bottom: 6px;">🔐</div>
-                                        <h1 style="margin: 0; font-size: 18px; font-weight: 700;">ĐẶT LẠI MẬT KHẨU TÀI KHOẢN</h1>
+                                    <td style="background: linear-gradient(135deg, #059669 0%%, #10B981 100%%); padding: 30px 24px; text-align: center; color: #FFFFFF;">
+                                        <div style="margin-bottom: 8px;">
+                                            <img src="https://pickleball-manhtien.vercel.app/pickleball-logo.svg" alt="Pickleball" width="48" height="48" style="width: 48px; height: 48px; display: inline-block; vertical-align: middle; filter: brightness(0) invert(1);" />
+                                        </div>
+                                        <h1 style="margin: 0; font-size: 20px; font-weight: 800;">ĐẶT LẠI MẬT KHẨU TÀI KHOẢN</h1>
+                                        <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.95;">Pickleball Club & Pro Shop</p>
                                     </td>
                                 </tr>
                                 <tr>
@@ -613,7 +640,7 @@ public class EmailService {
                                             Bạn vừa yêu cầu mã xác nhận để đặt lại mật khẩu tài khoản. Mã OTP của bạn là:
                                         </p>
 
-                                        <div style="display: inline-block; background-color: #F1F5F9; border: 2px dashed #059669; border-radius: 12px; padding: 14px 36px; margin-bottom: 20px;">
+                                        <div style="display: inline-block; background-color: #F0FDF4; border: 2px dashed #059669; border-radius: 12px; padding: 14px 36px; margin-bottom: 20px;">
                                             <span style="font-size: 32px; font-weight: 900; letter-spacing: 8px; color: #059669; font-family: monospace;">%s</span>
                                         </div>
 
@@ -624,7 +651,6 @@ public class EmailService {
                                             Tuyệt đối không cung cấp mã này cho bất kỳ ai để đảm bảo an toàn cho tài khoản.
                                         </p>
                                     </td>
-                                </tr>
                                 <tr>
                                     <td style="background-color: #F8FAFC; padding: 14px; text-align: center; border-top: 1px solid #E2E8F0; font-size: 11px; color: #94A3B8;">
                                         © 2026 Pickleball Club. Mọi quyền được bảo lưu.

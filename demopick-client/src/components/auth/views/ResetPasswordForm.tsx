@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 interface ResetPasswordFormProps {
   email: string
   countdown: number
+  demoOtp?: string | null
   onResendOtp: () => Promise<void>
   onResetSuccess: (email: string, newPassword: string) => void
   onCancel: () => void
@@ -17,11 +18,12 @@ interface ResetPasswordFormProps {
 export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
   email,
   countdown,
+  demoOtp,
   onResendOtp,
   onResetSuccess,
   onCancel,
 }) => {
-  const [resetOtp, setResetOtp] = useState('')
+  const [resetOtp, setResetOtp] = useState(demoOtp || '')
   const [newPassword, setNewPassword] = useState('')
   const [newPasswordConf, setNewPasswordConf] = useState('')
   const [isResetting, setIsResetting] = useState(false)
@@ -34,8 +36,8 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
       setError('Vui lòng nhập mã OTP gồm 6 chữ số.')
       return
     }
-    if (newPassword.length < 8) {
-      setError('Mật khẩu mới phải có tối thiểu 8 ký tự.')
+    if (newPassword.length < 6) {
+      setError('Mật khẩu mới phải có tối thiểu 6 ký tự.')
       return
     }
     if (newPassword !== newPasswordConf) {
@@ -65,9 +67,27 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
           Xác thực OTP & Đặt mật khẩu mới
         </h2>
         <p className="text-xs text-slate-500 dark:text-slate-300 mt-1">
-          Mã 6 chữ số đã được gửi tới <strong>{email}</strong>
+          Mã 6 chữ số đã gửi tới <strong>{email}</strong>
+        </p>
+        <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+          (Vui lòng kiểm tra <strong>Hộp thư đến</strong> hoặc thư mục <strong>Thư rác/Spam</strong>)
         </p>
       </div>
+
+      {demoOtp && (
+        <div className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800 text-[11px] mb-3">
+          <span className="text-amber-800 dark:text-amber-300">
+            Mã OTP đồng bộ: <strong className="font-mono text-emerald-700 dark:text-emerald-400 font-bold">{demoOtp}</strong>
+          </span>
+          <button
+            type="button"
+            onClick={() => setResetOtp(demoOtp)}
+            className="font-bold text-emerald-700 dark:text-emerald-400 underline hover:text-emerald-800 cursor-pointer"
+          >
+            Điền nhanh
+          </button>
+        </div>
+      )}
 
       {error && (
         <div className="flex items-center gap-2 rounded-xl bg-red-50 dark:bg-red-500/15 p-3 text-xs text-red-600 dark:text-red-400 border border-red-100 dark:border-red-500/30 mb-3">

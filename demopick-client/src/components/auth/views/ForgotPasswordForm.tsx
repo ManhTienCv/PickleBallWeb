@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 interface ForgotPasswordFormProps {
   initialEmail?: string
   onSwitchToLogin: () => void
-  onOtpSent: (email: string) => void
+  onOtpSent: (email: string, demoOtp?: string) => void
 }
 
 export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
@@ -32,7 +32,7 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
     try {
       const res = await authService.requestPasswordResetOTP(email.trim())
       toast.success(res.message || 'Mã OTP đã được gửi đến email của bạn!')
-      onOtpSent(email.trim())
+      onOtpSent(email.trim(), res?.demoOtp)
     } catch (err: any) {
       setError(err.message || 'Không thể gửi mã OTP. Vui lòng thử lại.')
     } finally {
