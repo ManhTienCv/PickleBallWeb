@@ -10,7 +10,9 @@ interface AuthContextType {
   isAuthenticated: boolean
   isLoading: boolean
   login: (email: string, password: string) => Promise<void>
+  loginWithOtp: (email: string, otp: string) => Promise<void>
   register: (data: RegisterData) => Promise<void>
+  registerWithOtp: (data: RegisterData & { otp: string }) => Promise<void>
   logout: () => Promise<void>
   updateUser: (updatedUser: User) => void
   setSession: (token: string, user: User) => void
@@ -53,10 +55,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const loginWithOtp = async (email: string, otp: string) => {
+    setIsLoading(true)
+    try {
+      const response = await api.post<ApiResponse<{ token: string; user: User }>>('/auth/login/verify-otp', {
+        email,
+        otp,
+      })
+      const { token: newToken, user: newUser } = response.data.data
+      setSession(newToken, newUser)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const register = async (data: RegisterData) => {
     setIsLoading(true)
     try {
       const response = await api.post<ApiResponse<{ token: string; user: User }>>('/auth/register', data)
+      const { token: newToken, user: newUser } = response.data.data
+      setSession(newToken, newUser)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const registerWithOtp = async (data: RegisterData & { otp: string }) => {
+    setIsLoading(true)
+    try {
+      const response = await api.post<ApiResponse<{ token: string; user: User }>>('/auth/register/verify-otp', data)
       const { token: newToken, user: newUser } = response.data.data
       setSession(newToken, newUser)
     } finally {
@@ -104,7 +131,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated, isLoading, login, register, logout, updateUser, setSession }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        isAuthenticated,
+        isLoading,
+        login,
+        loginWithOtp,
+        register,
+        registerWithOtp,
+        logout,
+        updateUser,
+        setSession,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )

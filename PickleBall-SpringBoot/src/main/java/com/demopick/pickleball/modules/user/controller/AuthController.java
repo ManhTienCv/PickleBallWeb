@@ -48,10 +48,43 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(result, "Đăng nhập thành công."));
     }
 
+    @PostMapping("/register/send-otp")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> sendRegisterOtp(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String name = request.get("name");
+        Map<String, Object> result = authService.sendRegisterOtp(email, name);
+        return ResponseEntity.ok(ApiResponse.success(result, "Mã OTP xác thực đăng ký đã được gửi tới email."));
+    }
+
+    @PostMapping("/register/verify-otp")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> verifyRegisterOtp(@Valid @RequestBody RegisterRequest request) {
+        Map<String, Object> result = authService.register(request);
+        return ResponseEntity.status(201).body(ApiResponse.success(result, "Xác thực OTP và đăng ký tài khoản thành công."));
+    }
+
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<Map<String, Object>>> register(@Valid @RequestBody RegisterRequest request) {
         Map<String, Object> result = authService.register(request);
         return ResponseEntity.status(201).body(ApiResponse.success(result, "Đăng ký tài khoản thành công."));
+    }
+
+    @PostMapping("/login/send-otp")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> sendLoginOtp(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        Map<String, Object> result = authService.sendLoginOtp(email);
+        return ResponseEntity.ok(ApiResponse.success(result, "Mã OTP đăng nhập đã được gửi tới email."));
+    }
+
+    @PostMapping("/login/verify-otp")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> verifyLoginOtp(
+            @RequestBody Map<String, String> request,
+            jakarta.servlet.http.HttpServletRequest servletRequest) {
+        String email = request.get("email");
+        String otp = request.get("otp");
+        String ipAddress = servletRequest != null ? servletRequest.getRemoteAddr() : null;
+        String userAgent = servletRequest != null ? servletRequest.getHeader("User-Agent") : null;
+        Map<String, Object> result = authService.loginWithOtp(email, otp, ipAddress, userAgent);
+        return ResponseEntity.ok(ApiResponse.success(result, "Đăng nhập bằng mã OTP thành công."));
     }
 
     @PostMapping("/google")

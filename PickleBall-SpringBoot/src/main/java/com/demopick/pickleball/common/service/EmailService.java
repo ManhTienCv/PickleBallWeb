@@ -642,6 +642,132 @@ public class EmailService {
     }
 
     /**
+     * 7.1 Gửi email Mã OTP Xác thực Đăng ký tài khoản mới
+     */
+    @Async
+    public boolean sendRegisterOtpEmail(String recipientEmail, String otp, String customerName) {
+        if (recipientEmail == null || recipientEmail.isBlank()) return false;
+
+        String name = customerName != null && !customerName.isBlank() ? customerName : "Bạn";
+        String subject = "📩 [Pickleball] Mã OTP xác thực đăng ký tài khoản";
+
+        String htmlContent = String.format("""
+            <!DOCTYPE html>
+            <html lang="vi">
+            <head><meta charset="UTF-8"><title>Xác thực đăng ký tài khoản</title></head>
+            <body style="margin: 0; padding: 0; background-color: #F8FAFC; font-family: 'Segoe UI', Arial, sans-serif;">
+                <table width="100%%" border="0" cellspacing="0" cellpadding="0" style="padding: 30px 10px;">
+                    <tr>
+                        <td align="center">
+                            <table width="600" border="0" cellspacing="0" cellpadding="0" style="background-color: #FFFFFF; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #E2E8F0;">
+                                <tr>
+                                    <td style="background: linear-gradient(135deg, #059669 0%%, #10B981 100%%); padding: 30px 24px; text-align: center; color: #FFFFFF;">
+                                        <div style="margin-bottom: 8px;">
+                                            <img src="https://pickleball-manhtien.vercel.app/pickleball-logo.svg" alt="Pickleball" width="48" height="48" style="width: 48px; height: 48px; display: inline-block; vertical-align: middle; filter: brightness(0) invert(1);" />
+                                        </div>
+                                        <h1 style="margin: 0; font-size: 20px; font-weight: 800;">XÁC THỰC TÀI KHOẢN MỚI</h1>
+                                        <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.95;">Pickleball Club & Pro Shop</p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 32px 28px; text-align: center;">
+                                        <p style="font-size: 15px; color: #1E293B; margin: 0 0 12px 0;">Xin chào <strong>%s</strong>,</p>
+                                        <p style="font-size: 14px; color: #475569; margin: 0 0 20px 0; line-height: 1.6;">
+                                            Cảm ơn bạn đã đăng ký tài khoản tại <strong>Pickleball Club</strong>. Dưới đây là mã OTP 6 chữ số dùng để kích hoạt tài khoản của bạn:
+                                        </p>
+
+                                        <div style="display: inline-block; background-color: #F0FDF4; border: 2px dashed #059669; border-radius: 12px; padding: 14px 36px; margin-bottom: 20px;">
+                                            <span style="font-size: 32px; font-weight: 900; letter-spacing: 8px; color: #059669; font-family: monospace;">%s</span>
+                                        </div>
+
+                                        <p style="font-size: 12px; color: #64748B; margin: 0 0 8px 0;">
+                                            Mã xác thực có hiệu lực trong vòng <strong>10 phút</strong>.
+                                        </p>
+                                        <p style="font-size: 12px; color: #EF4444; margin: 0;">
+                                            Vui lòng không cung cấp mã này cho người khác để bảo vệ an toàn cho tài khoản.
+                                        </p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="background-color: #F8FAFC; padding: 14px; text-align: center; border-top: 1px solid #E2E8F0; font-size: 11px; color: #94A3B8;">
+                                        © 2026 Pickleball Club. Mọi quyền được bảo lưu.
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </body>
+            </html>
+            """, escapeHtml(name), escapeHtml(otp));
+
+        return sendHtmlEmail(recipientEmail, subject, htmlContent, "OTP Đăng ký: " + recipientEmail);
+    }
+
+    /**
+     * 7.2 Gửi email Mã OTP Đăng nhập nhanh không cần mật khẩu
+     */
+    @Async
+    public boolean sendLoginOtpEmail(String recipientEmail, String otp, String customerName) {
+        if (recipientEmail == null || recipientEmail.isBlank()) return false;
+
+        String name = customerName != null && !customerName.isBlank() ? customerName : "Bạn";
+        String subject = "🔑 [Pickleball] Mã OTP đăng nhập tài khoản của bạn";
+
+        String htmlContent = String.format("""
+            <!DOCTYPE html>
+            <html lang="vi">
+            <head><meta charset="UTF-8"><title>Mã OTP đăng nhập tài khoản</title></head>
+            <body style="margin: 0; padding: 0; background-color: #F8FAFC; font-family: 'Segoe UI', Arial, sans-serif;">
+                <table width="100%%" border="0" cellspacing="0" cellpadding="0" style="padding: 30px 10px;">
+                    <tr>
+                        <td align="center">
+                            <table width="600" border="0" cellspacing="0" cellpadding="0" style="background-color: #FFFFFF; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #E2E8F0;">
+                                <tr>
+                                    <td style="background: linear-gradient(135deg, #059669 0%%, #10B981 100%%); padding: 30px 24px; text-align: center; color: #FFFFFF;">
+                                        <div style="margin-bottom: 8px;">
+                                            <img src="https://pickleball-manhtien.vercel.app/pickleball-logo.svg" alt="Pickleball" width="48" height="48" style="width: 48px; height: 48px; display: inline-block; vertical-align: middle; filter: brightness(0) invert(1);" />
+                                        </div>
+                                        <h1 style="margin: 0; font-size: 20px; font-weight: 800;">MÃ OTP ĐĂNG NHẬP NHANH</h1>
+                                        <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.95;">Pickleball Club & Pro Shop</p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 32px 28px; text-align: center;">
+                                        <p style="font-size: 15px; color: #1E293B; margin: 0 0 12px 0;">Xin chào <strong>%s</strong>,</p>
+                                        <p style="font-size: 14px; color: #475569; margin: 0 0 20px 0; line-height: 1.6;">
+                                            Bạn đang đăng nhập vào hệ thống bằng mã OTP một lần (không cần mật khẩu). Mã xác thực của bạn là:
+                                        </p>
+
+                                        <div style="display: inline-block; background-color: #F0FDF4; border: 2px dashed #059669; border-radius: 12px; padding: 14px 36px; margin-bottom: 20px;">
+                                            <span style="font-size: 32px; font-weight: 900; letter-spacing: 8px; color: #059669; font-family: monospace;">%s</span>
+                                        </div>
+
+                                        <p style="font-size: 12px; color: #64748B; margin: 0 0 8px 0;">
+                                            Mã có hiệu lực trong vòng <strong>10 phút</strong>.
+                                        </p>
+                                        <p style="font-size: 12px; color: #EF4444; margin: 0;">
+                                            Nếu bạn không yêu cầu đăng nhập, vui lòng bỏ qua thư này hoặc đổi mật khẩu.
+                                        </p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="background-color: #F8FAFC; padding: 14px; text-align: center; border-top: 1px solid #E2E8F0; font-size: 11px; color: #94A3B8;">
+                                        © 2026 Pickleball Club. Mọi quyền được bảo lưu.
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </body>
+            </html>
+            """, escapeHtml(name), escapeHtml(otp));
+
+        return sendHtmlEmail(recipientEmail, subject, htmlContent, "OTP Đăng nhập: " + recipientEmail);
+    }
+
+    /**
      * 8. Gửi email Kiểm thử kết nối SMTP trực tiếp
      */
     public boolean sendTestEmail(String recipientEmail) {

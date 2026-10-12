@@ -31,6 +31,8 @@ public class AuthService {
     private final JwtTokenProvider tokenProvider;
     private final EmailService emailService;
     private static final Map<String, String> RESET_OTP_CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, String> REGISTER_OTP_CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, String> LOGIN_OTP_CACHE = new ConcurrentHashMap<>();
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
@@ -74,10 +76,44 @@ public class AuthService {
         return result;
     }
 
+    public Map<String, Object> sendRegisterOtp(String email, String name) {
+        if (email == null || email.isBlank()) {
+            throw new ApiException("Vui lòng cung cấp địa chỉ email.", HttpStatus.BAD_REQUEST);
+        }
+        String cleanEmail = email.trim().toLowerCase();
+        if (userRepository.existsByEmail(cleanEmail) || userRepository.existsByEmail(email.trim())) {
+            throw new ApiException("Email này đã được đăng ký tài khoản trên hệ thống.", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+
+        String otp = String.format("%06d", (int) (Math.random() * 900000) + 100000);
+        REGISTER_OTP_CACHE.put(cleanEmail, otp);
+
+        try {
+            emailService.sendRegisterOtpEmail(cleanEmail, otp, name);
+        } catch (Exception ex) {
+            log.warn("Could not send Register OTP email to {}: {}", cleanEmail, ex.getMessage());
+        }
+
+        Map<String, Object> res = new HashMap<>();
+        res.put("message", "Mã xác thực OTP đã được gửi tới " + cleanEmail);
+        res.put("email", cleanEmail);
+        res.put("demoOtp", otp);
+        return res;
+    }
+
     public Map<String, Object> register(RegisterRequest request) {
         String email = request.getEmail() != null ? request.getEmail().trim().toLowerCase() : "";
         if (userRepository.existsByEmail(email) || userRepository.existsByEmail(request.getEmail())) {
             throw new ApiException("Email đã tồn tại trên hệ thống.", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+
+        // Nếu có OTP gửi kèm, kiểm tra mã xác thực từ bộ nhớ đệm
+        if (request.getOtp() != null && !request.getOtp().isBlank()) {
+            String cachedOtp = REGISTER_OTP_CACHE.get(email);
+            if (cachedOtp == null || !cachedOtp.equals(request.getOtp().trim())) {
+                throw new ApiException("Mã OTP không chính xác hoặc đã hết hạn.", HttpStatus.BAD_REQUEST);
+            }
+            REGISTER_OTP_CACHE.remove(email);
         }
 
         User user = new User();
@@ -98,6 +134,62 @@ public class AuthService {
         }
 
         String token = tokenProvider.generateToken(user.getId(), user.getEmail(), user.getRole());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("token", token);
+        result.put("user", AuthResponse.fromUser(user));
+        return result;
+    }
+
+    public Map<String, Object> sendLoginOtp(String email) {
+        if (email == null || email.isBlank()) {
+            throw new ApiException("Vui lòng cung cấp địa chỉ email.", HttpStatus.BAD_REQUEST);
+        }
+        String cleanEmail = email.trim().toLowerCase();
+        User user = userRepository.findByEmail(cleanEmail)
+                .or(() -> userRepository.findByEmail(email.trim()))
+                .orElseThrow(() -> new ApiException("Email này chưa được đăng ký trong hệ thống.", HttpStatus.NOT_FOUND));
+
+        String otp = String.format("%06d", (int) (Math.random() * 900000) + 100000);
+        LOGIN_OTP_CACHE.put(cleanEmail, otp);
+
+        try {
+            emailService.sendLoginOtpEmail(cleanEmail, otp, user.getName());
+        } catch (Exception ex) {
+            log.warn("Could not send Login OTP email to {}: {}", cleanEmail, ex.getMessage());
+        }
+
+        Map<String, Object> res = new HashMap<>();
+        res.put("message", "Mã xác thực OTP đăng nhập đã được gửi tới " + cleanEmail);
+        res.put("email", cleanEmail);
+        res.put("demoOtp", otp);
+        return res;
+    }
+
+    public Map<String, Object> loginWithOtp(String email, String otp, String ipAddress, String userAgent) {
+        if (email == null || otp == null) {
+            throw new ApiException("Thiếu thông tin email hoặc mã OTP.", HttpStatus.BAD_REQUEST);
+        }
+        String cleanEmail = email.trim().toLowerCase();
+        String cachedOtp = LOGIN_OTP_CACHE.get(cleanEmail);
+        if (cachedOtp == null || !cachedOtp.equals(otp.trim())) {
+            throw new ApiException("Mã OTP không chính xác hoặc đã hết hạn.", HttpStatus.BAD_REQUEST);
+        }
+
+        LOGIN_OTP_CACHE.remove(cleanEmail);
+
+        User user = userRepository.findByEmail(cleanEmail)
+                .or(() -> userRepository.findByEmail(email.trim()))
+                .orElseThrow(() -> new ApiException("Không tìm thấy tài khoản người dùng.", HttpStatus.NOT_FOUND));
+
+        String role = user.getRole();
+        String token = tokenProvider.generateToken(user.getId(), user.getEmail(), role);
+
+        try {
+            emailService.sendLoginAlertEmail(user, ipAddress, userAgent);
+        } catch (Exception ex) {
+            log.warn("Could not send login alert email to {}: {}", user.getEmail(), ex.getMessage());
+        }
 
         Map<String, Object> result = new HashMap<>();
         result.put("token", token);

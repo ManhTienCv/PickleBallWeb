@@ -42,6 +42,38 @@ export const authService = {
     return response.data.data
   },
 
+  /**
+   * Gửi mã OTP xác thực đăng ký tài khoản
+   */
+  async sendRegisterOtp(email: string, name?: string): Promise<{ message: string; email: string; demoOtp?: string }> {
+    const response = await api.post<ApiResponse<{ message: string; email: string; demoOtp?: string }>>('/auth/register/send-otp', { email, name })
+    return response.data.data
+  },
+
+  /**
+   * Xác thực OTP và hoàn tất đăng ký tài khoản
+   */
+  async verifyRegisterOtp(params: RegisterParams & { otp: string }): Promise<AuthResponseData> {
+    const response = await api.post<ApiResponse<AuthResponseData>>('/auth/register/verify-otp', params)
+    return response.data.data
+  },
+
+  /**
+   * Gửi mã OTP đăng nhập nhanh không cần mật khẩu
+   */
+  async sendLoginOtp(email: string): Promise<{ message: string; email: string; demoOtp?: string }> {
+    const response = await api.post<ApiResponse<{ message: string; email: string; demoOtp?: string }>>('/auth/login/send-otp', { email })
+    return response.data.data
+  },
+
+  /**
+   * Xác thực OTP đăng nhập nhanh
+   */
+  async verifyLoginOtp(email: string, otp: string): Promise<AuthResponseData> {
+    const response = await api.post<ApiResponse<AuthResponseData>>('/auth/login/verify-otp', { email, otp })
+    return response.data.data
+  },
+
   async logout(): Promise<void> {
     await api.post('/auth/logout')
   },
