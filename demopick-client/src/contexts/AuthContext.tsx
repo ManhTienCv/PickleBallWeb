@@ -118,6 +118,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 4. Xóa session lưu tạm giữ sân và bộ đếm checkout
       localStorage.removeItem('demopick_current_hold')
       localStorage.removeItem('checkout_timer_expiry')
+      localStorage.removeItem('demopick_orders_client')
+      localStorage.removeItem('demopick_client_orders')
+      localStorage.removeItem('demopick_user_addresses')
 
       // 5. Điều hướng ngay về trang chủ từ bất kỳ trang nào
       window.location.href = '/'

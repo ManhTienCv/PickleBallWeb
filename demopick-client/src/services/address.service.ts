@@ -1,3 +1,5 @@
+import { authHelpers } from '@/stores/useAuthStore';
+
 export type AddressLabelType = 'home' | 'office' | 'court' | 'other';
 
 export interface UserAddress {
@@ -15,14 +17,22 @@ export interface UserAddress {
   lng?: number;
 }
 
-const STORAGE_KEY = 'demopick_user_addresses';
-
-const INITIAL_ADDRESSES: UserAddress[] = [];
-
 class AddressService {
+  private getStorageKey(): string {
+    const user = authHelpers.getUser();
+    if (user?.id) {
+      return `demopick_user_addresses_${user.id}`;
+    }
+    if (user?.email) {
+      return `demopick_user_addresses_${user.email.toLowerCase().trim()}`;
+    }
+    return 'demopick_user_addresses_guest';
+  }
+
   public getSavedAddresses(): UserAddress[] {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const key = this.getStorageKey();
+      const raw = localStorage.getItem(key);
       if (!raw) {
         return [];
       }
@@ -43,7 +53,8 @@ class AddressService {
   }
 
   public saveAddresses(list: UserAddress[]) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    const key = this.getStorageKey();
+    localStorage.setItem(key, JSON.stringify(list));
     window.dispatchEvent(new Event('storage'));
   }
 

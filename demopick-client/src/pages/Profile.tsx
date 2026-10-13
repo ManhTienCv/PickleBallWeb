@@ -62,72 +62,31 @@ export default function Profile() {
   }
 
   const loadOrders = async () => {
+    if (!user) {
+      setOrders([])
+      return
+    }
     setIsLoadingOrders(true)
     try {
       const data = await orderService.getOrders()
-      if (data && data.length > 0) {
-        setOrders(data)
-      } else {
-        const adminOrdersRaw = localStorage.getItem('demopick_orders_admin')
-        if (adminOrdersRaw) {
-          try {
-            const parsed = JSON.parse(adminOrdersRaw)
-            if (Array.isArray(parsed)) {
-              const userOrders = parsed.filter((o: any) => {
-                const phoneMatch = user?.phone && (o.customerPhone === user.phone || o.customer_phone === user.phone || o.shippingPhone === user.phone)
-                const emailMatch = user?.email && (o.customerEmail === user.email || o.customer_email === user.email || o.email === user.email)
-                return phoneMatch || emailMatch
-              }).map((o: any) => ({
-                id: o.id || Math.floor(Math.random() * 9000) + 1000,
-                order_code: o.code || o.order_code || 'ORD-20261008-0001',
-                customer_name: o.customerName || o.customer_name || user?.name || 'Khách hàng',
-                customer_phone: o.customerPhone || o.customer_phone || user?.phone || '',
-                total_amount: o.totalAmount || o.total_amount || 0,
-                status: (o.status || 'pending').toLowerCase(),
-                payment_status: (o.paymentStatus || o.payment_status || 'unpaid').toLowerCase(),
-                payment_method: o.paymentMethod || o.payment_method || 'momo',
-                created_at: o.createdAt || o.created_at || new Date().toISOString().replace('T', ' ').substring(0, 19),
-                items: Array.isArray(o.items) ? o.items.map((it: any, idx: number) => {
-                  const qty = Math.max(1, Number(it.quantity || it.qty || 1))
-                  const price = Math.max(0, Number(it.price || it.unit_price || 0))
-                  const sub = it.subtotal != null && !isNaN(Number(it.subtotal)) && Number(it.subtotal) > 0
-                    ? Number(it.subtotal)
-                    : price * qty
-                  return {
-                    id: it.id || idx + 1,
-                    item_name: it.name || it.item_name || it.itemName || 'Sản phẩm Pickleball',
-                    quantity: qty,
-                    unit_price: price,
-                    subtotal: sub > 0 ? sub : Number(o.totalAmount || o.total_amount || 0),
-                  }
-                }) : [],
-              }))
-              setOrders(userOrders)
-            }
-          } catch {
-            setOrders([])
-          }
-        }
-      }
-    } catch {
-      // Fallback local storage
-      const localOrdersRaw = localStorage.getItem('demopick_orders_client') || localStorage.getItem('demopick_client_orders')
-      if (localOrdersRaw) {
-        try {
-          setOrders(JSON.parse(localOrdersRaw))
-        } catch {
-          setOrders([])
-        }
-      }
+      setOrders(data || [])
+    } catch (err) {
+      console.warn('Lỗi tải đơn hàng trong Profile:', err)
+      setOrders([])
     } finally {
       setIsLoadingOrders(false)
     }
   }
 
   useEffect(() => {
-    reloadAddresses()
-    loadOrders()
-  }, [])
+    if (user) {
+      reloadAddresses()
+      loadOrders()
+    } else {
+      setOrders([])
+      setAddresses([])
+    }
+  }, [user?.id, user?.email])
 
   const handleDeleteAddress = (id: string) => {
     addressService.deleteAddress(id)
@@ -209,7 +168,7 @@ export default function Profile() {
                     </span>
                     <span className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-200/50 dark:border-border/50">
                       <Phone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span>{user?.phone || '0867015044'}</span>
+                      <span>{user?.phone || 'Chưa cập nhật SĐT'}</span>
                     </span>
                     <span className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-200/50 dark:border-border/50 text-slate-500 hidden md:flex">
                       <Calendar className="w-3.5 h-3.5" />

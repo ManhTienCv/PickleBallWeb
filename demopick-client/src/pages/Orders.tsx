@@ -56,6 +56,7 @@ import {
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { authHelpers } from '@/stores/useAuthStore'
+import { useAuth } from '@/contexts/AuthContext'
 import { useAuthModalStore } from '@/stores/useAuthModalStore'
 import { safeSetLocalStorage } from '@/lib/utils'
 import OrderReceiptModal from '@/components/OrderReceiptModal'
@@ -64,6 +65,7 @@ import CheckinTicketModal, { CheckinTicketData } from '@/components/CheckinTicke
 
 export default function OrdersPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
 
   useEffect(() => {
     if (!authHelpers.isAuthenticated()) {
@@ -74,7 +76,7 @@ export default function OrdersPage() {
   }, [navigate])
 
   const { data: apiOrders = [], isLoading, refetch } = useQuery({
-    queryKey: ['orders'],
+    queryKey: ['orders', user?.id || user?.email],
     queryFn: orderService.getOrders,
   })
 
@@ -500,6 +502,29 @@ export default function OrdersPage() {
     const list: any[] = []
     const seenCodes = new Set<string>()
 
+    const currentUser = authHelpers.getUser()
+    if (!currentUser && !authHelpers.isAuthenticated()) {
+      setOrders([])
+      return
+    }
+
+    const isCurrentUsersOrder = (o: any) => {
+      if (!currentUser) return false
+      const idMatch = currentUser.id && (o.user_id === currentUser.id || o.userId === currentUser.id)
+      const emailMatch = currentUser.email && (
+        (o.customer_email && o.customer_email.toLowerCase() === currentUser.email.toLowerCase()) ||
+        (o.customerEmail && o.customerEmail.toLowerCase() === currentUser.email.toLowerCase()) ||
+        (o.email && o.email.toLowerCase() === currentUser.email.toLowerCase())
+      )
+      const phoneMatch = currentUser.phone && (
+        o.customer_phone === currentUser.phone ||
+        o.customerPhone === currentUser.phone ||
+        o.shipping_phone === currentUser.phone ||
+        o.shippingPhone === currentUser.phone
+      )
+      return idMatch || emailMatch || phoneMatch
+    }
+
     // 1. Nạp từ localStorage của Khách hàng (demopick_orders_client) - Ưu tiên hàng đầu
     try {
       const savedClient = localStorage.getItem('demopick_orders_client') || localStorage.getItem('demopick_client_orders')
@@ -509,6 +534,7 @@ export default function OrdersPage() {
           clientOrders.forEach((co: any) => {
             const code = co.order_code || co.code
             if (!code || seenCodes.has(code)) return
+            if (!isCurrentUsersOrder(co)) return
             seenCodes.add(code)
 
             const isBooking =
@@ -545,8 +571,8 @@ export default function OrdersPage() {
               shipping_address: co.shipping_address || co.shippingAddress || 'Số 10 Đường Pickleball, Q. Cầu Giấy, Hà Nội',
               shipping_carrier: co.shipping_carrier || co.shippingCarrier || 'GHN Express',
               tracking_number: co.tracking_code || co.tracking_number || co.trackingNumber || co.ghn_order_code,
-              customer_name: co.customer_name || co.customerName || co.shippingName || 'Khách hàng',
-              customer_phone: co.customer_phone || co.customerPhone || co.shippingPhone || '',
+              customer_name: co.customer_name || co.customerName || co.shippingName || currentUser?.name || 'Khách hàng',
+              customer_phone: co.customer_phone || co.customerPhone || co.shippingPhone || currentUser?.phone || '',
               court_name: co.court_name,
               court_address: co.court_address,
               play_time: co.play_time,
@@ -573,6 +599,7 @@ export default function OrdersPage() {
           adminOrders.forEach((o: any) => {
             const code = o.code || o.orderCode || o.order_code
             if (!code || seenCodes.has(code)) return
+            if (!isCurrentUsersOrder(o)) return
             seenCodes.add(code)
 
             const isBooking =
@@ -613,8 +640,8 @@ export default function OrdersPage() {
               shipping_address: o.shippingAddress || o.shipping_address || 'Số 10 Đường Pickleball, Q. Cầu Giấy, Hà Nội',
               shipping_carrier: o.shippingCarrier || o.shipping_carrier || 'GHN Express',
               tracking_number: o.trackingNumber || o.tracking_number,
-              customer_name: o.customerName || o.customer_name || 'Nguyễn Mạnh Tiến',
-              customer_phone: o.customerPhone || o.customer_phone || '0867015044',
+              customer_name: o.customerName || o.customer_name || currentUser?.name || 'Khách hàng',
+              customer_phone: o.customerPhone || o.customer_phone || currentUser?.phone || '',
               items,
             })
           })
@@ -700,7 +727,7 @@ export default function OrdersPage() {
     }
     window.addEventListener('storage', handleStorageChange)
     return () => window.removeEventListener('storage', handleStorageChange)
-  }, [apiOrders])
+  }, [apiOrders, user?.id, user?.email])
 
   const filteredOrders = orders.filter((order) => {
     const isBooking = isBookingOrder(order)
@@ -742,8 +769,8 @@ export default function OrdersPage() {
   const openEditModal = (order: any) => {
     setEditingOrder(order)
     setEditAddress(order.shipping_address || 'Số 10 Đường Pickleball, Q. Cầu Giấy, Hà Nội')
-    setEditName(order.customer_name || 'Nguyễn Mạnh Tiến')
-    setEditPhone(order.customer_phone || '0867015044')
+    setEditName(order.customer_name || user?.name || 'Khách hàng')
+    setEditPhone(order.customer_phone || user?.phone || '')
     setEditNote(order.note || '')
   }
 
@@ -755,9 +782,9 @@ export default function OrdersPage() {
       info = shippingService.createShippingOrder({
         orderCode: order.order_code,
         carrier: order.shipping_carrier || 'GHN',
-        receiverName: order.customer_name || 'Nguyễn Mạnh Tiến',
+        receiverName: order.customer_name || user?.name || 'Khách hàng',
         receiverAddress: order.shipping_address || 'Số 25 Phố Lý Thường Kiệt, Q. Hoàn Kiếm, Hà Nội',
-        receiverPhone: order.customer_phone || '0867015044',
+        receiverPhone: order.customer_phone || user?.phone || '',
         itemsSummary: itemsText,
       })
       if (order.status === 'completed') {
@@ -1376,7 +1403,7 @@ export default function OrdersPage() {
                       <div>
                         <span className="text-slate-500 dark:text-slate-400">Người nhận: </span>
                         <span className="font-bold text-slate-900 dark:text-slate-100">
-                          {order.customer_name || 'Nguyễn Mạnh Tiến'} ({order.customer_phone || '0867015044'})
+                          {order.customer_name || user?.name || 'Khách hàng'} {order.customer_phone ? `(${order.customer_phone})` : ''}
                         </span>
                       </div>
                       <div>
@@ -1478,8 +1505,8 @@ export default function OrdersPage() {
                             try {
                               toast.info('Đang kết nối sang Cổng thanh toán bảo mật...')
                               const res = await orderService.createOrder({
-                                shippingName: order.customer_name || 'Nguyễn Mạnh Tiến',
-                                shippingPhone: order.customer_phone || '0867015044',
+                                shippingName: order.customer_name || user?.name || 'Khách hàng',
+                                shippingPhone: order.customer_phone || user?.phone || '',
                                 shippingAddress: order.shipping_address || 'Hà Nội',
                                 paymentMethod: 'momo',
                                 redirectUrl: `${window.location.origin}/payment/momo/callback`,

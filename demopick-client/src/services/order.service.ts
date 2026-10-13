@@ -1,4 +1,5 @@
 import api, { ApiResponse } from '@/lib/api'
+import { authHelpers } from '@/stores/useAuthStore'
 
 export interface CreateOrderParams {
   shippingName: string
@@ -278,6 +279,7 @@ export const orderService = {
 
       // Lưu trữ đồng bộ local để đảm bảo xem được lịch sử đơn
       try {
+        const currentUser = authHelpers.getUser()
         const saved = localStorage.getItem('demopick_orders_client')
         const orders = saved ? JSON.parse(saved) : []
         const exists = orders.some((o: any) => o.order_code === orderCode)
@@ -285,6 +287,7 @@ export const orderService = {
           orders.unshift({
             id: Date.now(),
             order_code: orderCode,
+            user_id: currentUser?.id,
             status: params.paymentMethod === 'cod' ? 'pending' : 'pending',
             payment_status: 'unpaid',
             payment_method: params.paymentMethod,
@@ -293,6 +296,7 @@ export const orderService = {
             created_at: new Date().toISOString(),
             customer_name: params.shippingName,
             customer_phone: params.shippingPhone,
+            customer_email: params.customerEmail || currentUser?.email,
             shipping_address: params.shippingAddress,
             items: params.items.map((it, idx) => ({
               id: idx + 1,
@@ -376,9 +380,11 @@ export const orderService = {
           params.play_time ||
           params.items?.some((it: any) => it.item_type === 'booking' || (it.name && it.name.toLowerCase().includes('thuê ca sân')))
         )
+        const currentUser = authHelpers.getUser()
         orders.unshift({
           id: Date.now(),
           order_code: fallbackCode,
+          user_id: currentUser?.id,
           order_type: isBooking ? (params.order_type || 'booking') : 'shop',
           status: params.paymentMethod === 'cod' ? 'pending' : 'pending',
           payment_status: 'unpaid',
@@ -387,6 +393,7 @@ export const orderService = {
           created_at: new Date().toISOString(),
           customer_name: params.shippingName,
           customer_phone: params.shippingPhone,
+          customer_email: params.customerEmail || currentUser?.email,
           shipping_address: params.shippingAddress,
           booking_date: params.booking_date || (isBooking ? new Date().toISOString().split('T')[0] : undefined),
           play_time: params.play_time || (isBooking ? `18:00 - 20:00 (${new Date().toLocaleDateString('vi-VN')})` : undefined),
@@ -418,24 +425,47 @@ export const orderService = {
   },
 
   async getOrders(): Promise<Order[]> {
+    const currentUser = authHelpers.getUser()
+    if (!currentUser && !authHelpers.isAuthenticated()) {
+      return []
+    }
+
     let apiOrders: Order[] = []
     try {
-      const response = await api.get<{ success: boolean; data: Order[] }>('/orders')
-      if (response.data.data && Array.isArray(response.data.data)) {
-        apiOrders = response.data.data
+      const response = await api.get<any>('/orders')
+      const rawData = response.data?.data || response.data
+      if (Array.isArray(rawData)) {
+        apiOrders = rawData
       }
     } catch {
       // Ignored
     }
 
     try {
-      const local = localStorage.getItem('demopick_orders_client')
+      const local = localStorage.getItem('demopick_orders_client') || localStorage.getItem('demopick_client_orders')
       const localOrders: Order[] = local ? JSON.parse(local) : []
-      if (apiOrders.length === 0) return localOrders
+
+      // Lọc nghiêm ngặt các đơn local chỉ thuộc về user hiện tại
+      const userLocalOrders = localOrders.filter((o: any) => {
+        if (!currentUser) return false
+        const idMatch = currentUser.id && (o.user_id === currentUser.id || o.userId === currentUser.id)
+        const emailMatch = currentUser.email && (
+          (o.customer_email && o.customer_email.toLowerCase() === currentUser.email.toLowerCase()) ||
+          (o.customerEmail && o.customerEmail.toLowerCase() === currentUser.email.toLowerCase()) ||
+          (o.email && o.email.toLowerCase() === currentUser.email.toLowerCase())
+        )
+        const phoneMatch = currentUser.phone && (
+          o.customer_phone === currentUser.phone ||
+          o.customerPhone === currentUser.phone ||
+          o.shipping_phone === currentUser.phone ||
+          o.shippingPhone === currentUser.phone
+        )
+        return idMatch || emailMatch || phoneMatch
+      })
 
       // Merge and deduplicate by order_code
-      const seen = new Set(apiOrders.map((o) => o.order_code))
-      const extra = localOrders.filter((o) => !seen.has(o.order_code))
+      const seen = new Set(apiOrders.map((o) => o.order_code || (o as any).code))
+      const extra = userLocalOrders.filter((o) => !seen.has(o.order_code || (o as any).code))
       return [...apiOrders, ...extra]
     } catch {
       return apiOrders
