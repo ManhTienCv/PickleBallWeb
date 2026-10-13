@@ -3,13 +3,21 @@ FROM maven:3.9.9-eclipse-temurin-21-alpine AS builder
 
 WORKDIR /build
 
+# Copy settings.xml to avoid HTTP 429 rate limit from Maven Central
+COPY settings.xml /root/.m2/settings.xml
+COPY settings.xml .
+
 # Copy pom.xml and cache dependencies
 COPY pom.xml .
-RUN mvn dependency:go-offline -B || true
+RUN mvn dependency:go-offline -B -s settings.xml \
+    -Dmaven.wagon.http.retryHandler.count=5 \
+    -Dmaven.wagon.http.pool=false || true
 
 # Copy source code and package application
 COPY src ./src
-RUN mvn clean package -DskipTests -B
+RUN mvn clean package -DskipTests -B -s settings.xml \
+    -Dmaven.wagon.http.retryHandler.count=5 \
+    -Dmaven.wagon.http.pool=false
 
 # ── Stage 2: Lightweight Runtime with JRE 21 ──
 FROM eclipse-temurin:21-jre-alpine
