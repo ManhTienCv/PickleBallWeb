@@ -10,6 +10,7 @@ import { type SelectedLocationResult } from '@/components/MapLocationPicker'
 import { useCheckoutTimer } from '@/contexts/CheckoutTimerContext'
 import { authHelpers } from '@/stores/useAuthStore'
 import { useAuthModalStore } from '@/stores/useAuthModalStore'
+import { safeSetLocalStorage } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -446,7 +447,7 @@ export default function CheckoutPage() {
           })),
         }
 
-        localStorage.setItem('demopick_orders_admin', JSON.stringify([newAdminOrder, ...adminOrders]))
+        safeSetLocalStorage('demopick_orders_admin', JSON.stringify([newAdminOrder, ...adminOrders]))
         window.dispatchEvent(new Event('storage'))
       } catch (err) {
         console.error('Failed to sync to admin orders:', err)

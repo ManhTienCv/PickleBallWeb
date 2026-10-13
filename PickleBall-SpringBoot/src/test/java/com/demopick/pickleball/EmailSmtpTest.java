@@ -183,4 +183,52 @@ public class EmailSmtpTest {
             throw new RuntimeException(e);
         }
     }
+
+    @Test
+    public void testSendEmailBrevoApi() throws Exception {
+        String apiKey = System.getenv("BREVO_API_KEY");
+        if (apiKey == null || apiKey.isBlank()) {
+            System.out.println(">>> Bỏ qua test Brevo API do chưa cấu hình biến môi trường BREVO_API_KEY.");
+            return;
+        }
+        java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        java.util.Map<String, Object> payload = new java.util.HashMap<>();
+        payload.put("sender", java.util.Map.of("name", "Pickleball", "email", "nvmtein@gmail.com"));
+        payload.put("to", java.util.List.of(java.util.Map.of("email", "nvmtein@gmail.com")));
+        payload.put("subject", "🏸 [Pickleball] Kiểm thử Brevo REST API (HTTPS/443) thành công!");
+        payload.put("htmlContent", "<h3>Chào bạn, Brevo REST API kết nối thành công 100% qua cổng 443!</h3>");
+
+        String json = mapper.writeValueAsString(payload);
+        java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                .uri(java.net.URI.create("https://api.brevo.com/v3/smtp/email"))
+                .header("accept", "application/json")
+                .header("api-key", apiKey)
+                .header("content-type", "application/json")
+                .POST(java.net.http.HttpRequest.BodyPublishers.ofString(json, java.nio.charset.StandardCharsets.UTF_8))
+                .build();
+
+        java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+        System.out.println(">>> Brevo API Status Code: " + response.statusCode());
+        System.out.println(">>> Brevo API Response Body: " + response.body());
+        org.junit.jupiter.api.Assertions.assertTrue(response.statusCode() >= 200 && response.statusCode() < 300);
+    }
+
+    @Test
+    public void testEmailServiceWithBrevo() {
+        String apiKey = System.getenv("BREVO_API_KEY");
+        if (apiKey == null || apiKey.isBlank()) {
+            System.out.println(">>> Bỏ qua test EmailService Brevo do chưa cấu hình biến môi trường BREVO_API_KEY.");
+            return;
+        }
+        com.demopick.pickleball.common.service.EmailService service = new com.demopick.pickleball.common.service.EmailService(null, null);
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "brevoApiKey", apiKey);
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "brevoSenderEmail", "nvmtein@gmail.com");
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "brevoSenderName", "Pickleball");
+
+        boolean sentOtp = service.sendRegisterOtpEmail("nvmtein@gmail.com", "998877", "Nguyễn Văn Mạnh Tiến");
+        System.out.println(">>> Kết quả gửi OTP đăng ký qua EmailService (Brevo REST API): " + sentOtp);
+        org.junit.jupiter.api.Assertions.assertTrue(sentOtp);
+    }
 }

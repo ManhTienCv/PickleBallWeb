@@ -36,7 +36,7 @@ import {
   CircleDot,
 } from "lucide-react";
 import { toast } from "sonner";
-import { formatNumberWithDots } from "@/lib/utils";
+import { formatNumberWithDots, safeSetLocalStorage } from "@/lib/utils";
 
 export interface InventoryProduct {
   id: number;
@@ -148,12 +148,12 @@ export default function Inventory() {
         }));
         if (mapped.length >= 30) {
           setProducts(mapped);
-          localStorage.setItem("demopick_online_products_v3", JSON.stringify(mapped));
+          safeSetLocalStorage("demopick_online_products_v3", JSON.stringify(mapped));
         } else {
           const mappedIds = new Set(mapped.map((m) => m.id));
           const merged = [...mapped, ...initialUnifiedProducts.filter((u) => !mappedIds.has(u.id))];
           setProducts(merged);
-          localStorage.setItem("demopick_online_products_v3", JSON.stringify(merged));
+          safeSetLocalStorage("demopick_online_products_v3", JSON.stringify(merged));
         }
       }
     });
@@ -215,18 +215,12 @@ export default function Inventory() {
       ],
     }));
 
-    try {
-      localStorage.setItem("demopick_online_products_v3", JSON.stringify(products));
-      localStorage.setItem("demopick_categories", JSON.stringify(categories));
-      localStorage.setItem("demopick_brands", JSON.stringify(brands));
-      localStorage.setItem("demopick_synced_categories", JSON.stringify(categories));
-      localStorage.setItem("demopick_synced_brands", JSON.stringify(brands));
-      localStorage.setItem("demopick_synced_products_v3", JSON.stringify(syncedList));
-    } catch (err: any) {
-      if (err?.name === "QuotaExceededError" || err?.code === 22) {
-        console.warn("[LocalStorage] QuotaExceededError: Đạt giới hạn bộ nhớ cục bộ, tự động bảo vệ dữ liệu sản phẩm.");
-      }
-    }
+    safeSetLocalStorage("demopick_online_products_v3", JSON.stringify(products));
+    safeSetLocalStorage("demopick_categories", JSON.stringify(categories));
+    safeSetLocalStorage("demopick_brands", JSON.stringify(brands));
+    safeSetLocalStorage("demopick_synced_categories", JSON.stringify(categories));
+    safeSetLocalStorage("demopick_synced_brands", JSON.stringify(brands));
+    safeSetLocalStorage("demopick_synced_products_v3", JSON.stringify(syncedList));
     window.dispatchEvent(new Event("storage"));
   }, [products, categories, brands]);
 

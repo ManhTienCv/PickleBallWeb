@@ -16,7 +16,9 @@ import PosReceiptModal from "@/components/pos/PosReceiptModal";
 import PosShiftReportModal from "@/components/pos/PosShiftReportModal";
 import PosQuickRestockModal from "@/components/pos/PosQuickRestockModal";
 import PosStartSessionModal from "@/components/pos/PosStartSessionModal";
-import { PosLiveCourtCard, calculateLiveCourtDetails } from "@/components/pos/PosLiveCourtCard";
+import PosCourtAlertBanner from "@/components/pos/PosCourtAlertBanner";
+import { PosLiveCourtCard } from "@/components/pos/PosLiveCourtCard";
+import { safeSetLocalStorage } from "@/lib/utils";
 
 export interface CartItem {
   variantId: number;
@@ -114,12 +116,6 @@ export default function POS() {
     queryFn: adminService.getCourts,
   });
 
-  // Timer nhẹ nhàng 10s chỉ dùng để cập nhật banner cảnh báo quá giờ/sắp hết ca, không làm re-render toàn trang
-  const [, setAlertTick] = useState(0);
-  useEffect(() => {
-    const timer = setInterval(() => setAlertTick((t) => t + 1), 10000);
-    return () => clearInterval(timer);
-  }, []);
 
   // Quick QR Check-in State
   const [qrCodeInput, setQrCodeInput] = useState("");
@@ -146,7 +142,7 @@ export default function POS() {
   const [activeServingCourtId, setActiveServingCourtId] = useState<number | null>(null);
 
   useEffect(() => {
-    localStorage.setItem("demopick_pos_court_tab_orders", JSON.stringify(courtTabOrders));
+    safeSetLocalStorage("demopick_pos_court_tab_orders", JSON.stringify(courtTabOrders));
   }, [courtTabOrders]);
 
   // Dynamic fallback courts matching real database courts
@@ -769,7 +765,7 @@ export default function POS() {
         return p;
       });
       setProductsState(updatedProducts);
-      localStorage.setItem("demopick_synced_products_v3", JSON.stringify(updatedProducts));
+      safeSetLocalStorage("demopick_synced_products_v3", JSON.stringify(updatedProducts));
       window.dispatchEvent(new Event("storage"));
 
       const hasCourt = cartItems.some((i) => i.isCourtFee);
@@ -793,7 +789,7 @@ export default function POS() {
         time: `${new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })} ${new Date().toLocaleDateString("vi-VN")}`,
       };
       setLastPOSReceipt(receiptData);
-      localStorage.setItem("demopick_last_pos_receipt", JSON.stringify(receiptData));
+      safeSetLocalStorage("demopick_last_pos_receipt", JSON.stringify(receiptData));
       setPosReceiptModalOpen(true);
 
       // Persist POS order to system orders list
@@ -828,7 +824,7 @@ export default function POS() {
         const savedOrdersRaw = localStorage.getItem("demopick_orders_admin");
         const existingOrders = savedOrdersRaw ? JSON.parse(savedOrdersRaw) : [];
         const updatedOrders = [newPosOrder, ...(Array.isArray(existingOrders) ? existingOrders : [])];
-        localStorage.setItem("demopick_orders_admin", JSON.stringify(updatedOrders));
+        safeSetLocalStorage("demopick_orders_admin", JSON.stringify(updatedOrders));
         window.dispatchEvent(new Event("storage"));
       } catch {}
 
@@ -950,59 +946,11 @@ export default function POS() {
             </Button>
           </form>
 
-          {/* Cảnh báo thời gian sân sắp hết giờ / quá giờ */}
-          {(() => {
-            const alertCourts = courtStatusList
-              .map((c) => ({ court: c, live: calculateLiveCourtDetails(c) }))
-              .filter(({ court, live }) => (court.status === "in_use" || court.status === "ending") && (live.isNearEnding || live.isOvertime));
-
-            if (alertCourts.length === 0) return null;
-
-            return (
-              <div className="bg-amber-500/15 border border-amber-400 text-amber-950 rounded-xl p-2.5 text-[11px] space-y-1.5 shrink-0 shadow-xs">
-                <div className="font-bold flex items-center justify-between text-amber-900">
-                  <div className="flex items-center gap-1.5">
-                    <AlertTriangle className="h-4 w-4 text-amber-600 animate-bounce" />
-                    <span>Cảnh báo thời gian ca ({alertCourts.length} sân)</span>
-                  </div>
-                  <Badge variant="outline" className="text-[9px] bg-white border-amber-300 text-amber-800">
-                    Cần chú ý
-                  </Badge>
-                </div>
-                <div className="space-y-1">
-                  {alertCourts.map(({ court, live }) => (
-                    <div key={court.id} className="flex items-center justify-between text-[11px] bg-white/90 p-1.5 rounded-lg border border-amber-200">
-                      <span className="truncate pr-1">
-                        <strong>{court.name}</strong>: {live.isOvertime ? (
-                          <span className="text-rose-600 font-bold">Quá giờ +{live.overtimeMinutes}p!</span>
-                        ) : (
-                          <span className="text-amber-700 font-bold">Còn {live.remainingMinutes}p</span>
-                        )}
-                      </span>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          type="button"
-                          onClick={(e) => handleExtendCourtDuration(court, 15, e)}
-                          className="px-1.5 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200 text-[10px] font-bold"
-                          title="Gia hạn nhanh 15 phút"
-                        >
-                          +15p
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => handleExtendCourtDuration(court, 30, e)}
-                          className="px-1.5 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200 text-[10px] font-bold"
-                          title="Gia hạn nhanh 30 phút"
-                        >
-                          +30p
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
+          {/* Cảnh báo thời gian sân sắp hết giờ / quá giờ (cô lập timer trong component con) */}
+          <PosCourtAlertBanner
+            courtStatusList={courtStatusList}
+            onExtendDuration={handleExtendCourtDuration}
+          />
 
           {/* Dedicated Scrollable Court List */}
           <div className="space-y-2 flex-1 min-h-0 overflow-y-auto pr-1.5">

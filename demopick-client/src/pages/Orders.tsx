@@ -57,6 +57,7 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { authHelpers } from '@/stores/useAuthStore'
 import { useAuthModalStore } from '@/stores/useAuthModalStore'
+import { safeSetLocalStorage } from '@/lib/utils'
 import OrderReceiptModal from '@/components/OrderReceiptModal'
 import Barcode from '@/components/Barcode'
 import CheckinTicketModal, { CheckinTicketData } from '@/components/CheckinTicketModal'
@@ -860,7 +861,7 @@ export default function OrdersPage() {
 
       const updatedReviewed = { ...reviewedOrders, [reviewingOrder.order_code]: true }
       setReviewedOrders(updatedReviewed)
-      localStorage.setItem('demopick_reviewed_orders', JSON.stringify(updatedReviewed))
+      safeSetLocalStorage('demopick_reviewed_orders', JSON.stringify(updatedReviewed))
 
       toast.success(`Đã gửi đánh giá kèm hình ảnh cho đơn hàng #${reviewingOrder.order_code}!`)
       setReviewingOrder(null)
@@ -914,8 +915,8 @@ export default function OrdersPage() {
                 }
               : o
           )
-          localStorage.setItem('demopick_orders_client', JSON.stringify(updated))
-          localStorage.setItem('demopick_client_orders', JSON.stringify(updated))
+          safeSetLocalStorage('demopick_orders_client', JSON.stringify(updated))
+          safeSetLocalStorage('demopick_client_orders', JSON.stringify(updated))
         }
       } catch {}
 
@@ -936,7 +937,7 @@ export default function OrdersPage() {
                 }
               : o
           )
-          localStorage.setItem('demopick_orders_admin', JSON.stringify(updatedAdmin))
+          safeSetLocalStorage('demopick_orders_admin', JSON.stringify(updatedAdmin))
           window.dispatchEvent(new Event('storage'))
         }
       } catch {}

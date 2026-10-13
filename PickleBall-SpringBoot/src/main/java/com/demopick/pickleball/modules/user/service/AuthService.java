@@ -12,6 +12,7 @@ import com.demopick.pickleball.common.service.EmailService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -26,13 +27,44 @@ public class AuthService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
+    public static class OtpEntry {
+        private final String code;
+        private final long expiresAt;
+
+        public OtpEntry(String code, long ttlMillis) {
+            this.code = code;
+            this.expiresAt = System.currentTimeMillis() + ttlMillis;
+        }
+
+        public String getCode() {
+            return code;
+        }
+
+        public boolean isExpired() {
+            return System.currentTimeMillis() > expiresAt;
+        }
+
+        public boolean matches(String inputCode) {
+            return !isExpired() && this.code.equals(inputCode);
+        }
+    }
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
     private final EmailService emailService;
-    private static final Map<String, String> RESET_OTP_CACHE = new ConcurrentHashMap<>();
-    private static final Map<String, String> REGISTER_OTP_CACHE = new ConcurrentHashMap<>();
-    private static final Map<String, String> LOGIN_OTP_CACHE = new ConcurrentHashMap<>();
+
+    private static final long OTP_TTL_MILLIS = 10 * 60 * 1000L; // Thời gian hiệu lực 10 phút
+    private static final Map<String, OtpEntry> RESET_OTP_CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, OtpEntry> REGISTER_OTP_CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, OtpEntry> LOGIN_OTP_CACHE = new ConcurrentHashMap<>();
+
+    @Scheduled(fixedRate = 60000)
+    public void cleanupExpiredOtps() {
+        RESET_OTP_CACHE.entrySet().removeIf(entry -> entry.getValue().isExpired());
+        REGISTER_OTP_CACHE.entrySet().removeIf(entry -> entry.getValue().isExpired());
+        LOGIN_OTP_CACHE.entrySet().removeIf(entry -> entry.getValue().isExpired());
+    }
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
@@ -86,7 +118,7 @@ public class AuthService {
         }
 
         String otp = String.format("%06d", (int) (Math.random() * 900000) + 100000);
-        REGISTER_OTP_CACHE.put(cleanEmail, otp);
+        REGISTER_OTP_CACHE.put(cleanEmail, new OtpEntry(otp, OTP_TTL_MILLIS));
 
         try {
             emailService.sendRegisterOtpEmail(cleanEmail, otp, name);
@@ -109,9 +141,9 @@ public class AuthService {
 
         // Nếu có OTP gửi kèm, kiểm tra mã xác thực từ bộ nhớ đệm
         if (request.getOtp() != null && !request.getOtp().isBlank()) {
-            String cachedOtp = REGISTER_OTP_CACHE.get(email);
-            if (cachedOtp == null || !cachedOtp.equals(request.getOtp().trim())) {
-                throw new ApiException("Mã OTP không chính xác hoặc đã hết hạn.", HttpStatus.BAD_REQUEST);
+            OtpEntry cachedOtp = REGISTER_OTP_CACHE.get(email);
+            if (cachedOtp == null || !cachedOtp.matches(request.getOtp().trim())) {
+                throw new ApiException("Mã OTP không chính xác hoặc đã hết hạn (thời gian hiệu lực 10 phút).", HttpStatus.BAD_REQUEST);
             }
             REGISTER_OTP_CACHE.remove(email);
         }
@@ -151,7 +183,7 @@ public class AuthService {
                 .orElseThrow(() -> new ApiException("Email này chưa được đăng ký trong hệ thống.", HttpStatus.NOT_FOUND));
 
         String otp = String.format("%06d", (int) (Math.random() * 900000) + 100000);
-        LOGIN_OTP_CACHE.put(cleanEmail, otp);
+        LOGIN_OTP_CACHE.put(cleanEmail, new OtpEntry(otp, OTP_TTL_MILLIS));
 
         try {
             emailService.sendLoginOtpEmail(cleanEmail, otp, user.getName());
@@ -171,9 +203,9 @@ public class AuthService {
             throw new ApiException("Thiếu thông tin email hoặc mã OTP.", HttpStatus.BAD_REQUEST);
         }
         String cleanEmail = email.trim().toLowerCase();
-        String cachedOtp = LOGIN_OTP_CACHE.get(cleanEmail);
-        if (cachedOtp == null || !cachedOtp.equals(otp.trim())) {
-            throw new ApiException("Mã OTP không chính xác hoặc đã hết hạn.", HttpStatus.BAD_REQUEST);
+        OtpEntry cachedOtp = LOGIN_OTP_CACHE.get(cleanEmail);
+        if (cachedOtp == null || !cachedOtp.matches(otp.trim())) {
+            throw new ApiException("Mã OTP không chính xác hoặc đã hết hạn (thời gian hiệu lực 10 phút).", HttpStatus.BAD_REQUEST);
         }
 
         LOGIN_OTP_CACHE.remove(cleanEmail);
@@ -263,7 +295,7 @@ public class AuthService {
         }
         String cleanEmail = email.trim().toLowerCase();
         String otp = String.format("%06d", (int) (Math.random() * 900000) + 100000);
-        RESET_OTP_CACHE.put(cleanEmail, otp);
+        RESET_OTP_CACHE.put(cleanEmail, new OtpEntry(otp, OTP_TTL_MILLIS));
 
         // Gửi mã OTP xác thực qua email thật
         try {
@@ -283,9 +315,9 @@ public class AuthService {
             throw new ApiException("Thông tin đặt lại mật khẩu không hợp lệ.", HttpStatus.BAD_REQUEST);
         }
         String cleanEmail = email.trim().toLowerCase();
-        String cachedOtp = RESET_OTP_CACHE.get(cleanEmail);
-        if (cachedOtp == null || !cachedOtp.equals(otp.trim())) {
-            throw new ApiException("Mã OTP không chính xác hoặc đã hết hạn.", HttpStatus.BAD_REQUEST);
+        OtpEntry cachedOtp = RESET_OTP_CACHE.get(cleanEmail);
+        if (cachedOtp == null || !cachedOtp.matches(otp.trim())) {
+            throw new ApiException("Mã OTP không chính xác hoặc đã hết hạn (thời gian hiệu lực 10 phút).", HttpStatus.BAD_REQUEST);
         }
 
         User user = userRepository.findByEmail(cleanEmail)

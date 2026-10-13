@@ -32,8 +32,7 @@ public class AuthController {
         Map<String, Object> result = new java.util.HashMap<>();
         result.put("recipient", to);
         result.put("sent", sent);
-        result.put("smtpHost", "smtp.gmail.com");
-        result.put("port", 587);
+        result.put("channel", "Brevo REST API (HTTPS/443) / SMTP Fallback");
         result.put("timestamp", java.time.LocalDateTime.now().toString());
         return ResponseEntity.ok(ApiResponse.success(result, sent ? "Email kiểm thử đã được gửi thành công!" : "Gửi email thất bại hoặc chuyển sang mô phỏng."));
     }
