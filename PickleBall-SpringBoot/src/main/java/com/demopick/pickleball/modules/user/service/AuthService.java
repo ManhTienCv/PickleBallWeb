@@ -248,6 +248,14 @@ public class AuthService {
                 });
 
         boolean updated = false;
+        if (request.getName() != null && !request.getName().isBlank() && !request.getName().trim().equals(user.getName())) {
+            user.setName(request.getName().trim());
+            updated = true;
+        }
+        if (request.getPhone() != null && !request.getPhone().isBlank() && (user.getPhone() == null || user.getPhone().isBlank())) {
+            user.setPhone(request.getPhone().trim());
+            updated = true;
+        }
         if (user.getGoogleId() == null && request.getGoogleId() != null) {
             user.setGoogleId(request.getGoogleId());
             updated = true;

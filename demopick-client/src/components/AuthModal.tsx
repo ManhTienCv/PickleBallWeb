@@ -141,17 +141,29 @@ export function AuthModal() {
               setGoogleAvatar(picture)
               setGoogleId(gid)
 
-              // 1-Chạm: Đăng nhập hoặc tạo mới tức thì
-              const session = await authService.loginWithGoogle({
-                access_token: accessToken,
-                email,
-                name,
-                picture,
-                googleId: gid,
-              })
-              setSession(session.token, session.user)
-              toast.success(`Đăng nhập Google thành công! Chào mừng ${session.user.name}.`)
-              close()
+              // Kiểm tra xem email đã tồn tại trong database hệ thống chưa
+              const check = await authService.checkEmail(email)
+
+              // TRƯỜNG HỢP 1: Tài khoản đã có trong hệ thống VÀ người dùng bấm từ Đăng nhập ('login')
+              // -> Đăng nhập tự động ngay vào tài khoản
+              if (check.exists && fromView === 'login') {
+                const session = await authService.loginWithGoogle({
+                  access_token: accessToken,
+                  email,
+                  name: check.name || name,
+                  picture,
+                  googleId: gid,
+                })
+                setSession(session.token, session.user)
+                toast.success(`Đăng nhập Google thành công! Chào mừng ${session.user.name}.`)
+                close()
+                return
+              }
+
+              // TRƯỜNG HỢP 2: Email mới lần đầu (chưa có trong DB) HOẶC người dùng bấm từ Đăng ký ('register')
+              // -> Chuyển sang Form nhập / kiểm tra họ tên hiển thị của tài khoản mới
+              setView('google_complete')
+              toast.info('Tài khoản mới: Vui lòng xác nhận hoặc nhập họ và tên của bạn.')
             } catch (fetchErr: any) {
               toast.error(fetchErr.message || 'Lỗi khi đồng bộ dữ liệu hồ sơ Google.')
             } finally {

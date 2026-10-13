@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Search, ShoppingCart, Trash2, Banknote, QrCode, Receipt, PlusCircle, User, ShieldCheck, Lock, CheckCircle2, Clock, ChevronLeft, ChevronRight, Flame, Timer, CheckSquare, ScanLine, Sparkles, Play, Square, RefreshCw, Coffee, AlertTriangle, Plus, Minus } from "lucide-react";
+import { Search, ShoppingCart, Trash2, Banknote, QrCode, Receipt, PlusCircle, User, ShieldCheck, Lock, CheckCircle2, Clock, ChevronLeft, ChevronRight, Flame, Timer, CheckSquare, ScanLine, Sparkles, Play, Square, RefreshCw, Coffee, AlertTriangle, Plus, Minus, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import PosReceiptModal from "@/components/pos/PosReceiptModal";
@@ -130,7 +130,14 @@ export default function POS() {
   const [isStartingSession, setIsStartingSession] = useState(false);
 
   // Local session state overrides to provide immediate, zero-latency reactive UI
-  const [localCourtOverrides, setLocalCourtOverrides] = useState<Record<number, Partial<CourtStatusItem>>>({});
+  const [localCourtOverrides, setLocalCourtOverrides] = useState<Record<number, Partial<CourtStatusItem>>>(() => {
+    const saved = localStorage.getItem("demopick_pos_court_overrides");
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  useEffect(() => {
+    safeSetLocalStorage("demopick_pos_court_overrides", JSON.stringify(localCourtOverrides));
+  }, [localCourtOverrides]);
 
   // Court Tab Orders (Ghi nợ nước/đồ ăn vào từng sân đang chơi)
   const [courtTabOrders, setCourtTabOrders] = useState<Record<number, CartItem[]>>(() => {
@@ -357,8 +364,11 @@ export default function POS() {
   const handleExtendCourtDuration = (court: any, extraMinutes: number, e?: React.MouseEvent) => {
     e?.stopPropagation();
     const live = calculateLiveCourtDetails(court);
-    const currentBase = court.expected_duration_minutes || live.exactMinutes || (court.hours ? Math.round(court.hours * 60) : 60);
-    const newExpected = currentBase + extraMinutes;
+    // Base duration: ưu tiên expected_duration_minutes hiện tại, hoặc hours * 60, mặc định 60 phút
+    const currentExpected = court.expected_duration_minutes || (court.hours ? Math.round(court.hours * 60) : 60);
+    // Nếu sân đã quá giờ (exactMinutes > currentExpected), gia hạn sẽ cộng từ mốc thời gian hiện tại để khách có thêm thời gian chơi
+    const baseDuration = Math.max(currentExpected, live.exactMinutes);
+    const newExpected = baseDuration + extraMinutes;
 
     setLocalCourtOverrides((prev) => ({
       ...prev,
@@ -458,42 +468,31 @@ export default function POS() {
     }
   };
 
-  const handleStopCourtSession = async (court: any, e?: React.MouseEvent) => {
+  const handleStopCourtSession = (court: any, e?: React.MouseEvent) => {
     e?.stopPropagation();
     const live = calculateLiveCourtDetails(court);
-    let sessionRes: any = null;
-
-    try {
-      sessionRes = await adminService.stopCourtSession(court.id);
-    } catch {
-      // Offline fallback calculation
-    }
-
-    if (!sessionRes || !sessionRes.court_name) {
-      const durationMins = live.exactMinutes || Math.round((court.hours || 1) * 60);
-      const roundedMins = Math.max(15, Math.ceil(durationMins / 15) * 15);
-      const rate = court.rate || (court.id >= 5 ? 180000 : 140000);
-      const fee = Math.round((roundedMins / 60) * rate);
-      sessionRes = {
-        court_name: court.name,
-        duration_minutes: roundedMins,
-        total_price: fee,
-        formatted_price: `${new Intl.NumberFormat("vi-VN").format(fee)}đ`,
-        time_range: `${live.elapsedTimeStr} (${roundedMins} phút)`,
-      };
-    }
+    const durationMins = live.exactMinutes || Math.round((court.hours || 1) * 60);
+    const roundedMins = live.roundedMinutes || Math.max(15, Math.ceil(durationMins / 15) * 15);
+    const rate = court.rate || (court.id >= 5 ? 180000 : 140000);
+    // Tiền sân khớp chính xác 100% với số tiền tạm tính hiển thị trên Card
+    const courtFee = live.currentEstimatedPrice || Math.round((roundedMins / 60) * rate);
+    const timeFormatted = live.elapsedTimeStr || `${durationMins} phút`;
 
     const newCourtCartItem: CartItem = {
       variantId: Date.now() + Math.floor(Math.random() * 1000),
-      productName: `Tiền Sân: ${sessionRes.court_name} (${sessionRes.duration_minutes}p)`,
-      variantName: `Khung ${sessionRes.time_range} | ${court.customerName || court.customer_name || "Khách vãng lai"}`,
-      price: sessionRes.total_price,
+      productName: `Tiền Sân: ${court.name} (${roundedMins}p)`,
+      variantName: `Khung ${timeFormatted} (${roundedMins} phút) | ${court.customerName || court.customer_name || "Khách vãng lai"}`,
+      price: courtFee,
       quantity: 1,
       isCourtFee: true,
     };
 
     // LẤY TẤT CẢ MÓN NƯỚC/BÁNH MÀ SÂN NÀY ĐÃ GỌI TRONG LÚC CHƠI
     const tabItems = courtTabOrders[court.id] || [];
+
+    // XÓA HÓA ĐƠN CŨ ĐÃ IN ĐỂ HIỂN THỊ TRỰC TIẾP HÓA ĐƠN MỚI CỦA SÂN
+    setLastPOSReceipt(null);
+    localStorage.removeItem("demopick_last_pos_receipt");
 
     setCartItems((prev) => {
       const filteredOut = prev.filter((i) => !i.isCourtFee);
@@ -519,7 +518,7 @@ export default function POS() {
       });
     }
 
-    // Reset this court to available
+    // Reset this court to available ngay lập tức trên UI
     setLocalCourtOverrides((prev) => ({
       ...prev,
       [court.id]: {
@@ -536,9 +535,18 @@ export default function POS() {
       },
     }));
 
+    // Gửi API dọn dẹp phiên ở background không block UI
+    adminService.stopCourtSession(court.id, {
+      court_name: court.name,
+      duration_minutes: roundedMins,
+      exact_minutes: durationMins,
+      total_price: courtFee,
+      time_range: `${timeFormatted} (${roundedMins} phút)`,
+    }).catch(() => {});
+
     const tabCount = tabItems.reduce((acc, it) => acc + it.quantity, 0);
     const tabSummary = tabCount > 0 ? ` + ${tabCount} món nước/dịch vụ` : "";
-    toast.success(`🏁 Đã trả sân ${sessionRes.court_name}! Phí sân ${sessionRes.formatted_price}${tabSummary} đã đẩy vào Hóa Đơn POS.`);
+    toast.success(`🏁 Đã trả sân ${court.name}! Tiền sân ${new Intl.NumberFormat("vi-VN").format(courtFee)}đ${tabSummary} đã đẩy vào Hóa Đơn POS.`);
   };
 
   const handleQuickCheckIn = async (e: React.FormEvent) => {
@@ -598,6 +606,9 @@ export default function POS() {
       quantity: 1,
       isCourtFee: true,
     };
+
+    setLastPOSReceipt(null);
+    localStorage.removeItem("demopick_last_pos_receipt");
 
     setCartItems((prev) => {
       const filteredOutOtherCourts = prev.filter((i) => !i.isCourtFee);
@@ -671,6 +682,9 @@ export default function POS() {
       toast.success(`🥤 Đã thêm 1x "${product.name}" vào tab phục vụ của ${courtName}!`);
       return;
     }
+
+    setLastPOSReceipt(null);
+    localStorage.removeItem("demopick_last_pos_receipt");
 
     setCartItems((prev) => {
       const existing = prev.find((item) => item.variantId === variant.id);
@@ -1226,13 +1240,27 @@ export default function POS() {
                     </div>
 
                     {lastPOSReceipt && (
-                      <div className="bg-emerald-50/90 border border-emerald-200 rounded-xl p-2.5 text-left space-y-2 shadow-2xs">
+                      <div className="bg-emerald-50/90 border border-emerald-200 rounded-xl p-2.5 text-left space-y-2 shadow-2xs relative">
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-bold text-emerald-800 uppercase flex items-center gap-1">
                             <CheckCircle2 className="h-3 w-3 text-emerald-600" />
                             Vừa thanh toán thành công
                           </span>
-                          <span className="text-[10px] font-mono text-emerald-700 font-bold">#{lastPOSReceipt.code}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-mono text-emerald-700 font-bold">#{lastPOSReceipt.code}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setLastPOSReceipt(null);
+                                localStorage.removeItem("demopick_last_pos_receipt");
+                                toast.info("Đã đóng thông báo hóa đơn vừa in.");
+                              }}
+                              className="p-0.5 rounded-md text-emerald-700 hover:text-emerald-950 hover:bg-emerald-200/50 transition-colors cursor-pointer"
+                              title="Đóng thông báo hóa đơn này"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </div>
                         <div className="text-[11px] text-slate-700 space-y-0.5">
                           <div className="font-bold truncate">{lastPOSReceipt.customerName}</div>
@@ -1243,15 +1271,30 @@ export default function POS() {
                             </span>
                           </div>
                         </div>
-                        <Button
-                          size="sm"
-                          type="button"
-                          onClick={() => setPosReceiptModalOpen(true)}
-                          className="w-full h-7 text-[11px] font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-lg gap-1.5 shadow-xs"
-                        >
-                          <Receipt className="h-3.5 w-3.5" />
-                          <span>In Lại Hóa Đơn Cho Khách</span>
-                        </Button>
+                        <div className="flex items-center gap-1.5 pt-0.5">
+                          <Button
+                            size="sm"
+                            type="button"
+                            onClick={() => setPosReceiptModalOpen(true)}
+                            className="flex-1 h-7 text-[11px] font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-lg gap-1 shadow-xs cursor-pointer"
+                          >
+                            <Receipt className="h-3.5 w-3.5" />
+                            <span>In Lại Hóa Đơn</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              setLastPOSReceipt(null);
+                              localStorage.removeItem("demopick_last_pos_receipt");
+                              toast.info("Đã sẵn sàng tạo hóa đơn mới.");
+                            }}
+                            className="h-7 px-2 text-[10px] font-bold bg-white text-emerald-800 border-emerald-300 hover:bg-emerald-100/60 rounded-lg shadow-2xs cursor-pointer"
+                          >
+                            <span>Tạo Đơn Mới</span>
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>

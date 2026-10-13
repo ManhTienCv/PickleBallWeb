@@ -525,7 +525,13 @@ export const adminService = {
     }
   },
 
-  stopCourtSession: async (courtId: number): Promise<{
+  stopCourtSession: async (courtId: number, sessionData?: {
+    court_name?: string
+    duration_minutes?: number
+    exact_minutes?: number
+    total_price?: number
+    time_range?: string
+  }): Promise<{
     session: any
     court_name: string
     duration_minutes: number
@@ -535,29 +541,39 @@ export const adminService = {
     time_range: string
   }> => {
     try {
-      const res = await api.post<ApiResponse<any>>(`/admin/courts/${courtId}/stop-session`)
-      return res.data.data
+      const res = await api.post<ApiResponse<any>>(`/admin/courts/${courtId}/stop-session`, sessionData || {})
+      const d = res.data?.data
+      if (d && d.total_price !== undefined) {
+        return d
+      }
     } catch {
-      const courtNames: Record<number, string> = {
-        1: "Sân Pickleball A1",
-        2: "Sân Pickleball A2",
-        3: "Sân Pickleball B1",
-        4: "Sân Pickleball B2",
-        5: "Sân Pickleball C1",
-        6: "Sân Pickleball C2",
-        7: "Sân Pickleball D1",
-        8: "Sân Pickleball D2",
-      }
-      const rate = (courtId === 5 || courtId === 6) ? 180000 : 140000
-      return {
-        session: { id: Date.now(), court_id: courtId },
-        court_name: courtNames[courtId] || `Sân ${courtId}`,
-        duration_minutes: 60,
-        exact_minutes: 58,
-        total_price: rate,
-        formatted_price: `${new Intl.NumberFormat("vi-VN").format(rate)} đ`,
-        time_range: "Vừa kết thúc (1h00)",
-      }
+      // offline / mock fallback
+    }
+
+    const courtNames: Record<number, string> = {
+      1: "Sân Pickleball A1",
+      2: "Sân Pickleball A2",
+      3: "Sân Pickleball B1",
+      4: "Sân Pickleball B2",
+      5: "Sân Pickleball C1",
+      6: "Sân Pickleball C2",
+      7: "Sân Pickleball D1",
+      8: "Sân Pickleball D2",
+    }
+    const finalName = sessionData?.court_name || courtNames[courtId] || `Sân ${courtId}`
+    const finalDuration = sessionData?.duration_minutes ?? 60
+    const finalExact = sessionData?.exact_minutes ?? finalDuration
+    const rate = (courtId === 5 || courtId === 6) ? 180000 : 140000
+    const finalPrice = sessionData?.total_price ?? Math.round((finalDuration / 60) * rate)
+
+    return {
+      session: { id: Date.now(), court_id: courtId },
+      court_name: finalName,
+      duration_minutes: finalDuration,
+      exact_minutes: finalExact,
+      total_price: finalPrice,
+      formatted_price: `${new Intl.NumberFormat("vi-VN").format(finalPrice)} đ`,
+      time_range: sessionData?.time_range || `Vừa kết thúc (${finalDuration}p)`,
     }
   },
 

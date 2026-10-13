@@ -234,6 +234,16 @@ export const authService = {
         name: response.data?.data?.name || (response.data as any)?.name,
       }
     } catch {
+      try {
+        const savedUsersRaw = localStorage.getItem('demopick_system_users_v2') || localStorage.getItem('demopick_registered_users')
+        if (savedUsersRaw) {
+          const list = JSON.parse(savedUsersRaw)
+          if (Array.isArray(list)) {
+            const found = list.find((u: any) => u.email?.toLowerCase() === email.toLowerCase())
+            if (found) return { exists: true, name: found.name }
+          }
+        }
+      } catch {}
       return { exists: false }
     }
   },
