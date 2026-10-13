@@ -9,13 +9,13 @@ COPY settings.xml .
 
 # Copy pom.xml and cache dependencies
 COPY pom.xml .
-RUN mvn dependency:go-offline -B -s settings.xml \
+RUN mvn dependency:go-offline -B -U -s settings.xml \
     -Dmaven.wagon.http.retryHandler.count=5 \
     -Dmaven.wagon.http.pool=false || true
 
 # Copy source code and package application
 COPY src ./src
-RUN mvn clean package -DskipTests -B -s settings.xml \
+RUN mvn clean package -DskipTests -B -U -s settings.xml \
     -Dmaven.wagon.http.retryHandler.count=5 \
     -Dmaven.wagon.http.pool=false
 

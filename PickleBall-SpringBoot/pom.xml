@@ -128,9 +128,9 @@
 
     <repositories>
         <repository>
-            <id>aliyun-maven</id>
-            <name>Aliyun Maven</name>
-            <url>https://maven.aliyun.com/repository/public</url>
+            <id>central</id>
+            <name>Maven Central via Cloudflare</name>
+            <url>https://repo1.maven.org/maven2</url>
             <releases>
                 <enabled>true</enabled>
             </releases>
@@ -139,9 +139,9 @@
             </snapshots>
         </repository>
         <repository>
-            <id>central</id>
-            <name>Maven Central Fastly</name>
-            <url>https://repo1.maven.org/maven2</url>
+            <id>google-maven-central</id>
+            <name>Google Cloud Storage Maven Mirror</name>
+            <url>https://maven-central.storage-download.googleapis.com/maven2/</url>
             <releases>
                 <enabled>true</enabled>
             </releases>
@@ -153,9 +153,9 @@
 
     <pluginRepositories>
         <pluginRepository>
-            <id>aliyun-maven</id>
-            <name>Aliyun Maven</name>
-            <url>https://maven.aliyun.com/repository/public</url>
+            <id>central</id>
+            <name>Maven Central via Cloudflare</name>
+            <url>https://repo1.maven.org/maven2</url>
             <releases>
                 <enabled>true</enabled>
             </releases>
@@ -164,9 +164,9 @@
             </snapshots>
         </pluginRepository>
         <pluginRepository>
-            <id>central</id>
-            <name>Maven Central Fastly</name>
-            <url>https://repo1.maven.org/maven2</url>
+            <id>google-maven-central</id>
+            <name>Google Cloud Storage Maven Mirror</name>
+            <url>https://maven-central.storage-download.googleapis.com/maven2/</url>
             <releases>
                 <enabled>true</enabled>
             </releases>
