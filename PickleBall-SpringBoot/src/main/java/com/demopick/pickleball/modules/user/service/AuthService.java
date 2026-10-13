@@ -129,7 +129,6 @@ public class AuthService {
         Map<String, Object> res = new HashMap<>();
         res.put("message", "Mã xác thực OTP đã được gửi tới " + cleanEmail);
         res.put("email", cleanEmail);
-        res.put("demoOtp", otp);
         return res;
     }
 
@@ -194,7 +193,6 @@ public class AuthService {
         Map<String, Object> res = new HashMap<>();
         res.put("message", "Mã xác thực OTP đăng nhập đã được gửi tới " + cleanEmail);
         res.put("email", cleanEmail);
-        res.put("demoOtp", otp);
         return res;
     }
 
@@ -306,7 +304,6 @@ public class AuthService {
 
         Map<String, Object> res = new HashMap<>();
         res.put("message", "Mã xác thực OTP đã được gửi tới " + cleanEmail);
-        res.put("demoOtp", otp);
         return res;
     }
 

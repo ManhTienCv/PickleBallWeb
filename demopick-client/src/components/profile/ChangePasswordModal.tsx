@@ -45,7 +45,6 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
   const [isResettingPassword, setIsResettingPassword] = useState(false)
   const [countdown, setCountdown] = useState(0)
   const [otpSent, setOtpSent] = useState(false)
-  const [demoOtpHint, setDemoOtpHint] = useState<string | null>(null)
 
   // Đếm ngược gửi lại OTP
   useEffect(() => {
@@ -72,7 +71,6 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
     setShowResetConfirmPassword(false)
     setOtpSent(false)
     setCountdown(0)
-    setDemoOtpHint(null)
 
     onClose()
   }
@@ -89,12 +87,9 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
     if (!otpSent) {
       setIsSendingOtp(true)
       try {
-        const res = await authService.requestPasswordResetOTP(emailToUse)
+        await authService.requestPasswordResetOTP(emailToUse)
         setOtpSent(true)
         setCountdown(60)
-        if (res?.demoOtp) {
-          setDemoOtpHint(res.demoOtp)
-        }
         toast.success(`Mã OTP đã được gửi tới email ${emailToUse}`)
       } catch (err: any) {
         toast.error(err.message || 'Không thể gửi mã OTP. Vui lòng thử lại.')
@@ -115,11 +110,8 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
 
     setIsSendingOtp(true)
     try {
-      const res = await authService.requestPasswordResetOTP(emailToUse)
+      await authService.requestPasswordResetOTP(emailToUse)
       setCountdown(60)
-      if (res?.demoOtp) {
-        setDemoOtpHint(res.demoOtp)
-      }
       toast.success('Đã gửi lại mã OTP mới qua email!')
     } catch (err: any) {
       toast.error(err.message || 'Lỗi gửi lại mã OTP.')
@@ -394,26 +386,10 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
                   {user?.email || 'email tài khoản'}
                 </strong>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                  Mã OTP 6 số đã được gửi. Vui lòng kiểm tra <strong>Hộp thư đến</strong> hoặc thư mục <strong>Thư rác (Spam)</strong>.
+                  Mã OTP 6 số đã được gửi qua email. Vui lòng kiểm tra <strong>Hộp thư đến</strong> hoặc thư mục <strong>Thư rác (Spam) / Quảng cáo</strong>.
                 </p>
               </div>
             </div>
-
-            {/* Hint mã OTP nếu nhận được từ máy chủ */}
-            {demoOtpHint && (
-              <div className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800 text-[11px]">
-                <span className="text-amber-800 dark:text-amber-300">
-                  Mã xác thực gửi tới bạn: <strong className="font-mono text-emerald-700 dark:text-emerald-400 text-xs font-black">{demoOtpHint}</strong>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setOtpCode(demoOtpHint)}
-                  className="font-bold text-emerald-700 dark:text-emerald-400 underline hover:text-emerald-800 cursor-pointer ml-2 shrink-0"
-                >
-                  Điền nhanh
-                </button>
-              </div>
-            )}
 
             {/* Ô nhập mã OTP 6 số */}
             <div className="space-y-1.5">

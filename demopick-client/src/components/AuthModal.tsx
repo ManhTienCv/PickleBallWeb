@@ -21,7 +21,6 @@ export function AuthModal() {
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
   const [forgotEmail, setForgotEmail] = useState('')
-  const [forgotDemoOtp, setForgotDemoOtp] = useState<string | null>(null)
 
   // Google Flow State
   const [selectedGoogleEmail, setSelectedGoogleEmail] = useState('')
@@ -270,9 +269,8 @@ export function AuthModal() {
               <ForgotPasswordForm
                 initialEmail={forgotEmail}
                 onSwitchToLogin={() => setView('login')}
-                onOtpSent={(email, demoOtp) => {
+                onOtpSent={(email) => {
                   setForgotEmail(email)
-                  if (demoOtp) setForgotDemoOtp(demoOtp)
                   setOtpCountdown(60)
                   setView('reset')
                 }}
@@ -283,7 +281,6 @@ export function AuthModal() {
               <ResetPasswordForm
                 email={forgotEmail}
                 countdown={otpCountdown}
-                demoOtp={forgotDemoOtp}
                 onResendOtp={handleResendOtp}
                 onResetSuccess={(email, newPass) => {
                   setLoginEmail(email)

@@ -227,8 +227,12 @@ public class EmailSmtpTest {
         org.springframework.test.util.ReflectionTestUtils.setField(service, "brevoSenderEmail", "nvmtein@gmail.com");
         org.springframework.test.util.ReflectionTestUtils.setField(service, "brevoSenderName", "Pickleball");
 
-        boolean sentOtp = service.sendRegisterOtpEmail("nvmtein@gmail.com", "998877", "Nguyễn Văn Mạnh Tiến");
-        System.out.println(">>> Kết quả gửi OTP đăng ký qua EmailService (Brevo REST API): " + sentOtp);
-        org.junit.jupiter.api.Assertions.assertTrue(sentOtp);
+        boolean sentRegister = service.sendRegisterOtpEmail("nvmtein@gmail.com", "998877", "Nguyễn Văn Mạnh Tiến");
+        System.out.println(">>> Kết quả gửi OTP đăng ký qua EmailService (Brevo REST API): " + sentRegister);
+        org.junit.jupiter.api.Assertions.assertTrue(sentRegister);
+
+        boolean sentReset = service.sendOtpResetPasswordEmail("nvmtein@gmail.com", "654321");
+        System.out.println(">>> Kết quả gửi OTP reset password qua EmailService (Brevo REST API): " + sentReset);
+        org.junit.jupiter.api.Assertions.assertTrue(sentReset);
     }
 }

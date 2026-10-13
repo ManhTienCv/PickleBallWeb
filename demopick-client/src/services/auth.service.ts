@@ -45,8 +45,8 @@ export const authService = {
   /**
    * Gửi mã OTP xác thực đăng ký tài khoản
    */
-  async sendRegisterOtp(email: string, name?: string): Promise<{ message: string; email: string; demoOtp?: string }> {
-    const response = await api.post<ApiResponse<{ message: string; email: string; demoOtp?: string }>>('/auth/register/send-otp', { email, name })
+  async sendRegisterOtp(email: string, name?: string): Promise<{ message: string; email: string }> {
+    const response = await api.post<ApiResponse<{ message: string; email: string }>>('/auth/register/send-otp', { email, name })
     return response.data.data
   },
 
@@ -61,8 +61,8 @@ export const authService = {
   /**
    * Gửi mã OTP đăng nhập nhanh không cần mật khẩu
    */
-  async sendLoginOtp(email: string): Promise<{ message: string; email: string; demoOtp?: string }> {
-    const response = await api.post<ApiResponse<{ message: string; email: string; demoOtp?: string }>>('/auth/login/send-otp', { email })
+  async sendLoginOtp(email: string): Promise<{ message: string; email: string }> {
+    const response = await api.post<ApiResponse<{ message: string; email: string }>>('/auth/login/send-otp', { email })
     return response.data.data
   },
 
@@ -176,9 +176,9 @@ export const authService = {
   /**
    * Yêu cầu gửi mã OTP Đặt lại mật khẩu qua Email
    */
-  async requestPasswordResetOTP(email: string): Promise<{ message: string; demoOtp?: string }> {
+  async requestPasswordResetOTP(email: string): Promise<{ message: string }> {
     try {
-      const response = await api.post<ApiResponse<{ message: string; demoOtp?: string }>>('/auth/forgot-password', { email })
+      const response = await api.post<ApiResponse<{ message: string }>>('/auth/forgot-password', { email })
       return response.data.data
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Không thể kết nối đến máy chủ gửi email. Vui lòng thử lại sau.'
